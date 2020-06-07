@@ -1,8 +1,44 @@
+"""
+    GET REGIONy
+    ==========================
+    :author:  Mourdas MOHAMED 
+    :contact: mourdas.mohamed@igh.cnrs.fr
+    :date: 01/06/2020
+    :version: 0.1
+    Script description
+    ------------------
+    extract_region_reads_vcf.py get the regions in vcf file
+    -------
+    >>> extract_region_reads_vcf.py file.vcf -d REGION_DIRECTORY
+    
+    Help Programm
+    -------------
+    information arguments:
+        - \-h, -h
+                        show this help message and exit
+    Input mandatory infos for running:
+        - \-i <filename>, --input <filename>
+                        BED file issued from assemblytics analysis
+        - \-r <filename>, --reference <filename>
+                        reference sequence file used in assemblytics
+        - \-a <filename>, --alternate <filename>
+                        alternate sequence file used in assemblytics
+        - \- d <filename>, --database <filename>
+                        TE database in multifasta format
+        - \-o <filename>, --out <filename>
+                        Prefix of output files
+        - \-s <minimalSize>, --size <minimalSize>
+                        Minimal size in bases for a InDel to be analyzed (Optional, default 100)
+"""
+
+
+#Import
 import sys
 import os
 import re
 import argparse
 
+#parse args
 parser = argparse.ArgumentParser()
 
 #MAIN ARGS

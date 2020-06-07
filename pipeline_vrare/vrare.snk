@@ -1,0 +1,121 @@
+#configfile: "./config.json"
+
+
+rule extract_read :
+    input:
+        vcf  = config["name_out"] + ".vcf",
+        read = config["read"],
+
+    output:
+        "REGION_RD_" + config["name_out"],
+        "READ_FASTQ_" + config["name_out"] + "/reads_*",
+        
+    params:
+        name_out = config["name_out"],
+
+    shell:
+        """
+
+        echo '----------- BLAST --------------' ;
+
+        python3 scripts_python/extract_region_reads_vcf.py {params.name_out}.vcf -d REGION_RD_{params.name_out} ;
+        
+        nb_file=`ls ./REGION_RD_{params.name_out} | wc -l` ;
+        i=0 ;
+        for fr in `ls ./REGION_RD_{params.name_out}`; do
+            region=`echo $fr | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
+            i=$(($i + 1)) ;
+            echo $i/$nb_file ;
+            samtools fqidx {input.read} -r ./REGION_RD_{params.name_out}/$fr > ./READ_FASTQ_{params.name_out}/reads_$region.fastq ;
+        done;
+
+        """
+
+
+
+rule blast :
+    input:
+        vcf      = config["name_out"] + ".vcf",
+        fasta_TE = config["fasta_TE"],
+
+    output:
+        config["name_out"] + "_cnTE.bln",
+        
+    params:
+        name_out = config["name_out"],
+
+    shell:
+        """
+        echo '----------- BLAST --------------' ;
+
+        python3 scripts_python/get_seq_vcf.py {params.name_out}.vcf {params.name_out}_sniffle.fasta ;
+
+        makeblastdb -in {input.fasta_TE} -dbtype nucl ;
+        blastn -db {input.fasta_TE} -query {params.name_out}_sniffle.fasta -outfmt 6 -out {params.name_out}_cnTE.bln ;
+
+        python3 scripts_python/parse_blast_main.py {params.name_out}_cnTE.bln ;
+
+        """
+
+
+
+rule sniffles :
+    input:
+        config["name_out"] + "_MD.sorted.bam",
+
+    output:
+        config["name_out"] + ".vcf",
+        
+    params:
+        name_out = config["name_out"],
+
+    shell:
+        """
+        echo '<<<<<<<<<<<<<<<< SNIFFLES >>>>>>>>>>>>>>>>>>>>>>>' ;
+        sniffles --report_seq -s 1 -m {params.name_out}_MD.sorted.bam -v {params.name_out}.vcf -n -1 ;
+        """
+
+
+rule samtools :
+    input:
+        config["name_out"] + ".sam",
+        genome = config["genome"],
+
+    output:
+        config["name_out"] + "_MD.sorted.bam",
+        
+    params:
+        name_out = config["name_out"],
+
+    shell:
+        """
+        echo '<<<<<<<<<<<<<<<< SAMTOOLS >>>>>>>>>>>>>>>>>>>>>>>' ;
+
+        samtools view -S -b {params.name_out}.sam > {params.name_out}.bam ;
+        samtools sort {params.name_out}.bam -o {params.name_out}.sorted.bam ;
+
+        #rm -f {params.name_out}.bam ;
+
+        samtools calmd -b {params.name_out}.sorted.bam {input.genome} > {params.name_out}_MD.sorted.bam ;
+        """
+
+
+rule mapping :
+    input:  
+        read   = config["read"],
+        genome = config["genome"],
+
+    output:
+        config["name_out"] + ".sam",
+        
+    params:
+        name_out = config["name_out"],
+
+    shell:
+        """
+        echo '<<<<<<<<<<<<<<<<<<< INDEX >>>>>>>>>>>>>>>>>>>>' ;
+        minimap2 -x map-ont -d {input.genome}.mmi {input.genome} ;
+        echo '<<<<<<<<<<<<<<<<<<< MAPPING >>>>>>>>>>>>>>>>>>>>' ;
+        minimap2 -ax map-ont -t 16 {input.genome} {input.read} > {params.name_out}.sam ;
+        """
+        

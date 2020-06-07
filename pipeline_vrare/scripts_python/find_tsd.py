@@ -3,12 +3,31 @@ import sys
 import re
 from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
+import argparse
+
+parser = argparse.ArgumentParser()
+
+#MAIN ARGS
+parser.add_argument("flank_fasta", type=str,
+                    help="fasta file of flank")
+parser.add_argument("size_flank", type=int,
+                    help="size of flankan")
 
 
-file  = open(sys.argv[1], "r")
+parser.add_argument("id_elem", type=str,
+                    help="id of variant rare")
+parser.add_argument("strands", type=str,
+                    help="strands of sequence")
+parser.add_argument("size_tsd", type=int,
+                    help="name fasta file out")
+
+args = parser.parse_args()
+
+
+file  = open(args.flank_fasta, "r")
 lines = file.readlines()
 
-id_elem = sys.argv[3]
+id_elem = args.id_elem
 file_sequence_TE = open("seq_test.fasta", "r")
 seq_lines = file_sequence_TE.readlines()
 head_seq = seq_lines[0].strip()
@@ -25,7 +44,7 @@ def rev_comp(seq):
 
 #gere le forward et reverse
 strands = False #False + et True -
-if sys.argv[4] == "-":
+if args.strands == "-":
 	strands = True
 	sequence_1 = lines[3].strip()
 	sequence_2 = lines[1].strip()
@@ -48,8 +67,8 @@ def align(alignments, size):
 	return liste, (i-1)
 
 
-size_k       = int(sys.argv[2])
-size_tsd     = int(sys.argv[5])
+size_k       = int(args.size_flank)
+size_tsd     = int(args.size_tsd)
 size_flank   = size_k
 find         = False
 report_seq   = True
