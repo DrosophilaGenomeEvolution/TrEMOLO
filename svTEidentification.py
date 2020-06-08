@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-	Controlling mapping data for a de novo assembly
+	Identifying complete TE differences between two assemblies using Assemblytics/RaGOO output
 	==========================
-	:author:  François Sabot 
+	:author:  François Sabot
 	:contact: francois.sabot@ird.fr
 	:date: 10/10/2019
 	:version: 0.1
+	:licence: GPLv3
 	Script description
 	------------------
 	svTEidentification.py will inform about the new TE putative insertion based on a Assemblytics BED file.
     A TE database (mutlifasta file) must be provided
-    Requires bedtools and blast in the path
+    Requires bedtools and blast to be accessibl in the path
 	-------
 	>>> svTEidentification.py -i Assemblytics.bed -d TEdatabase -o output
-	
+
 	Help Programm
 	-------------
 	information arguments:
@@ -33,8 +34,8 @@
 						TE database in multifasta format
 		- \-o <filename>, --out <filename>
 						Prefix of output files
-		- \-s <minimalSize>, --size <minimalSize>
-						Minimal size in bases for a InDel to be analyzed (Optional, default 100)
+		- \-s <minimalPercentage>, --size <minimalPercentage>
+						Minimal percentage of identity and size for a TE hit to be conserved (Optional, default 90)
 """
 
 #Import
@@ -46,9 +47,9 @@ import subprocess as sp
 ## Python modules
 import argparse
 from Bio import SeqIO
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+#import numpy as np
+#import pandas as pd
+#import matplotlib.pyplot as plt
 
 ##################################################
 ## Variables Globales
@@ -61,8 +62,8 @@ debug="False"
 ##################################################
 ## Functions
 ##################################################
-	
-def relativeToAbsolutePath(relative): 
+
+def relativeToAbsolutePath(relative):
 	if relative[0] != "/":			# The relative path is a relative path, ie do not starts with /
 		command = "readlink -m "+relative
 		absolutePath = sp.check_output(command, shell=True).decode("utf-8").rstrip()
@@ -84,7 +85,7 @@ def indelExtraction(inputFile,outputPrefix):
     print ("Extraction of informations for Deletions & Insertions")
     grepCommand = "cat " + inputFile + "  | grep Deletion > " + outputPrefix + "_deletion.bed && cat " + inputFile + "  | grep Insertion > " + outputPrefix + "_insertion.bed"
     launchingShell(grepCommand)
-    
+
 def BEDconverter(inputBed,outputBed):
     '''Transform an Assemblytics BED in a BED based on the alternate sequence'''
     print ("Converting BED from reference to alternate")
@@ -109,10 +110,14 @@ def fastaExtraction(subInDelbed, fastaSeq, reference):
     launchingShell(extractCommand)
 
 def BlastOnReference(fastaInput,TEdb,outputBlast):
+	print ("Blasting...")
+	'''Simple BLAST command launcher'''
 	blastCommand="blastn -db " + TEdb + " -query " + fastaInput + " -outfmt 6 -out " + outputBlast
-	launchingShell(blastCommand) 
-	
+	launchingShell(blastCommand)
+
 def TEidentificationFromBlast(blastresults, seqDict, outputFile, minSize):
+	print ("Checking if TE are moving")
+	'''Use a simple BLAST parsing to identify complete TE new insertion/deletion'''
 	outputHandle = open(outputFile, "w")
 	outputHandle.write("#TE\tLocation\tPercId\tFragSize\tRefSize\tPercTotal\n")
 	with open(blastresults, "r") as inputHandle:
@@ -121,12 +126,12 @@ def TEidentificationFromBlast(blastresults, seqDict, outputFile, minSize):
 			fields = line.split("\t")
 			if int(fields[3]) < ((minSize/100) * len(seqDict[fields[1]])):
 				#print ("too short for " + fields[1])
-				#exit() 
+				#exit()
 				continue
 			else:
 				outLine = fields[1] + "\t" + fields[0] + "\t" + fields[2] + "\t" + fields[3] + "\t" + str(len(seqDict[fields[1]])) + "\t" + str((int(fields[3])/len(seqDict[fields[1]]))*100) + "\n"
 				outputHandle.write(outLine)
-			
+
 
 ##################################################
 ## Main code
@@ -145,11 +150,11 @@ if __name__ == "__main__":
 	parser.add_argument('-s', '--size', metavar="<Percentage>", required=False, default=90, type=int, dest = 'minimalSize', help = 'Minimal percentage of TE size to be analyzed')
 
 
-	
-	
+
+
 	# Check parameters
 	args = parser.parse_args()
-	
+
 	#Welcome message
 	print("##########################################################")
 	print("# 	      svTEidentification (Version " + version + ")	         #")
@@ -157,22 +162,22 @@ if __name__ == "__main__":
 
 	#Window size for scanning
 	minimalSize=args.minimalSize
-	print (minimalSize)
+	print ("Minimal percentage of similarity and size is of " + minimalSize + "%")
 
-	# From relative to absolute paths 
+	# From relative to absolute paths
 	inputFile = relativeToAbsolutePath(args.inputFile)
 	reference=relativeToAbsolutePath(args.reference)
 	alternate=relativeToAbsolutePath(args.alternate)
 	outputPrefix = relativeToAbsolutePath(args.outputPrefix)
 	database = relativeToAbsolutePath(args.database)
-	
+
      #Charging info for TE size
 	seqDict = SeqIO.to_dict(SeqIO.parse(database, "fasta"))
 	#print(len(seqDict["ZAM"]))
 
-    #Creating the sub BED with indel only   
+    #Creating the sub BED with indel only
 	indelExtraction(inputFile, outputPrefix)
-    
+
     #Deletion step
 	print("Working on Deletions...")
 	subDelBed = outputPrefix + "_deletion.bed"
@@ -184,8 +189,8 @@ if __name__ == "__main__":
 	BlastOnReference(deletionFastaSeq,database,delBlastOutput)
 	deletionOutput = outputPrefix + "_deleted_TE.csv"
 	TEidentificationFromBlast(delBlastOutput, seqDict, deletionOutput, minimalSize)
-       
-    
+
+
 	#Insertion step
 	print("Working on Insertions...")
 	subInsBed = outputPrefix + "_insertion.bed"
@@ -199,7 +204,9 @@ if __name__ == "__main__":
 	BlastOnReference(insertionFastaSeq, database, insBlastOutput)
 	insertionOutput = outputPrefix + "_insertion_TE.csv"
 	TEidentificationFromBlast(insBlastOutput, seqDict, insertionOutput, minimalSize)
-    
-    
-	
-	
+
+
+print("##########################################################")
+print("# 	      FINISHED! 	         #")
+print("# 	      Please cite xxx 	         #")
+print("##########################################################")
