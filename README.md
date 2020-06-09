@@ -35,15 +35,16 @@ Once the requirements fullfilled, just git clone
 ```
 
 ## Global TE variations
-The *svTEidentification.py* script will inform about the new TE putative insertion based on a Assemblytics BED file. This file ca be created through Assemblytics or RaGOO.
+The [*svTEidentification.py*](svTEidentification.py) script will inform about the new TE putative insertion based on a Assemblytics BED file. This file ca be created through Assemblytics or RaGOO.
   A TE database (mutlifasta file) must be provided. You can format it using the *makeblastdb* command from BLAST suite.
 
-  Requires Bedtools and BLAST to be accessible in the path
+  It requires Bedtools and BLAST to be accessible in the path.
 
 ```
  svTEidentification.py -i Assemblytics.bed -d TEdatabase -o output
 ```
 Options
+
 ```
   - \-h, --help
           show this help message and exit
@@ -74,7 +75,7 @@ The tabulated files are structured as follows:
 
 
 |#TE | Location | PercId | FragSize | RefSize | PercTotal |
-| ------------- | ------------- | ------------- | ------------- |------------- |------------- |
+| -- | -------- | ------ | -------- | ------- | --------- |
 | blood | +::2R_RaGOO_RaGOO:9104794-9112210 | 99.569 | 7424 | 7410 | 100.2 |
 | 412 | +::2R_RaGOO_RaGOO:13514820-13522246 | 99.511 | 6134 | 7567 | 81.06 |
 | flea | +::X_RaGOO_RaGOO:7469447-7474489 | 99.543 | 5036 | 5034 | 100.04 |
