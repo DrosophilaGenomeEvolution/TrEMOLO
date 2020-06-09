@@ -5,7 +5,7 @@ TrEMOLO used long reads assemblies to detect
 - Global TE variations between two assembled genomes  
 - Populational variation in TE insertions.
 
-It is licencied under [CeCill-C](Licence_CeCILL-C_V1-en.html) and [GPLv3](LICENSE).
+It is licencied under [CeCill-C](Licence_CeCILL-C_V1-en.txt) and [GPLv3](LICENSE).
 
 Please cite xxxx if using TrEMOLO
 
