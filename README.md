@@ -69,3 +69,12 @@ This script will output 8 files:
 - Two FASTA files with the sequences corresponding to these deletions and insertions
 - Two BLASTn output files providing the whole results of the precedent files compared to the TE database
 - And finally, two tabulated files (.csv) coming from filtering the BLASTn results according to the minimal percentage threshold.
+
+The tabulated files are structured as follows:
+
+
+|#TE | Location | PercId | FragSize | RefSize | PercTotal |
+| ------------- | ------------- | ------------- | ------------- |------------- |------------- |
+| blood | +::2R_RaGOO_RaGOO:9104794-9112210 | 99.569 | 7424 | 7410 | 100.2 |
+| 412 | +::2R_RaGOO_RaGOO:13514820-13522246 | 99.511 | 6134 | 7567 | 81.06 |
+| flea | +::X_RaGOO_RaGOO:7469447-7474489 | 99.543 | 5036 | 5034 | 100.04 |
