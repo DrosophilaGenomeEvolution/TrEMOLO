@@ -1,3 +1,40 @@
+"""
+    GET REGION
+    ==========================
+    :author:  Mourdas MOHAMED 
+    :contact: mourdas.mohamed@igh.cnrs.fr
+    :date: 01/06/2020
+    :version: 0.1
+    Script description
+    ------------------
+    extract_region_reads_vcf.py get the regions in vcf file
+    -------
+    >>> extract_region_reads_vcf.py file.vcf -d REGION_DIRECTORY out.csv
+    
+    Help Programm
+    -------------
+    usage: parse_blast_main.py [-h] [-t NAME_FILE_TE] [-p MIN_PIDENT]
+                           [-s MIN_SIZE_PERCENT] [-r MIN_READ_SUPPORT]
+                           blast_file out
+
+    positional arguments:
+      blast_file            blast file format outfmt 6
+      out                   name of tabular file out
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -t NAME_FILE_TE, --name_file_te NAME_FILE_TE
+                            file TE for get size
+      -p MIN_PIDENT, --min_pident MIN_PIDENT
+                            minimum percend of identity [94]
+      -s MIN_SIZE_PERCENT, --min_size_percent MIN_SIZE_PERCENT
+                            minimum precent size of TE [90]
+      -r MIN_READ_SUPPORT, --min_read_support MIN_READ_SUPPORT
+                        minimum read support number [1]
+"""
+
+
+
 import pandas as pd
 import re
 import os
@@ -9,6 +46,8 @@ parser = argparse.ArgumentParser()
 #MAIN ARGS
 parser.add_argument("blast_file", type=str,
                     help="blast file format outfmt 6")
+parser.add_argument("out", type=str,
+                    help="name of tabular file out")
 
 #OPTION
 parser.add_argument("-t", "--name_file_te", type=str, default=None,
@@ -52,14 +91,11 @@ df = pd.read_csv(name_file, "\t", header=None)
 name_file_withou_ext = name_file.split("/")[-1].split(".")[0] + "_"
 print(name_file_withou_ext)
 
-name_genome = name_file_withou_ext.split("vs")[0]
-os.system("mkdir -p "+name_genome)
-
 df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
 
 #KEEP ONLY LTR cf. (GET_SIZE CANNONICAL TE)
 df = df[df["sseqid"].isin(size_et.keys())]
-
+print(df.shape)
 #CALCUL SIZE AND PERCENT SIZE
 tab_percent = []
 tab_size    = []
@@ -124,4 +160,4 @@ for i, v in enumerate(df.values):
         
 df = df.iloc[tab_i]
 print(df.shape)
-df.to_csv(name_genome + "/" + name_file_withou_ext + "ALL_ET.csv", sep="\t", index=None)
+df.to_csv(args.out, sep="\t", index=None)

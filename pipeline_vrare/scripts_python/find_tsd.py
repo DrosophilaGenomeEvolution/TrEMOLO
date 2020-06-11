@@ -1,3 +1,33 @@
+"""
+    GET REGIONy
+    ==========================
+    :author:  Mourdas MOHAMED 
+    :contact: mourdas.mohamed@igh.cnrs.fr
+    :date: 01/06/2020
+    :version: 0.1
+    Script description
+    ------------------
+    find_tsd.py find TSD of TE
+    -------
+    >>> find_tsd.py ...
+    
+    Help Programm
+    -------------
+    usage: find_tsd.py [-h] flank_fasta size_flank id_elem strands size_tsd
+
+	positional arguments:
+	  flank_fasta  fasta file of flank
+	  size_flank   size of flankan
+	  id_elem      id of variant rare
+	  strands      strands of sequence
+	  size_tsd     name fasta file out
+
+	optional arguments:
+	  -h, --help   show this help message and exit
+"""
+
+
+
 import os
 import sys
 import re

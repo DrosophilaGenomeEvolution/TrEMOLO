@@ -13,22 +13,18 @@
     
     Help Programm
     -------------
-    information arguments:
-        - \-h, -h
-                        show this help message and exit
-    Input mandatory infos for running:
-        - \-i <filename>, --input <filename>
-                        BED file issued from assemblytics analysis
-        - \-r <filename>, --reference <filename>
-                        reference sequence file used in assemblytics
-        - \-a <filename>, --alternate <filename>
-                        alternate sequence file used in assemblytics
-        - \- d <filename>, --database <filename>
-                        TE database in multifasta format
-        - \-o <filename>, --out <filename>
-                        Prefix of output files
-        - \-s <minimalSize>, --size <minimalSize>
-                        Minimal size in bases for a InDel to be analyzed (Optional, default 100)
+    usage: extract_region_reads_vcf.py [-h] [-d DIRECTORY_NAME] [-i ID_SV]
+                                   vcf_file
+
+    positional arguments:
+      vcf_file              VCF file to parse
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -d DIRECTORY_NAME, --directory_name DIRECTORY_NAME
+                            name directory contains regions files
+      -i ID_SV, --id_sv ID_SV
+                            file id strucural variant to keep
 """
 
 
@@ -48,6 +44,8 @@ parser.add_argument("vcf_file", type=str,
 #OPTION
 parser.add_argument("-d", "--directory_name", type=str,
                     help="name directory contains regions files", default="REGION")
+parser.add_argument("-i", "--id_sv", type=str,
+                    help="file id strucural variant to keep")
 
 args = parser.parse_args()
 
@@ -55,6 +53,13 @@ args = parser.parse_args()
 rep_region = args.directory_name
 os.system("rm -fr " + rep_region)
 os.system("mkdir -p " + rep_region)
+
+
+
+list_id = None
+if args.id_sv:
+    file_id = open(args.id_sv, "r")
+    list_id = [i.strip() for i in file_id.readlines()]
 
 file = open(args.vcf_file, "r")
 
@@ -72,12 +77,15 @@ while line:
         rname  = spl[7].split(";")[9].split("=")[1]
         lrname = rname.split(",")
 
-        if type_v[0] == "<" and type_v not in ["<DEL>"] and chrom in tab_chrom:
-            file_out  = open("./" + rep_region + "/reads_"+str(chrom)+":"+str(ID)+":"+str(start)+"-"+str(end)+".txt", "w")
-            for index, value in enumerate(lrname):
-                file_out.write(str(value)+"\n")
+        #print(ID, list_id[0])
+        if list_id == None or (list_id and ID in list_id) :
 
-            file_out.close()
+            if type_v[0] == "<" and type_v not in ["<DEL>"] and chrom in tab_chrom:
+                file_out  = open("./" + rep_region + "/reads_"+str(chrom)+":"+str(ID)+":"+str(start)+"-"+str(end)+".txt", "w")
+                for index, value in enumerate(lrname):
+                    file_out.write(str(value)+"\n")
+
+                file_out.close()
     line = file.readline()
 
 file.close()

@@ -1,3 +1,33 @@
+"""
+    GET REGION
+    ==========================
+    :author:  Mourdas MOHAMED 
+    :contact: mourdas.mohamed@igh.cnrs.fr
+    :date: 01/06/2020
+    :version: 0.1
+    Script description
+    ------------------
+    get_seq_vcf.py get the  sequences report for indels in vcf output 
+    -------
+    >>> get_seq_vcf.py file.vcf 
+    
+    Help Programm
+    -------------
+    usage: get_seq_vcf.py [-h] [-m MIN_LEN_SEQ] vcf_file fasta_out
+
+    positional arguments:
+      vcf_file              VCF file to parse
+      fasta_out             name fasta file out
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -m MIN_LEN_SEQ, --min_len_seq MIN_LEN_SEQ
+                        size seq minimum to keep [1000]
+"""
+
+
+
+
 import sys
 import os
 import re
