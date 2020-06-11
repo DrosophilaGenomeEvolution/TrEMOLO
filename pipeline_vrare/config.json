@@ -1,5 +1,5 @@
 {
-    "work_directory": "",
+    "work_directory": "work_test",
     "genome": "G73onG0corrected_ragoo.fasta",
     "read": "G73.fastq",
     "name_out": "G73vsG73LR",
