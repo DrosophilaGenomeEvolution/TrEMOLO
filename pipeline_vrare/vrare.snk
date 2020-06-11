@@ -1,59 +1,66 @@
-#configfile: "./config.json"
 
 
 rule extract_read :
     input:
-        vcf  = config["name_out"] + ".vcf",
-        read = config["read"],
+        vcf     = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
+        read    = config["read"],
+        all_te  = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
 
     output:
-        "REGION_RD_" + config["name_out"],
-        "READ_FASTQ_" + config["name_out"] + "/reads_*",
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "REGION_RD_" + config["name_out"],
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "READ_FASTQ_" + config["name_out"] + "/reads_*",
         
     params:
-        name_out = config["name_out"],
+        name_out       = config["name_out"],
+        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+
 
     shell:
         """
+        mkdir -p {params.work_directory} ;
+        echo '<<<<<<<<<<<<<<<< GET READS >>>>>>>>>>>>>>>>>>>>>>>' ;
+        mkdir -p {params.work_directory}/READ_FASTQ_{params.name_out}
 
-        echo '----------- BLAST --------------' ;
-
-        python3 scripts_python/extract_region_reads_vcf.py {params.name_out}.vcf -d REGION_RD_{params.name_out} ;
+        awk 'NR>1 {{print $2}}' {input.all_te} | cut -d":" -f 5 > {params.work_directory}/id.txt ; 
+        python3 scripts_python/extract_region_reads_vcf.py {input.vcf} -d {params.work_directory}/REGION_RD_{params.name_out} -i {params.work_directory}/id.txt ;
         
-        nb_file=`ls ./REGION_RD_{params.name_out} | wc -l` ;
+        nb_file=`ls {params.work_directory}/REGION_RD_{params.name_out} | wc -l` ;
         i=0 ;
-        for fr in `ls ./REGION_RD_{params.name_out}`; do
+        for fr in `ls {params.work_directory}/REGION_RD_{params.name_out}`; do
             region=`echo $fr | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
             i=$(($i + 1)) ;
             echo $i/$nb_file ;
-            samtools fqidx {input.read} -r ./REGION_RD_{params.name_out}/$fr > ./READ_FASTQ_{params.name_out}/reads_$region.fastq ;
+            samtools fqidx {input.read} -r {params.work_directory}/REGION_RD_{params.name_out}/$fr > {params.work_directory}/READ_FASTQ_{params.name_out}/reads_$region.fastq ;
         done;
 
         """
 
-
-
 rule blast :
     input:
-        vcf      = config["name_out"] + ".vcf",
+        vcf      = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
         fasta_TE = config["fasta_TE"],
 
     output:
-        config["name_out"] + "_cnTE.bln",
+        snif_seqs = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_sniffle.fasta",
+        bln       = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE.bln",
+        all_te    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
         
     params:
         name_out = config["name_out"],
+        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+
 
     shell:
         """
-        echo '----------- BLAST --------------' ;
+        mkdir -p {params.work_directory} ;
+        echo '<<<<<<<<<<<<<<<< BLAST >>>>>>>>>>>>>>>>>>>>>>>' ;
 
-        python3 scripts_python/get_seq_vcf.py {params.name_out}.vcf {params.name_out}_sniffle.fasta ;
+        python3 scripts_python/get_seq_vcf.py {input.vcf} {output.snif_seqs} ;
 
         makeblastdb -in {input.fasta_TE} -dbtype nucl ;
-        blastn -db {input.fasta_TE} -query {params.name_out}_sniffle.fasta -outfmt 6 -out {params.name_out}_cnTE.bln ;
+        blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} ;
 
-        python3 scripts_python/parse_blast_main.py {params.name_out}_cnTE.bln ;
+        python3 scripts_python/parse_blast_main.py {output.bln} {output.all_te} ;
 
         """
 
@@ -61,34 +68,39 @@ rule blast :
 
 rule sniffles :
     input:
-        config["name_out"] + "_MD.sorted.bam",
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_MD.sorted.bam",
 
     output:
-        config["name_out"] + ".vcf",
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
         
     params:
         name_out = config["name_out"],
+        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
 
     shell:
         """
+        mkdir -p {params.work_directory} ;
         echo '<<<<<<<<<<<<<<<< SNIFFLES >>>>>>>>>>>>>>>>>>>>>>>' ;
-        sniffles --report_seq -s 1 -m {params.name_out}_MD.sorted.bam -v {params.name_out}.vcf -n -1 ;
+        sniffles --report_seq -s 1 -m {input} -v {output} -n -1 ;
         """
 
 
 rule samtools :
     input:
-        config["name_out"] + ".sam",
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".sam",
         genome = config["genome"],
 
     output:
-        config["name_out"] + "_MD.sorted.bam",
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_MD.sorted.bam",
         
     params:
         name_out = config["name_out"],
+        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+
 
     shell:
         """
+        mkdir -p {params.work_directory} ;
         echo '<<<<<<<<<<<<<<<< SAMTOOLS >>>>>>>>>>>>>>>>>>>>>>>' ;
 
         samtools view -S -b {params.name_out}.sam > {params.name_out}.bam ;
@@ -96,8 +108,9 @@ rule samtools :
 
         #rm -f {params.name_out}.bam ;
 
-        samtools calmd -b {params.name_out}.sorted.bam {input.genome} > {params.name_out}_MD.sorted.bam ;
+        samtools calmd -b {params.name_out}.sorted.bam {input.genome} > {output} ;
         """
+
 
 
 rule mapping :
@@ -106,16 +119,18 @@ rule mapping :
         genome = config["genome"],
 
     output:
-        config["name_out"] + ".sam",
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".sam",
         
     params:
-        name_out = config["name_out"],
+        name_out       = config["name_out"],
+        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
 
     shell:
         """
+        mkdir -p {params.work_directory} ;
         echo '<<<<<<<<<<<<<<<<<<< INDEX >>>>>>>>>>>>>>>>>>>>' ;
         minimap2 -x map-ont -d {input.genome}.mmi {input.genome} ;
         echo '<<<<<<<<<<<<<<<<<<< MAPPING >>>>>>>>>>>>>>>>>>>>' ;
-        minimap2 -ax map-ont -t 16 {input.genome} {input.read} > {params.name_out}.sam ;
+        minimap2 -ax map-ont -t 16 {input.genome} {input.read} > {output} ;
         """
         
