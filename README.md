@@ -2,8 +2,8 @@
 Transposable Elements MOvement detection using LOng reads
 
 TrEMOLO used long reads assemblies to detect
-- Global TE variations between two assembled genomes  
-- Populational variation in TE insertions.
+- [Global TE variations between two assembled genomes](#global)  
+- [Populational variation in TE insertions](#population)
 
 It is licencied under [CeCill-C](Licence_CeCILL-C_V1-en.txt) and [GPLv3](LICENSE).
 
@@ -18,13 +18,13 @@ Please cite xxxx if using TrEMOLO
   - [Bedtools](https://bedtools.readthedocs.io/en/latest/) v2
   - [Assemblytics](http://assemblytics.com/) or [RaGOO](https://github.com/malonge/RaGOO) output
 - For Populational variation tool
-  - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2
+  - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
   - [Minimap2](https://github.com/lh3/minimap2) 2.16+
   - [Samtools](http://www.htslib.org/) 1.10+
   - [Sniffles](https://github.com/fritzsedlazeck/Sniffles) 1.0.10+
-  - Biopython
-  - Pandas
-  - Numpy
+  - [Biopython](https://biopython.org/)
+  - [Pandas](https://pandas.pydata.org/)
+  - [Numpy](https://numpy.org/)
 
 ### Installation:
 Once the requirements fullfilled, just git clone
@@ -34,7 +34,7 @@ Once the requirements fullfilled, just git clone
   cd TrEMOLO
 ```
 
-## Global TE variations
+## Global TE variations<a name="global"></a>
 The [*svTEidentification.py*](svTEidentification.py) script will inform about the new TE putative insertion based on a Assemblytics BED file. This file ca be created through Assemblytics or RaGOO.
   A TE database (mutlifasta file) must be provided. You can format it using the *makeblastdb* command from BLAST suite.
 
@@ -79,3 +79,7 @@ The tabulated files are structured as follows:
 | blood | +::2R_RaGOO_RaGOO:9104794-9112210 | 99.569 | 7424 | 7410 | 100.2 |
 | 412 | +::2R_RaGOO_RaGOO:13514820-13522246 | 99.511 | 6134 | 7567 | 81.06 |
 | flea | +::X_RaGOO_RaGOO:7469447-7474489 | 99.543 | 5036 | 5034 | 100.04 |
+
+## Populational variation in TE insertions <a name="population"></a>
+
+This analysis is performed through a Snakemake pipeline
