@@ -1,5 +1,35 @@
 
 
+#Get juste sequence potentiel candidate of TE
+rule get_TE_seq :
+    input:
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "resume.txt",
+        all_te = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        snif_seqs = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_sniffle.fasta",
+
+    output:
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_total_find.fasta",
+
+    params:
+        name_out       = config["name_out"],
+        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+
+    shell:
+        """
+        mkdir -p {params.work_directory}/REP ;
+        
+        rep=\"{params.work_directory}/REP\" 
+        prefix="{params.name_out}"
+        
+        awk -v dir="$rep" -v prefix="$prefix" 'BEGIN{{OFS="\t"}} NR>1 {{if($8<$9){{print $2, $8-1, $9  >> dir"/"prefix"_find_"$1".bed"}}else{{print $2, $9-1, $8  >> dir"/"prefix"_find_"$1".bed"}} }}' {input.all_te} ;
+        for i in `ls {params.work_directory}/REP`; do bedtools getfasta -fi {input.snif_seqs} -bed {params.work_directory}/REP/$i > {params.work_directory}/REP/{params.name_out}_find_`echo $i | cut -d"." -f 1 | grep -o "_[^_]*$" | grep -o "[^_]*"`.fasta; done ;
+        
+        rm -f {params.work_directory}/REP/*.bed ;
+        cat {params.work_directory}/REP/* > {params.work_directory}/{params.name_out}_total_find.fasta ;
+        """
+
+
+#Get reads supports
 rule extract_read :
     input:
         vcf     = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
@@ -7,9 +37,10 @@ rule extract_read :
         all_te  = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
 
     output:
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "REGION_RD_" + config["name_out"],
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "READ_FASTQ_" + config["name_out"] + "/reads_*",
-        
+        #config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "REGION_RD_" + config["name_out"],
+        #config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "READ_FASTQ_" + config["name_out"] + "/reads_*",
+        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "resume.txt",
+
     params:
         name_out       = config["name_out"],
         work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
@@ -17,13 +48,15 @@ rule extract_read :
 
     shell:
         """
-        mkdir -p {params.work_directory} ;
         echo '<<<<<<<<<<<<<<<< GET READS >>>>>>>>>>>>>>>>>>>>>>>' ;
-        mkdir -p {params.work_directory}/READ_FASTQ_{params.name_out}
+        mkdir -p {params.work_directory} ;
+        mkdir -p {params.work_directory}/READ_FASTQ_{params.name_out} ;
 
         awk 'NR>1 {{print $2}}' {input.all_te} | cut -d":" -f 5 > {params.work_directory}/id.txt ; 
-        python3 scripts_python/extract_region_reads_vcf.py {input.vcf} -d {params.work_directory}/REGION_RD_{params.name_out} -i {params.work_directory}/id.txt ;
+        python3 scripts_python/extract_region_reads_vcf.py {input.vcf} -d {params.work_directory}/REGION_RD_{params.name_out} -i {params.work_directory}/id.txt > {params.work_directory}/resume.txt;
         
+        cat {params.work_directory}/resume.txt;
+
         nb_file=`ls {params.work_directory}/REGION_RD_{params.name_out} | wc -l` ;
         i=0 ;
         for fr in `ls {params.work_directory}/REGION_RD_{params.name_out}`; do
@@ -33,8 +66,16 @@ rule extract_read :
             samtools fqidx {input.read} -r {params.work_directory}/REGION_RD_{params.name_out}/$fr > {params.work_directory}/READ_FASTQ_{params.name_out}/reads_$region.fastq ;
         done;
 
+        NB_REGION=`ls {params.work_directory}/REGION_RD_{params.name_out} | wc -l` ;
+        NB_READS=`ls {params.work_directory}/READ_FASTQ_{params.name_out} | wc -l` ;
+        if [ $NB_REGION -ne $NB_READS ]; then rm -f {params.work_directory}/resume.txt ; fi;
+
+        echo \"$NB_READS AND $NB_REGION\";
+
         """
 
+
+#BLASt database of TE against SV (Structural variant)
 rule blast :
     input:
         vcf      = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
@@ -65,7 +106,7 @@ rule blast :
         """
 
 
-
+#Get Strucural Variant (vcf file)
 rule sniffles :
     input:
         config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_MD.sorted.bam",
@@ -85,9 +126,10 @@ rule sniffles :
         """
 
 
+#Sort and callmd
 rule samtools :
     input:
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".sam",
+        sam    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".sam",
         genome = config["genome"],
 
     output:
@@ -103,16 +145,16 @@ rule samtools :
         mkdir -p {params.work_directory} ;
         echo '<<<<<<<<<<<<<<<< SAMTOOLS >>>>>>>>>>>>>>>>>>>>>>>' ;
 
-        samtools view -S -b {params.name_out}.sam > {params.name_out}.bam ;
-        samtools sort {params.name_out}.bam -o {params.name_out}.sorted.bam ;
+        samtools view -S -b {input.sam} > {params.work_directory}/{params.name_out}.bam ;
+        samtools sort {params.work_directory}/{params.name_out}.bam -o {params.work_directory}/{params.name_out}.sorted.bam ;
 
         #rm -f {params.name_out}.bam ;
 
-        samtools calmd -b {params.name_out}.sorted.bam {input.genome} > {output} ;
+        samtools calmd -b {params.work_directory}/{params.name_out}.sorted.bam {input.genome} > {output} ;
         """
 
 
-
+#Map reads on assembly genome
 rule mapping :
     input:  
         read   = config["read"],
