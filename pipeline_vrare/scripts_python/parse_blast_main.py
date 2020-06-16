@@ -1,5 +1,5 @@
 """
-    GET REGION
+    GET TE CANDIDATE
     ==========================
     :author:  Mourdas MOHAMED 
     :contact: mourdas.mohamed@igh.cnrs.fr
@@ -7,19 +7,19 @@
     :version: 0.1
     Script description
     ------------------
-    extract_region_reads_vcf.py get the regions in vcf file
+    parse_blast_main.py filters a blast file in output format 6 to keep the candidate TE active
     -------
-    >>> extract_region_reads_vcf.py file.vcf -d REGION_DIRECTORY out.csv
+    >>> parse_blast_main.py input.bln output_ALL_TE.csv
     
     Help Programm
     -------------
     usage: parse_blast_main.py [-h] [-t NAME_FILE_TE] [-p MIN_PIDENT]
                            [-s MIN_SIZE_PERCENT] [-r MIN_READ_SUPPORT]
-                           blast_file out
+                           blast_file output_file
 
     positional arguments:
       blast_file            blast file format outfmt 6
-      out                   name of tabular file out
+      output_file           name of tabular file out
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -41,31 +41,28 @@ import os
 import sys
 import argparse
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description="filters a blast file in output format 6 to keep the candidate candidate TE active")
 
 #MAIN ARGS
 parser.add_argument("blast_file", type=str,
-                    help="blast file format outfmt 6")
-parser.add_argument("out", type=str,
-                    help="name of tabular file out")
+                    help="input blast file format outfmt 6")
+parser.add_argument("output_file", type=str,
+                    help="name of tabular output file ")
 
 #OPTION
 parser.add_argument("-t", "--name_file_te", type=str, default=None,
                     help="file TE for get size")
 parser.add_argument("-p", "--min_pident", type=int, default=94,
-                    help="minimum percend of identity [94]")
+                    help="minimum percentage of identity [94]")
 parser.add_argument("-s", "--min_size_percent", type=int, default=90,
-                    help="minimum precent size of TE [90]")
+                    help="minimum percentage of TE size [90]")
 parser.add_argument("-r", "--min_read_support", type=int, default=1,
                     help="minimum read support number [1]")
 
 args = parser.parse_args()
 
-#name_file_TE = "TE_Dm_LTR.fa"
-#name_file    = "./BLAST/G73vsG73LR_cnTE.bln"
 
-name_file = args.blast_file
-
+name_file        = args.blast_file
 min_pident       = args.min_pident
 min_size_percent = args.min_size_percent
 min_read_support = args.min_read_support
@@ -81,22 +78,24 @@ if args.name_file_te != None:
     for i, l in enumerate(lines):
         if l[0] == ">":
             size_et[l[1:].strip()] = len(lines[i + 1].strip())
-else :
+else :#default
     size_et = {'Idefix': 7411, '17.6': 7439, '1731': 4648, '297': 6995, '3S18': 6126, '412': 7567, 'aurora-element': 4263, 'Burdock': 6411, 'copia': 5143, 'gypsy': 7469, 'mdg1': 7480, 'mdg3': 5519, 'micropia': 5461, 'springer': 7546, 'Tirant': 8526, 'flea': 5034, 'opus': 7521, 'roo': 9092, 'blood': 7410, 'ZAM': 8435, 'GATE': 8507, 'Transpac': 5249, 'Circe': 7450, 'Quasimodo': 7387, 'HMS-Beagle': 7062, 'diver': 6112, 'Tabor': 7345, 'Stalker': 7256, 'gtwin': 7411, 'gypsy2': 6841, 'accord': 7404, 'gypsy3': 6973, 'invader1': 4032, 'invader2': 5124, 'invader3': 5484, 'gypsy4': 6852, 'invader4': 3105, 'gypsy5': 7369, 'gypsy6': 7826, 'invader5': 4038, 'diver2': 4917, 'Dm88': 4558, 'frogger': 2483, 'rover': 7318, 'Tom1': 410, 'rooA': 7621, 'accord2': 7650, 'McClintock': 6450, 'Stalker4': 7359, 'Stalker2': 7672, 'Max-element': 8556, 'gypsy7': 5486, 'gypsy8': 4955, 'gypsy9': 5349, 'gypsy10': 6006, 'gypsy11': 4428, 'gypsy12': 10218, 'invader6': 4885, 'Helena': 1317, 'HMS-Beagle2': 7220, 'Osvaldo': 1543}
-    print("SIZE TE DEFAULT", list(size_et.keys())[:5], "...")
+    #print("SIZE TE DEFAULT", list(size_et.keys())[:5], "...")
 
-#GET BLAST OUTFMT -
+#GET BLAST OUTFMT 
 df = pd.read_csv(name_file, "\t", header=None)
 
+#get prefix file
 name_file_withou_ext = name_file.split("/")[-1].split(".")[0] + "_"
-print(name_file_withou_ext)
+print("file name prefix :", name_file_withou_ext)
 
 df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
 
-#KEEP ONLY LTR cf. (GET_SIZE CANNONICAL TE)
+#KEEP ONLY TE on the LIST (GET_SIZE CANNONICAL TE)
 df = df[df["sseqid"].isin(size_et.keys())]
-print(df.shape)
-#CALCUL SIZE AND PERCENT SIZE
+print("keep only TE on list, shape :", df.shape)
+
+#CALCUL SIZE AND PERCENT SIZE OF TE
 tab_percent = []
 tab_size    = []
 for index, row in enumerate(df[["sseqid", "qend", "qstart"]].values):
@@ -104,8 +103,7 @@ for index, row in enumerate(df[["sseqid", "qend", "qstart"]].values):
     tab_percent.append(round((size_element/size_et[row[0]]) * 100, 1))
     tab_size.append(size_element)
     
-
-
+#keeps the TE according to the percentage of identity and the percentage of size
 df["size_per"] = tab_percent
 df["size_el"]  = tab_size
 df = df[df["size_per"] >= min_size_percent]
@@ -113,10 +111,10 @@ df = df[df["pident"] >= min_pident]
 df = df.sort_values(by=["sseqid"])
 df = df[["sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]]
 
-#display(df.head())
-print(df.shape)
 
-#GET BEST SCORE
+print("shape for min_size_percent>=" + str(min_size_percent) + ", min_pident>=" + str(min_pident), df.shape)
+
+#keep the TE with the highest score
 best_score_match = []
 best_score_match_index = []
 chaine = ""
@@ -140,24 +138,23 @@ for index, row in enumerate(df.values):
         if find_INS and read_support >= min_read_support:
             best_score_match_index.append(index)
     
-    
 df = df.iloc[best_score_match_index]
 
-#display(df.head())
-print(df.shape)
 
-#SECOND CRITERE (FACULTATIF)
-tab_i = []
-for i, v in enumerate(df.values):
-    qseqid  = df["qseqid"].values[i]
-    qsstart = int(qseqid.split(":")[2])
-    qsstop  = int(qseqid.split(":")[3])
-    qssize  = int(abs(qsstop-qsstart))
-    sseqid  = df["sseqid"].values[i]
-    if qssize <= size_et[sseqid] + 18:##########################################
-        tab_i.append(i)
+print("shape best score match insertion :", df.shape)
 
-        
-df = df.iloc[tab_i]
-print(df.shape)
-df.to_csv(args.out, sep="\t", index=None)
+#(optional)
+indexs = []
+for index, value in enumerate(df.values):
+    qseqid  = df["qseqid"].values[index]
+    qsstart = int(qseqid.split(":")[2])#example (in brackets) = X:<INS>:(11703079):11710477:119253:1:PRECISE
+    qsstop  = int(qseqid.split(":")[3])#example (in brackets) = X:<INS>:11703079:(11710477):119253:1:PRECISE
+    qssize  = int(abs(qsstop - qsstart))
+    sseqid  = df["sseqid"].values[index]
+    if qssize <= size_et[sseqid] + 18:###
+        indexs.append(index)
+
+df = df.iloc[indexs]
+print("shape by critere of size SV size TE :", df.shape)
+
+df.to_csv(args.output_file, sep="\t", index=None)
