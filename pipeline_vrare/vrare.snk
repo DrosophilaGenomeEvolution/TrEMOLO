@@ -1,10 +1,49 @@
+###################################################################################################################################
+#
+# Copyright 2019-2020 IRD-CNRS-Lyon1 University
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/> or
+# write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+# You should have received a copy of the CeCILL-C license with this program.
+# If not see <http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.txt>
+#
+# Intellectual property belongs to authors and IRD, CNRS, and Lyon 1 University  for all versions
+# Version 0.1 written by Mourdas Mohamed
+#                                                                                                                                   
+####################################################################################################################################
 
 
-#Get juste sequence potentiel candidate of TE
+## Find path or snakefile
+path_snk = ""
+
+i = 0
+while i < len(sys.argv) and path_snk == "" :
+    if sys.argv[i] == "--snakefile" :
+        path_snk = sys.argv[i + 1]
+
+    i += 1
+#
+
+
+#Get just sequence potentiel candidate of TE
 rule get_TE_seq :
     input:
         config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "resume.txt",
-        all_te = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        all_te    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
         snif_seqs = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_sniffle.fasta",
 
     output:
@@ -32,9 +71,9 @@ rule get_TE_seq :
 #Get reads supports
 rule extract_read :
     input:
-        vcf     = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
-        read    = config["read"],
-        all_te  = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        vcf    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
+        read   = config["read"],
+        all_te = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
 
     output:
         #config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "REGION_RD_" + config["name_out"],
@@ -42,6 +81,7 @@ rule extract_read :
         config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "resume.txt",
 
     params:
+        path_snk       = path_snk,
         name_out       = config["name_out"],
         work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
 
@@ -52,8 +92,10 @@ rule extract_read :
         mkdir -p {params.work_directory} ;
         mkdir -p {params.work_directory}/READ_FASTQ_{params.name_out} ;
 
+        path_to_pipline=`dirname {params.path_snk}`
+
         awk 'NR>1 {{print $2}}' {input.all_te} | cut -d":" -f 5 > {params.work_directory}/id.txt ; 
-        python3 scripts_python/extract_region_reads_vcf.py {input.vcf} -d {params.work_directory}/REGION_RD_{params.name_out} -i {params.work_directory}/id.txt > {params.work_directory}/resume.txt;
+        python3 ${{path_to_pipline}}/scripts_python/extract_region_reads_vcf.py {input.vcf} -d {params.work_directory}/REGION_RD_{params.name_out} -i {params.work_directory}/id.txt > {params.work_directory}/resume.txt;
         
         cat {params.work_directory}/resume.txt;
 
@@ -68,7 +110,7 @@ rule extract_read :
 
         NB_REGION=`ls {params.work_directory}/REGION_RD_{params.name_out} | wc -l` ;
         NB_READS=`ls {params.work_directory}/READ_FASTQ_{params.name_out} | wc -l` ;
-        if [ $NB_REGION -ne $NB_READS ]; then rm -f {params.work_directory}/resume.txt ; fi;
+        if [ $NB_REGION -ne $NB_READS ]; then rm -f {params.work_directory}/resume.txt ; echo 'Error : the number of files region it is not equal the number reads files' fi;
 
         echo \"$NB_READS AND $NB_REGION\";
 
@@ -87,7 +129,8 @@ rule blast :
         all_te    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
         
     params:
-        name_out = config["name_out"],
+        path_snk       = path_snk,
+        name_out       = config["name_out"],
         work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
 
 
@@ -96,12 +139,14 @@ rule blast :
         mkdir -p {params.work_directory} ;
         echo '<<<<<<<<<<<<<<<< BLAST >>>>>>>>>>>>>>>>>>>>>>>' ;
 
-        python3 scripts_python/get_seq_vcf.py {input.vcf} {output.snif_seqs} ;
+        path_to_pipline=`dirname {params.path_snk}`
+
+        python3 ${{path_to_pipline}}/scripts_python/get_seq_vcf.py {input.vcf} {output.snif_seqs} ;
 
         makeblastdb -in {input.fasta_TE} -dbtype nucl ;
         blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} ;
 
-        python3 scripts_python/parse_blast_main.py {output.bln} {output.all_te} ;
+        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {output.bln} {output.all_te} ;
 
         """
 
@@ -115,7 +160,7 @@ rule sniffles :
         config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
         
     params:
-        name_out = config["name_out"],
+        name_out       = config["name_out"],
         work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
 
     shell:
@@ -136,7 +181,7 @@ rule samtools :
         config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_MD.sorted.bam",
         
     params:
-        name_out = config["name_out"],
+        name_out       = config["name_out"],
         work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
 
 
