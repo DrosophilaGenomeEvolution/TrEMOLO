@@ -1,3 +1,34 @@
+#!/usr/bin python3
+# -*- coding: utf-8 -*-
+
+###################################################################################################################################
+#
+# Copyright 2019-2020 IRD-CNRS-Lyon1 University
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/> or
+# write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+# You should have received a copy of the CeCILL-C license with this program.
+#If not see <http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.txt>
+#
+# Intellectual property belongs to authors and IRD, CNRS, and Lyon 1 University  for all versions
+# Version 0.1 written by Mourdas MOHAMED
+#                                                                                                                                   
+####################################################################################################################################
+
 """
     GET REGION IN VCF
     ==========================
@@ -32,7 +63,7 @@
       -c CHROM, --chrom CHROM
                             chromosome (or part) to keep (give a list of arguments
                             separate the values ​​with commas "X,Y")
-                            [2L,2R,3L,3R,4,X]
+                            [2L,2R,3L,3R,4,X_]
 """
 
 
@@ -56,8 +87,8 @@ parser.add_argument("-i", "--id_sv", type=str,
                     help="file id strucural variant to keep")
 parser.add_argument("-t", "--type", type=str, default='<DEL>',
                     help="not keep this type on vcf (give a list of arguments separate the values ​​with commas \"<DEL>,<INS>\") [\"<DEL>\"]")
-parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,4,X',
-                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,4,X]')
+parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,4,X_',
+                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,4,X_]')
 
 
 args = parser.parse_args()
