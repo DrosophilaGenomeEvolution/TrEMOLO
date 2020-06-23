@@ -27,6 +27,7 @@
 ####################################################################################################################################
 
 
+
 ## Find path or snakefile
 path_snk = ""
 
@@ -110,9 +111,9 @@ rule extract_read :
 
         NB_REGION=`ls {params.work_directory}/REGION_RD_{params.name_out} | wc -l` ;
         NB_READS=`ls {params.work_directory}/READ_FASTQ_{params.name_out} | wc -l` ;
-        if [ $NB_REGION -ne $NB_READS ]; then rm -f {params.work_directory}/resume.txt ; echo 'Error : the number of files region it is not equal the number reads files' fi;
+        if [ $NB_REGION -ne $NB_READS ]; then rm -f {params.work_directory}/resume.txt ; echo 'Error : the number of files region it is not equal the number reads files'; fi;
 
-        echo \"$NB_READS AND $NB_REGION\";
+        echo "$NB_READS AND $NB_REGION";
 
         """
 
