@@ -1,7 +1,7 @@
 {
-    "work_directory": "work_test",
-    "genome": "G73onG0corrected_ragoo.fasta",
-    "read": "G73.fastq",
-    "name_out": "G73vsG73LR",
-    "fasta_TE": "6-TE_ENRICHMENT/canonical_TE.fa"
+    "work_directory": "/path/to/directory_work",
+    "genome": "/path/to/genome_file.fasta",
+    "read": "/path/to/reads_file.fastq",
+    "name_out": "prefix_of_name_files_out",
+    "fasta_TE": "/path/to/database_TE.fasta"
 }
