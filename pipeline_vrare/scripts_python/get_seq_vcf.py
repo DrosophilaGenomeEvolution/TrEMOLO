@@ -58,7 +58,7 @@
                             minimum size of the sequence to keep [1000]
       -t TYPE, --type TYPE  not keep this type on vcf ["<DEL>"]
       -c CHROM, --chrom CHROM
-                            chromosome (or part) to keep [2L,2R,3L,3R,4,X_]
+                            chromosome (or part) to keep [2L,2R,3L,3R,^4_,X_]
 """
 
 
@@ -80,8 +80,8 @@ parser.add_argument("-m", "--min_len_seq", type=int, default=1000,
                     help="minimum size of the sequence to keep [1000]")
 parser.add_argument("-t", "--type", type=str, default='<DEL>',
                     help="not keep this type on vcf (give a list of arguments separate the values ​​with commas \"<DEL>,<INS>\") [\"<DEL>\"]")
-parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,4,X_',
-                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,4,X_]')
+parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,^4_,X_',
+                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,^4_,X_]')
 
 args = parser.parse_args()
 

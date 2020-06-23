@@ -63,7 +63,7 @@
       -c CHROM, --chrom CHROM
                             chromosome (or part) to keep (give a list of arguments
                             separate the values ​​with commas "X,Y")
-                            [2L,2R,3L,3R,4,X_]
+                            [2L,2R,3L,3R,^4_,X_]
 """
 
 
@@ -87,8 +87,8 @@ parser.add_argument("-i", "--id_sv", type=str,
                     help="file id strucural variant to keep")
 parser.add_argument("-t", "--type", type=str, default='<DEL>',
                     help="not keep this type on vcf (give a list of arguments separate the values ​​with commas \"<DEL>,<INS>\") [\"<DEL>\"]")
-parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,4,X_',
-                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,4,X_]')
+parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,^4_,X_',
+                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,^4_,X_]')
 
 
 args = parser.parse_args()

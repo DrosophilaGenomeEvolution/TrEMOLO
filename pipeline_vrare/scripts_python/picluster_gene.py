@@ -30,12 +30,47 @@
 ####################################################################################################################################
 
 
+"""
+    GET PICLUSTER LOCALISATION AND TE IN PICLUSTER
+    ==========================
+    :author:  Mourdas MOHAMED 
+    :contact: mourdas.mohamed@igh.cnrs.fr
+    :date: 01/06/2020
+    :version: 0.1
+    Script description
+    ------------------
+    picluster_gene.py Get position picluster with flanking genes
+    -------
+    >>> picluster_gene.py genome_file genes_vs_genome_blast file_name_pair_genes tabular_file_all_te
+    
+    Help Programm
+    -------------
+    usage: picluster_gene.py [-h] [-c CHROM] genome genes flank_genes all_te
+
+    Get picluster with flanking genes
+
+    positional arguments:
+      genome                genome fasta file
+      genes                 blastn file format 6 flanking genes against genome
+      flank_genes           name flanking genes sperate by TAB
+      all_te                tabular of all potentiel candidate of TE generate by
+                            vrare.snk
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -c CHROM, --chrom CHROM
+                            chromosome (or part) to keep (give a list of arguments
+                            separate the values ​​with commas "X,Y")
+                            [2L,2R,3L,3R,^4_,X_]
+    
+"""
+
 
 import sys
 import pandas as pd
 import re
 import os
-import argpars
+import argparse
 
 
 parser = argparse.ArgumentParser(description="Get picluster with flanking genes")
@@ -45,24 +80,25 @@ parser.add_argument("genome", type=str,
                     help="genome fasta file")
 parser.add_argument("genes", type=str,
                     help="blastn file format 6 flanking genes against genome ")
-parser.add_argument("elements", type=str,
-                    help="blastn file format 6 TE against SV (Structural variant) ")
+# parser.add_argument("elements", type=str,
+#                     help="blastn file format 6 TE against SV (Structural variant) ")
+
 parser.add_argument("flank_genes", type=str,
-                    help="name output fasta file")
+                    help="name flanking genes sperate by TAB")
 parser.add_argument("all_te", type=str,
                     help="tabular of all potentiel candidate of TE generate by vrare.snk")
 
 
 #OPTION
-parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,4,X_',
-                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,4,X_]')
+parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,^4_,X_',
+                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,^4_,X_]')
 
 args = parser.parse_args()
 
 ##
 genome_fasta          = args.genome
 name_file_gene_bln    = args.genes
-name_file_element_bln = args.elements
+#name_file_element_bln = args.elements
 gene_flank_file       = args.flank_genes
 name_file_all_TE      = args.all_te
 
@@ -80,12 +116,13 @@ def regex_in_list(value, liste):
     return False
 
 
+
 file = open(genome_fasta, "r")
 line = file.readline()
 dico_size_genome = {}
 
-while line:
-    if line[0] == ">":
+while line :
+    if line[0] == ">" :
         chrom = line[1:].strip()
         line  = file.readline()
         if regex_in_list(chrom, chrom_tab) :
@@ -117,7 +154,7 @@ df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qs
 
 print("shape total :", df.shape)
 
-name_genome = genome_fasta.split(".")[0]
+name_genome = genome_fasta.split("/")[-1].split(".")[0]
 print("name genome :", name_genome)
 os.system("mkdir -p " + name_genome)
 
@@ -151,6 +188,33 @@ df_best_matchs["gene"] = genes
 print("shape of best matchs :", df_best_matchs.shape)
 print("-------------END GET BEST MATCHS----------------")
 
+
+
+best_score_match = []
+best_score_match_index = []
+chaine = ""
+for index, row in enumerate(df.values):
+    
+    chaine = df["qseqid"].values[index] + df["sseqid"].values[index]
+    if chaine not in best_score_match:
+        qseqid       = df["qseqid"].values[index]
+        info_qseqid  = qseqid.split(":")
+        read_support = int(info_qseqid[5])
+
+        df_tmp        = df[df["qseqid"] == qseqid]
+        maxe_bitscore = max(df_tmp["bitscore"].values)
+        df_best_score = df_tmp[df_tmp["bitscore"] == maxe_bitscore]
+        
+        chaine = df_best_score["qseqid"].values[0] + df_best_score["sseqid"].values[0]
+        best_score_match.append(chaine)
+        
+        #Insert only
+        find_INS = re.search("INS", df_best_score["qseqid"].values[0])
+        if find_INS and read_support >= min_read_support:
+            best_score_match_index.append(index)
+    
+df = df.iloc[best_score_match_index]
+
 ####-----------------------------------------------------
 
 
@@ -163,7 +227,7 @@ dico_out["persize"] = []
 dico_out["gene"] = []
 dico_out["samechrom"] = []
 
-df = df_for_pic_goupe
+df     = df_for_pic_goupe
 df_min = df[df["evalue"] == 0]
 
 
@@ -181,12 +245,12 @@ def all_same_seq(df):
 for e, v in enumerate(df_best_matchs.values):
     qseqid = df_best_matchs["qseqid"].values[e]
     sseqid = df_best_matchs["sseqid"].values[e]
-    test = df_min[df_min["qseqid"] == qseqid]
-    test = test[test["sseqid"] == sseqid]
+    test   = df_min[df_min["qseqid"] == qseqid]
+    test   = test[test["sseqid"] == sseqid]
     #display(test)
 
     sstart_best = test["sstart"].values[0]
-    ssend_best = test["send"].values[0]
+    ssend_best  = test["send"].values[0]
     size        = test["qseqid"].values[0].split(":")[-1]
 
     if int(test["qstart"].values[0]) == 1 and int(test["qend"].values[0]) == int(size) :
@@ -215,7 +279,7 @@ for e, v in enumerate(df_best_matchs.values):
         all_same = all_same_seq(test)
         if all_same:
             max_score = max(test["bitscore"].values)
-            test = test[test["bitscore"] == max_score]
+            test      = test[test["bitscore"] == max_score]
             send_max  = test["send"].values[0]
             start_min = test["sstart"].values[0]
         else:
@@ -234,11 +298,11 @@ for e, v in enumerate(df_best_matchs.values):
         #display(test)
 
         marge_send = 10000
-        sstart = test["sstart"].values[0]
-        test   = test[test["sstart"] <= int(sstart) + int(size) + marge_send]
-        qend_max = max(test["qend"].values)
+        sstart     = test["sstart"].values[0]
+        test       = test[test["sstart"] <= int(sstart) + int(size) + marge_send]
+        qend_max   = max(test["qend"].values)
         limit_send = test[test["qend"] == qend_max]["send"].values[-1]
-        test = test[test["send"] >= limit_send]
+        test       = test[test["send"] >= limit_send]
 
         min_qstart = min(test["qstart"].values)
         limi_max_sstart = test[test["qstart"] == min_qstart]["sstart"].values[-1]
@@ -250,7 +314,7 @@ for e, v in enumerate(df_best_matchs.values):
     
         if all_same:
             max_score = max(test["bitscore"].values)
-            test = test[test["bitscore"] == max_score]
+            test      = test[test["bitscore"] == max_score]
             send_max  = test["sstart"].values[0]
             start_min = test["send"].values[0]
         else:
@@ -296,15 +360,18 @@ df_for_cluster = pd.read_csv(name_file_all_TE, sep="\t")
 
 file_name_gene_flank = open(gene_flank_file, "r")
 couples_genes        = []
-for line in file_in:
+for line in file_name_gene_flank:
     genes_fk = line.strip().split("\t")
     couples_genes.append([genes_fk[0].lower(), genes_fk[1].lower()])
     
 print("couples genes :", couples_genes[:5],  len(couples_genes))
-file_in.close()
+file_name_gene_flank.close()
 
 
 ####-----------------------------------------------------
+
+
+###REGROUP FLANKING GENES
 
 
 df = df_combine
@@ -401,7 +468,7 @@ df_pic.to_csv(name_genome + "/" + "PiCluster_Gene_" + name_genome + ".csv", sep=
 ####-----------------------------------------------------
 
 
-###
+###GET TE IN CLUSTER 
 
 
 df = df_for_cluster #df TE
@@ -450,7 +517,7 @@ df_cout = df_for_count.groupby(["name_cluster", "sseqid"]).count()
 tab_x = []
 tab_y = []
 tab_z = []
-for i, value in enumerate(df_cout_out.values):
+for i, value in enumerate(df_cout.values):
     tab_y.append(df_cout.index[i][0])
     tab_x.append(df_cout.index[i][1])
     tab_z.append(value[0])
@@ -470,30 +537,30 @@ print("Number of TE in cluster :", sum(df_out["z"].values))
 
 
 ## PRINT 
-for i, v in enumerate(df_o["x"].unique()):
-    print(v, sum(df_o[df_o["x"] == v]["z"]))
+for i, v in enumerate(df_out["x"].unique()):
+    print(v, sum(df_out[df_out["x"] == v]["z"]))
     
-print(list(df_o["x"].unique()))
+print("name TE in clusters", list(df_out["x"].unique()))
 
 
-tab_add = []
-nb_add  = 0
-size    = len(df_o.values)
-df_out  = pd.DataFrame({"x":df_o["x"].values, "y":df_o["y"].values, "z":df_o["z"].values})
+# tab_add = []
+# nb_add  = 0
+# size    = len(df_out.values)
+# df_out  = pd.DataFrame({"x":df_out["x"].values, "y":df_out["y"].values, "z":df_out["z"].values})
 
-for i, clust in enumerate(df_pic["name_clust"].unique()):
-    df_tmp = df_o[df_o["y"] == clust]
-    elements = ['gtwin', 'blood', 'ZAM', 'roo', '412']
-    for e, elem in enumerate(elements):
-        if elem not in list(df_tmp["x"].unique()):
-            df_out.loc[size + nb_add] = list([elem, clust, 0])
-            nb_add += 1
+# for i, clust in enumerate(df_pic["name_clust"].unique()):
+#     df_tmp = df_out[df_out["y"] == clust]
+#     elements = ['gtwin', 'blood', 'ZAM', 'roo', '412']
+#     for e, elem in enumerate(elements):
+#         if elem not in list(df_tmp["x"].unique()):
+#             df_out.loc[size + nb_add] = list([elem, clust, 0])
+#             nb_add += 1
             
-print(len(df_out.values), nb_add)
-print(df_pic["name_clust"].unique())
+# print(len(df_out.values), nb_add)
+#print(df_pic["name_clust"].unique())
 
-df_out.to_csv(name_genome + "/" + str(prefixe_count) + "_hit_map.csv", sep="\t", index=None)
-print("file out >> :", name_genome + "/" + str(prefixe_count) + "_hit_map.csv")
+# df_out.to_csv(name_genome + "/" + str(prefixe_count) + "_hit_map.csv", sep="\t", index=None)
+# print("file out >> :", name_genome + "/" + str(prefixe_count) + "_hit_map.csv")
 
 
 ####-----------------------------------------------------
