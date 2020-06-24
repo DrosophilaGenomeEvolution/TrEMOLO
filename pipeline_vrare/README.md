@@ -54,7 +54,7 @@ snakemake --snakefile /path/to/vrare.snk --configfile /path/to/your_config.json
 
 ### Summarize output files :open_file_folder:
 
-Example of output file obtained after using the pipeline.
+Example of output file obtained after using the pipeline, in work directory.
 
 ```
 ├── G73vsG73LR.bam
@@ -81,7 +81,7 @@ Example of output file obtained after using the pipeline.
 │   ├── reads_2L_RaGOO_RaGOO:11769:12063423-12070758.txt
 │   ├── reads_2L_RaGOO_RaGOO:11994:12341312-12349689.txt
 │   ├── ....
-REP
+├── REP
 │   ├── G73vsG73LR_find_17.fasta
 │   ├── G73vsG73LR_find_297.fasta
 │   ├── G73vsG73LR_find_412.fasta

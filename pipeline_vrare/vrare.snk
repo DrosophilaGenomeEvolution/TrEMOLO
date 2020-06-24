@@ -58,7 +58,7 @@ rule get_TE_seq :
         """
         mkdir -p {params.work_directory}/REP ;
         
-        rep=\"{params.work_directory}/REP\" 
+        rep="{params.work_directory}/REP" 
         prefix="{params.name_out}"
         
         awk -v dir="$rep" -v prefix="$prefix" 'BEGIN{{OFS="\t"}} NR>1 {{if($8<$9){{print $2, $8-1, $9  >> dir"/"prefix"_find_"$1".bed"}}else{{print $2, $9-1, $8  >> dir"/"prefix"_find_"$1".bed"}} }}' {input.all_te} ;
