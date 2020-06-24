@@ -72,6 +72,8 @@ import re
 import os
 import sys
 import argparse
+import pylab as plt
+import tkinter
 
 parser = argparse.ArgumentParser(description="filters a blast file in output format 6 to keep the candidate candidate TE active")
 
@@ -99,6 +101,18 @@ min_pident       = args.min_pident
 min_size_percent = args.min_size_percent
 min_read_support = args.min_read_support
 
+output           = args.output_file
+name_out         = output.split("/")[-1].split(".")[0]
+dir_out          = "/".join(output.split("/")[:-1])
+
+print("------------------------")
+print("name_out :", name_out)
+
+if dir_out != "":
+    dir_out += "/"
+else :
+    dir_out += "./"
+
 
 size_et = {}
 
@@ -115,6 +129,7 @@ else :#default
     #print("SIZE TE DEFAULT", list(size_et.keys())[:5], "...")
 
 #GET BLAST OUTFMT 
+
 df = pd.read_csv(name_file, "\t", header=None)
 
 #get prefix file
@@ -189,4 +204,78 @@ for index, value in enumerate(df.values):
 df = df.iloc[indexs]
 print("shape by critere of size SV size TE :", df.shape)
 
-df.to_csv(args.output_file, sep="\t", index=None)
+df.to_csv(output, sep="\t", index=None)
+
+#*********** HISTOGRAM *************
+
+print("BUILD HISTOGRAM IN :", dir_out + "HISTO")
+os.system("mkdir -p " + dir_out + "HISTO")
+
+reads_supports = []
+for i, qseqid in enumerate(df["qseqid"].values):
+    read_support = qseqid.split(":")[5]
+    reads_supports.append(int(read_support))
+    
+list.sort(reads_supports)
+
+plt.grid(axis='y', alpha=0.95)
+
+bins = [x + 0.5 for x in range(0, max(reads_supports)+1)]
+maxe = max(reads_supports)
+if bins == 0:
+    bins = "auto"
+    maxe += 1
+    
+plt.hist(reads_supports, bins=bins, color='#ff0000', alpha=0.7, rwidth=0.85) 
+plt.xlabel("Number of reads support")
+plt.ylabel("Number of TE")
+plt.xlim(min(reads_supports)-1, maxe+1)
+#plt.ylim(1, 80)
+plt.savefig(dir_out + "HISTO/"+ str(name_out) + "_TOTAL_histo.pdf")
+#plt.show() 
+
+
+for e, element in enumerate(df["sseqid"].unique()):
+    reads_supports = []
+    for i, qseqid in enumerate(df[df["sseqid"] == element]["qseqid"].values):
+        read_support = qseqid.split(":")[5]
+        reads_supports.append(int(read_support))
+
+    list.sort(reads_supports)
+    
+    plt.grid(axis='y', alpha=0.95)
+    
+    bins = [x + 0.5 for x in range(0, max(reads_supports)+1)]
+    maxe = max(reads_supports)
+    if bins == 0:
+        bins = "auto"
+        maxe += 1 
+        
+    #print(element, bins, maxe)
+    plt.hist(reads_supports, bins=bins, color='#ff0000', alpha=0.7, rwidth=0.85) 
+    plt.xlabel("Number of reads support")
+    plt.ylabel("Number of TE")
+    plt.xlim(min(reads_supports)-1, maxe+1)
+    #plt.ylim(1, 80)
+    plt.savefig(dir_out + "HISTO/" + str(name_out) + "_" + str(element) + "_histo.pdf")
+    #plt.show() 
+    #
+    
+#*********** HISTOGRAM END *************
+
+
+#*********** COUNT TE FOR GGPLOT *************
+
+df_count = df.groupby(["sseqid"]).count()
+d = {'x': [" "] * len(df_count.iloc[:, 0].values), 'y': df_count.index, 'z': df_count.iloc[:, 0].values}
+
+df_o = pd.DataFrame(data=d)
+df_o = df_o.sort_values(by="z")
+
+print("build :", dir_out + name_out + "_hit_map.csv")
+df_o.to_csv( dir_out + name_out + "_hit_map.csv", sep="\t", index=None)
+
+print("Number total TE :", sum(df_o["z"].values))
+print("list TE :")
+df_o.columns = ["x", "TE", "NB_TE"]
+print(df_o[["TE", "NB_TE"]])
