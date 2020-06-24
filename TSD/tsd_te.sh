@@ -26,7 +26,9 @@
 #                                                                                                                                   
 ####################################################################################################################################
 
-
+# FIND TSD
+# ==========================
+# :author:  Mourdas MOHAMED 
 # :contact: mourdas.mohamed@igh.cnrs.fr
 # :date: 01/06/2020
 # :version: 0.1
@@ -109,7 +111,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":
 		echo "head : "$head
 
 		awk -v var=$head 'BEGIN {nb=0} { if( var == $0 || nb == 1 ){print $0; nb = nb + 1;} }' "${FIND_FA}" > sequence_TE.fasta
-		if [[ `cat sequence_TE.fasta` = "" ]]; then
+		if [ `cat sequence_TE.fasta` = "" ]; then
 			echo "ERROR : can't get sequence TE in ${FIND_FA}" ;
 			exit 1 ;
 		fi
@@ -143,7 +145,8 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":
 
 		# FIND TSD
 		# Warning : path
-		python ${path_this_script}/find_tsd.py flank_TE.fasta sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> total_results_tsd.txt
+		echo flank_TE.fasta    sequence_TE.fasta     $FLANK_SIZE     $id     $strand     $TSD_SIZE
+		python3 ${path_this_script}/find_tsd.py flank_TE.fasta sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> total_results_tsd.txt
 done
 
 
