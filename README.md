@@ -18,13 +18,20 @@ Please cite xxxx if using TrEMOLO
   - [Bedtools](https://bedtools.readthedocs.io/en/latest/) v2
   - [Assemblytics](http://assemblytics.com/) or [RaGOO](https://github.com/malonge/RaGOO) output
 - For Populational variation tool
+  - R 3.3+ libs
+    - [ggplot2](https://ggplot2.tidyverse.org/)
+    - [RColorBrewer](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)
+    - [extrafont](https://cran.r-project.org/web/packages/extrafont/README.html)
   - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
   - [Minimap2](https://github.com/lh3/minimap2) 2.16+
   - [Samtools](http://www.htslib.org/) 1.10+
   - [Sniffles](https://github.com/fritzsedlazeck/Sniffles) 1.0.10+
-  - [Biopython](https://biopython.org/)
-  - [Pandas](https://pandas.pydata.org/)
-  - [Numpy](https://numpy.org/)
+  - Python libs
+    - [Biopython](https://biopython.org/)
+    - [Pandas](https://pandas.pydata.org/)
+    - [Numpy](https://numpy.org/)
+    - [pylab](https://matplotlib.org/)
+    - [tkinter](https://docs.python.org/3/library/tkinter.html)
 
 ### Installation:
 Once the requirements fullfilled, just git clone
