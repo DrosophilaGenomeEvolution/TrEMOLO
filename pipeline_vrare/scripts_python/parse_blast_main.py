@@ -72,8 +72,12 @@ import re
 import os
 import sys
 import argparse
-import pylab as plt
+
 import tkinter
+import pylab as plt
+import warnings
+warnings.filterwarnings("ignore")
+
 
 parser = argparse.ArgumentParser(description="filters a blast file in output format 6 to keep the candidate candidate TE active")
 
@@ -107,6 +111,7 @@ dir_out          = "/".join(output.split("/")[:-1])
 
 print("------------------------")
 print("name_out :", name_out)
+
 
 if dir_out != "":
     dir_out += "/"
@@ -273,7 +278,7 @@ df_o = pd.DataFrame(data=d)
 df_o = df_o.sort_values(by="z")
 
 print("build :", dir_out + name_out + "_hit_map.csv")
-df_o.to_csv( dir_out + name_out + "_hit_map.csv", sep="\t", index=None)
+df_o.to_csv(dir_out + name_out + "_hit_map.csv", sep="\t", index=None)
 
 print("Number total TE :", sum(df_o["z"].values))
 print("list TE :")

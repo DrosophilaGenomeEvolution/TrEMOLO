@@ -71,6 +71,8 @@ import pandas as pd
 import re
 import os
 import argparse
+import warnings
+warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser(description="Get picluster with flanking genes")
@@ -92,6 +94,8 @@ parser.add_argument("all_te", type=str,
 #OPTION
 parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,^4_,X_',
                     help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,^4_,X_]')
+parser.add_argument("-d", "--directory_out", type=str, default='PICLUSTER/',
+                    help='output directory')
 
 args = parser.parse_args()
 
@@ -101,6 +105,7 @@ name_file_gene_bln    = args.genes
 #name_file_element_bln = args.elements
 gene_flank_file       = args.flank_genes
 name_file_all_TE      = args.all_te
+dir_out               = args.directory_out.strip("/") + "/"
 
 
 chrom_tab = args.chrom.split(",")#KEEP ONLY
@@ -115,6 +120,13 @@ def regex_in_list(value, liste):
 
     return False
 
+#Get rows indexs with regex 
+def getIDregex(df, pattern):
+    index = []
+    for i, v in enumerate(df.values):
+        if re.search(pattern, v):
+            index.append(i)
+    return index
 
 
 file = open(genome_fasta, "r")
@@ -156,64 +168,35 @@ print("shape total :", df.shape)
 
 name_genome = genome_fasta.split("/")[-1].split(".")[0]
 print("name genome :", name_genome)
-os.system("mkdir -p " + name_genome)
+os.system("mkdir -p " + dir_out)
 
 #premiere passe 
-df_best_matchs   = df
+
+df_best_matchs = df.copy()
 df_for_pic_goupe = df
-
-tab_take_top     = []
-tab_take_top_ind = []
-for index, value in enumerate(df_best_matchs.values):
-    chaine = value[0] #sseqid + qseqid
-    
-    qseqid_best_top = df_best_matchs["qseqid"].values[index].split(":")
-    gene            = qseqid_best_top[0]
-    chrom_qseq      = qseqid_best_top[1][1:]
-    chrom_sseq      = df_best_matchs["sseqid"].values[index].split("_")[0]
-
-    #best top blast
-    if chaine not in tab_take_top :#and chrom_qseq == chrom_sseq:
-        tab_take_top.append(chaine)
-        tab_take_top_ind.append(index)
-
-
-df_best_matchs = df_best_matchs.iloc[tab_take_top_ind]
-genes          = []
-for index, value in enumerate(df_best_matchs.values):
-    genes.append(df_best_matchs["qseqid"].values[index].split(":-")[0].lower())
-    
-
-df_best_matchs["gene"] = genes
-print("shape of best matchs :", df_best_matchs.shape)
-print("-------------END GET BEST MATCHS----------------")
-
-
+print(df_best_matchs.head())
 
 best_score_match = []
 best_score_match_index = []
 chaine = ""
-for index, row in enumerate(df.values):
+for index, row in enumerate(df_best_matchs.values):
     
-    chaine = df["qseqid"].values[index] + df["sseqid"].values[index]
+    chaine = df_best_matchs["qseqid"].values[index]
     if chaine not in best_score_match:
-        qseqid       = df["qseqid"].values[index]
-        info_qseqid  = qseqid.split(":")
-        read_support = int(info_qseqid[5])
-
-        df_tmp        = df[df["qseqid"] == qseqid]
-        maxe_bitscore = max(df_tmp["bitscore"].values)
-        df_best_score = df_tmp[df_tmp["bitscore"] == maxe_bitscore]
+        qseqid_best_top = df_best_matchs["qseqid"].values[index].split(":")
+        gene            = qseqid_best_top[0]
+        chrom_qseq      = qseqid_best_top[1][1:]
+        chrom_sseq      = df_best_matchs["sseqid"].values[index].split("_")[0]
         
-        chaine = df_best_score["qseqid"].values[0] + df_best_score["sseqid"].values[0]
         best_score_match.append(chaine)
         
-        #Insert only
-        find_INS = re.search("INS", df_best_score["qseqid"].values[0])
-        if find_INS and read_support >= min_read_support:
-            best_score_match_index.append(index)
+        best_score_match_index.append(index)
     
-df = df.iloc[best_score_match_index]
+df_best_matchs = df_best_matchs.iloc[best_score_match_index]
+
+
+print("-------------END GET BEST MATCHS----------------")
+
 
 ####-----------------------------------------------------
 
@@ -341,7 +324,7 @@ df_combine = df_combine[df_combine["samechrom"] == True]
 print("shape of only samechrom=True :", df_combine.shape)
 #df_combine = df_combine[df_combine["persize"] >= 0]
 
-df_combine.to_csv(name_genome + "/" + "Gene_" + name_genome + "_combine.csv", sep=";", index=None)
+df_combine.to_csv(dir_out + "/" + "Gene_" + name_genome + "_combine.csv", sep=";", index=None)
 
 
 
@@ -461,7 +444,7 @@ df_pic = pd.DataFrame(data=dico_new)
 df_pic = df_pic.drop_duplicates()
 print("shape cluster with flanking genes :", df_pic.shape)
 
-df_pic.to_csv(name_genome + "/" + "PiCluster_Gene_" + name_genome + ".csv", sep="\t", index=None)
+df_pic.to_csv(dir_out + "/" + "PiCluster_Gene_" + name_genome + ".csv", sep="\t", index=None)
 
 
 
@@ -475,7 +458,8 @@ df = df_for_cluster #df TE
 
 index_te_in_cluster     = []
 index_te_not_in_cluster = []
-tab_cluster_in           = []
+tab_cluster_in          = []
+m = 0
 for i, v in enumerate(df.values):
     qseqid    = df["qseqid"].values[i]
     chrom     = qseqid.split(":")[0]#.split("_")[0]
@@ -483,8 +467,13 @@ for i, v in enumerate(df.values):
     end       = max(int(qseqid.split(":")[2]), int(qseqid.split(":")[3]))
     in_cluter = False
 
-    df_tmp    = df_pic[df_pic["chrom"] == chrom]
-
+    #df_tmp    = df_pic[df_pic["chrom"] == chrom]
+    df_tmp = df_pic.iloc[getIDregex(df_pic["chrom"], chrom)]
+    if m == 0:
+        print(df_pic["chrom"])
+        print("")
+        print(chrom)
+        m += 1
     for e, vc in enumerate(df_tmp.values):
         start_cluster = min(int(df_tmp["start"].values[e]), int(df_tmp["stop"].values[e]))
         end_cluster   = max(int(df_tmp["start"].values[e]), int(df_tmp["stop"].values[e]))
@@ -543,24 +532,25 @@ for i, v in enumerate(df_out["x"].unique()):
 print("name TE in clusters", list(df_out["x"].unique()))
 
 
-# tab_add = []
-# nb_add  = 0
-# size    = len(df_out.values)
-# df_out  = pd.DataFrame({"x":df_out["x"].values, "y":df_out["y"].values, "z":df_out["z"].values})
+tab_add = []
+nb_add  = 0
+size    = len(df_out.values)
+df_out  = pd.DataFrame({"x": df_out["x"].values, "y": df_out["y"].values, "z": df_out["z"].values})
 
-# for i, clust in enumerate(df_pic["name_clust"].unique()):
-#     df_tmp = df_out[df_out["y"] == clust]
-#     elements = ['gtwin', 'blood', 'ZAM', 'roo', '412']
-#     for e, elem in enumerate(elements):
-#         if elem not in list(df_tmp["x"].unique()):
-#             df_out.loc[size + nb_add] = list([elem, clust, 0])
-#             nb_add += 1
+for i, clust in enumerate(df_pic["name_clust"].unique()):
+    df_tmp = df_out[df_out["y"] == clust]
+    #elements = ['gtwin', 'blood', 'ZAM', 'roo', '412']
+    elements = df_out["x"].unique()
+    for e, elem in enumerate(elements):
+        if elem not in list(df_tmp["x"].unique()):
+            df_out.loc[size + nb_add] = list([elem, clust, 0])
+            nb_add += 1
             
-# print(len(df_out.values), nb_add)
-#print(df_pic["name_clust"].unique())
+print(len(df_out.values), nb_add)
+print(df_pic["name_clust"].unique())
 
-# df_out.to_csv(name_genome + "/" + str(prefixe_count) + "_hit_map.csv", sep="\t", index=None)
-# print("file out >> :", name_genome + "/" + str(prefixe_count) + "_hit_map.csv")
+df_out.to_csv(dir_out + "/" + str(prefixe_count) + "_hit_map.csv", sep="\t", index=None)
+print("file out >> :", name_genome + "/" + str(prefixe_count) + "_hit_map.csv")
 
 
 ####-----------------------------------------------------
