@@ -28,7 +28,7 @@
 
 
 
-## Find path or snakefile
+## Find path snakefile
 path_snk = ""
 
 i = 0
@@ -40,51 +40,126 @@ while i < len(sys.argv) and path_snk == "" :
 #
 
 
-#Get just sequence potentiel candidate of TE
-rule get_TE_seq :
+rule TSD :
     input:
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "resume.txt",
-        all_te    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
-        snif_seqs = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_sniffle.fasta",
+        total     = config["work_directory"].strip("/") + "/" + config["name_out"] + "_total_find.fasta",
+        fasta_TE  = config["fasta_TE"],
+
 
     output:
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_total_find.fasta",
+        config["work_directory"].strip("/") + "/PICLUSTER/"  + config["genome"].split("/")[-1].split(".")[0] + "_IN_CLUSTER_COV_hit_map.csv",
 
     params:
+        path_snk       = path_snk,
         name_out       = config["name_out"],
-        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+        work_directory = config["work_directory"].strip("/"),
+        name_genome    = config["genome"].split("/")[-1].split(".")[0],
 
     shell:
         """
-        mkdir -p {params.work_directory}/REP ;
+
+        echo '-----------TSD----------' ;
+        mkdir -p {params.work_directory}/TSD ;
+        path_to_pipline=`dirname {params.path_snk}`
         
-        rep="{params.work_directory}/REP" 
+        read_directory="{params.work_directory}/READ_FASTQ_{params.name_out}"
+        fasta_dir_find="{params.work_directory}/FASTA_FIND"
+
+        nb_file=`ls {params.work_directory}/ET_FIND_FA | wc -l` ;
+        i=0 ;
+        for TE_found_fa in `ls {params.work_directory}/ET_FIND_FA/`; do
+
+            i=$(($i + 1)) ;
+            echo $i/$nb_file ;
+            sh ${{path_to_pipline}}/TSD/find_fq_to_fasta.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa ${{read_directory}} ${{fasta_dir_find}} ;
+            sh ${{path_to_pipline}}/TSD/tsd_te.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa ${{read_directory}} ${{fasta_dir_find}} {input.fasta_TE} 10 4 ;
+            name_te=`echo $TE_found_fa | grep -o "_[^_]*\." | grep -o "[^_]*" | sed 's/\.$//g'` ; 
+            mv total_results_tsd.txt total_results_tsd_${{name_te}}.txt ;
+            mv total_results_tsd_${{name_te}}.txt {params.work_directory}/TSD/ ;
+        done;
+
+        """
+
+
+#Get pifluster flanking genes
+rule picluster_flanking_genes :
+    input:
+        config["work_directory"].strip("/") + "/" + "resume.txt",
+        genome    = config["genome"],
+        all_te    = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        snif_seqs = config["work_directory"].strip("/") + "/" + config["name_out"] + "_sniffle.fasta",
+
+    output:
+        config["work_directory"].strip("/") + "/PICLUSTER/"  + config["genome"].split("/")[-1].split(".")[0] + "_IN_CLUSTER_COV_hit_map.csv",
+
+    params:
+        path_snk       = path_snk,
+        name_out       = config["name_out"],
+        work_directory = config["work_directory"].strip("/"),
+        name_genome    = config["genome"].split("/")[-1].split(".")[0],
+
+    shell:
+        """
+
+        echo '-----------PiCluster----------' ;
+        mkdir -p {params.work_directory} ;
+        path_to_pipline=`dirname {params.path_snk}`
+		
+        makeblastdb -in {input.genome} -dbtype nucl ;
+        blastn -db {input.genome} -query ${{path_to_pipline}}/data_test/picluster/genes_dm_picl.fasta -outfmt 6 -out {params.work_directory}/Gene_{params.name_genome}_full.bln ;
+        
+        python3 ${{path_to_pipline}}/scripts_python/picluster_gene.py {input.genome} {params.work_directory}/Gene_{params.name_genome}_full.bln ${{path_to_pipline}}/data_test/picluster/pair_genes.csv {input.all_te} ;
+        #Rscript --vanilla ${{path_to_pipline}}/scripts_R/hit_pilcuster.R PICLUSTER/{params.name_genome}_IN_CLUSTER_COV_hit_map.csv ;
+        mv PICLUSTER/ {params.work_directory}/
+
+        """
+
+
+#Get just sequence potentiel candidate of TE
+rule get_TE_seq :
+    input:
+        config["work_directory"].strip("/") + "/" + "resume.txt",
+        all_te    = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        snif_seqs = config["work_directory"].strip("/") + "/" + config["name_out"] + "_sniffle.fasta",
+
+    output:
+        config["work_directory"].strip("/") + "/" + config["name_out"] + "_total_find.fasta",
+
+    params:
+        name_out       = config["name_out"],
+        work_directory = config["work_directory"].strip("/"),
+
+    shell:
+        """
+        mkdir -p {params.work_directory}/ET_FIND_FA ;
+        
+        rep="{params.work_directory}/ET_FIND_FA" 
         prefix="{params.name_out}"
         
         awk -v dir="$rep" -v prefix="$prefix" 'BEGIN{{OFS="\t"}} NR>1 {{if($8<$9){{print $2, $8-1, $9  >> dir"/"prefix"_find_"$1".bed"}}else{{print $2, $9-1, $8  >> dir"/"prefix"_find_"$1".bed"}} }}' {input.all_te} ;
-        for i in `ls {params.work_directory}/REP`; do bedtools getfasta -fi {input.snif_seqs} -bed {params.work_directory}/REP/$i > {params.work_directory}/REP/{params.name_out}_find_`echo $i | cut -d"." -f 1 | grep -o "_[^_]*$" | grep -o "[^_]*"`.fasta; done ;
+        for i in `ls {params.work_directory}/ET_FIND_FA`; do bedtools getfasta -fi {input.snif_seqs} -bed {params.work_directory}/ET_FIND_FA/$i > {params.work_directory}/ET_FIND_FA/{params.name_out}_find_`echo G73_find_17.6.bed | grep -o "_[^_]*\." | grep -o "[^_]*" | sed 's/\.$//g'`.fasta; done ;
         
-        rm -f {params.work_directory}/REP/*.bed ;
-        cat {params.work_directory}/REP/* > {params.work_directory}/{params.name_out}_total_find.fasta ;
+        rm -f {params.work_directory}/ET_FIND_FA/*.bed ;
+        cat {params.work_directory}/ET_FIND_FA/* > {params.work_directory}/{params.name_out}_total_find.fasta ;
         """
 
 
 #Get reads supports
 rule extract_read :
     input:
-        vcf    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
+        vcf    = config["work_directory"].strip("/") + "/" + config["name_out"] + ".vcf",
         read   = config["read"],
-        all_te = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        all_te = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
 
     output:
-        #config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "REGION_RD_" + config["name_out"],
-        #config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "READ_FASTQ_" + config["name_out"] + "/reads_*",
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + "resume.txt",
+        #config["work_directory"].strip("/") + "/" + "REGION_RD_" + config["name_out"],
+        #config["work_directory"].strip("/") + "/" + "READ_FASTQ_" + config["name_out"] + "/reads_*",
+        config["work_directory"].strip("/") + "/" + "resume.txt",
 
     params:
         path_snk       = path_snk,
         name_out       = config["name_out"],
-        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+        work_directory = config["work_directory"].strip("/"),
 
 
     shell:
@@ -121,18 +196,19 @@ rule extract_read :
 #BLASt database of TE against SV (Structural variant)
 rule blast :
     input:
-        vcf      = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
+        vcf      = config["work_directory"].strip("/") + "/" + config["name_out"] + ".vcf",
         fasta_TE = config["fasta_TE"],
 
     output:
-        snif_seqs = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_sniffle.fasta",
-        bln       = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE.bln",
-        all_te    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        snif_seqs = config["work_directory"].strip("/") + "/" + config["name_out"] + "_sniffle.fasta",
+        bln       = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE.bln",
+        all_te    = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        hitmap    = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET_hit_map.csv",
         
     params:
         path_snk       = path_snk,
         name_out       = config["name_out"],
-        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+        work_directory = config["work_directory"].strip("/"),
 
 
     shell:
@@ -148,6 +224,7 @@ rule blast :
         blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} ;
 
         python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {output.bln} {output.all_te} ;
+        #Rscript --vanilla ${{path_to_pipline}}/scripts_R/hit_map_ET.R {output.hitmap} ;
 
         """
 
@@ -155,14 +232,14 @@ rule blast :
 #Get Strucural Variant (vcf file)
 rule sniffles :
     input:
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_MD.sorted.bam",
+        config["work_directory"].strip("/") + "/" + config["name_out"] + "_MD.sorted.bam",
 
     output:
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".vcf",
+        config["work_directory"].strip("/") + "/" + config["name_out"] + ".vcf",
         
     params:
         name_out       = config["name_out"],
-        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+        work_directory = config["work_directory"].strip("/"),
 
     shell:
         """
@@ -175,15 +252,15 @@ rule sniffles :
 #Sort and callmd
 rule samtools :
     input:
-        sam    = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".sam",
+        sam    = config["work_directory"].strip("/") + "/" + config["name_out"] + ".sam",
         genome = config["genome"],
 
     output:
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + "_MD.sorted.bam",
+        config["work_directory"].strip("/") + "/" + config["name_out"] + "_MD.sorted.bam",
         
     params:
         name_out       = config["name_out"],
-        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+        work_directory = config["work_directory"].strip("/"),
 
 
     shell:
@@ -194,7 +271,8 @@ rule samtools :
         samtools view -S -b {input.sam} > {params.work_directory}/{params.name_out}.bam ;
         samtools sort {params.work_directory}/{params.name_out}.bam -o {params.work_directory}/{params.name_out}.sorted.bam ;
 
-        #rm -f {params.name_out}.bam ;
+        rm -f {params.name_out}.bam ;
+        rm -f {input.sam} ;
 
         samtools calmd -b {params.work_directory}/{params.name_out}.sorted.bam {input.genome} > {output} ;
         """
@@ -207,11 +285,11 @@ rule mapping :
         genome = config["genome"],
 
     output:
-        config["work_directory"][:-1] + config["work_directory"][-1].replace("/", "") + "/" + config["name_out"] + ".sam",
+        config["work_directory"].strip("/") + "/" + config["name_out"] + ".sam",
         
     params:
         name_out       = config["name_out"],
-        work_directory = config["work_directory"][:-1] + config["work_directory"][-1].replace("/", ""),
+        work_directory = config["work_directory"].strip("/"),
 
     shell:
         """
