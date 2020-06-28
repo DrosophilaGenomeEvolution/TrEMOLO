@@ -57,36 +57,75 @@ snakemake --snakefile /path/to/vrare.snk --configfile /path/to/your_config.json
 Example of output file obtained after using the pipeline, in work directory.
 
 ```
+├── ET_FIND_FA
+│   ├── G73vsG73LR_find_17.6.fasta
+│   ├── G73vsG73LR_find_297.fasta
+│   ├── G73vsG73LR_find_412.fasta
+│   ├── G73vsG73LR_find_blood.fasta
+│   ├── G73vsG73LR_find_Burdock.fasta
+│   ├── G73vsG73LR_find_copia.fasta
+│   ├── G73vsG73LR_find_diver.fasta
+│   ├── G73vsG73LR_find_flea.fasta
+│   ├── G73vsG73LR_find_gtwin.fasta
+│   ├── G73vsG73LR_find_HMS-Beagle.fasta
+│   ├── G73vsG73LR_find_Max-element.fasta
+│   ├── G73vsG73LR_find_mdg3.fasta
+│   ├── G73vsG73LR_find_opus.fasta
+│   ├── G73vsG73LR_find_Quasimodo.fasta
+│   ├── G73vsG73LR_find_roo.fasta
+│   ├── G73vsG73LR_find_rover.fasta
+│   ├── G73vsG73LR_find_springer.fasta
+│   ├── G73vsG73LR_find_Transpac.fasta
+│   └── G73vsG73LR_find_ZAM.fasta
+├── FASTA_FIND
+│   ├── reads_2L_RaGOO_RaGOO:10077:10091462-10098788.fasta
+│   ├── reads_2L_RaGOO_RaGOO:10077:10091462-10098788.fasta.fai
+│   ├── reads_2L_RaGOO_RaGOO:10077:10091462-10098788.fasta.nhr
+│   ├── reads_2L_RaGOO_RaGOO:10077:10091462-10098788.fasta.nin
+│   ├── reads_2L_RaGOO_RaGOO:10077:10091462-10098788.fasta.nsq
+│   ├── reads_2L_RaGOO_RaGOO:1024:897326-904652.fasta
+│   ├── reads_2L_RaGOO_RaGOO:1024:897326-904652.fasta.fai
+│   ├── reads_2L_RaGOO_RaGOO:1024:897326-904652.fasta.nhr
+│   ├── reads_2L_RaGOO_RaGOO:1024:897326-904652.fasta.nin
+│   ├── reads_2L_RaGOO_RaGOO:1024:897326-904652.fasta.nsq
+│   ├── ...
 ├── G73vsG73LR.bam
 ├── G73vsG73LR_cnTE_ALL_ET.csv
+├── G73vsG73LR_cnTE_ALL_ET_hit_map.csv
 ├── G73vsG73LR_cnTE.bln
 ├── G73vsG73LR_MD.sorted.bam
-├── G73vsG73LR.sam
 ├── G73vsG73LR_sniffle.fasta
 ├── G73vsG73LR_sniffle.fasta.fai
 ├── G73vsG73LR.sorted.bam
 ├── G73vsG73LR_total_find.fasta
 ├── G73vsG73LR.vcf
-├── id.txt
+├── Gene_G73onG0corrected_ragoo_full.bln
+├── HISTO
+│   ├── G73vsG73LR_cnTE_ALL_ET_17.6_histo.pdf
+│   ├── G73vsG73LR_cnTE_ALL_ET_297_histo.pdf
+│   ├── G73vsG73LR_cnTE_ALL_ET_412_histo.pdf
+│   ├── ...
+├── PICLUSTER
+│   ├── G73onG0corrected_ragoo_IN_CLUSTER_COV_hit_map.csv
+│   ├── Gene_G73onG0corrected_ragoo_combine.csv
+│   └── PiCluster_Gene_G73onG0corrected_ragoo.csv
 ├── READ_FASTQ_G73vsG73LR
 │   ├── reads_2L_RaGOO_RaGOO:10077:10091462-10098788.fastq
 │   ├── reads_2L_RaGOO_RaGOO:1024:897326-904652.fastq
 │   ├── reads_2L_RaGOO_RaGOO:10273:10309986-10317318.fastq
-│   ├── reads_2L_RaGOO_RaGOO:11769:12063423-12070758.fastq
-│   ├── ....
+│   ├── ...
 ├── REGION_RD_G73vsG73LR
 │   ├── reads_2L_RaGOO_RaGOO:10077:10091462-10098788.txt
 │   ├── reads_2L_RaGOO_RaGOO:1024:897326-904652.txt
 │   ├── reads_2L_RaGOO_RaGOO:10273:10309986-10317318.txt
 │   ├── reads_2L_RaGOO_RaGOO:11769:12063423-12070758.txt
 │   ├── reads_2L_RaGOO_RaGOO:11994:12341312-12349689.txt
-│   ├── ....
-├── REP
-│   ├── G73vsG73LR_find_17.fasta
-│   ├── G73vsG73LR_find_297.fasta
-│   ├── G73vsG73LR_find_412.fasta
-│   ├── G73vsG73LR_find_blood.fasta
-│   ├── ....
+│   ├── ...
+└── TSD
+    ├── total_results_tsd_17.6.txt
+    ├── total_results_tsd_297.txt
+    ├── total_results_tsd_412.txt
+    ├── ...
 ```
 
 ##### Diagram of the different stages (rules)
