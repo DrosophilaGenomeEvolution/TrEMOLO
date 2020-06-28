@@ -137,7 +137,7 @@ rule get_TE_seq :
         prefix="{params.name_out}"
         
         awk -v dir="$rep" -v prefix="$prefix" 'BEGIN{{OFS="\t"}} NR>1 {{if($8<$9){{print $2, $8-1, $9  >> dir"/"prefix"_find_"$1".bed"}}else{{print $2, $9-1, $8  >> dir"/"prefix"_find_"$1".bed"}} }}' {input.all_te} ;
-        for i in `ls {params.work_directory}/ET_FIND_FA`; do bedtools getfasta -fi {input.snif_seqs} -bed {params.work_directory}/ET_FIND_FA/$i > {params.work_directory}/ET_FIND_FA/{params.name_out}_find_`echo G73_find_17.6.bed | grep -o "_[^_]*\." | grep -o "[^_]*" | sed 's/\.$//g'`.fasta; done ;
+        for i in `ls {params.work_directory}/ET_FIND_FA`; do bedtools getfasta -fi {input.snif_seqs} -bed {params.work_directory}/ET_FIND_FA/$i > {params.work_directory}/ET_FIND_FA/{params.name_out}_find_`echo $i | grep -o "_[^_]*\." | grep -o "[^_]*" | sed 's/\.$//g'`.fasta; done ;
         
         rm -f {params.work_directory}/ET_FIND_FA/*.bed ;
         cat {params.work_directory}/ET_FIND_FA/* > {params.work_directory}/{params.name_out}_total_find.fasta ;
