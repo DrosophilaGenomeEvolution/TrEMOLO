@@ -23,7 +23,7 @@ data$y <- factor(data$y, levels = rev(piclust))
 ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
   geom_tile()+
 
-  scale_fill_gradientn(breaks = c(0, 1, 2), colours = brewer.pal(n= 9, name="GnBu"))+
+  scale_fill_gradientn( colours = brewer.pal(n= 9, name="GnBu"))+
 
   theme_minimal()+ 
   theme(axis.text.x = element_text(angle = 55, vjust = 1, size = 12, hjust = 1))+

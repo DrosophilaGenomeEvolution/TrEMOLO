@@ -28,7 +28,7 @@ ggplot(data, aes(x, y, fill=z, height=1), width=50) +
                            size=12, angle=0))+
   coord_fixed()+
 
-  scale_fill_gradientn(breaks = c(0, 25, 50, 75, 93), colours = brewer.pal(n= 9, name="YlOrRd"))+
+  scale_fill_gradientn( colours = brewer.pal(n= 9, name="YlOrRd"))+
 
   labs(y='Transposables Element', x='', fill='NEW INSERTION')+
   theme(text=element_text(size=14), plot.title = element_text(size=30, hjust = 0.5)) 
