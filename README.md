@@ -89,4 +89,4 @@ The tabulated files are structured as follows:
 
 ## Populational variation in TE insertions <a name="population"></a>
 
-This analysis is performed through a Snakemake pipeline
+This analysis is performed through a Snakemake pipeline. A detailed manual is [available here](https://github.com/DrosophilaGenomeEvolution/TrEMOLO/tree/master/pipeline_vrare)
