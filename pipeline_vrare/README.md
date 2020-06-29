@@ -128,6 +128,24 @@ Example of output file obtained after using the pipeline, in work directory.
     ├── ...
 ```
 
+The output file whose name ends with "cnTE_ALL_ET.csv"
+
+| sseqid | qseqid | pident | size_per | size_el | mismatch | gapopen | qstart | qend | sstart | send | evalue | bitscore |
+| ------ | ------ | ------ | -------- | ------- | -------- | ------- | ------ | ---- | ------ | ---- | ------ | -------- |
+| ZAM | 2R:<INS>:12136769:12145149:33748:4:IMPRECISE | 95.494 | 99.0 | 8347 | 123 | 178 | 5 | 8352 | 8435 | 1 | 0.0 | 13369.0 |
+| blood | 3R:<INS>:22519173:22526514:100924:1:PRECISE | 94.259 | 99.0 | 7338 | 164 | 189 | 3 | 7341 | 7410 |  1 | 0.0 | 11230.0 |
+
+
+Format **qseqid** or header fasta file :
+
+
+chromosome:type_variant:start_position:end_position:ID:NB_read_support:PRECISE_OR_IMPRECISE_POSITION_SV
+3R:<INS>:22519173:22526514:100924:1:PRECISE
+
+
+Note : if you want to use the scripts individually know that the format **qseqid** is a format necessary for most scripts in the pipeline. The header of some fasta files must also be in this format. This info is extracted from a vcf file (generate with the appropriate options).
+
+
 ##### Diagram of the different stages (rules)
 
 <img src="dag.svg">
