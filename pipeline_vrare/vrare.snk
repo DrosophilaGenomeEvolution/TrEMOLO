@@ -42,17 +42,17 @@ while i < len(sys.argv) and path_snk == "" :
 
 rule TSD :
     input:
-        total     = config["work_directory"].strip("/") + "/" + config["name_out"] + "_total_find.fasta",
+        total     = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_total_find.fasta",
         fasta_TE  = config["fasta_TE"],
 
 
     output:
-        config["work_directory"].strip("/") + "/PICLUSTER/"  + config["genome"].split("/")[-1].split(".")[0] + "_IN_CLUSTER_COV_hit_map.csv",
+        config["work_directory"].rstrip("/") + "/PICLUSTER/"  + config["genome"].split("/")[-1].split(".")[0] + "_IN_CLUSTER_COV_hit_map.csv",
 
     params:
         path_snk       = path_snk,
         name_out       = config["name_out"],
-        work_directory = config["work_directory"].strip("/"),
+        work_directory = config["work_directory"].rstrip("/"),
         name_genome    = config["genome"].split("/")[-1].split(".")[0],
 
     shell:
@@ -82,52 +82,52 @@ rule TSD :
 
 
 #Get pifluster flanking genes
-rule picluster_flanking_genes :
-    input:
-        config["work_directory"].strip("/") + "/" + "resume.txt",
-        genome    = config["genome"],
-        all_te    = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
-        snif_seqs = config["work_directory"].strip("/") + "/" + config["name_out"] + "_sniffle.fasta",
+# rule picluster_flanking_genes :
+#     input:
+#         config["work_directory"].rstrip("/") + "/" + "resume.txt",
+#         genome    = config["genome"],
+#         all_te    = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+#         snif_seqs = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_sniffle.fasta",
 
-    output:
-        config["work_directory"].strip("/") + "/PICLUSTER/"  + config["genome"].split("/")[-1].split(".")[0] + "_IN_CLUSTER_COV_hit_map.csv",
+#     output:
+#         config["work_directory"].rstrip("/") + "/PICLUSTER/"  + config["genome"].split("/")[-1].split(".")[0] + "_IN_CLUSTER_COV_hit_map.csv",
 
-    params:
-        path_snk       = path_snk,
-        name_out       = config["name_out"],
-        work_directory = config["work_directory"].strip("/"),
-        name_genome    = config["genome"].split("/")[-1].split(".")[0],
+#     params:
+#         path_snk       = path_snk,
+#         name_out       = config["name_out"],
+#         work_directory = config["work_directory"].rstrip("/"),
+#         name_genome    = config["genome"].split("/")[-1].split(".")[0],
 
-    shell:
-        """
+#     shell:
+#         """
 
-        echo '-----------PiCluster----------' ;
-        mkdir -p {params.work_directory} ;
-        path_to_pipline=`dirname {params.path_snk}`
+#         echo '-----------PiCluster----------' ;
+#         mkdir -p {params.work_directory} ;
+#         path_to_pipline=`dirname {params.path_snk}`
 		
-        makeblastdb -in {input.genome} -dbtype nucl ;
-        blastn -db {input.genome} -query ${{path_to_pipline}}/data_test/picluster/genes_dm_picl.fasta -outfmt 6 -out {params.work_directory}/Gene_{params.name_genome}_full.bln ;
+#         makeblastdb -in {input.genome} -dbtype nucl ;
+#         blastn -db {input.genome} -query ${{path_to_pipline}}/data_test/picluster/genes_dm_picl.fasta -outfmt 6 -out {params.work_directory}/Gene_{params.name_genome}_full.bln ;
         
-        python3 ${{path_to_pipline}}/scripts_python/picluster_gene.py {input.genome} {params.work_directory}/Gene_{params.name_genome}_full.bln ${{path_to_pipline}}/data_test/picluster/pair_genes.csv {input.all_te} ;
-        #Rscript --vanilla ${{path_to_pipline}}/scripts_R/hit_pilcuster.R PICLUSTER/{params.name_genome}_IN_CLUSTER_COV_hit_map.csv ;
-        mv PICLUSTER/ {params.work_directory}/
+#         python3 ${{path_to_pipline}}/scripts_python/picluster_gene.py {input.genome} {params.work_directory}/Gene_{params.name_genome}_full.bln ${{path_to_pipline}}/data_test/picluster/pair_genes.csv {input.all_te} ;
+#         #Rscript --vanilla ${{path_to_pipline}}/scripts_R/hit_pilcuster.R PICLUSTER/{params.name_genome}_IN_CLUSTER_COV_hit_map.csv ;
+#         mv PICLUSTER/ {params.work_directory}/
 
-        """
+#         """
 
 
 #Get just sequence potentiel candidate of TE
 rule get_TE_seq :
     input:
-        config["work_directory"].strip("/") + "/" + "resume.txt",
-        all_te    = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
-        snif_seqs = config["work_directory"].strip("/") + "/" + config["name_out"] + "_sniffle.fasta",
+        config["work_directory"].rstrip("/") + "/" + "resume.txt",
+        all_te    = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        snif_seqs = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_sniffle.fasta",
 
     output:
-        config["work_directory"].strip("/") + "/" + config["name_out"] + "_total_find.fasta",
+        config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_total_find.fasta",
 
     params:
         name_out       = config["name_out"],
-        work_directory = config["work_directory"].strip("/"),
+        work_directory = config["work_directory"].rstrip("/"),
 
     shell:
         """
@@ -147,19 +147,19 @@ rule get_TE_seq :
 #Get reads supports
 rule extract_read :
     input:
-        vcf    = config["work_directory"].strip("/") + "/" + config["name_out"] + ".vcf",
+        vcf    = config["work_directory"].rstrip("/") + "/" + config["name_out"] + ".vcf",
         read   = config["read"],
-        all_te = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        all_te = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
 
     output:
-        #config["work_directory"].strip("/") + "/" + "REGION_RD_" + config["name_out"],
-        #config["work_directory"].strip("/") + "/" + "READ_FASTQ_" + config["name_out"] + "/reads_*",
-        config["work_directory"].strip("/") + "/" + "resume.txt",
+        #config["work_directory"].rstrip("/") + "/" + "REGION_RD_" + config["name_out"],
+        #config["work_directory"].rstrip("/") + "/" + "READ_FASTQ_" + config["name_out"] + "/reads_*",
+        config["work_directory"].rstrip("/") + "/" + "resume.txt",
 
     params:
         path_snk       = path_snk,
         name_out       = config["name_out"],
-        work_directory = config["work_directory"].strip("/"),
+        work_directory = config["work_directory"].rstrip("/"),
 
 
     shell:
@@ -196,19 +196,19 @@ rule extract_read :
 #BLASt database of TE against SV (Structural variant)
 rule blast :
     input:
-        vcf      = config["work_directory"].strip("/") + "/" + config["name_out"] + ".vcf",
+        vcf      = config["work_directory"].rstrip("/") + "/" + config["name_out"] + ".vcf",
         fasta_TE = config["fasta_TE"],
 
     output:
-        snif_seqs = config["work_directory"].strip("/") + "/" + config["name_out"] + "_sniffle.fasta",
-        bln       = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE.bln",
-        all_te    = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
-        hitmap    = config["work_directory"].strip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET_hit_map.csv",
+        snif_seqs = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_sniffle.fasta",
+        bln       = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_cnTE.bln",
+        all_te    = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET.csv",
+        hitmap    = config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_cnTE_ALL_ET_hit_map.csv",
         
     params:
         path_snk       = path_snk,
         name_out       = config["name_out"],
-        work_directory = config["work_directory"].strip("/"),
+        work_directory = config["work_directory"].rstrip("/"),
 
 
     shell:
@@ -232,14 +232,14 @@ rule blast :
 #Get Strucural Variant (vcf file)
 rule sniffles :
     input:
-        config["work_directory"].strip("/") + "/" + config["name_out"] + "_MD.sorted.bam",
+        config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_MD.sorted.bam",
 
     output:
-        config["work_directory"].strip("/") + "/" + config["name_out"] + ".vcf",
+        config["work_directory"].rstrip("/") + "/" + config["name_out"] + ".vcf",
         
     params:
         name_out       = config["name_out"],
-        work_directory = config["work_directory"].strip("/"),
+        work_directory = config["work_directory"].rstrip("/"),
 
     shell:
         """
@@ -252,15 +252,15 @@ rule sniffles :
 #Sort and callmd
 rule samtools :
     input:
-        sam    = config["work_directory"].strip("/") + "/" + config["name_out"] + ".sam",
+        sam    = config["work_directory"].rstrip("/") + "/" + config["name_out"] + ".sam",
         genome = config["genome"],
 
     output:
-        config["work_directory"].strip("/") + "/" + config["name_out"] + "_MD.sorted.bam",
+        config["work_directory"].rstrip("/") + "/" + config["name_out"] + "_MD.sorted.bam",
         
     params:
         name_out       = config["name_out"],
-        work_directory = config["work_directory"].strip("/"),
+        work_directory = config["work_directory"].rstrip("/"),
 
 
     shell:
@@ -285,11 +285,11 @@ rule mapping :
         genome = config["genome"],
 
     output:
-        config["work_directory"].strip("/") + "/" + config["name_out"] + ".sam",
+        config["work_directory"].rstrip("/") + "/" + config["name_out"] + ".sam",
         
     params:
         name_out       = config["name_out"],
-        work_directory = config["work_directory"].strip("/"),
+        work_directory = config["work_directory"].rstrip("/"),
 
     shell:
         """
