@@ -184,8 +184,8 @@ def search(ID, empty_site_seq_l, empty_site_seq_r, tab_old_line, name_file_tsd, 
     positions_kl_fl = BM(kmer_l, FK_L)
     positions_kl_fr = BM(kmer_l, FK_R)
     if len(positions_kl_fl) and len(positions_kl_fr) :
-        pos_kl_fl = positions_kl_fl[-1]
-        pos_kl_fr = positions_kl_fr[0]
+        pos_kl_fl = positions_kl_fl[-1]#best positino left
+        pos_kl_fr = positions_kl_fr[0]#...right
 
         dico["kl"]["FKL"] = [FK_L[:pos_kl_fl + kmer_size], FK_L[pos_kl_fl + kmer_size:]]
         dico["kl"]["FKR"] = [FK_R[:pos_kl_fr], FK_R[pos_kl_fr:]]
@@ -252,9 +252,11 @@ def search(ID, empty_site_seq_l, empty_site_seq_r, tab_old_line, name_file_tsd, 
         # print("------------")
 
         #print("---------", dico["kl"])
+        #redefine TE
         ETC  = dico[left_or_right]["FKL"][1] + ETC
         ETC += dico[left_or_right]["FKR"][0]
 
+        #redefine FLANK
         FK_L = dico[left_or_right]["FKL"][0]
         FK_R = dico[left_or_right]["FKR"][1]
 
@@ -271,6 +273,8 @@ def search(ID, empty_site_seq_l, empty_site_seq_r, tab_old_line, name_file_tsd, 
         chain_to_show += header_1 + "\n"
         chain_to_show += header_2 + "\n"
         chain_to_show += header_3 + "\n"
+        if len(FK_L[len(FK_L) - (kmer_size * 2) + 2:len(FK_L) - (kmer_size)] + FK_R[:kmer_size + 2]) == kmer_size + 4:
+            chain_to_show += " ".join(["SVI=" + FK_L[len(FK_L) - (kmer_size * 2) + 2:len(FK_L) - (kmer_size)] + FK_R[:kmer_size + 2], "[KO->OK:" + str(ID)+ "]", str(kmer_size) + "\n"])
         chain_to_show += " ".join(["TSM=" + FK_L[len(FK_L) - kmer_size:], "[KO->OK:" + str(ID)+ "]", str(kmer_size) + "\n"])
         chain_to_show += seq_and_tsd + "\n"
 
@@ -310,7 +314,7 @@ def find_decale_svi(empty_site, start, stop):
             pos = {"pos":i, "text":chaine, "find":find}
             return pos
 
-        elif len(empty_site_seq_r_slide) == kmer_size + 1:
+        elif i + itera == stop:
 
             # print("")
             # print("ID: ", ID)
@@ -385,12 +389,20 @@ while line :
             find = search(ID, empty_site_seq_l, empty_site_seq_r, tab_old_line, name_file_tsd, "IMPRECIS")
             if not find:
                 print("precise not find")
-                empty_site = empty_site_seq_l[origine_position_sniffle - (kmer_size + 1 ):] + empty_site_seq_r[:origine_position_sniffle + kmer_size + 1] ##all region
                 origine_position_sniffle = len(empty_site_seq_l)
+                #empty_site = empty_site_seq_l[origine_position_sniffle - (kmer_size*2):] + empty_site_seq_r[:kmer_size*2] ##all region
+               # empty_site = empty_site_seq_l + empty_site_seq_r ##all region
+                #origine_position_sniffle = len(empty_site_seq_l[origine_position_sniffle - (kmer_size*2):])
+                #print("empty --", empty_site)
+                #pos_l = find_decale_svi(empty_site, origine_position_sniffle, origine_position_sniffle - (kmer_size * 2))
 
-                pos_l = find_decale_svi(empty_site, origine_position_sniffle, origine_position_sniffle - (kmer_size + 1 ))
+                #pos_r = find_decale_svi(empty_site, origine_position_sniffle, origine_position_sniffle + kmer_size * 2)
 
-                pos_r = find_decale_svi(empty_site, origine_position_sniffle, origine_position_sniffle + kmer_size + 1)
+                empty_site = empty_site_seq_l + empty_site_seq_r ##all region
+                origine_position_sniffle = len(empty_site_seq_l)
+                pos_l = find_decale_svi(empty_site, origine_position_sniffle, kmer_size - 1)
+
+                pos_r = find_decale_svi(empty_site, origine_position_sniffle, len(empty_site) - kmer_size)
 
                 if pos_r["find"] and pos_l["find"] and abs(pos_r["pos"] - origine_position_sniffle) < abs(pos_l["pos"] - origine_position_sniffle) :
                     print(pos_r["text"])
@@ -405,7 +417,7 @@ while line :
                     nb_OK += 1
                 else:
                     print(False)
-                    print(pos_l["text"])
+                    print(pos_r["text"])
                     nb_KO += 1
 
         else:
