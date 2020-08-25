@@ -73,10 +73,10 @@ import os
 import sys
 import argparse
 
-import tkinter
-import pylab as plt
-import warnings
-warnings.filterwarnings("ignore")
+# import tkinter
+# import pylab as plt
+# import warnings
+# warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser(description="filters a blast file in output format 6 to keep the candidate candidate TE active")
@@ -96,6 +96,8 @@ parser.add_argument("-s", "--min_size_percent", type=int, default=90,
                     help="minimum percentage of TE size [90]")
 parser.add_argument("-r", "--min_read_support", type=int, default=1,
                     help="minimum read support number [1]")
+parser.add_argument("-k", "--type_sv_keep", type=str, default="INS",
+                    help="type_sv_keep")
 
 args = parser.parse_args()
 
@@ -104,6 +106,7 @@ name_file        = args.blast_file
 min_pident       = args.min_pident
 min_size_percent = args.min_size_percent
 min_read_support = args.min_read_support
+type_sv_keep     = args.type_sv_keep
 
 output           = args.output_file
 name_out         = output.split("/")[-1].split(".")[0]
@@ -122,14 +125,17 @@ else :
 size_et = {}
 
 if args.name_file_te != None:
-    #GET_SIZE CANNONICAL TE
+    #GET_SIZE TE Database format fasta
     file  = open(args.name_file_te, "r")
     lines = file.readlines()
 
     for i, l in enumerate(lines):
         if l[0] == ">":
             size_et[l[1:].strip()] = len(lines[i + 1].strip())
-else :#default
+
+    file.close()
+
+else :#default dm6 canonnical TE
     size_et = {'Idefix': 7411, '17.6': 7439, '1731': 4648, '297': 6995, '3S18': 6126, '412': 7567, 'aurora-element': 4263, 'Burdock': 6411, 'copia': 5143, 'gypsy': 7469, 'mdg1': 7480, 'mdg3': 5519, 'micropia': 5461, 'springer': 7546, 'Tirant': 8526, 'flea': 5034, 'opus': 7521, 'roo': 9092, 'blood': 7410, 'ZAM': 8435, 'GATE': 8507, 'Transpac': 5249, 'Circe': 7450, 'Quasimodo': 7387, 'HMS-Beagle': 7062, 'diver': 6112, 'Tabor': 7345, 'Stalker': 7256, 'gtwin': 7411, 'gypsy2': 6841, 'accord': 7404, 'gypsy3': 6973, 'invader1': 4032, 'invader2': 5124, 'invader3': 5484, 'gypsy4': 6852, 'invader4': 3105, 'gypsy5': 7369, 'gypsy6': 7826, 'invader5': 4038, 'diver2': 4917, 'Dm88': 4558, 'frogger': 2483, 'rover': 7318, 'Tom1': 410, 'rooA': 7621, 'accord2': 7650, 'McClintock': 6450, 'Stalker4': 7359, 'Stalker2': 7672, 'Max-element': 8556, 'gypsy7': 5486, 'gypsy8': 4955, 'gypsy9': 5349, 'gypsy10': 6006, 'gypsy11': 4428, 'gypsy12': 10218, 'invader6': 4885, 'Helena': 1317, 'HMS-Beagle2': 7220, 'Osvaldo': 1543}
     #print("SIZE TE DEFAULT", list(size_et.keys())[:5], "...")
 
@@ -185,9 +191,9 @@ for index, row in enumerate(df.values):
         chaine = df_best_score["qseqid"].values[0] + df_best_score["sseqid"].values[0]
         best_score_match.append(chaine)
         
-        #Insert only
-        find_INS = re.search("INS", df_best_score["qseqid"].values[0])
-        if find_INS and read_support >= min_read_support:
+        #only type SV choice 
+        find_type_SV = re.search(type_sv_keep, df_best_score["qseqid"].values[0])
+        if find_type_SV and read_support >= min_read_support:
             best_score_match_index.append(index)
     
 df = df.iloc[best_score_match_index]
@@ -213,56 +219,56 @@ df.to_csv(output, sep="\t", index=None)
 
 #*********** HISTOGRAM *************
 
-print("BUILD HISTOGRAM IN :", dir_out + "HISTO")
-os.system("mkdir -p " + dir_out + "HISTO")
+# print("BUILD HISTOGRAM IN :", dir_out + "HISTO")
+# os.system("mkdir -p " + dir_out + "HISTO")
 
-reads_supports = []
-for i, qseqid in enumerate(df["qseqid"].values):
-    read_support = qseqid.split(":")[5]
-    reads_supports.append(int(read_support))
+# reads_supports = []
+# for i, qseqid in enumerate(df["qseqid"].values):
+#     read_support = qseqid.split(":")[5]
+#     reads_supports.append(int(read_support))
     
-list.sort(reads_supports)
+# list.sort(reads_supports)
 
-plt.grid(axis='y', alpha=0.95)
+# plt.grid(axis='y', alpha=0.95)
 
-bins = [x + 0.5 for x in range(0, max(reads_supports)+1)]
-maxe = max(reads_supports)
-if bins == 0:
-    bins = "auto"
-    maxe += 1
+# bins = [x + 0.5 for x in range(0, max(reads_supports)+1)]
+# maxe = max(reads_supports)
+# if bins == 0:
+#     bins = "auto"
+#     maxe += 1
     
-plt.hist(reads_supports, bins=bins, color='#ff0000', alpha=0.7, rwidth=0.85) 
-plt.xlabel("Number of reads support")
-plt.ylabel("Number of TE")
-plt.xlim(min(reads_supports)-1, maxe+1)
-#plt.ylim(1, 80)
-plt.savefig(dir_out + "HISTO/"+ str(name_out) + "_TOTAL_histo.pdf")
-#plt.show() 
+# plt.hist(reads_supports, bins=bins, color='#ff0000', alpha=0.7, rwidth=0.85) 
+# plt.xlabel("Number of reads support")
+# plt.ylabel("Number of TE")
+# plt.xlim(min(reads_supports)-1, maxe+1)
+# #plt.ylim(1, 80)
+# plt.savefig(dir_out + "HISTO/"+ str(name_out) + "_TOTAL_histo.pdf")
+# #plt.show() 
 
 
-for e, element in enumerate(df["sseqid"].unique()):
-    reads_supports = []
-    for i, qseqid in enumerate(df[df["sseqid"] == element]["qseqid"].values):
-        read_support = qseqid.split(":")[5]
-        reads_supports.append(int(read_support))
+# for e, element in enumerate(df["sseqid"].unique()):
+#     reads_supports = []
+#     for i, qseqid in enumerate(df[df["sseqid"] == element]["qseqid"].values):
+#         read_support = qseqid.split(":")[5]
+#         reads_supports.append(int(read_support))
 
-    list.sort(reads_supports)
+#     list.sort(reads_supports)
     
-    plt.grid(axis='y', alpha=0.95)
+#     plt.grid(axis='y', alpha=0.95)
     
-    bins = [x + 0.5 for x in range(0, max(reads_supports)+1)]
-    maxe = max(reads_supports)
-    if bins == 0:
-        bins = "auto"
-        maxe += 1 
+#     bins = [x + 0.5 for x in range(0, max(reads_supports)+1)]
+#     maxe = max(reads_supports)
+#     if bins == 0:
+#         bins = "auto"
+#         maxe += 1 
         
-    #print(element, bins, maxe)
-    plt.hist(reads_supports, bins=bins, color='#ff0000', alpha=0.7, rwidth=0.85) 
-    plt.xlabel("Number of reads support")
-    plt.ylabel("Number of TE")
-    plt.xlim(min(reads_supports)-1, maxe+1)
-    #plt.ylim(1, 80)
-    plt.savefig(dir_out + "HISTO/" + str(name_out) + "_" + str(element) + "_histo.pdf")
+#     #print(element, bins, maxe)
+#     plt.hist(reads_supports, bins=bins, color='#ff0000', alpha=0.7, rwidth=0.85) 
+#     plt.xlabel("Number of reads support")
+#     plt.ylabel("Number of TE")
+#     plt.xlim(min(reads_supports)-1, maxe+1)
+#     #plt.ylim(1, 80)
+#     plt.savefig(dir_out + "HISTO/" + str(name_out) + "_" + str(element) + "_histo.pdf")
     #plt.show() 
     #
     
@@ -272,7 +278,7 @@ for e, element in enumerate(df["sseqid"].unique()):
 #*********** COUNT TE FOR GGPLOT *************
 
 df_count = df.groupby(["sseqid"]).count()
-d = {'x': [" "] * len(df_count.iloc[:, 0].values), 'y': df_count.index, 'z': df_count.iloc[:, 0].values}
+d = {'x': [" "] * len(df_count.iloc[:, 0].values), 'y': df_count.index, 'z': df_count.iloc[:, 0].values}# x : Nothing, y : Name TE, z : Number of TE
 
 df_o = pd.DataFrame(data=d)
 df_o = df_o.sort_values(by="z")
@@ -284,3 +290,4 @@ print("Number total TE :", sum(df_o["z"].values))
 print("list TE :")
 df_o.columns = ["x", "TE", "NB_TE"]
 print(df_o[["TE", "NB_TE"]])
+

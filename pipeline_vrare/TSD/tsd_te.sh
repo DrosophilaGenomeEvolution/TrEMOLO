@@ -111,7 +111,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":
 		echo "head : "$head
 
 		awk -v var=$head 'BEGIN {nb=0} { if( var == $0 || nb == 1 ){print $0; nb = nb + 1;} }' "${FIND_FA}" > sequence_TE.fasta
-		if [ `cat sequence_TE.fasta` = "" ]; then
+		if ! test -s sequence_TE.fasta; then
 			echo "ERROR : can't get sequence TE in ${FIND_FA}" ;
 			exit 1 ;
 		fi
