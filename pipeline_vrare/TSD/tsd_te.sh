@@ -84,31 +84,31 @@ REPO_READS_FA=`echo ${REPO_READS_FA} | sed 's/[/]$//g'`
 
 #for e in `ls all_fasta_element/ | grep -o "d_.*\." | grep -o "_.*[^.]" | grep -o "[^_]*"`; do
 #elem=$e
-echo "<<<<<<<<<<<<<<<<<<< TSD >>>>>>>>>>>>>>>>>>>>"
+echo "[$0] <<<<<<<<<<<<<<<<<<< TSD >>>>>>>>>>>>>>>>>>>>"
 echo " " > total_results_tsd.txt
 number_element=`grep ">" $FIND_FA | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":[0-9]*:" | grep -o "[0-9]*" | wc -l`
 i=0
 for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":[0-9]*:" | grep -o "[0-9]*"`; do
-		echo "------FIND INFOS READS------"
+		echo "[$0] ------FIND INFOS READS------"
 		fr="`ls ${REPO_READS} | grep ":$id:"`"
-		echo "id : $id"
-		echo "file : $fr"
+		echo "[$0] id : $id"
+		echo "[$0] file : $fr"
         name=`echo $fr | grep -o ".*\."`
-        echo "name : $name"
+        echo "[$0] name : $name"
         i=$(($i + 1))
-        echo "$i/$number_element"
+        echo "[$0] $i/$number_element"
 
         reads=${REPO_READS_FA}/${name}fasta
 
 		echo 
-		echo "------TSD------"
+		echo "[$0] ------TSD------"
 		id=`echo $reads | grep -o ":[0-9]*:" | grep -o "[0-9]*"`
 		echo "reads : "$reads
 		echo "id : "$id
 		echo "find_file : ${FIND_FA}"
 		head=`grep ".*:.*:$id:[0-9]*:[PI]" ${FIND_FA}`
 
-		echo "head : "$head
+		echo "[$0] head : "$head
 
 		awk -v var=$head 'BEGIN {nb=0} { if( var == $0 || nb == 1 ){print $0; nb = nb + 1;} }' "${FIND_FA}" > sequence_TE.fasta
 		if ! test -s sequence_TE.fasta; then
@@ -133,7 +133,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":
 		bedtools getfasta -fi $reads -bed flank_TE.bed > flank_TE.fasta
 		bedtools getfasta -fi $reads -bed sequence_TE.bed -name > sequence_TE.fasta
 
-		echo "*********BLAST 2 TE VS DBTE**********"
+		echo "[$0] *********BLAST 2 TE VS DBTE**********"
 		echo ${DB_TE}
 		makeblastdb -in ${DB_TE} -dbtype nucl
 		blastn -db ${DB_TE} -query sequence_TE.fasta -outfmt 6 -out TE_vs_databaseTE.bln
@@ -145,7 +145,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":
 
 		# FIND TSD
 		# Warning : path
-		echo flank_TE.fasta    sequence_TE.fasta     $FLANK_SIZE     $id     $strand     $TSD_SIZE
+		echo "[$0] flank_TE.fasta    sequence_TE.fasta     $FLANK_SIZE     $id     $strand     $TSD_SIZE"
 		python3 ${path_this_script}/find_tsd.py flank_TE.fasta sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> total_results_tsd.txt
 done
 

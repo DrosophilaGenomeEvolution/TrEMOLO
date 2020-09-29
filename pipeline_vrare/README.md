@@ -99,16 +99,6 @@ Example of output file obtained after using the pipeline, in work directory.
 ├── G73vsG73LR.sorted.bam
 ├── G73vsG73LR_total_find.fasta
 ├── G73vsG73LR.vcf
-├── Gene_G73onG0corrected_ragoo_full.bln
-├── HISTO
-│   ├── G73vsG73LR_cnTE_ALL_ET_17.6_histo.pdf
-│   ├── G73vsG73LR_cnTE_ALL_ET_297_histo.pdf
-│   ├── G73vsG73LR_cnTE_ALL_ET_412_histo.pdf
-│   ├── ...
-├── PICLUSTER
-│   ├── G73onG0corrected_ragoo_IN_CLUSTER_COV_hit_map.csv
-│   ├── Gene_G73onG0corrected_ragoo_combine.csv
-│   └── PiCluster_Gene_G73onG0corrected_ragoo.csv
 ├── READ_FASTQ_G73vsG73LR
 │   ├── reads_2L_RaGOO_RaGOO:10077:10091462-10098788.fastq
 │   ├── reads_2L_RaGOO_RaGOO:1024:897326-904652.fastq
@@ -128,22 +118,53 @@ Example of output file obtained after using the pipeline, in work directory.
     ├── ...
 ```
 
-The output file whose name ends with "cnTE_ALL_ET.csv"
+In directory **ET_FIND_FA** you can found fasta files of all sequences TE by familyof TE
+
+
+The output file whose name ends with "cnTE_ALL_ET.csv" contains the following informations :
 
 | sseqid | qseqid | pident | size_per | size_el | mismatch | gapopen | qstart | qend | sstart | send | evalue | bitscore |
 | ------ | ------ | ------ | -------- | ------- | -------- | ------- | ------ | ---- | ------ | ---- | ------ | -------- |
 | ZAM | 2R:\<INS\>:12136769:12145149:33748:4:IMPRECISE | 95.494 | 99.0 | 8347 | 123 | 178 | 5 | 8352 | 8435 | 1 | 0.0 | 13369.0 |
 | blood | 3R:\<INS\>:22519173:22526514:100924:1:PRECISE | 94.259 | 99.0 | 7338 | 164 | 189 | 3 | 7341 | 7410 |  1 | 0.0 | 11230.0 |
 
+##### Description of header .csv file :
 
-Format **qseqid** or header fasta file :
+ 1.    `qseqid` :   query (e.g., gene) sequence id
+ 2.    `sseqid` : subject (e.g., reference genome) sequence id
+ 3.    `pident` :  percentage of identical matches
+ 4.    `size_per`    :   percentage of size TE
+ 5.    `size_el` :  size sequence TE aligned
+ 6.    `mismatch` : number of mismatches
+ 7.    `gapopen` :  number of gap openings
+ 8.    `qstart` :  start of alignment in query
+ 9.    `qend`  : end of alignment in query
+ 10.   `sstart`   : start of alignment in subject
+ 11.   `send`   : end of alignment in subject
+ 12.   `evalue`   : expect value
+ 13.   `bitscore`   : bit score
 
+You can find the description here : [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6](http://www.metagenomics.wiki/tools/blast/blastn-output-format-6)
+
+##### Description of format qseqid or header of fasta files  :
 
 chromosome:type_variant:start_position:end_position:ID:NB_read_support:PRECISE_OR_IMPRECISE_POSITION_SV
 3R:\<INS\>:22519173:22526514:100924:1:PRECISE
 
+ 1.    `chromosome` : the name of the chromosome
+ 2.    `type_variant` : type of variant (insertion, deletion, duplication...) provided by sniffle in the **vcf** file
+ 3.    `start_position` : 5' position of the TE on the chromosome
+ 4.    `end_position`  : 3' position of the TE on the chromosome
+ 5.    `ID` : a uniq id of variant provided by sniffle in the **vcf** file
+ 6.    `NB_read_support` : number of reads supports
+ 7.    `PRECISE_OR_IMPRECISE_POSITION_SV` : indicates if the location of the TE is precise or imprecise
 
-Note : if you want to use the scripts individually know that the format **qseqid** is a format necessary for most scripts in the pipeline. The header of some fasta files must also be in this format. This info is extracted from a vcf file (generate with the appropriate options).
+
+Note : if you want to use the scripts individually know that the format **qseqid** is a format necessary for most scripts in the pipeline. The header of some fasta files must also be in this format. This info is extracted from a vcf file (generate by Sniffle with the appropriate options).
+
+In directory **FASTA_FIND**, **REGION_RD_G73vsG73LR**, **READ_FASTQ_G73vsG73LR** the format of name file is : 
+
+reads_chromosome:ID:start_position:end_position.(txt|fastq|fasta)
 
 
 ##### Diagram of the different stages (rules)

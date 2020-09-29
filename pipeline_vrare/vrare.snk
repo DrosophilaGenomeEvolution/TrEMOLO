@@ -47,7 +47,7 @@ rule TSD :
 
 
     output:
-        config["work_directory"].rstrip("/") + "/PICLUSTER/"  + config["genome"].split("/")[-1].split(".")[0] + "_IN_CLUSTER_COV_hit_map.csv",
+        "resume_TSD.txt",
 
     params:
         path_snk       = path_snk,
@@ -57,7 +57,8 @@ rule TSD :
 
     shell:
         """
-
+        rm -f resume_TSD.txt;
+        touch resume_TSD.txt;
         echo '-----------TSD----------' ;
         mkdir -p {params.work_directory}/TSD ;
         path_to_pipline=`dirname {params.path_snk}`
@@ -70,13 +71,17 @@ rule TSD :
         for TE_found_fa in `ls {params.work_directory}/ET_FIND_FA/`; do
 
             i=$(($i + 1)) ;
-            echo $i/$nb_file ;
+            echo "[TSD:snk] $i/$nb_file" ;
             sh ${{path_to_pipline}}/TSD/find_fq_to_fasta.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa ${{read_directory}} ${{fasta_dir_find}} ;
             sh ${{path_to_pipline}}/TSD/tsd_te.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa ${{read_directory}} ${{fasta_dir_find}} {input.fasta_TE} 10 4 ;
             name_te=`echo $TE_found_fa | grep -o "_[^_]*\." | grep -o "[^_]*" | sed 's/\.$//g'` ; 
             mv total_results_tsd.txt total_results_tsd_${{name_te}}.txt ;
             mv total_results_tsd_${{name_te}}.txt {params.work_directory}/TSD/ ;
+            echo ${{name_te}} >> resume_TSD.txt
+            tail -n 8 {params.work_directory}/TSD/total_results_tsd_${{name_te}}.txt >> resume_TSD.txt
         done;
+
+        echo '-----------TSD DONE----------' ; 
 
         """
 
@@ -188,7 +193,7 @@ rule extract_read :
         NB_READS=`ls {params.work_directory}/READ_FASTQ_{params.name_out} | wc -l` ;
         if [ $NB_REGION -ne $NB_READS ]; then rm -f {params.work_directory}/resume.txt ; echo 'Error : the number of files region it is not equal the number reads files'; fi;
 
-        echo "$NB_READS AND $NB_REGION";
+        echo "[extract_read:snk] $NB_READS AND $NB_REGION";
 
         """
 
