@@ -50,7 +50,7 @@ The [*svTEidentification.py*](svTEidentification.py) script will inform about th
   It requires Bedtools and BLAST to be accessible in the path.
 
 ```
- svTEidentification.py -i Assemblytics.bed -d TEdatabase -o output
+ svTEidentification.py -i Assemblytics.bed -d TEdatabase -a alternateFasta -r referenceFasta -o output
 ```
 Options
 
@@ -65,12 +65,14 @@ Input mandatory infos for running:
           BED file issued from Assemblytics/RaGOO analysis
   - \-r <filename>, --reference <filename>
           reference sequence file used in Assemblytics/RaGOO
-      - \-a <filename>, --alternate <filename>
+  - \-a <filename>, --alternate <filename>
           alternate sequence file used in Assemblytics/RaGOO
-      - \- d <filename>, --database <filename>
+  - \- d <filename>, --database <filename>
           TE database in multifasta format (must be formatted)
   - \-o <filename>, --out <filename>
           Prefix of output files
+Options
+
   - \-s <minimalPercentage>, --size <minimalPercentage>
           Minimal percentage of identity and size for a TE hit to be conserved (Optional, default 90)
 ```
