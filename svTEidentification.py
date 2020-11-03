@@ -190,7 +190,7 @@ if __name__ == "__main__":
 
 	#Window size for scanning
 	minimalSize=args.minimalSize
-	print ("Minimal percentage of similarity and size is of " + minimalSize + "%")
+	print ("Minimal percentage of similarity and size is of " + str(minimalSize) + "%")
 
 	# From relative to absolute paths
 	inputFile = relativeToAbsolutePath(args.inputFile)
