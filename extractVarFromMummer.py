@@ -112,41 +112,56 @@ def str2bool(v):
        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ('no', 'none', 'false', 'f', 'n', '0'):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+def launchingshell(command):
+    # Function to launch and display command
+    """Launcher for command"""
+    process = sp.Popen(command, stdout=sp.PIPE, shell=True, stderr=sp.PIPE)
+    (outputCommand, errorCommand) = process.communicate()
+    return outputCommand, errorCommand
+
+def uniqAnchor(delta,minimum,maximum,inter,prefix):
+    """Lanch the assemblytics uniq anchor script modified"""
+    outputtab = prefix + "/uniq"
+    commanduniq="scripts/Assemblytics_uniq_anchor.py --keep-small-uniques --delta " + delta \
+    + " --out " + outputtab + " --unique-length " + minimum
+    (standardout, errorout) = launchingshell(commanduniq)
+    logging.info(standardout)
+    if errorout:
+        logging.error(errorout)
+
 def betweenAlignment(coords, minimum, maximum, inter, prefix):
-    """Take a show-coords output file and create a temporary bed file withe the variation"""
-    # Structure example
-    # [S1]    [E1]    [S2]    [E2]    [LEN 1] [LEN 2] [% IDY] [LEN R] [LEN Q] [COV R] [COV Q] [TAGS]
-    # 1       1254    66408786        66410016        1254    1231    96.41   49364325        99875506        0.00    0.00    2L      chr3
-    # 436     1213    62151455        62150703        778     753     90.49   49364325        114808232       0.00    0.00    2L      chr2
-    tempBed = prefix + "/between.bed"
-    outputHandle = open(tempBed, "w")
+    """Take a tabulated output file and create a temporary bed file withe the variation
+    Based on the perl script from Assemblytics"""
+
+    tempbed = prefix + "/between.bed"
+    outputhandle = open(tempBed, "w")
 
     try:
-        inputHandle = gzip.open(coords, "r")
+        inputhandle = gzip.open(coords, "r")
         logging.info("Opening gzipped file " + coords )
     except:
-        inputHandle = open(coords, "r")
+        inputhandle = open(coords, "r")
         logging.info("Opening plain file " + coords)
     # removing headers
     logging.info("Reading...")
-    header1 = inputHandle.readline()
-    header2 = inputHandle.readline()
-    header3 = inputHandle.readline()
-    header4 = inputHandle.readline()
+    header1 = inputhandle.readline()
+    header2 = inputhandle.readline()
+    header3 = inputhandle.readline()
+    header4 = inputhandle.readline()
     logging.info("Headers for " + coords + " are:\n\t"
                  + header1 + "\t"
                  + header2 + "\t"
                  + header3 + "\t"
                  + header4)
-    previousline = inputHandle.readline().strip()
+    previousline = inputhandle.readline().strip()
     previousfields = previousline.split()
     farestend = int(previousfields[1])
-    for line in inputHandle:
+    for line in inputhandle:
         fields = line.strip().split()
         if farestend > int(fields[0]):
             # overlap/contained in, next
@@ -158,7 +173,7 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
         localdistref = abs(int(fields[1]) - farestend) + 1
         localdistalt = (int(fields[1]) - int(previousfields[0])) + 1
 
-        if localdistref > minimum && localdistref < maximum && maximum != 0:
+        if localdistref > minimum and localdistref < maximum and maximum != 0:
             if localdistref > 0:
                 if localdistalt > 0:
                     type = "FF"
@@ -184,9 +199,9 @@ def concatenate(prefix):
 
 
 
-##################################################
+# #################################################
 # Main code
-##################################################
+# #################################################
 if __name__ == "__main__":
 
     # Welcome message
@@ -260,10 +275,14 @@ if __name__ == "__main__":
     else:
         logging.info("Interchromosomal variants will not be conserved in the output file")
 
-    # The following part is mostly inspired from Assemblytics but adapted to the show-coords file
+    # The following part is mostly inspired from Assemblytics but adapted to the show-coords file and use their scripts
+    # converting in a tabular file
+    uniqAnchor(deltaFile,minimalSize,maximalSize,interchromosomal, outputPrefix)
+
+    exit(0)
     # Starting between alignment analysis
     betweenAlignment(showCoords, minimalSize, maximalSize, interchromosomal, outputPrefix)
     # Continuing within alignment analysis
     withinAlignment(deltaFile, minimalSize, maximalSize, interchromosomal, outputPrefix)
     # Mixing the two
-    concatenateInfo(outputPrefix)
+    concatenate(outputPrefix)
