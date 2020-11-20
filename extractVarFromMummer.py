@@ -43,7 +43,7 @@
     It is widely inspired from the excellent job done by Maria Nattestad in her Assemblytics tools:
     https://github.com/MariaNattestad/Assemblytics
     -------
-    >>> extractVarFromMummer.py -d deltaFile -s show-coordsFile -o outputName [-m minimalSize -l maximalSize -i True ]
+    >>> extractVarFromMummer.py -d deltaFile -o outputName [-m minimalSize -l maximalSize -i True ]
 
     Help Programm
     -------------
@@ -55,8 +55,6 @@
     Input mandatory infos for running:
         - \- d <filename>, --delta <filename>
                         The delta file issued from Mummer v4.0
-        - \- s <filename>, --showcoords <filename>
-                        The show-coords file issued from Mummer v4.0 (correspond to the delta file)
         - \-o <filename>, --out <filename>
                         Prefix of output files
     Optional informations
@@ -71,16 +69,15 @@
 
 # Import
 import os
-
-current_dir = os.path.dirname(os.path.abspath(__file__)) + "/"
-
 import subprocess as sp
-
-## Python modules
+import sys
 import argparse
 import logging
 import gzip
+#import yoda_powers
 
+current_dir = os.path.dirname(os.path.abspath(__file__)) + "/"
+softwarelocation = pathname = os.path.dirname(sys.argv[0])
 
 ##################################################
 # Global variables
@@ -127,75 +124,53 @@ def launchingshell(command):
 def uniqAnchor(delta,minimum,maximum,inter,prefix):
     """Lanch the assemblytics uniq anchor script modified"""
     outputtab = prefix + "/uniq"
-    commanduniq="scripts/Assemblytics_uniq_anchor.py --keep-small-uniques --delta " + delta \
-    + " --out " + outputtab + " --unique-length " + minimum
-    (standardout, errorout) = launchingshell(commanduniq)
-    logging.info(standardout)
-    if errorout:
-        logging.error(errorout)
+    commanduniq=softwarelocation + "/scripts/Assemblytics_uniq_anchor.py --keep-small-uniques --delta " + delta + " --out " + outputtab + " --unique-length " + str(minimum)
+    # (standardout, errorout) = launchingshell(commanduniq)
+    # logging.info(standardout)
+    # if errorout:
+    #     logging.error(errorout)
+    return outputtab + ".coords.tab"
 
 def betweenAlignment(coords, minimum, maximum, inter, prefix):
     """Take a tabulated output file and create a temporary bed file withe the variation
     Based on the perl script from Assemblytics"""
 
     tempbed = prefix + "/between.bed"
-    outputhandle = open(tempBed, "w")
+    outputhandle = open(tempbed, "w")
 
-    try:
-        inputhandle = gzip.open(coords, "r")
-        logging.info("Opening gzipped file " + coords )
-    except:
-        inputhandle = open(coords, "r")
-        logging.info("Opening plain file " + coords)
-    # removing headers
+    #Gathering infos
     logging.info("Reading...")
-    header1 = inputhandle.readline()
-    header2 = inputhandle.readline()
-    header3 = inputhandle.readline()
-    header4 = inputhandle.readline()
-    logging.info("Headers for " + coords + " are:\n\t"
-                 + header1 + "\t"
-                 + header2 + "\t"
-                 + header3 + "\t"
-                 + header4)
-    previousline = inputhandle.readline().strip()
-    previousfields = previousline.split()
-    farestend = int(previousfields[1])
-    for line in inputhandle:
-        fields = line.strip().split()
-        if farestend > int(fields[0]):
-            # overlap/contained in, next
-            previousfields = fields
-            # recompute the end of overlap
-            farestend = max(farestend,int(fields[1]))
-            continue
+    fieldsList=("rstart","rend","qstart","qend","rlen","qlen","rid","qid")
+    alignments = dict()
+    numalignments = 0
+    with open(coords, "r") as input:
+        for line in input:
+            localdict = dict(zip(fieldsList, line.strip().split()))
+            localdict["str"] = line.strip()
+            localdict["qidx"] = 0
+            localdict["qrc"] = True if localdict["qend"] > localdict["qstart"] else False
+            (qid, rid) = (localdict["qid"], localdict["rid"])
+            if qid in alignments:
+                if rid in alignments[qid]:
+                    alignments[qid][rid].append(dict(localdict))
+                else:
+                    alignments[qid][rid] = [dict(localdict)]
+            else:
+                alignments[qid] = dict()
+                alignments[qid][rid] = [dict(localdict)]
+            numalignments += 1
+    logging.info("Loaded " + str(numalignments) + " alignments...")
 
-        localdistref = abs(int(fields[1]) - farestend) + 1
-        localdistalt = (int(fields[1]) - int(previousfields[0])) + 1
-
-        if localdistref > minimum and localdistref < maximum and maximum != 0:
-            if localdistref > 0:
-                if localdistalt > 0:
-                    type = "FF"
-                elif localdistalt < 0:
-                    type = "FR"
+    #Parsing infos
+    
 
 
-
-
-        previousfields = fields
-
-
-
-        # Convert from CHR:START-STOP:STRAND to CHR START STOP STRAND
-        altInfo = fields[9].replace(':', '\t')
-        altInfo = altInfo.replace('-', '\t')
-        outputHandle.write(altInfo)
-        outputHandle.write("\n")
 
 def withinAlignment(delta, minimum, maximum, inter, prefix):
+    return
 
 def concatenate(prefix):
+    return
 
 
 
@@ -221,8 +196,6 @@ if __name__ == "__main__":
     filesreq = parser.add_argument_group('Input mandatory information for running')
     filesreq.add_argument('-d', '--delta', metavar="<filename>", required=True, dest='deltaFile',
                           help='Delta file coming from Mummer 4.0+')
-    filesreq.add_argument('-s', '--showcoords', metavar="<filename>", required=True, dest='showCoords',
-                          help='Show-coords file coming from Mummer 4.0+, corresponding to the delta file')
     filesreq.add_argument('-o', '--out', metavar="<filename>", required=True,
                           dest='outputPrefix', help='Prefix for the output files')
 
@@ -243,7 +216,6 @@ if __name__ == "__main__":
 
     # From relative to absolute paths
     deltaFile = relativeToAbsolutePath(args.deltaFile)
-    showCoords = relativeToAbsolutePath(args.showCoords)
     outputPrefix = relativeToAbsolutePath(args.outputPrefix)
 
     # Logging and output system
@@ -252,7 +224,7 @@ if __name__ == "__main__":
     outputFile = outputPrefix + "/extract.bed"
     logging.basicConfig(filename=outputLog, level=logging.DEBUG, format='%(asctime)s %(message)s')
     logging.info(toolName + " version " + version)
-    logging.info("Working on " + deltaFile + " and " + showCoords + " files ")
+    logging.info("Working on " + deltaFile + " file ")
     logging.info("Output files will be in the " + outputPrefix + "folder")
 
 
@@ -277,11 +249,10 @@ if __name__ == "__main__":
 
     # The following part is mostly inspired from Assemblytics but adapted to the show-coords file and use their scripts
     # converting in a tabular file
-    uniqAnchor(deltaFile,minimalSize,maximalSize,interchromosomal, outputPrefix)
+    tabularfile = uniqAnchor(deltaFile,minimalSize,maximalSize,interchromosomal, outputPrefix)
 
-    exit(0)
     # Starting between alignment analysis
-    betweenAlignment(showCoords, minimalSize, maximalSize, interchromosomal, outputPrefix)
+    betweenAlignment(tabularfile, minimalSize, maximalSize, interchromosomal, outputPrefix)
     # Continuing within alignment analysis
     withinAlignment(deltaFile, minimalSize, maximalSize, interchromosomal, outputPrefix)
     # Mixing the two

@@ -130,8 +130,8 @@ def run(args):
     current_query_name = ""
     current_query_position = 0
     fcoords_out_tab = open(output_filename + ".coords.tab",'w')
-    fcoords_out_csv = open(output_filename + ".coords.csv",'w')
-    fcoords_out_csv.write("ref_start,ref_end,query_start,query_end,ref_length,query_length,ref,query,tag\n")
+    # fcoords_out_csv = open(output_filename + ".coords.csv",'w')
+    # fcoords_out_csv.write("ref_start,ref_end,query_start,query_end,ref_length,query_length,ref,query,tag\n")
 
 
     # For basic assembly stats:
@@ -190,14 +190,14 @@ def run(args):
                     keep_printing = True
                 else:
                     keep_printing = False
-                fcoords_out_csv.write(",".join(map(str,[ref_start,ref_end,query_start, query_end,current_reference_size,current_query_size,current_reference_name.replace(",","_"),current_query_name.replace(",","_"),csv_tag])) + "\n")
+                # fcoords_out_csv.write(",".join(map(str,[ref_start,ref_end,query_start, query_end,current_reference_size,current_query_size,current_reference_name.replace(",","_"),current_query_name.replace(",","_"),csv_tag])) + "\n")
                 alignment_counter[query] = alignment_counter[query] + 1
 
             elif keep_printing == True:
                 fout.write(line)
 
     fcoords_out_tab.close()
-    fcoords_out_csv.close()
+    # fcoords_out_csv.close()
 
     print("Reading file and recording all the entries we decided to keep: %d seconds for %d total lines in file" % (time.time()-before,linecounter))
 
