@@ -162,6 +162,8 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
     logging.info("Loaded " + str(numalignments) + " alignments...")
 
     #Parsing infos
+    (candidatefusion, candidatesv, svIdCounter) = (0, 0, 0)
+
     
 
 
