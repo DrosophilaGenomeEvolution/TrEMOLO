@@ -148,7 +148,7 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
             localdict = dict(zip(fieldsList, line.strip().split()))
             localdict["str"] = line.strip()
             localdict["qidx"] = 0
-            localdict["qrc"] = True if localdict["qend"] > localdict["qstart"] else False
+            localdict["qrc"] = False if localdict["qend"] > localdict["qstart"] else True
             (qid, rid) = (localdict["qid"], localdict["rid"])
             if qid in alignments:
                 if rid in alignments[qid]:
@@ -161,8 +161,154 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
             numalignments += 1
     logging.info("Loaded " + str(numalignments) + " alignments...")
 
-    #Parsing infos
+    # Parsing infos
     (candidatefusion, candidatesv, svIdCounter) = (0, 0, 0)
+    svstats = dict()
+    for qid in sorted(alignments.keys()):
+        refs = sorted(alignments[qid].keys())
+        qalign = list()
+        for rid in refs:
+            for aln in alignments[qid][rid]:
+                qalign.append(aln)
+        qalign = sorted(qalign, key=lambda k: k["qstart"])
+        i = 0
+        for aln in qalign:
+            qalign[i]["qidx"] = i
+            i += 1
+
+        # scan for SV
+        if len(qalign) > 1:
+        # Query has more than one aln, so has SV
+            j = 1
+            while j < len(qalign):
+                previousaln = qalign[j-1]
+                currentaln = qalign[j]
+
+                previousline = previousaln["str"]
+                currentline = currentaln["str"]
+
+                rid = previousaln["rid"]
+
+                if int(previousaln["rlen"]) >= minimum and int(currentaln["rlen"]) >= minimum:
+                    # aln before and after on the reference are longer than the minimal requested here
+                    svIdCounter += 1
+                    (rpos, qpos, previousposition, currentposition, previousstrand, currentstrand)= ("", "", "", "", "", "")
+                    qdist = 0
+                    rdist = 0
+
+                    print("+" + previousaln["rlen"] + " " + currentaln["rlen"])
+                    print(previousaln["qrc"])
+                    print(currentaln["qrc"])
+                    if previousaln["qrc"] is False and currentaln["qrc"] is False:
+                        svtype = "FF"
+                        qdist = int(currentaln["qstart"]) - int(previousaln["qend"])
+                        rdist = int(currentaln["rstart"]) - int(previousaln["rend"])
+                        print('.')
+                        if rdist >= 0:
+                            rpos = "%s:%s-%s:+" % (rid, previousaln["rend"], currentaln["rstart"])
+                        else:
+                            rpos = "%s:%s-%s:-" % (rid, previousaln["rstart"], currentaln["rend"])
+                        if qdist >= 0:
+                            qpos = "%s:%s-%s:+" % (qid, previousaln["qend"], currentaln["qstart"])
+                        else:
+                            qpos = "%s:%s-%s:-" % (qid, currentaln["qstart"], previousaln["qend"])
+                        previousposition = previousaln["rend"]
+                        currentposition = currentaln["rstart"]
+                        previousstrand = "+"
+                        currentstrand = "-"
+                    elif previousaln["qrc"] and currentaln["qrc"]:
+                        svtype = "RR"
+                        qdist = int(currentaln["qend"]) - int(previousaln["qstart"])
+                        rdist = int(previousaln["rstart"]) - int(currentaln["rend"])
+                        print('.')
+                        if rdist >= 0:
+                            rpos = "%s:%s-%s:+" % (rid, previousaln["rend"], currentaln["rstart"])
+                        else:
+                            rpos = "%s:%s-%s:-" % (rid, previousaln["rstart"], currentaln["rend"])
+                        if qdist >= 0:
+                            qpos = "%s:%s-%s:+" % (qid, previousaln["qstart"], currentaln["qend"])
+                        else:
+                            qpos = "%s:%s-%s:-" % (qid, currentaln["qend"], previousaln["qstart"])
+                        previousposition = previousaln["rstart"]
+                        currentposition = currentaln["rend"]
+                        previousstrand = "-"
+                        currentstrand = "+"
+                    elif previousaln["qrc"] is False and currentaln["qrc"]:
+                        svtype = "FR"
+                        qdist = int(currentaln["qend"]) - int(previousaln["qend"])
+                        rdist = int(currentaln["rstart"]) - int(previousaln["rend"])
+                        print('.')
+                        if rdist >= 0:
+                            rpos = "%s:%s-%s:+" % (rid, previousaln["rend"], currentaln["rstart"])
+                        else:
+                            rpos = "%s:%s-%s:-" % (rid, currentaln["rstart"], previousaln["rend"])
+                        if qdist >= 0:
+                            qpos = "%s:%s-%s:+" % (qid, previousaln["qend"], currentaln["qend"])
+                        else:
+                            qpos = "%s:%s-%s:-" % (qid, currentaln["qend"], previousaln["qstart"])
+                        previousposition = previousaln["rend"]
+                        currentposition = currentaln["rend"]
+                        previousstrand = "+"
+                        currentstrand = "+"
+                    elif previousaln["qrc"] and currentaln["qrc"] is False:
+                        svtype = "RF"
+                        qdist = int(previousaln["qend"]) - int(currentaln["qend"])
+                        rdist = int(currentaln["rstart"]) - int(previousaln["rend"])
+                        print('.')
+                        if rdist >= 0:
+                            rpos = "%s:%s-%s:+" % (rid, previousaln["rend"], currentaln["rstart"])
+                        else:
+                            rpos = "%s:%s-%s:-" % (rid, currentaln["rstart"], previousaln["rend"])
+                        if qdist >= 0:
+                            qpos = "%s:%s-%s:+" % (qid, currentaln["qend"], previousaln["qend"])
+                        else:
+                            qpos = "%s:%s-%s:-" % (qid, previousaln["qend"], currentaln["qstart"])
+                        previousposition = previousaln["rstart"]
+                        currentposition = currentaln["rstart"]
+                        previousstrand = "-"
+                        currentstrand = "-"
+                    else:
+                        logging.error("ERROR: unknown SV: \n\t\t" + previousline + "\n\t\t" + currentline)
+
+                    totaldist = rdist + qdist
+                    typeguess = ""
+                    absEventSize = abs(rdist - qdist)
+
+                    if previousaln["rid"] is not currentaln["rid"]:
+                        typeguess = "Interchromosomal"
+                        rdist = 0
+                    else:
+                        if previousaln["str"] is currentaln["str"]:
+                            typeguess = "Inversion"
+                            absEventSize = rdist
+                        elif qdist > rdist:
+                            if -1 * minimum < rdist < minimum and qdist > -1 * minimum:
+                                typeguess = "Insertion"
+                            else:
+                                if rdist <0 or qdist <0:
+                                    typeguess = "TandemExpansion"
+                                else:
+                                    typeguess = "RepeatExpansion"
+                        elif qdist < rdist:
+                            if rdist > -1 * minimum and -1 * minimum < qdist < minimum:
+                                typeguess = "Deletion"
+                            else:
+                                if rdist < 0 or qdist < 0:
+                                    typeguess = "TandemContraction"
+                                else:
+                                    type = "RepeatContraction"
+                        else:
+                            typeguess = "None"
+                        if absEventSize > maximum:
+                            typeguess = "Longrange"
+                            # TODO RECHECK HERE !!
+
+                    if typeguess is not "Inversion" and typeguess is not "None" and absEventSize >= minimum:
+
+
+                j += 1
+
+
 
     
 
