@@ -130,6 +130,8 @@ def uniqAnchor(delta,minimum,maximum,inter,prefix):
     # if errorout:
     #     logging.error(errorout)
     return outputtab + ".coords.tab"
+    # TODO be careful, here duplications are not taken into account
+
 
 def betweenAlignment(coords, minimum, maximum, inter, prefix):
     """Take a tabulated output file and create a temporary bed file withe the variation
@@ -178,7 +180,7 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
 
         # scan for SV
         if len(qalign) > 1:
-        # Query has more than one aln, so has SV
+            # Query has more than one aln, so has SV
             j = 1
             while j < len(qalign):
                 previousaln = qalign[j-1]
@@ -301,11 +303,22 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
                             typeguess = "None"
                         if absEventSize > maximum:
                             typeguess = "Longrange"
-                            # TODO RECHECK HERE !!
+                            # TODO RECHECK HERE: what about long range ?
 
-                    if typeguess is not "Inversion" and typeguess is not "None" and absEventSize >= minimum:
+                    if typeguess is not "Inversion" and typeguess is not "Interchromosomal" and typeguess is not "None" and absEventSize >= minimum:
+                        refstart = min(int(previousaln["rstart"]), int(currentaln["rstart"]))
+                        refend = max(int(previousaln["rend"]), int(currentaln["rend"]))
+                        if refstart == refend:
+                            refend = refstart + 1
+                        outlist = (currentaln["rid"], refstart, refend, "Assemblytics_var_" + str(svIdCounter), absEventSize, typeguess, rdist, qdist, qpos)
+                        outputhandle.write("\t".join(outlist) + "\n")
+                    elif typeguess is "Inversion":
+                        # TODO deals with inversion
 
+                    elif typeguess is "Interchromosomal":
+                        # TODO deals with interchromosomal
 
+                    candidatesv += 1
                 j += 1
 
 
