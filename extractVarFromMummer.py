@@ -125,10 +125,12 @@ def uniqAnchor(delta,minimum,maximum,inter,prefix):
     """Lanch the assemblytics uniq anchor script modified"""
     outputtab = prefix + "/uniq"
     commanduniq=softwarelocation + "/scripts/Assemblytics_uniq_anchor.py --keep-small-uniques --delta " + delta + " --out " + outputtab + " --unique-length " + str(minimum)
-    # (standardout, errorout) = launchingshell(commanduniq)
-    # logging.info(standardout)
-    # if errorout:
-    #     logging.error(errorout)
+    (standardout, errorout) = launchingshell(commanduniq)
+    standardout = standardout.decode('utf-8')
+    errorout = errorout.decode('utf-8')
+    logging.info(standardout)
+    if errorout:
+        logging.error(errorout)
     return outputtab + ".coords.tab"
     # TODO be careful, here duplications are not taken into account
 
@@ -139,6 +141,12 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
 
     tempbed = prefix + "/between.bed"
     outputhandle = open(tempbed, "w")
+    outlist = ["#RefChrom", "RefStart", "RefEnd", "VarID",
+               "EventSize", "Type", "RefSize", "QueryDist", "QueryPos"]
+    outputhandle.write("\t".join(outlist))
+    outputhandle.write("\n")
+    minimum = int(minimum)
+    maximum = int(maximum)
 
     #Gathering infos
     logging.info("Reading...")
@@ -185,10 +193,8 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
             while j < len(qalign):
                 previousaln = qalign[j-1]
                 currentaln = qalign[j]
-
                 previousline = previousaln["str"]
                 currentline = currentaln["str"]
-
                 rid = previousaln["rid"]
 
                 if int(previousaln["rlen"]) >= minimum and int(currentaln["rlen"]) >= minimum:
@@ -198,14 +204,10 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
                     qdist = 0
                     rdist = 0
 
-                    print("+" + previousaln["rlen"] + " " + currentaln["rlen"])
-                    print(previousaln["qrc"])
-                    print(currentaln["qrc"])
                     if previousaln["qrc"] is False and currentaln["qrc"] is False:
                         svtype = "FF"
                         qdist = int(currentaln["qstart"]) - int(previousaln["qend"])
                         rdist = int(currentaln["rstart"]) - int(previousaln["rend"])
-                        print('.')
                         if rdist >= 0:
                             rpos = "%s:%s-%s:+" % (rid, previousaln["rend"], currentaln["rstart"])
                         else:
@@ -222,7 +224,6 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
                         svtype = "RR"
                         qdist = int(currentaln["qend"]) - int(previousaln["qstart"])
                         rdist = int(previousaln["rstart"]) - int(currentaln["rend"])
-                        print('.')
                         if rdist >= 0:
                             rpos = "%s:%s-%s:+" % (rid, previousaln["rend"], currentaln["rstart"])
                         else:
@@ -239,7 +240,6 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
                         svtype = "FR"
                         qdist = int(currentaln["qend"]) - int(previousaln["qend"])
                         rdist = int(currentaln["rstart"]) - int(previousaln["rend"])
-                        print('.')
                         if rdist >= 0:
                             rpos = "%s:%s-%s:+" % (rid, previousaln["rend"], currentaln["rstart"])
                         else:
@@ -256,7 +256,6 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
                         svtype = "RF"
                         qdist = int(previousaln["qend"]) - int(currentaln["qend"])
                         rdist = int(currentaln["rstart"]) - int(previousaln["rend"])
-                        print('.')
                         if rdist >= 0:
                             rpos = "%s:%s-%s:+" % (rid, previousaln["rend"], currentaln["rstart"])
                         else:
@@ -274,25 +273,27 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
 
                     totaldist = rdist + qdist
                     typeguess = ""
-                    absEventSize = abs(rdist - qdist)
+                    absEventSize = abs(int(rdist) - int(qdist))
 
-                    if previousaln["rid"] is not currentaln["rid"]:
+                    if previousaln["rid"] != currentaln["rid"]:
                         typeguess = "Interchromosomal"
                         rdist = 0
                     else:
-                        if previousaln["str"] is currentaln["str"]:
+                        if previousstrand == currentstrand:
                             typeguess = "Inversion"
                             absEventSize = rdist
                         elif qdist > rdist:
-                            if -1 * minimum < rdist < minimum and qdist > -1 * minimum:
+                            if (-1 * minimum) < rdist < minimum and qdist > (-1 * minimum):
                                 typeguess = "Insertion"
                             else:
-                                if rdist <0 or qdist <0:
+                                if rdist < 0 or qdist < 0:
                                     typeguess = "TandemExpansion"
                                 else:
                                     typeguess = "RepeatExpansion"
                         elif qdist < rdist:
-                            if rdist > -1 * minimum and -1 * minimum < qdist < minimum:
+                            if rdist > (-1 * minimum) and (-1 * minimum) < qdist < minimum:
+                                typeguess = "Deletion"
+                            elif rdist > (-1 * minimum) and (-1 * minimum) < qdist < minimum:
                                 typeguess = "Deletion"
                             else:
                                 if rdist < 0 or qdist < 0:
@@ -301,25 +302,35 @@ def betweenAlignment(coords, minimum, maximum, inter, prefix):
                                     type = "RepeatContraction"
                         else:
                             typeguess = "None"
-                        if absEventSize > maximum:
-                            typeguess = "Longrange"
-                            # TODO RECHECK HERE: what about long range ?
+                        # if absEventSize > maximum:
+                        #     typeguess = "Longrange"
+                        #     # TODO RECHECK HERE: what about long range ?
 
-                    if typeguess is not "Inversion" and typeguess is not "Interchromosomal" and typeguess is not "None" and absEventSize >= minimum:
+                    if typeguess == "Inversion":
+                        pass
+                        # TODO deals with inversion
+
+                    elif typeguess == "Interchromosomal":
+                        pass
+                        # TODO deals with interchromosomal
+
+                    elif typeguess == "None":
+                        pass
+
+                    else:
                         refstart = min(int(previousaln["rstart"]), int(currentaln["rstart"]))
                         refend = max(int(previousaln["rend"]), int(currentaln["rend"]))
                         if refstart == refend:
                             refend = refstart + 1
-                        outlist = (currentaln["rid"], refstart, refend, "Assemblytics_var_" + str(svIdCounter), absEventSize, typeguess, rdist, qdist, qpos)
-                        outputhandle.write("\t".join(outlist) + "\n")
-                    elif typeguess is "Inversion":
-                        # TODO deals with inversion
-
-                    elif typeguess is "Interchromosomal":
-                        # TODO deals with interchromosomal
+                        outlist = [currentaln["rid"], str(refstart), str(refend), "Assemblytics_var_" + str(svIdCounter), str(absEventSize), typeguess, str(rdist), str(qdist), str(qpos)]
+                        outputhandle.write("\t".join(outlist))
+                        outputhandle.write("\n")
 
                     candidatesv += 1
+                logging.info(str(j))
                 j += 1
+
+    return (1)
 
 
 
@@ -410,7 +421,7 @@ if __name__ == "__main__":
 
     # The following part is mostly inspired from Assemblytics but adapted to the show-coords file and use their scripts
     # converting in a tabular file
-    tabularfile = uniqAnchor(deltaFile,minimalSize,maximalSize,interchromosomal, outputPrefix)
+    tabularfile = uniqAnchor(deltaFile, minimalSize, maximalSize, interchromosomal, outputPrefix)
 
     # Starting between alignment analysis
     betweenAlignment(tabularfile, minimalSize, maximalSize, interchromosomal, outputPrefix)
