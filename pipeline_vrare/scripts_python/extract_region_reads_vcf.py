@@ -131,14 +131,22 @@ while line:
         ID     = spl[2]
         type_v = spl[4]
         start  = spl[1]
-        end    = spl[7].split(";")[3].split("=")[1]
-        rname  = spl[7].split(";")[9].split("=")[1]
-        lrname = rname.split(",")
+        #end    = spl[7].split(";")[3].split("=")[1]
+        exp_end = re.search(r'END=([^;]*);', line.strip())
+
+        
+        #rname  = spl[7].split(";")[9].split("=")[1]
+        exp_rname = re.search(r'RNAMES=([^;]*);', line.strip())
+        
 
         #print(ID, list_id[0])
         if list_id == None or (list_id and ID in list_id) :
 
-            if type_v[0] == "<" and type_v not in type_list and regex_in_list(chrom, chrom_list) :
+            if type_v[0] == "<" and type_v not in type_list and regex_in_list(chrom, chrom_list) and exp_end and exp_rname :
+                end = exp_end.group(1)
+                rname = exp_rname.group(1)
+
+                lrname = rname.split(",")
                 #just for resume
                 if chrom not in dico_chrom:
                     dico_chrom[chrom] = 1

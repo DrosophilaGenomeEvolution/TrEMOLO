@@ -66,7 +66,7 @@
 """
 
 
-
+import numpy
 import pandas as pd
 import re
 import os
@@ -180,6 +180,13 @@ for index, row in enumerate(df.values):
     
     chaine = df["qseqid"].values[index] + df["sseqid"].values[index]
     if chaine not in best_score_match:
+        sstart       = df["sstart"].values[index]
+        send         = df["send"].values[index]
+        if send < sstart:
+            df["qseqid"].values[index] = df["qseqid"].values[index] + ":" + "-"
+        else:
+            df["qseqid"].values[index] = df["qseqid"].values[index] + ":" + "+"
+
         qseqid       = df["qseqid"].values[index]
         info_qseqid  = qseqid.split(":")
         read_support = int(info_qseqid[5])

@@ -1,7 +1,0 @@
-{
-    "work_directory": "/path/to/directory_work",
-    "genome": "/path/to/genome_file.fasta",
-    "read": "/path/to/reads_file.fastq",
-    "name_out": "prefix_of_name_files_out",
-    "fasta_TE": "/path/to/database_TE.fasta"
-}

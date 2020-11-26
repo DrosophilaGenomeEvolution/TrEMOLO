@@ -1,0 +1,17 @@
+DATA: 
+    GENOME:          "/path/to/genome_file.fasta"   #genome (fasta file)
+    SAMPLE:          "/path/to/reads_file.fastq"    #long reads (a fastq file)
+    WORK_DIRECTORY:  "/path/to/directory_work"      #name of output directory
+    TE_DB:           "/path/to/database_TE.fasta"   #Database of TE (a fasta file)
+
+
+LOCAL_ASSEMBLY:
+    FLYE:  False
+    WTDGB: True
+
+params:
+    MINIMAP2:
+        PRESET_OPTION: 'map-ont' # -x minimap2 preset option is map-pb by default (map-pb, map-ont etc)
+        THREAD: 8
+    FLYE:
+        OPTIONS: ''

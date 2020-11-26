@@ -67,7 +67,7 @@ import os
 import re
 import argparse
 
-parser = argparse.ArgumentParser(description="get the sequences report for INDEL in vcf file")
+parser = argparse.ArgumentParser(description="Get the sequences report for INDEL in vcf file (format VCFv4.3)")
 
 #MAIN ARGS
 parser.add_argument("vcf_file", type=str,
@@ -97,8 +97,10 @@ type_list   = args.type.split(",")#NOT KEEP THIS
 chrom_list  = args.chrom.split(",")#KEEP ONLY
 min_len_seq = args.min_len_seq
 
-print("exclude type : ", type_list)
-print("chromosome liste : ", chrom_list)
+
+print("[" + str(sys.argv[0]) + "] : exclude type : ", type_list)
+print("[" + str(sys.argv[0]) + "] : chromosome liste : ", chrom_list)
+
 
 #check if an element of the array is at least part of the value
 def regex_in_list(value, liste):
@@ -109,6 +111,15 @@ def regex_in_list(value, liste):
     return False
 
 line = file.readline()
+
+##fileformat=VCFv4.3
+#Check format vcf file
+if line.split("=")[1].strip() != "VCFv4.3":
+    print("[" + str(sys.argv[0]) + "] : ERROR format vcf must be VCFv4.3 not " + str(line.split("=")[1].strip()) )
+    print("[" + str(sys.argv[0]) + "] : please change format of vcf file, or use Snifflesv1.0.10 for genrate the good vcf file")
+    exit(1)
+
+count = 0
 while line :
     
     seq = None
@@ -119,24 +130,25 @@ while line :
         ID      = spl[2]
         type_v  = spl[4]
         start   = spl[1]
-        end     = spl[7].split(";")[3].split("=")[1]
-        precise = spl[7].split(";")[0]
-        read_support = spl[7].split(";")[-1].split("=")[1]
+        if re.search("END=([0-9]+)", spl[7]) != None and re.search("RE=([0-9]+)", spl[7]) != None :
+            end     = re.search("END=([0-9]+)", spl[7]).group(1)
+            precise = spl[7].split(";")[0]
+            read_support = re.search("RE=([0-9]+)", spl[7]).group(1)
         
-        
-        if spl[7].split(";")[-2].split("=")[0] == "SEQ":
-            seq    = spl[7].split(";")[-2].split("=")[1]
-            seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
-            seq    = seq.replace("N", "A")#replace
-        
-
-        condition = seq != None and not seq_NN and min_len_seq < len(seq) and type_v not in type_list
-        if regex_in_list(chrom, chrom_list) and condition :
-            #EXEMPLE  FORMAT
-            #2R:<INS>:1;190;2:1:PRECISE
-            file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID, read_support, precise]) + "\n" + seq + "\n")
+            if spl[7].split(";")[-2].split("=")[0] == "SEQ":
+                seq    = spl[7].split(";")[-2].split("=")[1]
+                seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
+                seq    = seq.replace("N", "A")#replace
+            
+            condition = seq != None and not seq_NN and min_len_seq < len(seq) and type_v not in type_list
+            if regex_in_list(chrom, chrom_list) and condition :
+                #EXEMPLE  FORMAT
+                #2R:<INS>:1;190;2:1:PRECISE
+                file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID, read_support, precise]) + "\n" + seq + "\n")
+                count += 1
 
     line = file.readline()
 
+print("[" + str(sys.argv[0]) + "] : Total sequence found=" + str(count))
 file.close()
 file_fasta.close()
