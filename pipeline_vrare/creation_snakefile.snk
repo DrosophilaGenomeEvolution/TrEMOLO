@@ -128,11 +128,11 @@ rule create_snake_file :
 
 
         ##Creation du snake file en fonction des instructions
-        python3 ${{path_to_pipline}}/scripts_python/make_snk.py instruction.txt ${{path_to_pipline}}/list_rules.snk Snakefile -t ${{path_to_pipline}}/template.snk
+        python3 ${{path_to_pipline}}/scripts_python/make_snk.py instruction.txt ${{path_to_pipline}}/list_rules.snk ${{path_to_pipline}}/Snakefile -t ${{path_to_pipline}}/template.snk
 
         printf "%s\\n" "{params.cmess} [SNK] CREATION SNAKEFILE DONE !! {params.cend}"
 
-        snakemake --snakefile Snakefile --configfile {params.name_configfil}
+        snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil}
 
         """
         
