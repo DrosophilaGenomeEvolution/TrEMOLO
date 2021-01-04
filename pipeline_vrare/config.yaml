@@ -12,6 +12,6 @@ LOCAL_ASSEMBLY:
 params:
     MINIMAP2:
         PRESET_OPTION: 'map-ont' # -x minimap2 preset option is map-pb by default (map-pb, map-ont etc)
-        THREAD: 8
+        OPTION: '-t 8'
     FLYE:
         OPTIONS: ''

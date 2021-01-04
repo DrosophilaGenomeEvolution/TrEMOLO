@@ -129,6 +129,11 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":
 		# get TE SEQ
 		awk '{ if($9 < $10){ print $2"\t"$9-1"\t"$10"\t" "forward" "\t" "1" "\t" "+" }else{ print $2"\t"$10-1"\t"$9"\t" "reverse" "\t" "1" "\t" "-" } }' sequence_TE.bln > sequence_TE.bed
 
+		mkdir -p DIR_SEQ_TE_READ_POS
+		
+		cp sequence_TE.bed  DIR_SEQ_TE_READ_POS/sequence_TE_${name}.bed
+		cp sequence_TE.bln  DIR_SEQ_TE_READ_POS/sequence_TE_${name}.bln
+
 
 		bedtools getfasta -fi $reads -bed flank_TE.bed > flank_TE.fasta
 		bedtools getfasta -fi $reads -bed sequence_TE.bed -name > sequence_TE.fasta

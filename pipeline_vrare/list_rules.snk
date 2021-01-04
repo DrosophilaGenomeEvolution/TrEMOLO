@@ -1,85 +1,6 @@
-###################################################################################################################################
-#
-# Copyright 2019-2020 IRD-CNRS-Lyon1 University
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, see <http://www.gnu.org/licenses/> or
-# write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-#
-# You should have received a copy of the CeCILL-C license with this program.
-# If not see <http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.txt>
-#
-# Intellectual property belongs to authors and IRD, CNRS, and Lyon 1 University  for all versions
-# Version 0.1 written by Mourdas Mohamed
-#                                                                                                                                   
-####################################################################################################################################
-
-
-#IMPORT
-import json
-import os
-
-#Class Color
-class bcolors:
-    VIOLET    = '\033[95m'
-    RED       = '\033[91m'
-    BLUE      = '\033[94m'
-    CYAN      = '\033[96m'
-    GREEN     = '\033[92m'
-    WARNING   = '\033[93m'
-    FAIL      = '\033[91m'
-    BOLD      = '\033[1m'
-    END       = '\033[0m'
-    UNDERLINE = '\033[4m'
-
-def message_color(color, text):
-    return color + text + bcolors.END
-
-# Create ouput folder
-os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"])
-
-# Remember the parameters associated with the output folder
-with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as file:
-    file.write(json.dumps(config))
-
-
-# Get path snakefile
-path_snk = ""
-
-i = 0
-while i < len(sys.argv) and path_snk == "" :
-    if sys.argv[i] == "--snakefile" :
-        path_snk = sys.argv[i + 1]
-
-    i += 1
-#
-
-os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
-
-ASSEMBLY_RULE = []
-if config["LOCAL_ASSEMBLY"]["FLYE"]:
-    ASSEMBLY_RULE.append("FLYE")
-if config["LOCAL_ASSEMBLY"]["WTDGB"]:
-    ASSEMBLY_RULE.append("WTDGB")
-
-
-
 rule TSD :
     input:
         "get_TE_seq.done",
-        #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "ET_FIND_FA"),
         fasta_TE  = config["DATA"]["TE_DB"],
 
     output:
@@ -135,6 +56,9 @@ rule TSD :
 
         """
 
+
+#END TSD
+
 #Get just sequence potentiel candidate of TE
 rule get_TE_seq :
     input:
@@ -169,6 +93,7 @@ rule get_TE_seq :
         cat {params.work_directory}/ET_FIND_FA/* > {params.work_directory}/TE_REPORT_total_find.fasta ;
         """
 
+#END get_TE_seq
 
 
 rule assembly_flye :
@@ -286,6 +211,8 @@ rule assembly_flye :
         echo "[extract_read:snk] $NB_READS AND $NB_REGION";
 
         """
+
+#END assembly_flye
 
 
 
@@ -409,6 +336,9 @@ rule assembly_wdtgb :
 
         """
 
+#END assembly_wdtgb
+
+
 #Get reads supports
 rule extract_read :
     input:
@@ -503,6 +433,8 @@ rule extract_read :
 
         """
 
+#END extract_read
+
 
 #BLASt database of TE against SV (Structural variant)
 rule blast :
@@ -537,9 +469,12 @@ rule blast :
         blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} ;
 
         # FILTER TE BLAST #
-        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py -t {input.fasta_TE} {output.bln} {output.all_te} ;
+        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {output.bln} {output.all_te} ;
         
         """
+
+#END blast
+
 
 
 #Get Strucural Variant (vcf file)
@@ -563,6 +498,8 @@ rule sniffles :
 
         sniffles --report_seq -s 1 -m {input} -v {output} -n -1 ;
         """
+
+#END sniffles
 
 
 #Sort and callmd
@@ -595,6 +532,8 @@ rule samtools :
         {input.sam}.sorted.bam;
         """
 
+#END samtools
+
 
 #Map reads on assembly genome
 rule mapping :
@@ -623,19 +562,6 @@ rule mapping :
         minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} ;
         minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} ;
         """
-        
+   
 
-#for i in `cat ID_nameTE.txt`; do mkdir READ_BY_TE^Cgrep $i G73vsG73TEST_cnTE_ALL_ET.csv; done;
-#for i in `cat all_TE_assembly.bln | cut -f 1 | cut -d":" -f 2`; do qseqid=`grep ":$i:" G73vsG73LR_cnTE_ALL_ET.csv | cut -f 2`; qid_old=`grep ":$i:" all_TE_assembly.bln | cut -f 1`; ET=`grep ":$i:" G73vsG73LR_cnTE_ALL_ET.csv | cut -f 1`; cat all_TE_assembly.bln | grep ":$i:" | sed "s/$qid_old/$qseqid":"$ET/g"; done > new.bln;
-
-#ASFL
-#rm -f   && touch
-# while read l; do 
-#     chrom=`echo $l | cut -d" " -f 1`
-#     start=`echo $l | awk '{print $2-140}'`;
-#     end=`echo $l | awk '{print $3+140}'`; 
-#     #echo $chrom  $start   $end
-#     awk -v start="$start" -v end="$end"  '{if($2>start && $3<end){print $0}}' ETLRvsG73_addVR_2L.bed
-#     echo "#----"
-#     #grep $chrom ETLRvsG73_addVR.bed | awk '{if($2>start && $3<end){print $0}}' 
-# done < true_bed.bed | tr " " "\t" > ETSR_on_TE.bed;
+#END mapping

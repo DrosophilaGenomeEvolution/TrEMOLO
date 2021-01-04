@@ -4,7 +4,7 @@ library(ggplot2)
 library(RColorBrewer)
 
 
-name_input = args[1]
+name_input  = args[1]
 name_output = args[2]
 print(name_input)
 
@@ -15,8 +15,7 @@ head(data)
 
 data$y <- factor(data$y, levels = data$y)
 ggplot(data, aes(x, y, fill=z, height=1), width=50) + 
-  geom_tile()+
-
+  geom_tile() +
   theme(axis.text.x = element_blank(),
           axis.text.y = element_text(face="plain", color="#222222", 
                            size=12, angle=0))+

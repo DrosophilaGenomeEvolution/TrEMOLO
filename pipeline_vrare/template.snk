@@ -1,0 +1,77 @@
+###################################################################################################################################
+#
+# Copyright 2019-2020 IRD-CNRS-Lyon1 University
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/> or
+# write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+# You should have received a copy of the CeCILL-C license with this program.
+# If not see <http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.txt>
+#
+# Intellectual property belongs to authors and IRD, CNRS, and Lyon 1 University  for all versions
+# Version 0.1 written by Mourdas Mohamed
+#                                                                                                                                   
+####################################################################################################################################
+
+
+#IMPORT
+import json
+import os
+
+#Class Color
+class bcolors:
+    VIOLET    = '\033[95m'
+    RED       = '\033[91m'
+    BLUE      = '\033[94m'
+    CYAN      = '\033[96m'
+    GREEN     = '\033[92m'
+    WARNING   = '\033[93m'
+    FAIL      = '\033[91m'
+    BOLD      = '\033[1m'
+    END       = '\033[0m'
+    UNDERLINE = '\033[4m'
+
+def message_color(color, text):
+    return color + text + bcolors.END
+
+# Create ouput folder
+os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"])
+
+# Remember the parameters associated with the output folder
+with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as file:
+    file.write(json.dumps(config))
+
+
+# Get path snakefile
+path_snk = ""
+
+i = 0
+while i < len(sys.argv) and path_snk == "" :
+    if sys.argv[i] == "--snakefile" :
+        path_snk = sys.argv[i + 1]
+
+    i += 1
+#
+
+#os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
+
+ASSEMBLY_RULE = []
+if config["LOCAL_ASSEMBLY"]["FLYE"]:
+    ASSEMBLY_RULE.append("FLYE")
+if config["LOCAL_ASSEMBLY"]["WTDGB"]:
+    ASSEMBLY_RULE.append("WTDGB")
+
+

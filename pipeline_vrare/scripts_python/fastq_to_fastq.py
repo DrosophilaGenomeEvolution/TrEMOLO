@@ -3,10 +3,10 @@ import os
 import re
 
 name_fastq = sys.argv[1]
-name_fasta = sys.argv[2]
-print(sys.argv[0], name_fasta, name_fastq)
-file_out   = open(name_fasta, "w")
+output     = sys.argv[2]
+print(sys.argv[0], name_fastq, output)
 file       = open(name_fastq, "r")
+file_out   = open(output, "w")
 line       = file.readline()
 
 sequence          = ""
