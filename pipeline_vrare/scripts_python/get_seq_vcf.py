@@ -77,14 +77,24 @@ parser.add_argument("fasta_out", type=str,
 
 #OPTION
 parser.add_argument("-m", "--min_len_seq", type=int, default=1000,
-                    help="minimum size of the sequence to keep [1000]")
+                    help="minimum size of the sequence to keep (default: [1000])")
 parser.add_argument("-t", "--type", type=str, default='<DEL>',
-                    help="not keep this type on vcf (give a list of arguments separate the values ​​with commas \"<DEL>,<INS>\") [\"<DEL>\"]")
+                    help="not keep this type on vcf (give a list of arguments separate the values ​​with commas \"<DEL>,<INS>\") (default: [\"<DEL>\"])")
 
 #Warning : format of the list of chromosome must be separate by "," it could be regex
 parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,^4_,X_',
-                    help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,^4_,X_]')
+                    help='chromosome (or part/contig) to keep (give a list of arguments separate the values ​​with commas "X,Y") put \".\" for keep all chromosome (default: [2L,2R,3L,3R,^4_,X_])')
 
+parser.add_argument("-k", "--keep", default=False, action='store_true',
+                    help='keep the sequence contain only character N (default: False)')
+
+parser.add_argument("-i", "--idrs", default=False, action='store_true',
+                    help='for make all id reads support')
+
+
+print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta --keep --chrom \".\" " )
+print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta --keep --chrom chrX,chrY " )
+print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta \n" )
 args = parser.parse_args()
 
 #file in
@@ -96,10 +106,11 @@ file_fasta  = open(args.fasta_out, "w")
 type_list   = args.type.split(",")#NOT KEEP THIS
 chrom_list  = args.chrom.split(",")#KEEP ONLY
 min_len_seq = args.min_len_seq
-
+keep_seq_N  = args.keep
+ID_RS       = args.idrs
 
 print("[" + str(sys.argv[0]) + "] : exclude type : ", type_list)
-print("[" + str(sys.argv[0]) + "] : chromosome liste : ", chrom_list)
+print("[" + str(sys.argv[0]) + "] : regex contig liste : ", chrom_list)
 
 
 #check if an element of the array is at least part of the value
@@ -112,42 +123,100 @@ def regex_in_list(value, liste):
 
 line = file.readline()
 
+version_vcf =  line.split("=")[1].strip()
+print("version_vcf=", version_vcf)
 ##fileformat=VCFv4.3
 #Check format vcf file
-if line.split("=")[1].strip() != "VCFv4.3":
+if version_vcf != "VCFv4.3" and version_vcf != "VCFv4.2":
     print("[" + str(sys.argv[0]) + "] : ERROR format vcf must be VCFv4.3 not " + str(line.split("=")[1].strip()) )
     print("[" + str(sys.argv[0]) + "] : please change format of vcf file, or use Snifflesv1.0.10 for genrate the good vcf file")
     exit(1)
 
-count = 0
-while line :
-    
-    seq = None
-    if re.search("^[^#]", line) :
-        #FOR HEADER
-        spl     = line.split("\t")
-        chrom   = spl[0]
-        ID      = spl[2]
-        type_v  = spl[4]
-        start   = spl[1]
-        if re.search("END=([0-9]+)", spl[7]) != None and re.search("RE=([0-9]+)", spl[7]) != None :
-            end     = re.search("END=([0-9]+)", spl[7]).group(1)
-            precise = spl[7].split(";")[0]
-            read_support = re.search("RE=([0-9]+)", spl[7]).group(1)
-        
-            if spl[7].split(";")[-2].split("=")[0] == "SEQ":
-                seq    = spl[7].split(";")[-2].split("=")[1]
-                seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
-                seq    = seq.replace("N", "A")#replace
-            
-            condition = seq != None and not seq_NN and min_len_seq < len(seq) and type_v not in type_list
-            if regex_in_list(chrom, chrom_list) and condition :
-                #EXEMPLE  FORMAT
-                #2R:<INS>:1;190;2:1:PRECISE
-                file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID, read_support, precise]) + "\n" + seq + "\n")
-                count += 1
 
+contig_vcf = []
+while line and line[:2] == "##":
+    #line.split("=")[2].split(",")[1] == chrom
+    if "contig=" in line and regex_in_list(line.split("=")[2].split(",")[0], chrom_list):
+        contig_vcf.append(line.split("=")[2].split(",")[0])
+        
     line = file.readline()
+
+print("[" + str(sys.argv[0]) + "] : contig keeping = " + str(contig_vcf))
+count = 0
+if version_vcf == "VCFv4.3":
+    
+    while line :
+        
+        seq = None
+        if re.search("^[^#]", line) :
+            #FOR HEADER
+            spl     = line.split("\t")
+            chrom   = spl[0]
+            start   = spl[1]
+            ID      = spl[2]
+            type_v  = spl[4]
+            
+            if re.search("END=([0-9]+)", spl[7]) != None and re.search("RE=([0-9]+)", spl[7]) != None :
+                end     = re.search("END=([0-9]+)", spl[7]).group(1)
+                precise = spl[7].split(";")[0]
+                read_support = re.search("RE=([0-9]+)", spl[7]).group(1)
+            
+                if "SEQ=" in spl[7] :
+                    seq    = re.search("SEQ=([A-Z][A-Z]+);", spl[7]).group(1)
+                    #seq    = spl[7].split(";")[-2].split("=")[1]
+                    seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
+                    seq    = seq.replace("N", "A")#replace
+
+                condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list
+                if regex_in_list(chrom, chrom_list) and condition :
+                    #EXEMPLE  FORMAT
+                    #2R:<INS>:1;190;2:1:PRECISE
+                    file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID, read_support, precise]) + "\n" + seq + "\n")
+                    count += 1
+
+        line = file.readline()
+
+
+if version_vcf == "VCFv4.2":
+    while line :
+        
+        if re.search("^[^#]", line) :
+            #FOR HEADER
+            spl     = line.split("\t")
+            chrom   = spl[0]
+            ID      = spl[2]
+            start   = spl[1]
+            type_v  = spl[4]
+
+
+            
+            if re.search("END=([0-9]+)", spl[7]) != None and re.search("SUPPORT=([0-9]+)", spl[7]) != None :
+                end     = re.search("END=([0-9]+)", spl[7]).group(1)
+                precise = "PRECISE"
+                read_support = re.search("SUPPORT=([0-9]+)", spl[7]).group(1)
+                
+                if "SEQS=" in spl[7] :
+
+                    seqs   = re.search("SEQS=([A-Z][A-Z,]+);", spl[7]).group(1).split(",")
+
+                    for i, seq in enumerate(seqs) :
+                        
+                        if ID_RS :
+                            ID_VR = ID + "." + str(i)
+                        else:
+                            ID_VR = ID
+
+                        seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
+                        seq    = seq.replace("N", "A")#replace
+                    
+                        condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list
+                        if regex_in_list(chrom, chrom_list) and condition :
+                            #EXEMPLE  FORMAT
+                            #2R:<INS>:1;190;2:1:PRECISE
+                            file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID_VR, read_support, precise, str(i)]) + "\n" + seq + "\n")
+                            count += 1
+
+        line = file.readline()
 
 print("[" + str(sys.argv[0]) + "] : Total sequence found=" + str(count))
 file.close()

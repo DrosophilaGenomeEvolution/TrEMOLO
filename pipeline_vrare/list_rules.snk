@@ -1,3 +1,6 @@
+
+############# MINORY VARIANT
+
 rule TSD :
     input:
         "get_TE_seq.done",
@@ -367,7 +370,7 @@ rule extract_read :
 
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK] GET READS AND ASSEMBLY [^-^] {params.cend}"
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] GET READS AND ASSEMBLY [^-^] {params.cend}"
 
         #rm -fr {params.work_directory}/READ_FASTQ_TE_ASSEMBLY/
         #rm -fr {params.work_directory}/READ_FASTQ_TE
@@ -457,7 +460,7 @@ rule blast :
 
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK] BLAST [^-^] {params.cend}"
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] BLAST [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
@@ -469,7 +472,7 @@ rule blast :
         blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} ;
 
         # FILTER TE BLAST #
-        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {output.bln} {output.all_te} ;
+        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py -t {input.fasta_TE} {output.bln} {output.all_te} ;
         
         """
 
@@ -494,10 +497,11 @@ rule sniffles :
 
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK] SNIFFLES [^-^] {params.cend}"
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
 
         sniffles --report_seq -s 1 -m {input} -v {output} -n -1 ;
         """
+
 
 #END sniffles
 
@@ -520,7 +524,7 @@ rule samtools :
 
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK] SAMTOOLS [^-^] {params.cend}"
+        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
         samtools view -S -b {input.sam} > {input.sam}.bam ;
         samtools sort {input.sam}.bam -o {input.sam}.sorted.bam ;
@@ -557,7 +561,7 @@ rule mapping :
         cend           = bcolors.END,
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK] MINIMAP2 MAPPING {params.cend}"
+        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
 
         minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} ;
         minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} ;
@@ -565,3 +569,119 @@ rule mapping :
    
 
 #END mapping
+
+
+############# ASSEMBLY GENOME
+
+
+#TODO
+rule ragoo :
+    input:  
+        read          = config["DATA"]["SAMPLE"],
+        assembly_flye = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FLYE_OUT/assembly.fasta",
+
+    output:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SAMPLE_mapping_GENOME.sam",
+    
+    params:
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+        config         = json.dumps(config),
+        params         = 
+
+        preset         = config["params"]["FLYE_GENOME"]["PRESET_OPTION"] if config["params"]["FLYE_GENOME"]["PRESET_OPTION"] != "" else "--nano-raw",
+        option         = config["params"]["FLYE_GENOME"]["OPTION"],
+
+        #COLOR 
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+    shell:
+        """
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
+
+        ragoo.py 
+
+        """
+   
+#END ragoo
+
+
+rule polishing :
+    input:  
+        read          = config["DATA"]["SAMPLE"],
+        assembly_flye = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FLYE_OUT/assembly.fasta",
+
+    output:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SAMPLE_mapping_GENOME.sam",
+    
+    params:
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+        config         = json.dumps(config),
+        params         = 
+
+        preset         = config["params"]["FLYE_GENOME"]["PRESET_OPTION"] if config["params"]["FLYE_GENOME"]["PRESET_OPTION"] != "" else "--nano-raw",
+        option         = config["params"]["FLYE_GENOME"]["OPTION"],
+
+        #COLOR 
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+    shell:
+        """
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
+
+        j={input.assembly_flye}
+        base="base"
+        for round in {1..4}
+                do
+                        echo -e "\t$base round $round"
+                        minimap2 -t 20 -x map-ont -t 20 $j {input.read} | gzip -1 > {params.work_directory}/tempData/$base.$round.paf.gz
+                        racon -t 20 {input.read} {params.work_directory}/tempData/$base.$round.paf.gz $j > {params.work_directory}/tempData/tempRef.$round.fasta
+                        j={params.work_directory}/tempData/tempRef.$round.fasta
+                        #rm -rf {params.work_directory}/tempData/$base.$round.paf.gz
+                done
+
+
+        #rm -Rf tempData
+
+        printf "%s\n" "{params.cmess} [SNK]--[`date`]   STATISTICS {params.cend}"
+        assembly-stats -t {params.work_directory}/tempData/*.fasta > {params.work_directory}/Stats/polisehdGlobalStats.csv
+
+
+        """
+   
+
+#END polishing
+
+
+#TODO
+rule flye_genome :
+    input:  
+        read   = config["DATA"]["SAMPLE"],
+
+    output:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FLYE_OUT/assembly.fasta",
+    
+    params:
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+        config         = json.dumps(config),
+        params         = 
+
+        preset         = config["params"]["FLYE_GENOME"]["PRESET_OPTION"] if config["params"]["FLYE_GENOME"]["PRESET_OPTION"] != "" else "--nano-raw",
+        option         = config["params"]["FLYE_GENOME"]["OPTION"],
+
+        #COLOR 
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+    shell:
+        """
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY READS WITH FLYE {params.cend}"
+
+        echo "VERSION FLYE " `flye -v`; 
+        flye {params.option} {params.preset} {input.read} --out-dir {params.work_directory}/FLYE_OUT 
+
+        """
+   
+
+#END flye_genome

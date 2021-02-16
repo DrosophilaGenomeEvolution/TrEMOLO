@@ -85,7 +85,7 @@ rule create_snake_file :
 
 
     output:
-        "Snakefiles",
+        temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
     
     params:
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),

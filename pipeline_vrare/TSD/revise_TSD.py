@@ -122,7 +122,8 @@ def rev_comp(seq):
 def grep(motif, file, options=""):
     proc = subprocess.Popen(["grep "+ options + " " + motif + " " + file], stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    return out.split("\n")
+    #print("youhou", str(out).split("\n"))
+    return str(out).split("\\n")
 
 #print(grep("KO", "total_results_tsd_ZAM_KO*"))
 

@@ -14,7 +14,7 @@ head(data)
 
 
 data$y <- factor(data$y, levels = data$y)
-ggplot(data, aes(x, y, fill=z, height=1), width=50) + 
+p <- ggplot(data, aes(x, y, fill=z, height=1), width=50) + 
   geom_tile() +
   theme(axis.text.x = element_blank(),
           axis.text.y = element_text(face="plain", color="#222222", 
@@ -24,6 +24,6 @@ ggplot(data, aes(x, y, fill=z, height=1), width=50) +
 
   labs(y='TRANSPOSABLE ELEMENT', x='', fill='INSERTION') +
   theme(text=element_text(size=14), plot.title = element_text(size=30, hjust = 0.5)) 
-
+p
 ggsave(name_output)
 

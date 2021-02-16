@@ -1,20 +1,18 @@
-
-
 GENOME=$1
 #FILE_TSD="total_results_tsd_ZAM_KO.txt"
 FILE_TSD=$2
 SIZE_FLANK=$3
 SIZE_KMER=$4
 
-NAME_FILE=`echo $FILE_TSD | cut -d"." -f 1`
+NAME_FILE=`echo $FILE_TSD | sed 's/.txt//g'`
 
-grep -A 2 -B 2 KO $FILE_TSD > ${NAME_FILE}_KO.txt 
+grep -A 2 -B 2 "KO:" $FILE_TSD > ${NAME_FILE}_KO.txt 
 grep -B 1 KO ${NAME_FILE}_KO.txt | grep ">" | tr -d ">" | awk -F":" -v s_fk="$SIZE_FLANK" 'OFS="\t" {print $1, $3-s_fk, $3, $5":FLANK_LEFT\n"$1, $3, $3+s_fk, $5":FLANK_RIGHT"}' > empty_site_KO.bed
 
 bedtools getfasta -fi $GENOME -bed empty_site_KO.bed -name > empty_site_KO.fasta
 
 echo ${NAME_FILE}_KO_corrected.txt;
-python revise_TSD.py empty_site_KO.fasta ${NAME_FILE}_KO.txt $SIZE_KMER > ${NAME_FILE}_KO_corrected.txt
+python `dirname $0`/revise_TSD.py empty_site_KO.fasta ${NAME_FILE}_KO.txt $SIZE_KMER > ${NAME_FILE}_KO_corrected.txt
 
 #GET TSD
 grep "OK:" $FILE_TSD | cut -d"," -f 2 | tr -d " " > ${NAME_FILE}_TSD_OK.txt
