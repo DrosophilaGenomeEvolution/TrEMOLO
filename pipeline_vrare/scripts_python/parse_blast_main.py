@@ -102,7 +102,8 @@ parser.add_argument("-k", "--type-sv-keep", dest="type_sv_keep", type=str, defau
                     help="Type of SV")
 parser.add_argument("-c", "--combine", dest="combine", default=False, action='store_true',
                     help="Combine parts blast TE")
-
+parser.add_argument("--combine_name", dest="combine_name", default="COMBINE_TE.csv",
+                    help="Combine name output file")
 args = parser.parse_args()
 
 
@@ -112,6 +113,7 @@ min_size_percent = args.min_size_percent
 min_read_support = args.min_read_support
 type_sv_keep     = args.type_sv_keep
 combine          = args.combine
+combine_name     = args.combine_name
 
 output           = args.output_file.name
 name_out         = output.split("/")[-1].split(".")[0]
@@ -178,16 +180,17 @@ for index, row in enumerate(df.values):
     #chaine = str(df["qseqid"].values[index])
     #TODO INDICE 7 a regler
     chaine          = str(":".join(qseqid.split(":")[:7]))
-    df_tmp          = df[df["qseqid"].str.contains(">:[0-9]*:[0-9]*:" + str(ID).replace(".", "\.") + ":")]
     
-    # if "svim.INS.6." in ID :
-    #         print(qseqid, " -=- ", chaine, ID)
-    #         print(df_tmp["bitscore"].values)
-
-    maxe_bitscore   = max(df_tmp["bitscore"].values) 
-    df_best_score   = df_tmp[df_tmp["bitscore"] == maxe_bitscore]
 
     if chaine not in best_score_match :
+        df_tmp          = df[df["qseqid"].str.contains(">:[0-9]*:[0-9]*:" + str(ID).replace(".", "\.") + ":")]
+    
+        # if "svim.INS.6." in ID :
+        #         print(qseqid, " -=- ", chaine, ID)
+        #         print(df_tmp["bitscore"].values)
+
+        maxe_bitscore   = max(df_tmp["bitscore"].values) 
+        df_best_score   = df_tmp[df_tmp["bitscore"] == maxe_bitscore]
 
         #sstart       = df["sstart"].values[index]
         #send         = df["send"].values[index]
@@ -209,7 +212,6 @@ for index, row in enumerate(df.values):
 
 
         indice    = max_index.tolist()[0]
-        #print(index, max_index, index_tmp, indice, "lol", chaine)
 
         #df_tmp        = df[df["qseqid"] == qseqid]
         #maxe_bitscore = max(df_tmp["bitscore"].values)
@@ -230,7 +232,6 @@ for index, row in enumerate(df.values):
         if find_type_SV and read_support >= min_read_support:
             best_score_match_index.append(indice)
 
-    
 #df = df.iloc[best_score_match_index]
 
 df_best = df.iloc[best_score_match_index]
@@ -240,12 +241,13 @@ if combine :
     
     print("Combine TE...")
     #COMBINE
-    dic_comb = {"qseqid": [], "sseqid": [], "qstart": [], "qend": [], "sstart": [], "send": []}
+    dic_comb = {"qseqid": [], "sseqid": [], "grain_pident":[], "qstart": [], "qend": [], "sstart": [], "send": []}
     for i, v in enumerate(df_best.values) :
 
         qseqid = df_best["qseqid"].values[i]
         sseqid = df_best["sseqid"].values[i]
-        df_tmp = df[df["qseqid"] == qseqid]
+        pident = df_best["pident"].values[i]
+        df_tmp = df[df["qseqid"].str.contains(qseqid[:-2].replace(":", "\:").replace("+", "\+").replace("-", "\-"))]
         df_tmp = df_tmp[df_tmp["sseqid"] == sseqid]
 
         sstart_best = df_tmp["sstart"].values[0]
@@ -256,7 +258,10 @@ if combine :
         if int(sstart_best) < int(ssend_best):#forward
             df_tmp = df_tmp.sort_values(by=["sstart"])
 
-                    
+            # if "2R_RaGOO_RaGOO_RaGOO:2371284-2378557" in qseqid :
+            #     print(qseqid)
+            #     print(df_tmp)
+
             sstart_global = sstart_best
             send_global   = ssend_best
             qstart_global = qstart_best
@@ -278,7 +283,6 @@ if combine :
             send       = send_global
             qstart_min = qstart_global
             qend_max   = qend_global
-            
             
         else:#reverse
             
@@ -307,12 +311,12 @@ if combine :
 
         dic_comb["qseqid"].append(qseqid)
         dic_comb["sseqid"].append(sseqid)
+        dic_comb["grain_pident"].append(pident)
         dic_comb["qstart"].append(qstart_min)
         dic_comb["qend"].append(qend_max)
         dic_comb["sstart"].append(sstart)
         dic_comb["send"].append(send)
         
-            
     df_comb = pd.DataFrame(dic_comb)
 
 
@@ -321,7 +325,7 @@ if combine :
     tab_size    = []
     for index, row in enumerate(df_comb[["sseqid", "qend", "qstart"]].values):
         size_element = abs(int(row[1])-int(row[2]))#qend - qstart
-        tab_percent.append(round((size_element/size_et[row[0]]) * 100, 1))
+        tab_percent.append(round((size_element/size_et[row[0]]) * 100, 2))
         tab_size.append(size_element)
 
     df_comb["size_per"] = tab_percent
@@ -329,15 +333,18 @@ if combine :
     df_comb = df_comb[df_comb["size_per"] >= min_size_percent]#min_size_v2 combine
 
     #print(df_comb.shape)
+    df_comb = df_comb[["sseqid", "qseqid", "grain_pident", "size_per", "size_el", "qstart", "qend", "sstart", "send"]]
+    df_comb = df_comb.sort_values(by="sseqid")
 
-    df_comb.to_csv("COMBINE_TE.csv", sep="\t", index=None)
+
+    df_comb.to_csv(combine_name, sep="\t", index=None)
 
 
     tab_percent = []
     tab_size    = []
     for index, row in enumerate(df_comb[["sseqid", "qend", "qstart"]].values):
         size_element = abs(int(row[1])-int(row[2]))#qend - qstart
-        tab_percent.append(round((size_element/size_et[row[0]]) * 100, 1))
+        tab_percent.append(round((size_element/size_et[row[0]]) * 100, 2))
         tab_size.append(size_element)
 
 
@@ -358,7 +365,7 @@ tab_percent = []
 tab_size    = []
 for index, row in enumerate(df[["sseqid", "qend", "qstart"]].values):
     size_element = abs(int(row[1])-int(row[2]))#qend - qstart
-    tab_percent.append(round((size_element/size_et[row[0]]) * 100, 1))
+    tab_percent.append(round((size_element/size_et[row[0]]) * 100, 2))
     tab_size.append(size_element)
     
 #keeps the TE according to the percentage of identity and the percentage of size
@@ -409,4 +416,5 @@ print("Number total TE :", sum(df_o["z"].values))
 print("list TE :")
 df_o.columns = ["x", "TE", "NB_TE"]
 print(df_o[["TE", "NB_TE"]])
+
 

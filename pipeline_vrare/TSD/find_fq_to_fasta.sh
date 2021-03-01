@@ -68,10 +68,10 @@ OUT_DIR=`echo ${OUT_DIR} | sed 's/[/]$//g'`
 
 
 echo " " > total_results_tsd.txt
-nombre_element=`grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":[0-9]*:" | grep -o "[0-9]*" | wc -l`
+nombre_element=`grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | grep -o ":[A-Za-z\.0-9]*:" | grep -o "[A-Za-z\.0-9]*" | wc -l`
 i=0
 echo "begin $nombre_element"
-for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[0-9]*:[0-9]*:[PI]" | grep -o ":[0-9]*:" | grep -o "[0-9]*"`; do
+for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | grep -o ":[A-Za-z\.0-9]*:" | grep -o "[A-Za-z\.0-9]*"`; do
 	fr="`ls ${REPO_READS} | grep ":$id:"`"
 	echo "id : $id"
 	echo "file : $fr"

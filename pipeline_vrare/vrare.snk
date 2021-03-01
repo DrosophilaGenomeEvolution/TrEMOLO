@@ -81,7 +81,7 @@ rule TSD :
         "get_TE_seq.done",
         #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "ET_FIND_FA"),
         fasta_TE  = config["DATA"]["TE_DB"],
-        genome = config["DATA"]["GENOME"],
+        genome    = config["DATA"]["GENOME"],
 
     output:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/report_TSD.txt",
@@ -113,37 +113,40 @@ rule TSD :
             echo "[TSD:snk] $i/$NB_FILE" ;
             nameTE=`echo $TE_found_fa | grep -o "_[^_]*\." | grep -o "[^_]*" | sed 's/\.$//g'` ;
             SIZE_TSD=`grep -w "${{nameTE}}" ${{path_to_pipline}}/TSD/TE_SIZE_TSD.txt || echo "NONE"`; # EX: ZAM 4 :or: -1
-            echo "hihi   $SIZE_TSD"
+            echo "SIZE_TSD--1   $SIZE_TSD"
             if [[ $SIZE_TSD != "NONE" ]]; then
                 SIZE_TSD=`echo $SIZE_TSD | awk '{{print $2}}'`;
                 echo "SIZE_TSD = $SIZE_TSD"
+
+                size_tsd=`grep -w "${{nameTE}}" ${{path_to_pipline}}/TSD/TE_SIZE_TSD.txt || echo NONE`
+                echo "TE=$nameTE size_tsd=$size_tsd  SIZE_TSD=$SIZE_TSD" 
+                sh ${{path_to_pipline}}/TSD/find_fq_to_fasta.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
+                   ${{read_directory}} \
+                   ${{fasta_dir_find}} ;
+
+                sh ${{path_to_pipline}}/TSD/tsd_te.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
+                    ${{read_directory}} \
+                    ${{fasta_dir_find}} \
+                    {input.fasta_TE} 30 $SIZE_TSD ;
+
+                mv total_results_tsd.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt
+                #mv total_results_tsd_${{nameTE}}.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt ;
+
+                sh ${{path_to_pipline}}/TSD/revise_TSD.sh {input.genome} \
+                    {params.work_directory}/TSD/TSD_${{nameTE}}.txt \
+                    30 \
+                    $SIZE_TSD ;
+                    
+                echo ${{nameTE}} >> report_TSD.txt
+                tail -n 8 {params.work_directory}/TSD/TSD_${{nameTE}}.txt >> {params.work_directory}/report_TSD.txt
             fi;
-            size_tsd=`grep -w "${{nameTE}}" ${{path_to_pipline}}/TSD/TE_SIZE_TSD.txt || echo NONE`
-            echo "TE=$nameTE SIZE_TSD=$size_tsd  ss=$SIZE_TSD" 
-            sh ${{path_to_pipline}}/TSD/find_fq_to_fasta.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
-               ${{read_directory}} \
-               ${{fasta_dir_find}} ;
-
-            sh ${{path_to_pipline}}/TSD/tsd_te.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
-                ${{read_directory}} \
-                ${{fasta_dir_find}} \
-                {input.fasta_TE} 30 $SIZE_TSD ;
-
-            mv total_results_tsd_${{nameTE}}.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt ;
-
-            sh ${{path_to_pipline}}/TSD/revise_TSD.sh {input.genome} \
-                {params.work_directory}/TSD/TSD_${{nameTE}}.txt \
-                30 \
-                $SIZE_TSD ;
-
-            echo ${{nameTE}} >> report_TSD.txt
-            tail -n 8 {params.work_directory}/TSD/total_results_tsd_${{nameTE}}.txt >> {params.work_directory}/report_TSD.txt
+            
         done;
 
         """
 
 #Get just sequence potentiel candidate of TE
-rule get_TE_seq :
+rule GET_SEQ_TE :
     input:
         "extract_read.done",
         all_te            = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
@@ -427,6 +430,7 @@ rule extract_read :
         bln      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
 
     output:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/ID_BEST_READ_TE.txt",
         touch("extract_read.done"),
 
     params:
@@ -479,7 +483,10 @@ rule extract_read :
             region=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
             id=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]" | cut -d":" -f 2`
 
-            nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "RE=[0-9]*" | cut -d"=" -f 2`
+            #nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "RE=[0-9]*" | cut -d"=" -f 2`
+            #nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "SUPPORT=[0-9]*" | cut -d"=" -f 2`
+
+            nb_read=`wc -l {params.work_directory}/ID_READS_TE/$read_file | cut -d " " -f 1`
             TE=`grep ":$id:[0-9]*:[IP]" {input.all_te} | cut -f 1 || echo "NONE"`
 
             i=$(($i + 1)) ;
@@ -507,13 +514,24 @@ rule extract_read :
         NB_REGION=`ls {params.work_directory}/ID_READS_TE | wc -l` ;
         NB_READS=`ls {params.work_directory}/READ_FASTQ_TE | wc -l` ;
 
-        echo "      [extract_read:snk] $NB_READS AND $NB_REGION";
+        awk 'NR>1 {{print $2}}' {input.all_te} | cut -d ":" -f 5,8 > {params.work_directory}/ID_RD_SEQ.txt
+
+        for i in `cat {params.work_directory}/ID_RD_SEQ.txt`; 
+        do 
+            ID=`echo $i | cut -d ":" -f 1`; 
+            num=`echo $i | cut -d ":" -f 2`; 
+            name_file=`ls {params.work_directory}/ID_READS_TE/ | grep -w "$ID"`; 
+
+            awk -v num="$num" 'NR-1 == num' {params.work_directory}/ID_READS_TE/$name_file; 
+        done > {params.work_directory}/ID_BEST_READ_TE.txt;
+
+        echo "     [extract_read:snk] $NB_READS AND $NB_REGION";
 
         """
 
 
 #BLASt database of TE against SV (Structural variant)
-rule blast :
+rule DETECTION_TE :
     input:
         vcf      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SV.vcf",
         fasta_TE = config["DATA"]["TE_DB"],
@@ -535,24 +553,31 @@ rule blast :
 
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK]--[`date`] BLAST [^-^] {params.cend}"
+
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] DETECTION_TE [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
         # GET SEQUENCE REPORT #
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCES VARIANTS [^-^] {params.cend}"
         python3 ${{path_to_pipline}}/scripts_python/get_seq_vcf.py -m 150 {input.vcf} {output.snif_seqs} ;
 
+
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] BLAST TE TO SEQUENCES [^-^] {params.cend}"
         # BLAST SEQUENCE VCF on DATABASE TE #
         makeblastdb -in {input.fasta_TE} -dbtype nucl ;
         blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} ;
 
+
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] FILTER TE BLAST [^-^] {params.cend}"
         # FILTER TE BLAST #
-        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {output.bln} {input.fasta_TE} {output.all_te} ;
+        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {output.bln} {input.fasta_TE} {output.all_te} -c;
 
 
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] CALCUL FREQUENCE TE [^-^] {params.cend}"
         # CALCUL FREQUENCE #
         CSV_TE={output.all_te}
-        BAM_TE={output.bam}
+        BAM_TE={input.bam}
         i=0;
         while read l; do
             if [ $i -ne 0 ]; then
@@ -572,8 +597,9 @@ rule blast :
         done < $CSV_TE;
 
 
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] GET BAM TE [^-^] {params.cend}"
         # GET BAM TE
-        awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -v size="10" -F ":" 'OFS="\t"{{print $1, $3-size, $3+size, $5":"$9}}' > {params.work_directory}/POSITION_START_TE.bed
+        awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -v size="15" -F ":" 'OFS="\t"{{print $1, $3-size, $3+size, $5":"$9}}' > {params.work_directory}/POSITION_START_TE.bed
         samtools view -h -b {input.bam} -L {params.work_directory}/POSITION_START_TE.bed > {params.work_directory}/MAPPING_POSTION_TE.bam
         """
 
@@ -597,12 +623,10 @@ rule svim :
 
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] SVIM DETECTION VARIANT [^-^] {params.cend}"
 
-        #sniffles --report_seq -s 1 -m {input} -v {output} -n -1 ;
-        svim alignment --read_names --interspersed_duplications_as_insertions \
+        svim alignment --read_names \
             --insertion_sequences \
-            --tandem_duplications_as_insertions \
             --minimum_depth 1 {params.work_directory}/SVIM_RESULT {input.bam} {input.genome}
 
         cp {params.work_directory}/SVIM_RESULT/variants.vcf {output.sv}
@@ -654,7 +678,7 @@ rule samtools :
         """
         printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
-        samtools view {params.preset} -b {input.sam} > {input.sam}.bam ;
+        samtools view -h {params.preset} -b {input.sam} > {input.sam}.bam ;
         samtools sort {params.preset} {input.sam}.bam -o {input.sam}.sorted.bam ;
         samtools calmd {params.preset} -b {input.sam}.sorted.bam {input.genome} > {output} ; #CALL MD for sniffles
         samtools index {output}

@@ -124,6 +124,18 @@ print("chromosome liste : ", chrom_list)
 dico_chrom = {}#just for resume
 
 line = file.readline()
+
+version_vcf =  line.split("=")[1].strip()
+print("version_vcf=", version_vcf)
+##fileformat=VCFv4.3
+#Check format vcf file
+if version_vcf != "VCFv4.3" and version_vcf != "VCFv4.2":
+    print("[" + str(sys.argv[0]) + "] : ERROR format vcf must be VCFv4.3 not " + str(line.split("=")[1].strip()) )
+    print("[" + str(sys.argv[0]) + "] : please change format of vcf file, or use Snifflesv1.0.10 for genrate the good vcf file")
+    exit(1)
+
+
+
 while line:
     if re.search("^[^#]", line) :
         spl    = line.split("\t")
@@ -136,8 +148,10 @@ while line:
 
         
         #rname  = spl[7].split(";")[9].split("=")[1]
-        exp_rname = re.search(r'RNAMES=([^;]*);', line.strip())
-        
+        if version_vcf == "VCFv4.3" :
+            exp_rname = re.search(r'RNAMES=([^;]*);', line.strip())
+        if version_vcf == "VCFv4.2" :
+            exp_rname = re.search(r'READS=([^;\t]*)', line.strip())
 
         #print(ID, list_id[0])
         if list_id == None or (list_id and ID in list_id) :

@@ -187,8 +187,6 @@ if version_vcf == "VCFv4.2":
             ID      = spl[2]
             start   = spl[1]
             type_v  = spl[4]
-
-
             
             if re.search("END=([0-9]+)", spl[7]) != None and re.search("SUPPORT=([0-9]+)", spl[7]) != None :
                 end     = re.search("END=([0-9]+)", spl[7]).group(1)

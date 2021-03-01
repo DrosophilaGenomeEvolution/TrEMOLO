@@ -23,4 +23,4 @@ params:
         OPTIONS: '--plasmids -t 30'
         PRESET_OPTION: '--nano-raw'
     SAMTOOLS:
-        PRESET_OPTION: '--threads 8'
+        PRESET_OPTION: ''
