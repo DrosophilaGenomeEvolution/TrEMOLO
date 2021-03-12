@@ -83,7 +83,6 @@ while i < len(sys.argv) and name_configfil == "" :
 rule create_snake_file :
     input:  
 
-
     output:
         temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
     
@@ -125,15 +124,18 @@ rule create_snake_file :
         ##Exemple les instruction par default obligatoir
         printf "%s\\n" "> get_TE_seq > TSD" >> instruction.txt
 
-
         ##Creation du snake file en fonction des instructions
-        python3 ${{path_to_pipline}}/scripts_python/make_snk.py instruction.txt ${{path_to_pipline}}/list_rules.snk ${{path_to_pipline}}/Snakefile -t ${{path_to_pipline}}/template.snk
+        python3 ${{path_to_pipline}}/lib/python/make_snk.py instruction.txt ${{path_to_pipline}}/list_rules.snk ${{path_to_pipline}}/Snakefile -t ${{path_to_pipline}}/template.snk
 
-        printf "%s\\n" "{params.cmess} [SNK] CREATION SNAKEFILE DONE !! {params.cend}"
+        printf "%s\\n" "{params.cmess} [SNK] CREATION SNAKEFILE DONE ! {params.cend}"
+
+        printf "%s\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
 
         snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil}
 
         rm -f ${{path_to_pipline}}/Snakefile
 
         """
-        
+
+
+

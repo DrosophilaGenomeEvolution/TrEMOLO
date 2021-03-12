@@ -112,19 +112,19 @@ rule TSD :
             i=$(($i + 1)) ;
             echo "[TSD:snk] $i/$NB_FILE" ;
             nameTE=`echo $TE_found_fa | grep -o "_[^_]*\." | grep -o "[^_]*" | sed 's/\.$//g'` ;
-            SIZE_TSD=`grep -w "${{nameTE}}" ${{path_to_pipline}}/TSD/TE_SIZE_TSD.txt || echo "NONE"`; # EX: ZAM 4 :or: -1
+            SIZE_TSD=`grep -w "${{nameTE}}" ${{path_to_pipline}}/lib/TSD/TE_SIZE_TSD.txt || echo "NONE"`; # EX: ZAM 4 :or: -1
             echo "SIZE_TSD--1   $SIZE_TSD"
             if [[ $SIZE_TSD != "NONE" ]]; then
                 SIZE_TSD=`echo $SIZE_TSD | awk '{{print $2}}'`;
                 echo "SIZE_TSD = $SIZE_TSD"
 
-                size_tsd=`grep -w "${{nameTE}}" ${{path_to_pipline}}/TSD/TE_SIZE_TSD.txt || echo NONE`
+                size_tsd=`grep -w "${{nameTE}}" ${{path_to_pipline}}/lib/TSD/TE_SIZE_TSD.txt || echo NONE`
                 echo "TE=$nameTE size_tsd=$size_tsd  SIZE_TSD=$SIZE_TSD" 
-                sh ${{path_to_pipline}}/TSD/find_fq_to_fasta.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
+                sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
                    ${{read_directory}} \
                    ${{fasta_dir_find}} ;
 
-                sh ${{path_to_pipline}}/TSD/tsd_te.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
+                sh ${{path_to_pipline}}/lib/TSD/tsd_te.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
                     ${{read_directory}} \
                     ${{fasta_dir_find}} \
                     {input.fasta_TE} 30 $SIZE_TSD ;
@@ -132,7 +132,7 @@ rule TSD :
                 mv total_results_tsd.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt
                 #mv total_results_tsd_${{nameTE}}.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt ;
 
-                sh ${{path_to_pipline}}/TSD/revise_TSD.sh {input.genome} \
+                sh ${{path_to_pipline}}/lib/TSD/revise_TSD.sh {input.genome} \
                     {params.work_directory}/TSD/TSD_${{nameTE}}.txt \
                     30 \
                     $SIZE_TSD ;
@@ -235,7 +235,7 @@ rule assembly_flye :
                     #rm -f no_asm.txt;
 
                     ! test -e {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq && \
-                    python3 ${{path_to_pipline}}/scripts_python/fastq_to_fastq.py \
+                    python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
                      {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fq \
                      {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq
 
@@ -283,7 +283,7 @@ rule assembly_flye :
             cat {params.work_directory}/all_TE_assembly.bln | grep ":$i:" | sed "s/$qid_old/$qseqid":"$ET/g";
         done > {params.work_directory}/all_TE_assembly_format_old.bln;
 
-        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {params.work_directory}/all_TE_assembly_format_old.bln {params.work_directory}/all_TE_assembly.csv ;
+        python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {params.work_directory}/all_TE_assembly_format_old.bln {params.work_directory}/all_TE_assembly.csv ;
 
         NB_REGION=`ls {params.work_directory}/ID_READS_TE | wc -l` ;
         NB_READS=`ls {params.work_directory}/READ_FASTQ_TE | wc -l` ;
@@ -348,7 +348,7 @@ rule assembly_wdtgb :
             (! test -e {params.work_directory}/READ_FASTQ_TE/reads_$region.fastq && grep -w $id {params.work_directory}/ID_TE_SV_REPORT.txt && samtools fqidx {input.read} -r {params.work_directory}/ID_READS_TE/$read_file > {params.work_directory}/READ_FASTQ_TE/reads_$region.fq) || echo "$id NOT FOUND" ;
             
             ! test -e {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq && \
-                python3 ${{path_to_pipline}}/scripts_python/fastq_to_fastq.py \
+                python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
                      {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fq \
                      {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq
 
@@ -407,7 +407,7 @@ rule assembly_wdtgb :
             cat {params.work_directory}/all_TE_assembly.bln | grep ":$i:" | sed "s/$qid_old/$qseqid":"$ET/g";
         done > {params.work_directory}/all_TE_assembly_format_old.bln;
 
-        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {params.work_directory}/all_TE_assembly_format_old.bln {params.work_directory}/all_TE_assembly.csv ;
+        python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {params.work_directory}/all_TE_assembly_format_old.bln {params.work_directory}/all_TE_assembly.csv ;
 
         NB_REGION=`ls {params.work_directory}/ID_READS_TE | wc -l` ;
         NB_READS=`ls {params.work_directory}/READ_FASTQ_TE | wc -l` ;
@@ -471,7 +471,7 @@ rule extract_read :
         #TEST
         cat {params.work_directory}/ID_TE_SV_REPORT.txt > {params.work_directory}/ID_SV_ALL.txt
 
-        python3 ${{path_to_pipline}}/scripts_python/extract_region_reads_vcf.py {input.vcf} \
+        python3 ${{path_to_pipline}}/lib/python/extract_region_reads_vcf.py {input.vcf} \
          -d {params.work_directory}/ID_READS_TE \
          -i {params.work_directory}/ID_SV_ALL.txt > {params.work_directory}/resume.txt;
         
@@ -502,7 +502,7 @@ rule extract_read :
                     samtools fqidx {input.read} -r {params.work_directory}/ID_READS_TE/$read_file > {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fq ;
 
                     ! test -e {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq && \
-                    python3 ${{path_to_pipline}}/scripts_python/fastq_to_fastq.py \
+                    python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
                      {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fq \
                      {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq
 
@@ -562,7 +562,7 @@ rule DETECTION_TE :
 
         # GET SEQUENCE REPORT #
         printf "%s\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCES VARIANTS [^-^] {params.cend}"
-        python3 ${{path_to_pipline}}/scripts_python/get_seq_vcf.py -m 150 {input.vcf} {output.snif_seqs} ;
+        python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py -m 150 {input.vcf} {output.snif_seqs} ;
 
 
         printf "%s\n" "{params.cmess} [SNK]--[`date`] BLAST SV TO TE [^-^] {params.cend}"
@@ -574,7 +574,7 @@ rule DETECTION_TE :
 
         printf "%s\n" "{params.cmess} [SNK]--[`date`] FILTER TE BLAST [^-^] {params.cend}"
         # FILTER TE BLAST #
-        python3 ${{path_to_pipline}}/scripts_python/parse_blast_main.py {output.bln} {input.fasta_TE} {output.all_te} -c;
+        python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} {input.fasta_TE} {output.all_te} -c;
 
 
         printf "%s\n" "{params.cmess} [SNK]--[`date`] CALCUL FREQUENCE TE [^-^] {params.cend}"

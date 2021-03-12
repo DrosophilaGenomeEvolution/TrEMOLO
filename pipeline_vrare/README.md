@@ -169,7 +169,7 @@ reads_chromosome:ID:start_position:end_position.(txt|fastq|fasta)
 
 ##### Diagram of the different stages (rules)
 
-<img src="dag.svg">
+<img src="images/dag.svg">
 
 Enjoy :+1:
 
