@@ -550,6 +550,8 @@ rule DETECTION_TE :
         cfail          = bcolors.FAIL,
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
+    log:
+        blast = blastn.log
 
     shell:
         """
@@ -563,10 +565,11 @@ rule DETECTION_TE :
         python3 ${{path_to_pipline}}/scripts_python/get_seq_vcf.py -m 150 {input.vcf} {output.snif_seqs} ;
 
 
-        printf "%s\n" "{params.cmess} [SNK]--[`date`] BLAST TE TO SEQUENCES [^-^] {params.cend}"
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] BLAST SV TO TE [^-^] {params.cend}"
         # BLAST SEQUENCE VCF on DATABASE TE #
-        makeblastdb -in {input.fasta_TE} -dbtype nucl ;
-        blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} ;
+        makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.blastn};
+        blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} 2>> {log.blastn};
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] BLAST DONE CHECK logfile=={log.blastn} {params.cend}"
 
 
         printf "%s\n" "{params.cmess} [SNK]--[`date`] FILTER TE BLAST [^-^] {params.cend}"
@@ -621,13 +624,18 @@ rule svim :
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
 
+    log:
+        svim.log
+
     shell:
         """
         printf "%s\n" "{params.cmess} [SNK]--[`date`] SVIM DETECTION VARIANT [^-^] {params.cend}"
 
         svim alignment --read_names \
             --insertion_sequences \
-            --minimum_depth 1 {params.work_directory}/SVIM_RESULT {input.bam} {input.genome}
+            --minimum_depth 1 {params.work_directory}/SVIM_RESULT {input.bam} {input.genome} 2> {log}
+
+        printf "%s\n" "{params.cmess} [SNK]--[`date`] SVIM DONE CHECK logfile=={log}"
 
         cp {params.work_directory}/SVIM_RESULT/variants.vcf {output.sv}
         """
@@ -673,15 +681,26 @@ rule samtools :
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
+    log:
+        samtools.log
 
     shell:
         """
         printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
-        samtools view -h {params.preset} -b {input.sam} > {input.sam}.bam ;
-        samtools sort {params.preset} {input.sam}.bam -o {input.sam}.sorted.bam ;
-        samtools calmd {params.preset} -b {input.sam}.sorted.bam {input.genome} > {output} ; #CALL MD for sniffles
-        samtools index {output}
+        echo "---view---" > {log}
+        samtools view -h {params.preset} -b {input.sam} > {input.sam}.bam 2>> {log};
+
+        echo "---sort---" >> {log}
+        samtools sort {params.preset} {input.sam}.bam -o {input.sam}.sorted.bam 2>> {log};
+
+        echo "---calmd---" >> {log}
+        samtools calmd {params.preset} -b {input.sam}.sorted.bam {input.genome} > {output} 2>> {log}; #CALL MD for sniffles
+        
+        echo "---index---" >> {log}
+        samtools index {output} 2>> {log}
+
+        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS DONE CHECK logfile=={log}"
 
         rm -f {input.sam} \
         {input.sam}.bam \
@@ -709,14 +728,17 @@ rule mapping :
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
+    log:
+        minimap2.log
+
     shell:
         """
         printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
 
-        minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} ;
-        minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} ;
+        minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} 2> {log};
+        minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} 2>> {log};
         """
-        
+
 
 #for i in `cat ID_nameTE.txt`; do mkdir READ_BY_TE^Cgrep $i G73vsG73TEST_cnTE_ALL_ET.csv; done;
 #for i in `cat all_TE_assembly.bln | cut -f 1 | cut -d":" -f 2`; do qseqid=`grep ":$i:" G73vsG73LR_cnTE_ALL_ET.csv | cut -f 2`; qid_old=`grep ":$i:" all_TE_assembly.bln | cut -f 1`; ET=`grep ":$i:" G73vsG73LR_cnTE_ALL_ET.csv | cut -f 1`; cat all_TE_assembly.bln | grep ":$i:" | sed "s/$qid_old/$qseqid":"$ET/g"; done > new.bln;
