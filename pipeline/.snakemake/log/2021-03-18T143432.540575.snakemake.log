@@ -1,0 +1,3 @@
+KeyError in line 72 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/Snakefile:
+'LOCAL_ASSEMBLY'
+  File "/home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/Snakefile", line 72, in <module>

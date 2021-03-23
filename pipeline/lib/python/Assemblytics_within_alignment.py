@@ -1,0 +1,1 @@
+/home/mourdas/Documents/2-SCRIPTS/1-PYTHON/Assemblytics_within_alignment.py

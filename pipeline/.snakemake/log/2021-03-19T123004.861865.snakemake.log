@@ -1,0 +1,3 @@
+KeyError in line 110 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk:
+'CALL_SV'
+  File "/home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk", line 110, in <module>

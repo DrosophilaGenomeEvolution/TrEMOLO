@@ -1,0 +1,30 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	test
+	1	test2
+	2
+
+[Thu Mar 18 13:20:59 2021]
+rule test:
+    output: out.xt
+    jobid: 1
+
+[Thu Mar 18 13:20:59 2021]
+Error in rule test:
+    jobid: 1
+    output: out.xt
+    shell:
+        
+        echo ok;
+        echo export var=5;
+        echo $var;
+        
+        (exited with non-zero exit code)
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/.snakemake/log/2021-03-18T132059.415708.snakemake.log

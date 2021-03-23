@@ -1,0 +1,34 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	test
+	1	test2
+	2
+
+[Thu Mar 18 13:54:04 2021]
+rule test:
+    output: out.xt
+    jobid: 1
+
+Touching output file out.xt.
+[Thu Mar 18 13:54:04 2021]
+Finished job 1.
+1 of 2 steps (50%) done
+
+[Thu Mar 18 13:54:04 2021]
+rule test2:
+    input: out.xt
+    output: out2.xt
+    jobid: 0
+
+Waiting at most 5 seconds for missing files.
+MissingOutputException in line 87 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk:
+Missing files after 5 seconds:
+out2.xt
+This might be due to filesystem latency. If that is the case, consider to increase the wait time with --latency-wait.
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/.snakemake/log/2021-03-18T135404.659710.snakemake.log

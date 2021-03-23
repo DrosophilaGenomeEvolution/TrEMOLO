@@ -1,0 +1,3 @@
+KeyError in line 51 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/Snakefile:
+'DATA'
+  File "/home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/Snakefile", line 51, in <module>

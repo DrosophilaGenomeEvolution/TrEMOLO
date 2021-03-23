@@ -1,0 +1,1 @@
+/home/mourdas/Documents/9-TEST/Assemblitics/1-SCRIPT/global_sv.py

@@ -1,0 +1,47 @@
+
+DATA: 
+    REFERENCE:       "/path/to/reference_file.fasta"   #reference genome (fasta file)
+    GENOME:          "/path/to/genome_file.fasta"   #genome (fasta file)
+    SAMPLE:          "/path/to/reads_file.fastq"    #long reads (a fastq file)
+    WORK_DIRECTORY:  "/path/to/directory_work"      #name of output directory
+    TE_DB:           "/path/to/database_TE.fasta"   #Database of TE (a fasta file)
+
+
+
+CHOICE:
+    PIPELINE:
+        ASSEMBLY_GENOME: False
+        OUTSIDER_VARIANT: True
+    OUTSIDER_VARIANT:
+        LOCAL_ASSEMBLY:
+            FLYE: False
+            WTDGB: False
+        CALL_SV: "svim" #Posibiliti (sniffles, svim)
+
+
+
+PARAMS:
+    OUTSIDER_VARIANT:
+        MINIMAP2:
+            PRESET_OPTION: 'map-ont' # -x minimap2 preset option is map-pb by default (map-pb, map-ont etc)
+            OPTION: '-t 8'
+        SAMTOOLS_VIEW:
+            PRESET_OPTION: ''
+        SAMTOOLS_SORT:
+            PRESET_OPTION: ''
+        SAMTOOLS_CALLMD:
+            PRESET_OPTION: ''
+        FLYE:
+            OPTIONS: '--plasmids -t 30'
+            PRESET_OPTION: '--nano-raw'
+        TSD:
+            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt"
+            SIZE_FLANK: 30
+
+
+    ASSEMBLY_GENOME:
+        FLYE:
+            OPTIONS: ''
+            PRESET_OPTION: '--nano-raw'
+        
+        

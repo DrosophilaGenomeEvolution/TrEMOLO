@@ -1,0 +1,17 @@
+Building DAG of jobs...
+Using shell: /bin/bash
+Provided cores: 1
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	test2
+	1
+
+[Thu Mar 18 13:48:26 2021]
+rule test2:
+    input: out.xt
+    output: out2.xt
+    jobid: 0
+
+RuleException in line 87 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk:
+'Params' object has no attribute 'test'
