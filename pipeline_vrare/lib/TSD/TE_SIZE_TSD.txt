@@ -1,8 +1,0 @@
-ZAM	4
-412	4
-blood	4
-mdg3	4
-gtwin	4
-roo	5
-copia	5
-17.6	5
