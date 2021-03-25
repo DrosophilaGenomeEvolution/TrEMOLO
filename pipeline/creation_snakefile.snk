@@ -93,8 +93,9 @@ os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 # onerror:
 #     print("An error occurred")
-# onsuccess:
-#     print("Workflow finished, no error")
+onsuccess:
+     print("Workflow finished, no error")
+     shell("rm -f end_pipeline.end")
 
 #Map reads on assembly genome
 rule create_snake_file :
@@ -102,6 +103,7 @@ rule create_snake_file :
 
     output:
         temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
+        "end_pipeline.end",
     
     params:
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -116,6 +118,7 @@ rule create_snake_file :
         call_sv             = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
         choice_asm          = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
+        choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
 
         LC_ASM_FLYE         = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["FLYE"],
         LC_ASM_WTDGB        = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["WTDGB"],
@@ -154,6 +157,35 @@ rule create_snake_file :
             cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_UTILS/Snakefile_assemby.snk
 
             printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE OUTSIDER DONE ! {params.cend}"
+
+            printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
+
+            snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --dryrun \
+                || (message_fail "\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\n\n" && exit 1)
+            
+            if [ $? -eq 0 ]; then
+                printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} \
+                    || (message_fail "\n[SNK INFO] ERROR PIPELINE\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
+            fi;
+        fi;
+
+        #INSIDER
+        if [ {params.choice_insider_sv} = "True" ]; then
+
+            ## Exemple les instructions par default obligatoir
+            printf "%s" "sv_insider > TE_INSIDER " > instruction.txt
+
+            ## BUILD SNAKEFILE en fonctions des instructions
+            python3 ${{path_to_pipline}}/lib/python/make_snk.py \
+                instruction.txt \
+                ${{path_to_pipline}}/list_rules.snk \
+                ${{path_to_pipline}}/Snakefile \
+                -t ${{path_to_pipline}}/template.snk
+
+            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_UTILS/Snakefile_assemby.snk
+
+            printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE INSIDER DONE ! {params.cend}"
 
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
 
@@ -213,6 +245,7 @@ rule create_snake_file :
         fi;
 
         ##rm -f ${{path_to_pipline}}/Snakefile*
+        touch end_pipeline.end
 
         """
 

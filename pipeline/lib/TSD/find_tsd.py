@@ -138,7 +138,7 @@ tab_ko       = []
 tab_gap      = []
 
 
-while not find and size_k > 1 :
+while not find and size_k > 3 :
 
     for i in reversed(range(len(sequence_1)-size_k+1)):
         chaine = ""
@@ -155,7 +155,7 @@ while not find and size_k > 1 :
             alignments = pairwise2.align.globalxx(sequence_1[i:i+size_k], sequence_2[e:e+size_k])
             aln, ind = align(alignments, size_k)
             if aln and aln[2] == size_k :
-                if i == len(sequence_1.strip()) - size_k and e == 0 and ((size_tsd != -1 and size_k == size_tsd) or size_tsd == -1) :
+                if i == len(sequence_1.strip()) - size_k and e == 0 and ((size_tsd != -1 and size_k == size_tsd) or (size_tsd == -1 and len(sequence_1.strip()) >= 4)) :
                     #print(sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[OK]", i, e, size_k)
                     chaine += "("+", ".join([sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[OK:"+id_elem+"]", str(i), str(e), str(size_k)])+")\n"
                     find = True
@@ -170,12 +170,12 @@ while not find and size_k > 1 :
                 tab_ko.append(chaine)
                 if find:
                     print(chaine)
-                    tmp_file = open("all_flank.fasta", "a")
-                    tmp_file.write(sequence_1[i:i+size_k]+"\n"+sequence_2[e:e+size_k]+"\n")
-                    tmp_file.close()
+                    # tmp_file = open("all_flank.fasta", "a")
+                    # tmp_file.write(sequence_1[i:i+size_k]+"\n"+sequence_2[e:e+size_k]+"\n")
+                    # tmp_file.close()
                     break
             elif aln and aln[2] == size_k - 1 and size_k >= 4 :
-                if i == len(sequence_1.strip()) - size_k and e == 0 and ((size_tsd != -1 and size_k == size_tsd) or size_tsd == -1) :
+                if i == len(sequence_1.strip()) - size_k and e == 0 and ((size_tsd != -1 and size_k == size_tsd) or (size_tsd == -1)) :
                     #print(sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[OK]", i, e, size_k)
                     chaine += "("+", ".join([sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[K-O:"+id_elem+"]", str(i), str(e), str(size_k)])+")\n"
                     

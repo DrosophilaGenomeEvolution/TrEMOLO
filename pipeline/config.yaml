@@ -12,6 +12,7 @@ CHOICE:
     PIPELINE:
         ASSEMBLY_GENOME: False
         OUTSIDER_VARIANT: True
+        INSIDER_VARIANT: True
     OUTSIDER_VARIANT:
         LOCAL_ASSEMBLY:
             FLYE: False
@@ -37,6 +38,8 @@ PARAMS:
         TSD:
             FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt"
             SIZE_FLANK: 30
+        TE_DETECTION:
+            CHROM_KEEP: "."  #regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3R,3L,X" ; put "." for keep all chromosome
 
 
     ASSEMBLY_GENOME:

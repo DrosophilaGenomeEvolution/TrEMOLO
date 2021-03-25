@@ -1,1 +1,0 @@
-mapping > samtools > svim > blast > extract_read > get_TE_seq > TSD

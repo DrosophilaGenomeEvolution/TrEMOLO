@@ -8,13 +8,13 @@
 
 rule TSD :
     input:
-        "get_TE_seq.done",
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_REPORT_total_find.fasta",
         #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "ET_FIND_FA"),
         fasta_TE  = config["DATA"]["TE_DB"],
         genome    = config["DATA"]["GENOME"],
 
     output:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/report_TSD.txt",
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/VALUES_TSD_GROUP.csv",
         #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "TSD"),
 
     params:
@@ -37,15 +37,19 @@ rule TSD :
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/TSD",
 
-    threads: 30
+
     shell:
         #TODO broullion
         """
         {params.env}
-        rm -f {params.work_directory}/report_TSD.txt;
-        touch {params.work_directory}/report_TSD.txt;
 
-        echo '-----------TSD----------' ;
+        rm -f {log}.*
+
+        echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
+        echo -e "x\ty\tcondition" > {params.work_directory}/VALUES_TSD_GROUP.csv
+
+        #echo '-----------TSD----------' ;
+        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] --- TSD --- {params.cend}"
         mkdir -p {params.work_directory}/TSD ;
         path_to_pipline=`dirname {params.path_snk}`
         
@@ -65,22 +69,25 @@ rule TSD :
             SIZE_TSD=`grep -w "${{nameTE}}" {params.FILE_SIZE_TE_TSD} || echo "NONE"`; # EX: ZAM 4 :or: -1
             #SIZE_TSD=`grep -w "${{nameTE}}" ${{path_to_pipline}}/lib/TSD/TE_SIZE_TSD.txt || echo "NONE"`; # EX: ZAM 4 :or: -1
             
-            echo "TE=$nameTE ; SIZE_TSD == $SIZE_TSD"
+            echo "TE : $nameTE"
             
             if [[ $SIZE_TSD != "NONE" ]]; then
                 SIZE_TSD=`echo $SIZE_TSD | awk '{{print $2}}'`;
-                #echo "SIZE_TSD = $SIZE_TSD"
+                echo "SIZE TSD : $SIZE_TSD"
 
-                size_tsd=`grep -w "${{nameTE}}" ${{path_to_pipline}}/lib/TSD/TE_SIZE_TSD.txt || echo NONE`
-                echo "TE=$nameTE size_tsd=$size_tsd  SIZE_TSD=$SIZE_TSD" 
+                #echo "TE=$nameTE ; SIZE TSD=$SIZE_TSD" 
+                
+                (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
                 sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
                    ${{read_directory}} \
-                   ${{fasta_dir_find}} > {log}.out 2> {log}.err;
+                   ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
 
                 sh ${{path_to_pipline}}/lib/TSD/tsd_te.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
                     ${{read_directory}} \
                     ${{fasta_dir_find}} \
-                    {input.fasta_TE} 10 $SIZE_TSD > {log}.out 2> {log}.err;
+                    {input.fasta_TE} \
+                    {params.SIZE_FLANK} \
+                    $SIZE_TSD >> {log}.out 2>> {log}.err;
 
                 mv total_results_tsd.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt
                 #mv total_results_tsd_${{nameTE}}.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt ;
@@ -88,47 +95,79 @@ rule TSD :
                 sh ${{path_to_pipline}}/lib/TSD/revise_TSD.sh {input.genome} \
                     {params.work_directory}/TSD/TSD_${{nameTE}}.txt \
                     {params.SIZE_FLANK} \
-                    $SIZE_TSD > {log}.out 2> {log}.err;
+                    $SIZE_TSD >> {log}.out 2>> {log}.err;
                     
-                echo ${{nameTE}} >> {params.work_directory}/report_TSD.txt
-                tail -n 8 {params.work_directory}/TSD/TSD_${{nameTE}}.txt >> {params.work_directory}/report_TSD.txt
+                sh ${{path_to_pipline}}/lib/bash/end_load.sh;
             else
                 SIZE_TSD=-1;
                 #echo "SIZE_TSD = $SIZE_TSD"
 
-                size_tsd=`grep -w "${{nameTE}}" ${{path_to_pipline}}/lib/TSD/TE_SIZE_TSD.txt || echo NONE`
-                echo "TE=$nameTE size_tsd=$size_tsd  SIZE_TSD=$SIZE_TSD" 
+                #echo "TE=$nameTE ; SIZE TSD=?" 
+                
+                (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
                 sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
                    ${{read_directory}} \
-                   ${{fasta_dir_find}} > {log}.out 2> {log}.err;
+                   ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
 
                 sh ${{path_to_pipline}}/lib/TSD/tsd_te.sh {params.work_directory}/ET_FIND_FA/$TE_found_fa \
                     ${{read_directory}} \
                     ${{fasta_dir_find}} \
-                    {input.fasta_TE} {params.SIZE_FLANK} $SIZE_TSD > {log}.out 2> {log}.err;
+                    {input.fasta_TE} \
+                    {params.SIZE_FLANK} \
+                    $SIZE_TSD >> {log}.out 2>> {log}.err;
 
                 mv total_results_tsd.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt
                 #mv total_results_tsd_${{nameTE}}.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt ;
 
-                # sh ${{path_to_pipline}}/lib/TSD/revise_TSD.sh {input.genome} \
-                #     {params.work_directory}/TSD/TSD_${{nameTE}}.txt \
-                #     {params.SIZE_FLANK} \
-                #     $SIZE_TSD > {log}.out 2> {log}.err;
+                if [ 0 -ne `grep "^(" {params.work_directory}/TSD/TSD_${{nameTE}}.txt | grep "OK" -c` ]; then
+                    SIZE_TSD_MOY=`grep "^(" {params.work_directory}/TSD/TSD_${{nameTE}}.txt | grep "OK" | tr -d ")" | cut -d "," -f 6 | awk 'BEGIN{{somme=0}}{{somme+=$0}}END{{print int(somme/NR)}}'`
+                    echo "SIZE TSD MEAN : $SIZE_TSD_MOY ;"
 
-                # sh ${{path_to_pipline}}/lib/TSD/revise_TSD.sh {input.genome} \
-                #     {params.work_directory}/TSD/TSD_${{nameTE}}.txt \
-                #     {params.SIZE_FLANK} \
-                #     4 > {log}.out 2> {log}.err;
+                    sh ${{path_to_pipline}}/lib/TSD/revise_TSD.sh {input.genome} \
+                        {params.work_directory}/TSD/TSD_${{nameTE}}.txt \
+                        {params.SIZE_FLANK} \
+                        $SIZE_TSD_MOY >> {log}.out 2>> {log}.err;
+                fi;
                     
-                echo ${{nameTE}} >> {params.work_directory}/report_TSD.txt
-                tail -n 8 {params.work_directory}/TSD/TSD_${{nameTE}}.txt >> {params.work_directory}/report_TSD.txt
+                sh ${{path_to_pipline}}/lib/bash/end_load.sh;
             fi;
             
-            
+            TOTAL=`grep "^OK/total" {params.work_directory}/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 2`
+            NB_TSD_OK=`grep "^OK/total" {params.work_directory}/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+            NB_TSD_KO=`grep "^KO/total" {params.work_directory}/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+            NB_TSD_K_gap_O=`grep "^K-O/total" {params.work_directory}/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+
+
+            if test -e {params.work_directory}/TSD/TSD_${{nameTE}}_KO_corrected.txt ; then
+                NB_TSD_OK_corrected=`grep "OK/total" {params.work_directory}/TSD/TSD_${{nameTE}}_KO_corrected.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+                NB_TSD_KO_corrected=`grep "KO/total" {params.work_directory}/TSD/TSD_${{nameTE}}_KO_corrected.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+            else
+                NB_TSD_OK_corrected=0;
+                NB_TSD_KO_corrected=0;
+            fi;
+
+            OK_K_gap_O=$(($NB_TSD_OK + $NB_TSD_K_gap_O + $NB_TSD_OK_corrected));
+                        
+            PERCENT=$(($OK_K_gap_O*100/$TOTAL))
+
+            KO=$(($NB_TSD_KO-$NB_TSD_OK_corrected))
+
+            echo "TOTAL TE:$TOTAL ; TSD [OK]:$NB_TSD_OK ; TSD [K-O]:$NB_TSD_K_gap_O ; TSD [KO]:$KO ; TSD CORRECTED [KO]:$NB_TSD_OK_corrected ;"
+
+            echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD.csv
+
+            echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tOK" >> {params.work_directory}/VALUES_TSD_GROUP.csv
+            echo -e "${{nameTE}}\t${{KO}}\tKO" >> {params.work_directory}/VALUES_TSD_GROUP.csv
             
             i=$(($i + 1)) ;
             printf "%s\\n" "{params.cmess} [SNK]--[`date`] [TSD:snk] : $i/$NB_FILE {params.cend}"
         done;
+
+        rm -f {params.work_directory}/TE_REPORT_total_find.fasta;
+        rm -f TSM_OK.txt;
+        rm -fr {params.work_directory}/TSD/DIR_SEQ_TE_READ_POS
+        mv DIR_SEQ_TE_READ_POS {params.work_directory}/TSD/
+
 
         """
 
@@ -139,22 +178,19 @@ rule TSD :
 #Get just sequence potentiel candidate of TE
 rule GET_SEQ_TE :
     input:
-        "extract_read.done",
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/ID_BEST_READ_TE.txt",
         all_te            = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
         snif_seqs         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SEQUENCE_INDEL.fasta",
 
     output:
-        temp(touch("get_TE_seq.done")),
         directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "ET_FIND_FA"),
-
-
-
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_REPORT_total_find.fasta",
 
     params:
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
         env            = env, #source environnement
-    threads: 30
+
     shell:
         """
         {params.env}
@@ -189,7 +225,7 @@ rule assembly_flye :
         fasta_TE = config["DATA"]["TE_DB"],
         all_te   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
         bln      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
-        active   = "extract_read.done" if config["LOCAL_ASSEMBLY"]["FLYE"] else [],
+        active   = "extract_read.done"
 
     output:
         temp(touch("FLYE")),
@@ -208,7 +244,7 @@ rule assembly_flye :
 
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY FLYE [^-^] {params.cend}"
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`] LOCAL ASSEMBLY FLYE [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
@@ -218,8 +254,8 @@ rule assembly_flye :
             region=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
             id=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]" | cut -d":" -f 2`
 
-            #nb_read=`grep ":$id:" {input.all_te} | cut -f 2 | cut -d ":" -f 6`
-            nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "RE=[0-9]*" | cut -d"=" -f 2`
+            nb_read=`grep ":$id:" {input.all_te} | cut -f 2 | cut -d ":" -f 6`
+            #nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "RE=[0-9]*" | cut -d"=" -f 2`
             TE=`grep ":$id:[0-9]*:[IP]" {input.all_te} | cut -f 1 || echo "NONE"`
 
             i=$(($i + 1)) ;
@@ -342,7 +378,8 @@ rule assembly_wdtgb :
             id=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]" | cut -d":" -f 2`
 
             #nb_read=`grep ":$id:" {input.all_te} | cut -f 2 | cut -d ":" -f 6`
-            nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "RE=[0-9]*" | cut -d"=" -f 2`
+            
+            nb_read=`cat {params.work_directory}/ID_READS_TE/$read_file | sort | uniq | wc -l`
             TE=`grep ":$id:[0-9]*:[IP]" {input.all_te} | cut -f 1 || echo "NONE"`
 
             i=$(($i + 1)) ;
@@ -443,7 +480,7 @@ rule extract_read :
 
     output:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/ID_BEST_READ_TE.txt",
-        touch("extract_read.done"),
+        #touch("extract_read.done"),
 
     params:
         path_snk       = path_snk,
@@ -454,6 +491,8 @@ rule extract_read :
         #Choice
         FLYE           = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["FLYE"],
         WTDGB          = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["WTDGB"],
+
+        CHROM_KEEP     = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
 
         #Color message
         cmess          = bcolors.CYAN,
@@ -480,13 +519,12 @@ rule extract_read :
 
         ##only TE found
         awk 'NR>1 {{print $2}}' {input.all_te} | cut -d":" -f 5 > {params.work_directory}/ID_TE_SV_REPORT.txt ; 
-        echo "ok------"
-        python3 ${{path_to_pipline}}/lib/python/extract_region_reads_vcf.py -c "." \
+
+        python3 ${{path_to_pipline}}/lib/python/extract_region_reads_vcf.py -c {params.CHROM_KEEP} \
           {input.vcf} \
          -d {params.work_directory}/ID_READS_TE \
          -i {params.work_directory}/ID_TE_SV_REPORT.txt ;
 
-        echo "ok------"
         makeblastdb -in {input.fasta_TE} -dbtype nucl ;
 
         NB_FILE=`ls {params.work_directory}/ID_READS_TE | wc -l` ;
@@ -496,14 +534,11 @@ rule extract_read :
             region=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
             
             if ! test -e {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq; then
-                echo "REGION ------- {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq"
+                ####echo "REGION ------- {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq"
 
                 id=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]" | cut -d":" -f 2`
 
-                #nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "RE=[0-9]*" | cut -d"=" -f 2`
-                #nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "SUPPORT=[0-9]*" | cut -d"=" -f 2`
-
-                nb_read=`wc -l {params.work_directory}/ID_READS_TE/$read_file | cut -d " " -f 1`
+                nb_read=`cat {params.work_directory}/ID_READS_TE/$read_file | sort | uniq | wc -l`
                 TE=`grep ":$id:[0-9]*:[IP]" {input.all_te} | cut -f 1 || echo "NONE"`
 
                 printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [extract_read:snk] $read_file {params.cend}"
@@ -531,7 +566,7 @@ rule extract_read :
         NB_REGION=`ls {params.work_directory}/ID_READS_TE | wc -l` ;
         NB_READS=`ls {params.work_directory}/READ_FASTQ_TE | wc -l` ;
 
-        #echo "     [extract_read:snk] $NB_READS AND $NB_REGION";
+        ####echo "     [extract_read:snk] $NB_READS AND $NB_REGION";
 
         ## GET BEST ID TE
         awk 'NR>1 {{print $2}}' {input.all_te} | cut -d ":" -f 5,8 > {params.work_directory}/tmp_ID_RD_SEQ.txt
@@ -576,13 +611,16 @@ rule DETECTION_TE :
 
         env            = env, #source environnement
 
+        CHROM_KEEP     = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
+
+
         cfail          = bcolors.FAIL,
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
     log:
         blastn = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/blastn"
 
-    threads: 30
+
     shell:
         """
         {params.env}
@@ -592,7 +630,7 @@ rule DETECTION_TE :
 
         # GET SEQUENCE REPORT #
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCES VARIANTS [^-^] {params.cend}"
-        python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py -m 150 {input.vcf} {output.snif_seqs} -c "." ;
+        python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py -m 150 {input.vcf} {output.snif_seqs} -c {params.CHROM_KEEP} ;
 
         cp {output.snif_seqs} {params.work_directory}/tmp_seq.fasta
 
@@ -677,7 +715,7 @@ rule svim :
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/svim"
 
-    threads: 30
+
     shell:
         """
         {params.env}
@@ -720,13 +758,12 @@ rule sniffles :
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/sniffles",
 
-    threads: 30
     shell:
         """
         {params.env}
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
 
-        samtools index {input.bam} 2> {log}.err
+        samtools index {input} 2> {log}.err
 
         #sniffles --report-seq -s 1 -m {input} -v {output} -n -1 ;
         run_cmd "sniffles --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES" "False";
@@ -761,8 +798,6 @@ rule samtools :
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
-
-    threads: 30
 
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/samtools"
@@ -808,6 +843,7 @@ rule mapping :
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SAMPLE_mapping_GENOME.sam",
     
     params:
+        path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
         config         = json.dumps(config),
 
@@ -816,25 +852,30 @@ rule mapping :
 
         env            = env, #source environnement
 
+
         #COLOR 
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/minimap2"
-    threads: 30
 
     shell:
         """
         {params.env};
+        path_to_pipline=`dirname {params.path_snk}`
 
         printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
         
         #minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} 2> {log};
-        run_cmd "minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome}" "{log}" "MINIMAP2_INDEX" "False";
+        run_cmd "minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome}" "{log}" "MINIMAP2_INDEX" "False" ;
         
         #minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} 2>> {log};
-        run_cmd "minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} | tee {output}" "{log}" "MINIMAP2" "False";
+        
+       (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+        run_cmd "minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} | tee {output}" "{log}" "MINIMAP2" "False"; 
+        sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+
         """
 
 
@@ -854,17 +895,17 @@ rule TE_INSIDER:
         ref   = config["DATA"]["REFERENCE"],
         query = config["DATA"]["GENOME"],
         sam   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam",
-        delta = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.delta",
+        delta = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam.delta",
         bed   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_structural_variants.bed",
         stats = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_assembly_stats.txt",
 
         fasta_TE = config["DATA"]["TE_DB"],
 
+
     output:
-        sam   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam",
-        delta = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.delta",
-        bed   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_structural_variants.bed",
-    
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_INSIDER/INSERTION.csv",
+
+
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -875,31 +916,33 @@ rule TE_INSIDER:
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
+    log:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/TE_INSIDER",
 
     shell:
         """
         #### STEP 2 GET TE
         {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
         
         mkdir -p {params.work_directory}/TE_INSIDER/
 
         array_type=( "INSERTION" "Repeat_expansion" "Tandem_expansion" );
-        for type in "${array_type[@]}"
+        for type in "${{array_type[@]}}"
         do
             echo "type=$type";
-            grep -i $type {output.bed} | awk '{{print $10":"$4}}' | awk -v type="$type" -F ":" 'OFS="\t"{{split($2, a, "-"); print $1 , a[1], a[2], $4":"$3":"type}}' > {params.work_directory}/TE_INSIDER/${{type}}.bed
+            grep -i $type {input.bed} | awk '{{print $10":"$4}}' | awk -v type="$type" -F ":" 'OFS="\t"{{split($2, a, "-"); print $1 , a[1], a[2], $4":"$3":"type}}' > {params.work_directory}/TE_INSIDER/${{type}}.bed
             
-
             bedtools getfasta -fi {input.query} -bed {params.work_directory}/TE_INSIDER/${{type}}.bed -name > {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta
         done;
 
         cat {params.work_directory}/TE_INSIDER/Tandem_expansion_SEQ.fasta {params.work_directory}/TE_INSIDER/Repeat_expansion_SEQ.fasta {params.work_directory}/TE_INSIDER/INSERTION_SEQ.fasta > {params.work_directory}/TE_INSIDER/INSERTION_SEQ_ALL.fasta
-        cat INSERTION_SEQ_ALL.fasta > {params.work_directory}/TE_INSIDER/INSERTION_SEQ.fasta
+        cat {params.work_directory}/TE_INSIDER/INSERTION_SEQ_ALL.fasta > {params.work_directory}/TE_INSIDER/INSERTION_SEQ.fasta
 
         array_type_deletion=( "DELETION" "Repeat_contraction" "Tandem_contraction" );
-        for type in "${array_type_deletion[@]}"
+        for type in "${{array_type_deletion[@]}}"
         do
-            grep -i ${{type}}  {output.bed} | awk  -v type="$type" 'OFS="\t"{{print $1, $2, $3, $4":"$6":"type}}' > {params.work_directory}/TE_INSIDER/${{type}}.bed
+            grep -i ${{type}}  {input.bed} | awk  -v type="$type" 'OFS="\t"{{print $1, $2, $3, $4":"$6":"type}}' > {params.work_directory}/TE_INSIDER/${{type}}.bed
 
             bedtools getfasta -fi {input.ref}  -bed {params.work_directory}/TE_INSIDER/${{type}}.bed -name > {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta
         done;
@@ -909,15 +952,15 @@ rule TE_INSIDER:
 
 
         array_type=( "INSERTION" "Repeat_expansion" "Tandem_expansion" "DELETION" "Repeat_contraction" "Tandem_contraction" )
-        for type in "${array_type[@]}"
+        for type in "${{array_type[@]}}"
         do
             echo "type=$type";
 
-            makeblastdb -in {input.fasta_TE} -dbtype nucl ;
+            makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
             blastn -db {input.fasta_TE} \
             -query {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta \
             -outfmt 6 \
-            -out {params.work_directory}/TE_INSIDER/${{type}}.bln ;
+            -out {params.work_directory}/TE_INSIDER/${{type}}.bln 2> {log}.err 1> {log}.out;
             
             test -s {params.work_directory}/TE_INSIDER/${{type}}.bln && \
                 python3 ${{path_to_pipline}}/lib/python/global_sv.py --combine_name {params.work_directory}/TE_INSIDER/${{type}}_COMBINE_TE.csv \
@@ -929,8 +972,14 @@ rule TE_INSIDER:
                 awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > {params.work_directory}/TE_INSIDER/${{type}}_COUNT_TE.csv
         done;
 
+        cd {params.work_directory}/TE_INSIDER/
+        
+        rm -f Repeat*
+        rm -f Tandem*
+        rm -f *SEQ_ALL.fasta
 
         """
+
 
 #END TE_INSIDER
 
@@ -943,7 +992,7 @@ rule sv_insider:
 
     output:
         sam   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam",
-        delta = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.delta",
+        delta = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam.delta",
         bed   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_structural_variants.bed",
         stats = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_assembly_stats.txt",
 
@@ -964,23 +1013,25 @@ rule sv_insider:
 
         #### STEP 1 GET SV
         mkdir -p {params.work_directory}/INSIDER/
-        cd {params.work_directory}/INSIDER/
+        mkdir -p {params.work_directory}/log/
+        #cd {params.work_directory}/INSIDER/
 
         path_to_pipline=`dirname {params.path_snk}`
 
-        minimap2 -ax asm5 --cs -t3 {input.ref} {input.genome} > {output.sam} 2> pm_contigs_against_ref.sam.log
+        minimap2 -ax asm5 --cs -t3 {input.ref} {input.genome} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
         
         python3 ${{path_to_pipline}}/lib/python/sam2delta.py {output.sam};
+        
 
         python3 ${{path_to_pipline}}/lib/python/Assemblytics_uniq_anchor.py \
         --delta {output.delta} \
         --unique-length 10000 \
-        --out assemblytics_out \
+        --out {params.work_directory}/INSIDER/assemblytics_out \
         --keep-small-uniques;
 
 
         perl ${{path_to_pipline}}/lib/perl/Assemblytics_between_alignments.pl \
-        assemblytics_out.coords.tab \
+        {params.work_directory}/INSIDER/assemblytics_out.coords.tab \
         50 \
         10000 \
         all-chromosomes \
@@ -993,19 +1044,32 @@ rule sv_insider:
         --min 50 > {params.work_directory}/INSIDER/assemblytics_out.variants_within_alignments.bed;
 
 
-        cat {params.work_directory}/INSIDER/assemblytics_out.variants_between_alignments.bed {params.work_directory}/INSIDER/assemblytics_out.variants_within_alignments.bed > {output.bed}
-        python3 ${{path_to_pipline}}/lib/python/filter_gap_SVs.py {input.ref} {input.genome}
+        cat {params.work_directory}/INSIDER/assemblytics_out.variants_between_alignments.bed \
+        {params.work_directory}/INSIDER/assemblytics_out.variants_within_alignments.bed \
+        > {output.bed}
+        
+        path_ref=`readlink -f {input.ref}`
+        path_genome=`readlink -f {input.genome}`
+        
+        old_path=`pwd`
+        
+        cd {params.work_directory}/INSIDER/
+        python3 ${{path_to_pipline}}/lib/python/filter_gap_SVs.py ${{path_ref}} ${{path_genome}}
+        cd ${{old_path}}
 
 
         ## delet '/' for command sed
-        name_ref=`echo {input.ref} | grep "/[^/]*$" -o | tr -d "/"`
-        name_query=`echo {input.genome} | grep "/[^/]*$" -o | tr -d "/"`
+        name_ref=`echo {input.ref} | grep "[/]*[^/]*$" -o | tr -d "/"`
+        name_query=`echo {input.genome} | grep "[/]*[^/]*$" -o | tr -d "/"`
+
+
+        echo " -- $name_ref ; -- $name_query ;"
 
 
         sed -i "s/file1/${{name_ref}}/g" {output.stats}
         sed -i "s/file2/${{name_query}}/g" {output.stats}
 
-        mv assemblytics_out* {params.work_directory}/INSIDER/
+        ##mv assemblytics_out* {params.work_directory}/INSIDER/
 
         """
 
@@ -1042,7 +1106,7 @@ rule ragoo :
         cend           = bcolors.END,
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK]--[`date`] RAGOO {params.cend}"
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`] RAGOO {params.cend}"
 
         ragoo.py 
 
@@ -1075,7 +1139,7 @@ rule polishing :
         cend           = bcolors.END,
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK]--[`date`] RACON POLISHING {params.cend}"
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`] RACON POLISHING {params.cend}"
 
         j={input.assembly_flye}
         base="base"
@@ -1121,7 +1185,7 @@ rule flye_genome :
         cend           = bcolors.END,
     shell:
         """
-        printf "%s\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY READS WITH FLYE {params.cend}"
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY READS WITH FLYE {params.cend}"
 
         echo "VERSION FLYE " `flye -v`; 
         flye {params.option} {params.preset} {input.read} --out-dir {params.work_directory}/FLYE_OUT 

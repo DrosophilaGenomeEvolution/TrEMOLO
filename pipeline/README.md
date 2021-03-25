@@ -1,4 +1,7 @@
-# Pipeline minority variants
+
+<img src="images/TrEMOLO.png">
+
+# TrEMOLO
 
 *******
 Content 
