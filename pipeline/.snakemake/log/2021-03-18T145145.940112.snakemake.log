@@ -1,3 +1,0 @@
-KeyError in line 346 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/Snakefile:
-'SAMTOOLS'
-  File "/home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/Snakefile", line 346, in <module>

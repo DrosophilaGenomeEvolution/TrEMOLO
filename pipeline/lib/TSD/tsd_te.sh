@@ -51,14 +51,14 @@ REPO_READS_FA=$3
 DB_TE=$4
 FLANK_SIZE=$5
 TSD_SIZE=$6
-
+COMBINE=$7
 
 path_this_script=`dirname $0`
 echo $path_this_script ;
 
 
 #ERROR
-if [ "$#" -ne 6 ]; then
+if [ "$#" -ne 7 ]; then
     echo "ERROR : need 6 arguments. You have put $# arguments" ;
     echo "usage: tsd_te.sh <file_find_nameTE.fasta> <DIRECTORY_READS_SUPPORT> <DIRECTORY_READS_SUPPORT_FASTA> <database_TE_fasta> <flank_size> <tsd_size>"
     exit 1 ;
@@ -89,14 +89,25 @@ echo " " > total_results_tsd.txt
 number_element=`grep ">" $FIND_FA | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | grep -o ":[A-Za-z\.0-9]*:" | grep -o "[A-Za-z\.0-9]*" | wc -l`
 i=0
 for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | grep -o ":[A-Za-z\.0-9]*:" | grep -o "[A-Za-z\.0-9]*"`; do
+        
+        if [ ! -n "$id" ]; then
+            echo "[$0] ID NOT FOUND : $id";
+            exit 1;
+        fi
+
         echo "[$0] ------FIND INFOS READS------"
         fr="`ls ${REPO_READS} | grep ":$id:"`"
-        echo "[$0] id : $id"
-        echo "[$0] file : $fr"
+        echo "[$0] id : $id--"
+        echo "[$0] file : $fr--"
         name=`echo $fr | grep -o ".*\."`
         echo "[$0] name : $name"
         i=$(($i + 1))
         echo "[$0] $i/$number_element"
+
+        if [ ! -n "$fr" ]; then
+            echo "[$0] FILE NOT FOUND FOR ID : $id";
+            exit 1;
+        fi
 
         reads=${REPO_READS_FA}/${name}fasta
 
@@ -110,11 +121,14 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
 
         echo "[$0] head : "$head
 
-        awk -v var=$head 'BEGIN {nb=0} { if( var == $0 || nb == 1 ){print $0; nb = nb + 1;} }' "${FIND_FA}" > sequence_TE.fasta
+        #awk -v var=$head 'BEGIN {nb=0} { if( var == $0 || nb == 1 ){print $0; nb = nb + 1;} }' "${FIND_FA}" > sequence_TE.fasta
+        grep -w $head -A 1 "${FIND_FA}" > sequence_TE.fasta 
+        # cat sequence_TE.fasta 
+        
         if ! test -s sequence_TE.fasta; then
             echo "ERROR : can't get sequence TE in ${FIND_FA}" ;
             exit 1 ;
-        fi
+        fi;
 
         #
         echo "*********BLAST 1 TE VS READ**********"
@@ -123,6 +137,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
             -perc_identity 100 \
             -outfmt 6 \
             -out sequence_TE.bln ;
+
 
         # get flank bed file
         awk -v var=$FLANK_SIZE '{if($9 - var > 0){ if($9 < $10){ print $2"\t"$9-var-1"\t"$9-1"\n" $2"\t"$10"\t"$10+var }else{ print $2"\t"$10-var-1"\t"$10-1"\n" $2"\t"$9"\t"$9+var  } } }' sequence_TE.bln > flank_TE.bed
@@ -143,7 +158,46 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         makeblastdb -in ${DB_TE} -dbtype nucl
         blastn -db ${DB_TE} -query sequence_TE.fasta -outfmt 6 -out TE_vs_databaseTE.bln
 
+
+# sstart_global=`awk 'NR==1 {print $7}' test.bln`
+# send_global=`awk 'NR==1 {print $8}' test.bln`
+# qstart_global=`awk 'NR==1 {print $9}' test.bln`
+# qend_global=`awk 'NR==1 {print $10}' test.bln`
+
+
+# awk -v ssg="$sstart_global" -v seg="$send_global" -v qsg="$qstart_global" -v qeg="$qend_global" '
+#     BEGIN{
+#         chrom=""
+#         sstart_global=ssg; 
+#         send_global=seg; 
+#         qstart_global=qsg; 
+#         qend_global=qeg; 
+#     }
+
+#      OFS="\t"  {
+#         chrom=$1
+#         TE=$2
+#         sstart = $7
+#         ssend  = $8
+#         qstart = $9
+#         qend   = $10
+#         if (sstart < sstart_global && send < send_global && qstart < qstart_global && qend < qend_global ){
+#             sstart_global = sstart
+#             qstart_global = qstart
+#         }
+#         else if ( sstart > sstart_global && send > send_global && qstart > qstart_global && qend > qend_global ){
+#             send_global   = send
+#             qend_global   = qend
+#         }
+#     }
+
+#    END{split(chrom, a, ":"); print chrom, sstart_global, send_global, TE"|"a[5]; }' test.bln
+
+
+
+
         head -n 1 TE_vs_databaseTE.bln
+
         strand=`awk 'NR==1 {if ($9 < $10){print "+"} else {print "-"}}' TE_vs_databaseTE.bln`
         echo $reads >> total_results_tsd.txt
         echo $head  >> total_results_tsd.txt

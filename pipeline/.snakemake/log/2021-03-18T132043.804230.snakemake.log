@@ -1,4 +1,0 @@
-Building DAG of jobs...
-MissingInputException in line 87 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk:
-Missing input files for rule test2:
-out.txt

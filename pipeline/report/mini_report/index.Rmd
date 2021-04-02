@@ -1,0 +1,330 @@
+--- 
+title: "MINI REPORT"
+author: ""
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+github-repo: rstudio/bookdown-demo
+description: "mini report of analysis of TrEMOLO"
+---
+
+
+
+# REPORT TrEMOLO ANALYSIS
+
+```{r, echo=FALSE}
+#install.packages("bookdown")
+# or the development version
+# devtools::install_github("rstudio/bookdown")
+knitr::opts_chunk$set(engine.path = list(python='/usr/bin/python3'), echo=FALSE, message=FALSE, cache=FALSE, include=TRUE, results=FALSE, eval=TRUE)
+```
+
+```{r include=FALSE}
+# automatically create a bib database for R packages
+knitr::write_bib(c(
+  .packages(), 'bookdown', 'knitr', 'rmarkdown'
+), 'packages.bib')
+```
+
+```{r, eval=TRUE, include=TRUE, results=FALSE}
+
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(kableExtra)
+library(forcats)# pour reorder
+library(RColorBrewer)
+library(ggthemes)
+library(rjson)
+library(viridisLite)
+library(viridis)
+
+```
+
+## Resume parameters
+
+
+```{r, eval=TRUE, include=TRUE, results=TRUE}
+
+params <- fromJSON(file="../../params.log", method='C')
+
+print(paste("REFERENCE : ", params$DATA$REFERENCE))
+print(paste("GENOME : ", params$DATA$GENOME))
+print(paste("TE DATABASE : ", params$DATA$TE_DB))
+print(paste("SAMPLE : ", params$DATA$SAMPLE))
+print(paste("WORKING DIRECTORY : ", params$DATA$WORK_DIRECTORY))
+print(paste("VARIANT CALLING : ", params$CHOICE$OUTSIDER_VARIANT$CALL_SV))
+
+```
+
+
+## SV ANALYSIS
+
+Informations of **SV.vcf** file.
+
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+array_type=( "INS" "DEL" "DUP" ); 
+echo -e "x\ty" > .tmp_graph_sv.csv; 
+for i in ${array_type[@]}; do 
+    NB=`grep -w $i ../../SV.vcf | cut -f 2 | sort | uniq | wc -l`;
+    echo -e "$i\t$NB";
+done >> .tmp_graph_sv.csv;
+
+
+```
+
+
+```{r, eval=TRUE, include=TRUE, results=TRUE}
+
+df = read.csv(".tmp_graph_sv.csv", sep="\t")
+#kbl(df)
+
+p = ggplot(df, aes(y=y, x=x), width=0.5) + 
+    geom_bar(stat="identity", fill="#F85533", width=0.5) +
+    coord_flip()+
+    #geom_text(aes(label=y), vjust=1.6, color="white",
+    #        position = position_dodge(0.9), size=5) +
+    xlab("TYPE") +
+    ylab("NUMBER") +
+    #labs(fill = legendLabel) +
+    theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.4),
+      panel.background = element_rect(fill="white", colour="white", 
+                                           color="white"))
+
+
+colnames(df) <- c("type", "number")
+kbl(df)
+
+
+p
+#ggsave(p, file=output)
+
+```
+
+## TE ANALYSIS
+
+### OUTSIDER
+
+#### NUMBER
+
+Total number of **TE : `r data=read.csv("../../FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv", sep="\t"); nrow(data);`**
+
+Number of family found : **`r data=read.csv("../../FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t"); nrow(data);`**
+
+```{r NB_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
+
+data = read.csv("../../FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t")
+#kbl(data)
+
+uniqy = unique(data$y)
+uniqx = unique(data$x)
+
+for (y in uniqy)
+{
+  datay = data[data$y %in% y, ]
+  for(x in uniqx){
+    datax = datay[datay$x %in% x, ]
+    if(nrow(datax) != 1){
+      new_line_data <- data.frame(x, y, 0)
+      names(new_line_data) <- c("x", "y", "z")
+
+      data <- rbind(data, new_line_data)
+    }
+  }
+}
+
+
+max=0
+namx=""
+for(x in uniqx){
+  datax = data[data$x %in% x, ]
+  if(max(datax$z)>max){
+    max  = max(datax$z)
+    namx = x
+  }
+}
+
+datax = data[data$x %in% namx, ]
+datax = datax[order(datax$z), ]
+
+data$y <- factor(data$y, levels = datax$y)
+
+nb_diff_TE = length( unique(data$y) )
+
+    #print("ok--s")
+xlabel = ''
+graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+    geom_tile() + 
+    ggtitle("") +
+    
+    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=9, angle=0)) +
+    coord_fixed() +
+    scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
+    #scale_fill_viridis(option="heat") +
+theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
+  #,panel.border = element_rect(linetype = "dashed", fill = NA)
+  #, panel.grid.major = element_line(colour = "black")
+) +
+geom_segment( aes(x = 3, y = 1, xend = 3, yend = nb_diff_TE ), colour = "black", alpha=0.5, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
+
+    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 3) 
+
+order_TE = data$y
+
+#graph
+graph
+#ggsave(name_output)
+
+```
+
+#### FREQUENCE
+
+```{bash FREQB, eval=TRUE, include=TRUE, results=TRUE}
+
+python3 ../lib/freq_graph.py ../../DEPTH_TE.csv   FREQ_TE.csv
+
+```
+
+
+
+```{r FREQ, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+
+data = read.csv("FREQ_TE.csv", sep="\t")
+
+data$x <- factor(data$x, levels = order_TE)
+
+
+
+order <- read.table("orderc.txt", header = FALSE)
+data$condition <- factor(data$condition, levels = order$V1)
+
+p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
+        geom_bar(position="stack", stat="identity") +
+        xlab("TE") +
+        ylab("NUMBER") +
+        labs(fill = "FREQUENCE") +
+        #scale_fill_viridis(discrete = T) +
+        scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
+        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+            panel.background = element_rect(fill="white", colour="white", 
+                                          linetype="solid", color="white"))
+
+p
+#ggsave(p, file=output)
+
+```
+
+
+#### TSD
+
+```{r TSD, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+
+data = read.csv("../../VALUES_TSD_GROUP.csv", sep="\t")
+
+data$x <- factor(data$x, levels = order_TE)
+
+p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
+        geom_bar(position="stack", stat="identity") +
+        xlab("TE") +
+        ylab("NUMBER") +
+        labs(fill = "TYPE TSD") +
+        #scale_fill_viridis(discrete = T) +
+        scale_fill_manual(values=c("#6EB9FF", "#0064D4")) +
+        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+            panel.background = element_rect(fill="white", colour="white", 
+                                          linetype="solid", color="white"))
+
+p
+#ggsave(p, file=output)
+
+```
+
+
+### INSIDER
+
+Total number of **TE : `r data=read.csv("../../TE_INSIDER/INSERTION.csv", sep="\t"); nrow(data);`**
+
+Number of family found : **`r data=read.csv("../../TE_INSIDER/INSERTION_COUNT_TE.csv", sep="\t"); nrow(data);`**
+
+```{r insider1, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
+
+data = read.csv("../../TE_INSIDER/INSERTION_COUNT_TE.csv", sep="\t")
+#kbl(data)
+
+uniqy = unique(data$y)
+uniqx = unique(data$x)
+
+for (y in uniqy)
+{
+  datay = data[data$y %in% y, ]
+  for(x in uniqx){
+    datax = datay[datay$x %in% x, ]
+    if(nrow(datax) != 1){
+      new_line_data <- data.frame(x, y, 0)
+      names(new_line_data) <- c("x", "y", "z")
+
+      data <- rbind(data, new_line_data)
+    }
+  }
+}
+
+
+max=0
+namx=""
+for(x in uniqx){
+  datax = data[data$x %in% x, ]
+  if(max(datax$z)>max){
+    max  = max(datax$z)
+    namx = x
+  }
+}
+
+datax = data[data$x %in% namx, ]
+datax = datax[order(datax$z), ]
+
+data$y <- factor(data$y, levels = datax$y)
+
+nb_diff_TE = length( unique(data$y) )
+
+    #print("ok--s")
+xlabel = ''
+graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+    geom_tile() + 
+    ggtitle("") +
+    
+    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)) +
+    coord_fixed() +
+    scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
+    #scale_fill_viridis(option="heat") +
+theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
+  #,panel.border = element_rect(linetype = "dashed", fill = NA)
+  #, panel.grid.major = element_line(colour = "black")
+) +
+geom_segment( aes(x = 3, y = 1, xend = 3, yend = nb_diff_TE ), colour = "black", alpha=0.5, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
+
+    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
+
+order_TE = data$y
+
+#graph
+graph
+#ggsave(name_output)
+
+```
+
+
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+
+rm -f FREQ_TE.csv
+rm -f .tmp_graph_sv.csv;
+
+
+```

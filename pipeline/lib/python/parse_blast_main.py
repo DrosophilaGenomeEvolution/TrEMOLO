@@ -224,6 +224,7 @@ for index, row in enumerate(df.values):
 
 df_best = df.iloc[best_score_match_index]
 print("NUMBER BEST TE SCORE MATCH :", len(df_best.values))
+#df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
 
 if combine :
     

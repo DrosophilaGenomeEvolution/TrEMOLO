@@ -97,6 +97,7 @@ onsuccess:
      print("Workflow finished, no error")
      shell("rm -f end_pipeline.end")
 
+
 #Map reads on assembly genome
 rule create_snake_file :
     input:  
@@ -123,11 +124,15 @@ rule create_snake_file :
         LC_ASM_FLYE         = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["FLYE"],
         LC_ASM_WTDGB        = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["WTDGB"],
 
+        INTEGRATE_TE_TO_GENOME = config["CHOICE"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"],
+        INCREASE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["INCREASE_FREQUENCE"],
+
+        REPORT                 = config["CHOICE"]["PIPELINE"]["REPORT"],
+
         #COLOR 
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
-    
 
     shell:
         """
@@ -136,12 +141,15 @@ rule create_snake_file :
         path_to_pipline=`dirname {params.path_snk}`
 
         mkdir -p {params.work_directory}/SNAKE_UTILS/
+        mkdir -p {params.work_directory}/log/
 
         rm -f ${{path_to_pipline}}/Snakefile*
         
         printf "%s\\n" "{params.cmess} [SNK] CREATION SNAKEFILE {params.cend}"
-
+        
+        ###
         #ASSMBLY
+        ###
         if [ {params.choice_asm} = "True" ]; then
 
             ## Exemple les instructions par default obligatoir
@@ -165,16 +173,25 @@ rule create_snake_file :
             
             if [ $? -eq 0 ]; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} \
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} | tee {params.work_directory}/log/Snakefile_assemby.log \
                     || (message_fail "\n[SNK INFO] ERROR PIPELINE\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
             fi;
         fi;
 
+        ###
         #INSIDER
+        ###
         if [ {params.choice_insider_sv} = "True" ]; then
 
             ## Exemple les instructions par default obligatoir
-            printf "%s" "sv_insider > TE_INSIDER " > instruction.txt
+            printf "%s" "sv_insider > TE_INSIDER:N " > instruction.txt
+
+            if [ {params.REPORT} ]; then
+                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
+                printf "%s" "> report " >> instruction.txt
+            fi
+            
+            echo "" >> instruction.txt
 
             ## BUILD SNAKEFILE en fonctions des instructions
             python3 ${{path_to_pipline}}/lib/python/make_snk.py \
@@ -183,7 +200,7 @@ rule create_snake_file :
                 ${{path_to_pipline}}/Snakefile \
                 -t ${{path_to_pipline}}/template.snk
 
-            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_UTILS/Snakefile_assemby.snk
+            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_UTILS/Snakefile_insider.snk
 
             printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE INSIDER DONE ! {params.cend}"
 
@@ -194,18 +211,23 @@ rule create_snake_file :
             
             if [ $? -eq 0 ]; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} \
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} | tee {params.work_directory}/log/Snakefile_insider.log \
                     || (message_fail "\n[SNK INFO] ERROR PIPELINE\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
             fi;
         fi;
 
-
+        ###
         #OUTSIDER
+        ###
+
         if [ {params.choice_outsider_sv} = "True" ]; then
             
             ## Exemple les instruction par default obligatoir
-            printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > extract_read " > instruction.txt
-            
+            if [ {params.INCREASE_FREQUENCE} = True ]; then
+                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > FREQUENCE > extract_read " > instruction.txt
+            else
+                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > extract_read:NI " > instruction.txt
+            fi
             
             ## Depend du fichier de config
             if [ {params.LC_ASM_FLYE} = "True" ]; then
@@ -218,7 +240,22 @@ rule create_snake_file :
             fi;
             
             ## Exemple les instruction par default obligatoir
-            printf "%s\\n" "> GET_SEQ_TE > TSD" >> instruction.txt
+            printf "%s" "> GET_SEQ_TE " >> instruction.txt
+            
+            if [ {params.INTEGRATE_TE_TO_GENOME} = True ]; then
+                
+                printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
+                printf "%s" "> TSD" >> instruction.txt
+            else
+                printf "%s" "> TSD:NI" >> instruction.txt
+            fi
+
+
+            if [ {params.REPORT} ]; then
+                printf "%s" "> report " >> instruction.txt
+            fi
+            
+            echo "" >> instruction.txt
 
 
             ## Creation du snake file en fonction des instructions
@@ -239,7 +276,7 @@ rule create_snake_file :
             
             if [ $? -eq 0 ]; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} \
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} | tee {params.work_directory}/log/Snakefile_outsider.log \
                     || (message_fail "\n[SNK INFO] ERROR PIPELINE\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
             fi;
         fi;

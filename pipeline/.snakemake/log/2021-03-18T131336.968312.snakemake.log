@@ -1,3 +1,0 @@
-FileNotFoundError in line 54 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk:
-[Errno 2] No such file or directory: '/path/to/directory_work/params.log'
-  File "/home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk", line 54, in <module>

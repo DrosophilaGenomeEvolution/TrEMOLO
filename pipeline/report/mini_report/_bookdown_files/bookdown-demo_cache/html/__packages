@@ -1,0 +1,9 @@
+base
+ggplot2
+dplyr
+reshape2
+forcats
+RColorBrewer
+scales
+treemap
+kableExtra

@@ -1,3 +1,0 @@
-KeyError in line 100 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk:
-'MINIMAP2'
-  File "/home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk", line 100, in <module>

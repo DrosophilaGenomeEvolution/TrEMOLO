@@ -1,3 +1,0 @@
-KeyError in line 51 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk:
-'DATA'
-  File "/home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/creation_snakefile.snk", line 51, in <module>

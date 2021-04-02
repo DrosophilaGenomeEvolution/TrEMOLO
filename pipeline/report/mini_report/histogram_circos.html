@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>BioCircos.js</title>
+    </head>
+    <body>
+        <!-- BioCircos.js, Jquery.js and D3.js import -->
+        <script src="./lib/jquery.js"></script>
+        <script src="./lib/d3.js"></script>
+        <script src="./lib/biocircos-1.1.0.js"></script>
+        <!-- Prepare a <div> tag with "biocircos" id to set the picture position your will draw in html -->
+        <div id="biocircos"></div>
+
+     <script src="HISTOGRAM.js"></script>
+     <script src="HISTOGRAM_NLR.js"></script>
+
+     <script src="HISTOGRAM_LTR.js"></script>
+     <script src="HISTOGRAM_DNA.js"></script>
+     <script src="gallery09_BACKGROUND.js"></script>
+     
+
+<!-- Genome configuration -->
+
+<script>
+  //dm6
+   var BioCircosGenome = [      // Configure your own genome here.
+     ["2L" , 23513712],
+     ["2R" , 25286936],
+     ["3L" , 28110227],
+     ["3R" , 32079331],
+     ["4" , 1348131],
+     ["X" , 23542271]
+  ];
+
+  BioCircos01 = new BioCircos(HISTOGRAM_LTR,HISTOGRAM_NLR,HISTOGRAM_DNA,HISTOGRAM,BioCircosGenome,{       // Initialize BioCircos.js with "BioCircosGenome" and Main configuration
+     target : "biocircos",                              // Main configuration "target"
+     svgWidth : 900,                                  // Main configuration "svgWidth"
+     svgHeight : 600,                                 // Main configuration "svgHeight"
+     innerRadius: 246,
+     outerRadius: 252,
+     zoom : true,
+     genomeBorder : {
+        display : true,
+        borderColor : "#000",
+        borderSize : 0.5
+     },
+     ticks : {
+        display : true,
+        len : 5,
+        color : "#000",
+        textSize : 10,
+        textColor : "#000",
+        scale : 2000000
+     },
+     genomeLabel : {
+        display : true,
+        textSize : 15,
+        textColor : "#000",
+        dx : 0.028,
+        dy : "-0.55em"
+     },
+     genomeFillColor: ["#999999"],
+     HISTOGRAMMouseEvent: true,
+     HISTOGRAMMouseOutDisplay: true,
+     HISTOGRAMMouseOutAnimationTime: 500,
+     HISTOGRAMMouseOutColor: "gold",
+     HISTOGRAMMouseOutOpacity: 1,
+     HISTOGRAMMouseOutStrokeColor: "red",
+     HISTOGRAMMouseOutStrokeWidth: 0,
+     HISTOGRAMMouseOverDisplay: true,
+     HISTOGRAMMouseOverColor: "red",
+     HISTOGRAMMouseOverOpacity: 1,
+     HISTOGRAMMouseOverStrokeColor: "#F26223",
+     HISTOGRAMMouseOverStrokeWidth: 5,
+  });
+
+  BioCircos01.draw_genome(BioCircos01.genomeLength); // BioCircos.js callback
+</script>
+    </body>
+</html>

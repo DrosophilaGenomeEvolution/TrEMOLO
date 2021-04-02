@@ -1,3 +1,0 @@
-KeyError in line 91 of /home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/Snakefile:
-'OPTION'
-  File "/home/mourdas/Documents/5-GIT/TrEMOLO/pipeline/Snakefile", line 91, in <module>

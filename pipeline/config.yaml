@@ -13,11 +13,14 @@ CHOICE:
         ASSEMBLY_GENOME: False
         OUTSIDER_VARIANT: True
         INSIDER_VARIANT: True
+        REPORT: True
     OUTSIDER_VARIANT:
         LOCAL_ASSEMBLY:
             FLYE: False
             WTDGB: False
         CALL_SV: "svim" #Posibiliti (sniffles, svim)
+        INTEGRATE_TE_TO_GENOME: True
+        INCREASE_FREQUENCE: True
 
 
 
@@ -40,7 +43,10 @@ PARAMS:
             SIZE_FLANK: 30
         TE_DETECTION:
             CHROM_KEEP: "."  #regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3R,3L,X" ; put "." for keep all chromosome
-
+        INTEGRATE_TE_TO_GENOME:
+            PUT_ID: True
+            PUT_SEQUENCE_DB_TE: True
+        PARS_BLN_OPTION: ""
 
     ASSEMBLY_GENOME:
         FLYE:
