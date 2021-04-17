@@ -120,6 +120,7 @@ Number of family found : **`r data=read.csv("../../FILTER_BLAST_SEQUENCE_INDEL_v
 
 data = read.csv("../../FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t")
 #kbl(data)
+data = tail(data, 50)
 
 uniqy = unique(data$y)
 uniqx = unique(data$x)
@@ -196,6 +197,7 @@ python3 ../lib/freq_graph.py ../../DEPTH_TE.csv   FREQ_TE.csv
 ```{r FREQ, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
 data = read.csv("FREQ_TE.csv", sep="\t")
+data = tail(data, 50)
 
 data$x <- factor(data$x, levels = order_TE)
 
@@ -226,6 +228,8 @@ p
 ```{r TSD, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
 data = read.csv("../../VALUES_TSD_GROUP.csv", sep="\t")
+data = tail(data, 50)
+
 
 data$x <- factor(data$x, levels = order_TE)
 
@@ -244,6 +248,20 @@ p
 #ggsave(p, file=output)
 
 ```
+
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://code.jquery.com/jquery-migrate-1.4.1.min.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<input type="range" min="0" max="179" value="0" id="slider" style="width: 820px">
+
+<script src="./js/TSD_histo.js"></script>
+
+<script src="./js/d3_js_histo_grouped.js"></script>
+
 
 
 ### INSIDER
@@ -328,3 +346,23 @@ rm -f .tmp_graph_sv.csv;
 
 
 ```
+
+
+### TE POSITION
+
+<script src="js/lib/jquery.js"></script>
+<!-- <script src="js/lib/d3.js"></script> -->
+<script src="js/lib/biocircos-1.1.0.js"></script>
+  <!-- Prepare a <div> tag with "biocircos" id to set the picture position your will draw in html -->
+<div id="biocircos"></div>
+
+<script src="js/HISTOGRAM.js"></script> <!-- a generer-->
+<script src="js/histo_TE_BACKGROUND.js"></script>
+<div class="box">
+   <select id="pet-select">
+      <option value="all">all</option>
+   </select>
+</div>
+
+<script src="js/bioCircosGenome.js"></script> <!-- a generer-->
+<script src="js/histo_circos.js"></script>

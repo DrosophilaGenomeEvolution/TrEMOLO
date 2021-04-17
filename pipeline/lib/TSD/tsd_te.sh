@@ -91,7 +91,7 @@ i=0
 for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | grep -o ":[A-Za-z\.0-9]*:" | grep -o "[A-Za-z\.0-9]*"`; do
         
         if [ ! -n "$id" ]; then
-            echo "[$0] ID NOT FOUND : $id";
+            echo "[$0] **ERROR** ID NOT FOUND : $id";
             exit 1;
         fi
 
@@ -105,7 +105,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         echo "[$0] $i/$number_element"
 
         if [ ! -n "$fr" ]; then
-            echo "[$0] FILE NOT FOUND FOR ID : $id";
+            echo "[$0] **ERROR** : FILE NOT FOUND FOR ID : $id";
             exit 1;
         fi
 
@@ -126,7 +126,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         # cat sequence_TE.fasta 
         
         if ! test -s sequence_TE.fasta; then
-            echo "ERROR : can't get sequence TE in ${FIND_FA}" ;
+            echo "**ERROR** : can't get sequence TE in ${FIND_FA}" ;
             exit 1 ;
         fi;
 
@@ -214,10 +214,10 @@ rm -f sequence_TE.fasta sequence_TE.bln sequence_TE.bed
 rm -f flank_TE.fasta flank_TE.bed
 
 
-number_ok=`grep OK total_results_tsd.txt | wc -l`
-number_ko=`grep KO total_results_tsd.txt | wc -l`
-number_total=`grep reads total_results_tsd.txt | wc -l`
-number_k_o=`grep "K-O" total_results_tsd.txt | wc -l`
+number_ok=`grep "OK" total_results_tsd.txt -c`
+number_ko=`grep "KO" total_results_tsd.txt -c`
+number_total=`grep "reads" total_results_tsd.txt -c`
+number_k_o=`grep "K-O" total_results_tsd.txt  -c`
 
 
 #RESUME

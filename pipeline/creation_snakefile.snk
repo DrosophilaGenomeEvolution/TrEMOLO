@@ -95,7 +95,7 @@ os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 #     print("An error occurred")
 onsuccess:
      print("Workflow finished, no error")
-     shell("rm -f end_pipeline.end")
+     shell("rm -fr tmp_snk/;")
 
 
 #Map reads on assembly genome
@@ -104,7 +104,7 @@ rule create_snake_file :
 
     output:
         temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
-        "end_pipeline.end",
+        temp("tmp_snk/tmp_end_pipeline.end"),
     
     params:
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -118,14 +118,14 @@ rule create_snake_file :
         #CHOICE
         call_sv             = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
-        choice_asm          = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
+        #choice_asm          = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
         choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
 
         LC_ASM_FLYE         = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["FLYE"],
         LC_ASM_WTDGB        = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["WTDGB"],
 
         INTEGRATE_TE_TO_GENOME = config["CHOICE"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"],
-        INCREASE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["INCREASE_FREQUENCE"],
+        OPTIMIZE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["OPTIMIZE_FREQUENCE"],
 
         REPORT                 = config["CHOICE"]["PIPELINE"]["REPORT"],
 
@@ -140,55 +140,28 @@ rule create_snake_file :
         {params.env};
         path_to_pipline=`dirname {params.path_snk}`
 
-        mkdir -p {params.work_directory}/SNAKE_UTILS/
+        mkdir -p {params.work_directory}/SNAKE_USED/
         mkdir -p {params.work_directory}/log/
+        mkdir -p tmp_snk/
 
         rm -f ${{path_to_pipline}}/Snakefile*
         
         printf "%s\\n" "{params.cmess} [SNK] CREATION SNAKEFILE {params.cend}"
         
         ###
-        #ASSMBLY
-        ###
-        if [ {params.choice_asm} = "True" ]; then
-
-            ## Exemple les instructions par default obligatoir
-            printf "%s" "flye_genome > polishing > ragoo " > instruction.txt
-
-            ## BUILD SNAKEFILE en fonctions des instructions
-            python3 ${{path_to_pipline}}/lib/python/make_snk.py \
-                instruction.txt \
-                ${{path_to_pipline}}/list_rules.snk \
-                ${{path_to_pipline}}/Snakefile \
-                -t ${{path_to_pipline}}/template.snk
-
-            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_UTILS/Snakefile_assemby.snk
-
-            printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE OUTSIDER DONE ! {params.cend}"
-
-            printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
-
-            snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --dryrun \
-                || (message_fail "\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\n\n" && exit 1)
-            
-            if [ $? -eq 0 ]; then
-                printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} | tee {params.work_directory}/log/Snakefile_assemby.log \
-                    || (message_fail "\n[SNK INFO] ERROR PIPELINE\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
-            fi;
-        fi;
-
-        ###
         #INSIDER
         ###
+
         if [ {params.choice_insider_sv} = "True" ]; then
 
-            ## Exemple les instructions par default obligatoir
-            printf "%s" "sv_insider > TE_INSIDER:N " > instruction.txt
+            rm -f {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
 
-            if [ {params.REPORT} ]; then
+            ## Exemple les instructions par default obligatoir
+            printf "%s" "SV_INSIDER > TE_INSIDER:N " > instruction.txt
+
+            if [ {params.REPORT} ] && [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-                printf "%s" "> report " >> instruction.txt
+                printf "%s" "> REPORT " >> instruction.txt
             fi
             
             echo "" >> instruction.txt
@@ -200,7 +173,7 @@ rule create_snake_file :
                 ${{path_to_pipline}}/Snakefile \
                 -t ${{path_to_pipline}}/template.snk
 
-            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_UTILS/Snakefile_insider.snk
+            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
 
             printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE INSIDER DONE ! {params.cend}"
 
@@ -212,19 +185,23 @@ rule create_snake_file :
             if [ $? -eq 0 ]; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
                 snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} | tee {params.work_directory}/log/Snakefile_insider.log \
-                    || (message_fail "\n[SNK INFO] ERROR PIPELINE\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
+                    || (message_fail "\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_insider.snk\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
             fi;
         fi;
+
+        
 
         ###
         #OUTSIDER
         ###
 
         if [ {params.choice_outsider_sv} = "True" ]; then
+
+            rm -f {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
             
             ## Exemple les instruction par default obligatoir
-            if [ {params.INCREASE_FREQUENCE} = True ]; then
-                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > FREQUENCE > extract_read " > instruction.txt
+            if [ {params.OPTIMIZE_FREQUENCE} = True ]; then
+                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > FREQ_GLOBAL > FREQUENCE > extract_read " > instruction.txt
             else
                 printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > extract_read:NI " > instruction.txt
             fi
@@ -241,22 +218,27 @@ rule create_snake_file :
             
             ## Exemple les instruction par default obligatoir
             printf "%s" "> GET_SEQ_TE " >> instruction.txt
-            
-            if [ {params.INTEGRATE_TE_TO_GENOME} = True ]; then
-                
+
+            if [ {params.choice_insider_sv} = "True" ]; then
                 printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
+                printf "%s" "> FIND_SV_ON_REF" >> instruction.txt
+                printf "%s" "> FIND_TE_ON_REF " >> instruction.txt
                 printf "%s" "> TSD" >> instruction.txt
             else
-                printf "%s" "> TSD:NI" >> instruction.txt
-            fi
-
+                if [ {params.INTEGRATE_TE_TO_GENOME} = True ]; then
+                    printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
+                    printf "%s" "> TSD" >> instruction.txt
+                else
+                    #:NI = NO INPUT
+                    printf "%s" "> TSD:NI" >> instruction.txt
+                fi;
+            fi;
 
             if [ {params.REPORT} ]; then
-                printf "%s" "> report " >> instruction.txt
+                printf "%s" "> REPORT " >> instruction.txt
             fi
             
             echo "" >> instruction.txt
-
 
             ## Creation du snake file en fonction des instructions
             python3 ${{path_to_pipline}}/lib/python/make_snk.py \
@@ -265,7 +247,7 @@ rule create_snake_file :
                 ${{path_to_pipline}}/Snakefile \
                 -t ${{path_to_pipline}}/template.snk
 
-            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_UTILS/Snakefile_outsider.snk
+            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
 
             printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE OUTSIDER DONE ! {params.cend}"
 
@@ -277,73 +259,14 @@ rule create_snake_file :
             if [ $? -eq 0 ]; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
                 snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} | tee {params.work_directory}/log/Snakefile_outsider.log \
-                    || (message_fail "\n[SNK INFO] ERROR PIPELINE\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
+                    || (message_fail "\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\n\n" && rm -f ${{path_to_pipline}}/Snakefile*);
             fi;
         fi;
 
+        touch tmp_snk/tmp_end_pipeline.end
         ##rm -f ${{path_to_pipline}}/Snakefile*
-        touch end_pipeline.end
+
+        
 
         """
-
-
-
-
-# rule test2:
-#     input:  
-#         "out.xt"
-#     output:
-#         "out2.xt",
-    
-#     params:
-#         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
-#         config         = json.dumps(config),
-
-#         path_snk       = path_snk,
-#         name_configfil = name_configfil,
-#         env = env,
-
-#         choice_outsider_sv  = config["CHOICE_PIPELINE"]["OUTSIDER_VARIANT"],
-#         choice_asm          = config["CHOICE_PIPELINE"]["ASSEMBLY_GENOME"],
-
-#         #COLOR 
-#         cmess          = bcolors.CYAN,
-#         cfail          = bcolors.FAIL,
-#         cend           = bcolors.END,
-#     shell:
-#         """
-#         echo ok;
-#         echo {params.env};
-#         rm out.xt;
-#         """
-
-# rule test:
-#     input:  
-
-#     output:
-#         touch("out.xt"),
-    
-#     params:
-#         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
-#         config         = json.dumps(config),
-
-#         path_snk       = path_snk,
-#         name_configfil = name_configfil,
-#         env = env,
-
-#         choice_outsider_sv  = config["CHOICE_PIPELINE"]["OUTSIDER_VARIANT"],
-#         choice_asm          = config["CHOICE_PIPELINE"]["ASSEMBLY_GENOME"],
-
-#         #COLOR 
-#         cmess          = bcolors.CYAN,
-#         cfail          = bcolors.FAIL,
-#         cend           = bcolors.END,
-#     shell:
-#         """
-#         {params.env};
-#         run_cmd "echo ok" "log" "sisi" "True";
-#         """
-
-
-
 

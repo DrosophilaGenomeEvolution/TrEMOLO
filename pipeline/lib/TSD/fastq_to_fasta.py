@@ -76,6 +76,7 @@ args = parser.parse_args()
 
 name_fastq = args.fastq_file
 name_fasta = args.fasta_out_file
+
 file_out   = open(name_fasta, "w")
 file       = open(name_fastq, "r")
 line       = file.readline()

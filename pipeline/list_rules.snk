@@ -7,8 +7,9 @@
 
 
 
-rule report:
+rule REPORT:
     input:
+        genome = config["DATA"]["GENOME"],
         input_link=[],
 
     output:
@@ -25,6 +26,8 @@ rule report:
         FILE_SIZE_TE_TSD = config["PARAMS"]["OUTSIDER_VARIANT"]["TSD"]["FILE_SIZE_TE_TSD"],
         SIZE_FLANK       = config["PARAMS"]["OUTSIDER_VARIANT"]["TSD"]["SIZE_FLANK"],
 
+        CHROM_KEEP       = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
+        
         #Color message
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
@@ -49,6 +52,77 @@ rule report:
         path_to_pipline=`dirname {params.path_snk}`
 
         cp -r ${{path_to_pipline}}/report/* {params.work_directory}/REPORT/
+
+        python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
+        {params.work_directory}/VALUES_TSD_GROUP.csv data > {params.work_directory}/REPORT/mini_report/js/TSD_histo.js
+
+        samtools faidx {input.genome}
+        echo {params.CHROM_KEEP} | tr "," "\n" > chrom.txt 
+        
+        mkdir -p js
+
+        #create_biocircosgenome.py chrom.txt
+        grep -f chrom.txt {input.genome}.fai > .tmp_index.fai
+        
+        python3 ${{path_to_pipline}}/lib/python/create_biocircosgenome.py .tmp_index.fai > js/bioCircosGenome.js
+
+        size_cut=1000000
+        for i in `grep -f chrom.txt .tmp_index.fai | cut -f 1-2 | tr "\t" ":"`; 
+        do 
+            chrom=`echo $i | cut -d ":" -f 1`
+            size_chrom=`echo $i | cut -d ":" -f 2`;
+            index=1;
+            while [ $index -lt $size_chrom ]; 
+            do 
+                echo -e $chrom"\t"$index"\t"$(($index+$size_cut))
+                index=$(($index+$size_cut));
+            done;
+        done \
+         > dm6_cut_chrom.bed;
+
+        first_chrom=`awk 'NR==1{{print $1}}' .tmp_index.fai`
+
+        rm -f  .tmp_index.fai
+
+        awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1]}}' {params.work_directory}/POSITION_START_TE.bed > {params.work_directory}/POSITION_START_TE_V2.bed
+        
+        #head {params.work_directory}/POSITION_START_TE_V2.bed
+
+        bedtools intersect -a dm6_cut_chrom.bed -b {params.work_directory}/POSITION_START_TE_V2.bed -wa | tr "\t" ":" \
+            | sort | uniq -c | sort -k 1 -n \
+            | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
+            | bedtools sort > HISTOGRAM.txt
+
+        max_value_histo_circos=`cat HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
+
+
+        python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM.txt > js/HISTOGRAM.js
+        echo "dico_histo = {{}}" >> js/HISTOGRAM.js
+
+        awk '{{print $4}}' {params.work_directory}/POSITION_START_TE_V2.bed | cut -d "|" -f 1 | sort | uniq > TE_NAME.txt
+        for TE in `cat TE_NAME.txt`; do
+            grep "\\s${{TE}}|" {params.work_directory}/POSITION_START_TE_V2.bed > POS_TE_$TE.bed
+
+            TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
+
+            bedtools intersect -a dm6_cut_chrom.bed -b POS_TE_$TE.bed -wa | tr "\t" ":" \
+                | sort | uniq -c | sort -k 1 -n \
+                | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 2, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
+                | bedtools sort > HISTOGRAM_${{TE_NAME}}.txt
+
+            echo "TE_NAME = $TE_NAME"
+            
+            python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > js/HISTOGRAM_${{TE_NAME}}.js
+            
+            echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> js/HISTOGRAM_${{TE_NAME}}.js
+            echo -e "\n" >> js/HISTOGRAM.js
+            cat js/HISTOGRAM_${{TE_NAME}}.js >> js/HISTOGRAM.js
+
+            rm -f HISTOGRAM_${{TE_NAME}}.txt POS_TE_$TE.bed
+            rm -f js/HISTOGRAM_${{TE_NAME}}.js
+        done;
+
+        cp js/* {params.work_directory}/REPORT/mini_report/js/
         cd {params.work_directory}/REPORT/mini_report/
 
 
@@ -69,12 +143,15 @@ rule report:
             sed -i '/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE/d' index.Rmd
         fi;
 
+        if ! test -e ../../VALUES_TSD_GROUP.csv; then
+            sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+        fi
+
         make
 
         path_to_report=`readlink -f ../report.html`
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`]--[INFO] CHECK $path_to_report [^-^] {params.cend}"
-
 
         """
 
@@ -86,11 +163,12 @@ rule report:
 
 rule TSD :
     input:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_REPORT_total_find.fasta",
+        input_link=[],
         #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "ET_FIND_FA"),
         fasta_TE  = config["DATA"]["TE_DB"],
         genome    = config["DATA"]["GENOME"],
-        input_link=[],
+        sam       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/pm_against_ref.sam",
+        
 
     output:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/VALUES_TSD_GROUP.csv",
@@ -117,7 +195,6 @@ rule TSD :
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/TSD",
 
-
     shell:
         #TODO broullion
         """
@@ -128,7 +205,7 @@ rule TSD :
         echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
         echo -e "x\ty\tcondition" > {params.work_directory}/VALUES_TSD_GROUP.csv
 
-        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] --- TSD --- {params.cend}"
+        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] --- TSD --- {params.cend}"
 
         mkdir -p {params.work_directory}/TSD ;
         path_to_pipline=`dirname {params.path_snk}`
@@ -162,6 +239,8 @@ rule TSD :
                    ${{read_directory}} \
                    ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
 
+
+
                 echo "sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore" | tr -d " " | tr "," "\t" > test.csv
                 awk 'NR>1 && OFS="\t"{{print $1, $2, $3, $4, $5, "mismatch", "gapopen", $6, $7, $8, $9, "evalue", "bitscore"}}' {params.work_directory}/COMBINE_TE.csv  >> test.csv
 
@@ -170,7 +249,7 @@ rule TSD :
                     ${{fasta_dir_find}} \
                     {input.fasta_TE} \
                     {params.SIZE_FLANK} \
-                    $SIZE_TSD {params.work_directory}/COMBINE_TE.csv >> {log}.out 2>> {log}.err;
+                    $SIZE_TSD {params.work_directory}/COMBINE_TE.csv >> {log}.out 2>> {log}.err || (message_fail "ERROR FOUND TSD PLEASE CHECK {log}.out, {log}.err")
 
                 mv total_results_tsd.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt
                 #mv total_results_tsd_${{nameTE}}.txt {params.work_directory}/TSD/TSD_${{nameTE}}.txt ;
@@ -236,7 +315,7 @@ rule TSD :
                         
             PERCENT=$(($OK_K_gap_O*100/$TOTAL))
 
-            KO=$(($NB_TSD_KO-$NB_TSD_OK_corrected))
+            ###KO=$(($NB_TSD_KO-$NB_TSD_OK_corrected))
             KO=$(($TOTAL-$OK_K_gap_O));
 
             echo "TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ;   TSD CORRECTED [KO]:$NB_TSD_OK_corrected ;  "
@@ -250,6 +329,90 @@ rule TSD :
             printf "%s\\n" "{params.cmess} [SNK]--[`date`] [TSD:snk] : $i/$NB_FILE {params.cend}"
         done;
 
+
+        ## TE INSIDER 
+        if test -s {params.work_directory}/TE_INSIDER/INSERTION.csv && [ `cat {params.work_directory}/TE_INSIDER/INSERTION.csv | wc -l` -ge 2 ]; then
+            echo "[SNK] TSD TE ASSEMBLED"
+            mkdir -p {params.work_directory}/TE_INSIDER/TSD/
+            awk 'NR>1 && OFS="\t"{{ split($2,   a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' {params.work_directory}/TE_INSIDER/INSERTION.csv > INS.bed
+            awk 'NR>1 {{ print $1 }}' {params.work_directory}/TE_INSIDER/INSERTION.csv | sort -u > TE_name.txt
+
+            NB_TE=`cat TE_name.txt | wc -l`
+
+            e=0;
+
+            show_step="$e/$NB_TE : TSD TE ASSEMBLED "
+            number_of_char=`echo "$show_step" | wc -c`
+            number_of_char=$(($number_of_char-1));
+            printf "\b%.0s" `seq 1 $number_of_char`
+            printf "$show_step";
+
+            for TE in `cat TE_name.txt`; do
+                #echo "$TE"
+                grep "^$TE\s" {params.work_directory}/TE_INSIDER/INSERTION.csv | awk 'OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' > INS_$TE.bed
+                rm -f total_results_tsd.txt
+                
+                for i in `cat INS_$TE.bed | tr "\t" ":"`; 
+                do 
+                    echo $i | tr ":" "\t" > TE.bed;
+                    bedtools getfasta -fi {input.genome} -bed TE.bed > TE.fasta
+
+                    ID=`cat TE.bed | cut -f 4 | cut -d "|" -f 2`
+                    #echo "ID = $ID"
+                    
+                    strand=`grep -w $ID {params.work_directory}/TE_INSIDER/INSERTION.csv | awk 'OFS="\t"{{split($2, a, ":"); print a[7]}}'`
+                    #echo "ID = $ID; strand = $strand;"
+                    
+                    cat TE.bed | awk -v size_flank="{params.SIZE_FLANK}" 'OFS="\t"{{print $1, $2-size_flank, $2; print $1, $3, $3+size_flank;}}' > FLANK.bed;
+                    bedtools getfasta -fi {input.genome} -bed FLANK.bed > FLANK.fasta
+
+                    python3 ${{path_to_pipline}}/lib/TSD/find_tsd.py FLANK.fasta TE.fasta {params.SIZE_FLANK} $ID $strand -1 >> total_results_tsd.txt 
+                done;
+
+                bash ${{path_to_pipline}}/lib/TSD/TSD_VG.sh {params.work_directory}/TE_INSIDER/INSERTION.csv {input.genome}
+
+                nameTE=$TE
+
+                mv total_results_tsd.txt {params.work_directory}/TE_INSIDER/TSD/TSD_${{nameTE}}.txt
+
+                #rm -f TE.bed INS_$TE.bed INS.bed ;
+                rm -f TE.fasta FLANK.fasta ;
+
+                e=$(($e+1));
+
+                show_step="$e/$NB_TE : TSD TE ASSEMBLED "
+                number_of_char=`echo "$show_step" | wc -c`
+                number_of_char=$(($number_of_char-1));
+                printf "\b%.0s" `seq 1 $number_of_char`
+                printf "$show_step";
+
+                
+                TOTAL=`grep "^OK/total" {params.work_directory}/TE_INSIDER/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 2`
+                NB_TSD_OK=`grep "^OK/total" {params.work_directory}/TE_INSIDER/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+                NB_TSD_KO=`grep "^KO/total" {params.work_directory}/TE_INSIDER/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+                NB_TSD_K_gap_O=`grep "^K-O/total" {params.work_directory}/TE_INSIDER/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+
+                OK_K_gap_O=$(($NB_TSD_OK + $NB_TSD_K_gap_O));
+                            
+                PERCENT=$(($OK_K_gap_O*100/$TOTAL))
+
+                KO=$(($TOTAL-$OK_K_gap_O));
+
+                echo "TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ;   TSD CORRECTED [KO]:$NB_TSD_OK_corrected ;  "
+
+                echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD_INSIDER.csv
+
+                echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD [OK]" >> {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+                echo -e "${{nameTE}}\t${{KO}}\tTSD [KO]" >> {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+                
+                printf "%s\\n" "{params.cmess} [SNK]--[`date`] [TSD:snk] : $e/$NB_TE {params.cend}"
+
+            done;
+            rm -f FLANK.bed TE.bed TE_name.txt
+            echo
+        fi;
+
+
         #rm -f {params.work_directory}/TE_REPORT_total_find.fasta;
         rm -f TSM_OK.txt;
         rm -fr {params.work_directory}/TSD/DIR_SEQ_TE_READ_POS
@@ -258,19 +421,28 @@ rule TSD :
 
         """
 
+
+
 #END TSD
 
 
-rule TE_TOWARD_GENOME :
+
+
+
+rule FIND_TE_ON_REF :
     input:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_REPORT_total_find.fasta",
-        fasta_TE  = config["DATA"]["TE_DB"],
-        genome    = config["DATA"]["GENOME"],
-        all_te    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
-        
+        ref         = config["DATA"]["REFERENCE"],
+        genome_real = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_TOWARD_GENOME/genome.out.fasta",
+        fasta_TE    = config["DATA"]["TE_DB"],
+        all_te      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
+        sam         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/pm_against_ref.sam",
+        delta       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/pm_against_ref.sam.delta",
+        bed         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/assemblytics_out.Assemblytics_structural_variants.bed",
+        stats       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/assemblytics_out.Assemblytics_assembly_stats.txt",
+        input_link=[],
     output:
-        #config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_TOWARD_GENOME/genome.out.fasta",
         output_link=[],
+        
 
     group: "complement_optionnel",
     params:
@@ -282,6 +454,236 @@ rule TE_TOWARD_GENOME :
         #INTEGRATE_TE_TO_GENOME
         PUT_ID               = config["PARAMS"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"]["PUT_ID"],
         PUT_SEQUENCE_DB_TE   = config["PARAMS"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"]["PUT_SEQUENCE_DB_TE"],
+
+        #Color message
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+        cbold          = bcolors.BOLD,
+
+    log:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FIND_TE_ON_REF",
+
+
+    shell:
+        #TODO broullion
+        """
+        {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+
+        mkdir -p {params.work_directory}/FIND_TE_ON_REF/
+        rm -f {log}.*
+        
+        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
+
+        {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+        
+        mkdir -p {params.work_directory}/TE_INSIDER_VR/
+
+        array_type=( "INSERTION" "Repeat_expansion" "Tandem_expansion" )
+        for type in "${{array_type[@]}}"
+        do
+            echo "type=${{type}}";
+            grep -i ${{type}} {input.bed} | awk '{{print $10":"$4}}' | awk -v type="${{type}}" -F ":" 'OFS="\t"{{split($2, a, "-"); print $1 , a[1], a[2], $4":"$3":"type}}' > {params.work_directory}/TE_INSIDER_VR/${{type}}.bed
+            test -s {params.work_directory}/TE_INSIDER_VR/${{type}}.bed || echo "[SNK  INFO]: ${{type}}.bed IS EMPTY"
+
+            bedtools getfasta -fi {input.genome_real} -bed {params.work_directory}/TE_INSIDER_VR/${{type}}.bed -name > {params.work_directory}/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta
+            test -s {params.work_directory}/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta || echo "[SNK  INFO]: tmp_${{type}}_SEQ.fasta IS EMPTY"
+            
+            sh ${{path_to_pipline}}/lib/bash/get_seq_with_id.sh {params.work_directory}/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta {params.work_directory}/TE_INSIDER_VR/${{type}}_SEQ.fasta
+            test -s {params.work_directory}/TE_INSIDER_VR/${{type}}_SEQ.fasta || echo "[SNK  INFO]: ${{type}}_SEQ.fasta IS EMPTY"
+        done;
+
+        cat {params.work_directory}/TE_INSIDER_VR/Tandem_expansion_SEQ.fasta {params.work_directory}/TE_INSIDER_VR/Repeat_expansion_SEQ.fasta {params.work_directory}/TE_INSIDER_VR/INSERTION_SEQ.fasta > {params.work_directory}/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta
+        cat {params.work_directory}/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta > {params.work_directory}/TE_INSIDER_VR/INSERTION_SEQ.fasta
+
+        array_type_deletion=( "DELETION" "Repeat_contraction" "Tandem_contraction" );
+        for type in "${{array_type_deletion[@]}}"
+        do
+            grep -i ${{type}}  {input.bed} | awk  -v type="$type" 'OFS="\t"{{print $1, $2, $3, $4":"$6":"type}}' > {params.work_directory}/TE_INSIDER_VR/${{type}}.bed
+
+            bedtools getfasta -fi {input.ref}  -bed {params.work_directory}/TE_INSIDER_VR/${{type}}.bed -name > {params.work_directory}/TE_INSIDER_VR/${{type}}_SEQ.fasta
+        done;
+
+        cat {params.work_directory}/TE_INSIDER_VR/Tandem_contraction_SEQ.fasta {params.work_directory}/TE_INSIDER_VR/Repeat_contraction_SEQ.fasta {params.work_directory}/TE_INSIDER_VR/DELETION_SEQ.fasta > {params.work_directory}/TE_INSIDER_VR/DELETION_SEQ_ALL.fasta
+        cat {params.work_directory}/TE_INSIDER_VR/DELETION_SEQ_ALL.fasta > {params.work_directory}/TE_INSIDER_VR/DELETION_SEQ.fasta
+
+
+        array_type=( "INSERTION" "Repeat_expansion" "Tandem_expansion" "DELETION" "Repeat_contraction" "Tandem_contraction" )
+        for type in "${{array_type[@]}}"
+        do
+            echo "type=$type";
+
+            awk 'BEGIN{{header="";}}{{if(substr($0, 1, 1) == ">"){{header=$0;}}else if(length($0)>30){{print header"\\n"$0}}}}' {params.work_directory}/TE_INSIDER_VR/${{type}}_SEQ.fasta > {params.work_directory}/TE_INSIDER_VR/tmp.fasta
+            cat {params.work_directory}/TE_INSIDER_VR/tmp.fasta > {params.work_directory}/TE_INSIDER_VR/${{type}}_SEQ.fasta
+
+            makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
+
+            blastn -db {input.fasta_TE} \
+            -query {params.work_directory}/TE_INSIDER_VR/${{type}}_SEQ.fasta \
+            -outfmt 6 \
+            -out {params.work_directory}/TE_INSIDER_VR/${{type}}.bln 2> {log}.err 1> {log}.out;
+            
+            test -s {params.work_directory}/TE_INSIDER_VR/${{type}}.bln && \
+                python3 ${{path_to_pipline}}/lib/python/global_sv_id.py --combine_name {params.work_directory}/TE_INSIDER_VR/${{type}}_COMBINE_TE.csv \
+                    {params.work_directory}/TE_INSIDER_VR/${{type}}.bln \
+                    {input.fasta_TE} \
+                    {params.work_directory}/TE_INSIDER_VR/${{type}}.csv 
+
+            awk 'NR>1{{print $1}}' {params.work_directory}/TE_INSIDER_VR/${{type}}.csv | sort | uniq -c | sort -k 1 -n | \
+                awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > {params.work_directory}/TE_INSIDER_VR/${{type}}_COUNT_TE.csv
+
+        done;
+
+        cd {params.work_directory}/TE_INSIDER_VR/
+        
+        rm -f Repeat*
+        rm -f Tandem*
+        rm -f *SEQ_ALL.fasta
+
+        """
+
+
+#END FIND_TE_ON_REF
+
+
+
+rule FIND_SV_ON_REF :
+    input:
+        ref         = config["DATA"]["REFERENCE"],
+        genome_real = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_TOWARD_GENOME/genome.out.fasta",
+        fasta_TE    = config["DATA"]["TE_DB"],
+        all_te      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
+        input_link=[],
+    output:
+        output_link=[],
+        sam   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/pm_against_ref.sam",
+        delta = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/pm_against_ref.sam.delta",
+        bed   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/assemblytics_out.Assemblytics_structural_variants.bed",
+        stats = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER_VR/assemblytics_out.Assemblytics_assembly_stats.txt",
+        
+
+    group: "complement_optionnel",
+    params:
+        path_snk       = path_snk,
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        env            = env, #source environnement
+
+        #INTEGRATE_TE_TO_GENOME
+        PUT_ID               = config["PARAMS"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"]["PUT_ID"],
+        PUT_SEQUENCE_DB_TE   = config["PARAMS"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"]["PUT_SEQUENCE_DB_TE"],
+
+        #Color message
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+        cbold          = bcolors.BOLD,
+
+    log:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FIND_TE_ON_REF",
+
+
+    shell:
+        #TODO broullion
+        """
+        {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+
+        mkdir -p {params.work_directory}/FIND_TE_ON_REF/
+        rm -f {log}.*
+        
+        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
+
+
+        mkdir -p {params.work_directory}/INSIDER_VR/
+        mkdir -p {params.work_directory}/log/
+        #cd {params.work_directory}/INSIDER_VR/
+
+
+        path_to_pipline=`dirname {params.path_snk}`
+
+        minimap2 -ax asm5 --cs -t3 {input.ref} {input.genome_real} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
+
+        python3 ${{path_to_pipline}}/lib/python/sam2delta.py {output.sam};
+        
+
+        python3 ${{path_to_pipline}}/lib/python/Assemblytics_uniq_anchor.py \
+        --delta {output.delta} \
+        --unique-length 10000 \
+        --out {params.work_directory}/INSIDER_VR/assemblytics_out \
+        --keep-small-uniques;
+
+
+        perl ${{path_to_pipline}}/lib/perl/Assemblytics_between_alignments.pl \
+        {params.work_directory}/INSIDER_VR/assemblytics_out.coords.tab \
+        50 \
+        10000 \
+        all-chromosomes \
+        exclude-longrange \
+        bed > {params.work_directory}/INSIDER_VR/assemblytics_out.variants_between_alignments.bed;
+
+
+        python3 ${{path_to_pipline}}/lib/python/Assemblytics_within_alignment.py \
+        --delta {params.work_directory}/INSIDER_VR/assemblytics_out.Assemblytics.unique_length_filtered_l10000.delta \
+        --min 50 > {params.work_directory}/INSIDER_VR/assemblytics_out.variants_within_alignments.bed;
+
+
+        cat {params.work_directory}/INSIDER_VR/assemblytics_out.variants_between_alignments.bed \
+        {params.work_directory}/INSIDER_VR/assemblytics_out.variants_within_alignments.bed \
+        > {output.bed}
+        
+
+        path_ref=`readlink -f {input.ref}`
+        path_genome=`readlink -f {input.genome_real}`
+        
+
+        old_path=`pwd`
+        
+        cd {params.work_directory}/INSIDER_VR/
+        python3 ${{path_to_pipline}}/lib/python/filter_gap_SVs.py ${{path_ref}} ${{path_genome}}
+        cd ${{old_path}}
+
+        name_ref=`basename {input.ref}`
+        name_query=`basename {input.genome_real}`
+
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`]--[INFO] REFERENCE : $name_ref {params.cend}"
+        printf "%s\\n\\n" "{params.cmess} [SNK]--[`date`]--[INFO] GENOME : $name_query {params.cend}"
+
+        sed -i "s/file1/${{name_ref}}/g" {output.stats}
+        sed -i "s/file2/${{name_query}}/g" {output.stats}
+
+        """
+
+#END FIND_SV_ON_REF
+
+
+
+rule TE_TOWARD_GENOME :
+    input:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_REPORT_total_find.fasta",
+        fasta_TE  = config["DATA"]["TE_DB"],
+        genome    = config["DATA"]["GENOME"],
+        all_te    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
+        
+    output:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_TOWARD_GENOME/genome.out.fasta",
+        output_link=[],
+
+    group: "complement_optionnel",
+    params:
+        path_snk       = path_snk,
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        env            = env, #source environnement
+
+        #INTEGRATE_TE_TO_GENOME
+        PUT_ID              = config["PARAMS"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"]["PUT_ID"],
+        PUT_SEQUENCE_DB_TE  = config["PARAMS"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"]["PUT_SEQUENCE_DB_TE"],
+
+        #FOR DETECTION ON ASM
+        choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
 
         #Color message
         cmess          = bcolors.CYAN,
@@ -307,7 +709,8 @@ rule TE_TOWARD_GENOME :
 
         rm -f {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_DB_TE.fasta && touch {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_DB_TE.fasta
 
-        if [ {params.PUT_SEQUENCE_DB_TE} = "True" ]; then
+        if [ {params.PUT_SEQUENCE_DB_TE} = "True" ]  || [ {params.choice_insider_sv} = "True" ]; then
+
             #SEQ INDEL to Cannonical SEQ
             for ID in `cat "{params.work_directory}/TE_TOWARD_GENOME/ID.txt"`; do
                 seq_old=`grep "$ID" {params.work_directory}/SEQUENCE_INDEL.fasta -A 1 | grep -v ">"`
@@ -329,7 +732,7 @@ rule TE_TOWARD_GENOME :
                 ID_TE=`echo ${{ID}} | cut -d ":" -f 5`
 
                 #WARNING SEQ WITH NUMBER
-                if [ {params.PUT_ID} = "True" ]; then
+                if [ {params.PUT_ID} = "True" ] || [ {params.choice_insider_sv} = "True" ]; then
                     echo "${{ID_TE}}$seq_TE_cannonical" >> {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_DB_TE.fasta
                 else
                     echo "$seq_TE_cannonical" >> {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_DB_TE.fasta
@@ -346,19 +749,24 @@ rule TE_TOWARD_GENOME :
         else
 
             #INTEGRATION SEQUENCE TE READS
-            awk 'BEGIN{{start=0; header=0;}} OFS="\t"{{if(substr($0, 1, 1) == ">"){{split($0, sp, ":"); header=$0; start=sp[3];}}else{{print header, start, start+length($0)}} }}' \
-            {params.work_directory}/SEQUENCE_INDEL.fasta | sed 's/^>//g' > {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL.bed
+            
         
-            grep -w -f {params.work_directory}/TE_TOWARD_GENOME/ID.txt {params.work_directory}/SEQUENCE_INDEL.fasta -A 1 \
-            > {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta
+            if [ {params.PUT_ID} = "True" ]; then
+                grep -f {params.work_directory}/TE_TOWARD_GENOME/ID.txt {params.work_directory}/SEQUENCE_INDEL.fasta -A 1 | \
+                awk '{{if(substr($0, 1, 1) == ">"){{head=$0; }}else if(length($0) >= 30 ){{split(head, a, ":"); print head"\\n"a[5]$0}}}}' | grep -v "\\-\\-" \
+                > {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta
+
+                awk 'BEGIN{{start=0; header=0;}} OFS="\t"{{if(substr($0, 1, 1) == ">"){{split($0, sp, ":"); header=$0; start=sp[3];}}else{{print header, start, start+length($0)}} }}' \
+                {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta | sed 's/^>//g' > {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL.bed
+            else
+                grep -w -f {params.work_directory}/TE_TOWARD_GENOME/ID.txt {params.work_directory}/SEQUENCE_INDEL.fasta -A 1 \
+                > {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta
+            fi;
         fi;
 
         
         grep -f {params.work_directory}/TE_TOWARD_GENOME/ID.txt {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL.bed \
         > {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.bed
-
-        
-
 
         #FASTA TO FORMAT bed for script vr_to_genome
         while read l; do 
@@ -391,13 +799,11 @@ rule TE_TOWARD_GENOME :
         TOTAL_TE=`awk 'NR>1' {input.all_te} | wc -l`
         NB_SEQ_FOUND=`grep -w -f {params.work_directory}/TE_TOWARD_GENOME/TRUE_POSITION_TE.fasta {params.work_directory}/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta -c`
         
-        echo "NB_TE INTEGRATE: $NB_SEQ_FOUND ; TOTAL_TE: $TOTAL_TE"
+        echo "NB_TE INTEGRATE: $NB_SEQ_FOUND ;   TOTAL_TE: $TOTAL_TE"
         
         rm -f {params.work_directory}/TE_TOWARD_GENOME/genome.out.fasta.fai #important to delet this
-        rm -f {params.work_directory}/TE_TOWARD_GENOME/ID.txt;
+        #rm -f {params.work_directory}/TE_TOWARD_GENOME/ID.txt;
         """
-
-
 
 #END TE_TOWARD_GENOME
 
@@ -462,15 +868,15 @@ rule GET_SEQ_TE :
 
 rule assembly_flye :
     input:
-        vcf      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SV.vcf",
-        read     = config["DATA"]["SAMPLE"],
-        fasta_TE = config["DATA"]["TE_DB"],
-        all_te   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
-        bln      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
-        input_link=[],
+        vcf         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SV.vcf",
+        read        = config["DATA"]["SAMPLE"],
+        fasta_TE    = config["DATA"]["TE_DB"],
+        all_te      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
+        bln         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
+        input_link  = [],
 
     output:
-        output_link=[],
+        output_link = [],
 
     group: "assembly"
 
@@ -501,11 +907,7 @@ rule assembly_flye :
             region=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
             id=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]" | cut -d":" -f 2`
 
-            ##nb_read=`grep ":$id:" {input.all_te} | cut -f 2 | cut -d ":" -f 6`
-
             nb_read=`cat {params.work_directory}/ID_READS_TE/$read_file | sort | uniq | wc -l`
-
-            #nb_read=`awk -v ID="$id" '{{if($3 == ID){{print $0}}}}' {input.vcf} | grep -o -e "RE=[0-9]*" | cut -d"=" -f 2`
             TE=`grep ":$id:[0-9]*:[IP]" {input.all_te} | cut -f 1 || echo "NONE"`
 
             i=$(($i + 1)) ;
@@ -555,7 +957,7 @@ rule assembly_flye :
             fi;
         done;
 
-        echo "-------- ASSEMBLY DONE --------";
+        echo "--- LOCAL ASSEMBLY DONE ---";
 
         for i in `cat {params.work_directory}/all_TE_assembly.bln | cut -f 1 | cut -d":" -f 2`; do 
             qseqid=`grep ":$i:" {params.work_directory}/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv | cut -f 2`;
@@ -673,7 +1075,7 @@ rule assembly_wdtgb :
                         wtpoa-cns -i {params.work_directory}/WTDGB/dbg.ctg.lay.gz -fo "{params.work_directory}/READ_FASTQ_TE_ASSEMBLY/assembly_WTDBG_${{region}}.fasta" 2>> {log}.err || ( echo $id >> not_assembly.txt && touch no_asm.txt && echo "PROBLEME : $id;  i=$i; nb_read=$nb_read" )
                     
                         if ! test -e no_asm.txt; then
-                            printf "%s\n" "[extract_read:snk] BLAST ASSEMBLY $TE"
+                            printf "%s\\n" "[extract_read:snk] BLAST ASSEMBLY $TE"
                             ### BLAST assembly on DATABASE TE
                             
                             blastn -db {input.fasta_TE} \
@@ -744,6 +1146,7 @@ rule extract_read :
         vcf      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SV.vcf",
         read     = config["DATA"]["SAMPLE"],
         fasta_TE = config["DATA"]["TE_DB"],
+        input_link=[],
 
     output:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/ID_BEST_READ_TE.txt",
@@ -776,7 +1179,6 @@ rule extract_read :
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET READS AND ASSEMBLY [^-^] {params.cend}"
 
-
         rm -fr {params.work_directory}/READ_FASTQ_TE
         mkdir -p {params.work_directory}/READ_FASTQ_TE ;
 
@@ -799,6 +1201,13 @@ rule extract_read :
 
         NB_FILE=`ls {params.work_directory}/ID_READS_TE | wc -l` ;
         i=0 ;
+
+        show_step="$i/$NB_FILE TE"
+        number_of_char=`echo "$show_step" | wc -c`
+        number_of_char=$(($number_of_char-1));
+        printf "\b%.0s" `seq 1 $number_of_char`
+        printf "$show_step";
+
         for read_file in `ls {params.work_directory}/ID_READS_TE`; do
 
             region=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
@@ -809,9 +1218,16 @@ rule extract_read :
                 nb_read=`cat {params.work_directory}/ID_READS_TE/$read_file | sort | uniq | wc -l`
                 TE=`grep ":$id:[0-9]*:[IP]" {input.all_te} | cut -f 1 || echo "NONE"`
 
-                printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [extract_read:snk] $read_file {params.cend}"
-                printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [extract_read:snk] [extract_read:snk] $i/$NB_FILE : nb_read=$nb_read : id=$id {params.cend}"
-                
+                # show_step="      {params.cmess} [SNK]--[`date`] [extract_read:snk] $read_file {params.cend}"
+                # number_of_char=`echo "$show_step" | wc -c`
+                # number_of_char=$(($number_of_char-1));
+                # printf "\b%.0s" `seq 1 $number_of_char`
+                # printf "$show_step";
+
+
+                printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [extract_read:snk] $read_file {params.cend}" >> {log}.out
+                printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [extract_read:snk] [extract_read:snk] $i/$NB_FILE : nb_read=$nb_read : id=$id {params.cend}" >> {log}.out
+
                 (grep -w $id {params.work_directory}/ID_TE_SV_REPORT.txt && \
                 samtools fqidx {input.read} -r {params.work_directory}/ID_READS_TE/$read_file > \
                 {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fq) || echo "$id NOT FOUND" >> {log}.err ;
@@ -820,7 +1236,7 @@ rule extract_read :
                 test -e {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fq && \
                 python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
                  {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fq \
-                 {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq
+                 {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq 1>> {log}.out 2>> {log}.err
 
                 (test -e {params.work_directory}/READ_FASTQ_TE/reads_${{region}}.fastq && echo "[OK]" ) || echo "[ERROR EXTRACT READ] $id" >> {log}.err
                 
@@ -828,6 +1244,12 @@ rule extract_read :
             fi;
 
             i=$(($i + 1));
+
+            show_step="$i/$NB_FILE TE"
+            number_of_char=`echo "$show_step" | wc -c`
+            number_of_char=$(($number_of_char-1));
+            printf "\b%.0s" `seq 1 $number_of_char`
+            printf "$show_step";
         done;
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] EXTRACT DONE ! {params.cend}"
@@ -869,6 +1291,7 @@ rule FREQUENCE :
         bam      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/MAPPING_POSTION_TE.bam",
         all_te   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
         genome   = config["DATA"]["GENOME"],
+        input_link=[],
 
     output:
         output_link=[],
@@ -876,8 +1299,8 @@ rule FREQUENCE :
         
         
     params:
-        path_snk       = path_snk,
-        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+        path_snk        = path_snk,
+        work_directory  = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
         pars_bln_option = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
 
@@ -918,7 +1341,6 @@ rule FREQUENCE :
         # -outfmt 6 \
         # -out {params.work_directory}/FREQ_BEFORE/variants.fasta \
         # {params.work_directory}/FREQ_BEFORE/variants.bln 2>> {log}.err;
-
 
         # python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py \
         #     {params.work_directory}/FREQ_BEFORE/variants.bln \
@@ -981,14 +1403,13 @@ rule FREQUENCE :
 
                 if [ -n "$depth" ]; then
                     ###echo "$i : $info_TE : $depth : RS=$RS : NB_depth=$NB_depth"
-                    printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t$info_TE\n" "$(((10**6 * $RS/$NB_depth) * 100))e-6" | tr "," "." >> {output.depth_te}
+                    printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t$info_TE\\n" "$(((10**6 * $RS/$NB_depth) * 100))e-6" | tr "," "." >> {output.depth_te}
                 else
-                    printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t${{info_TE}}|ERROR\n" "0" | tr "," "." >> {output.depth_te}
-                    message_fail "ERROR FOR ${{info_TE}} \n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\n";
+                    printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t${{info_TE}}|ERROR\\n" "0" | tr "," "." >> {output.depth_te}
+                    message_fail "ERROR FOR ${{info_TE}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
                 fi;
-
             else
-                printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\n"  > {output.depth_te}
+                printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n"  > {output.depth_te}
             fi;
             
             i=$(($i+1));
@@ -1000,6 +1421,207 @@ rule FREQUENCE :
 
 
 #END FREQUENCE
+
+
+# rule MAPPING_TO_REF:
+#     input:  
+#         TE_INS   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_INSIDER/INSERTION.csv",
+#         ref      = config["DATA"]["REFERENCE"],
+#         read     = config["DATA"]["SAMPLE"],
+#         bam      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SAMPLE_mapping_GENOME_MD.sorted.bam",
+
+#     output:
+#         bam = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/MAPPING_TO_REF/SAMPLE_TO_REF_MD.sorted.bam",
+#         output_link=[],
+
+#     params:
+#         path_snk       = path_snk,
+#         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+#         env            = env,
+        
+#         #COLOR 
+#         cmess          = bcolors.CYAN,
+#         cfail          = bcolors.FAIL,
+#         cend           = bcolors.END,
+#     log:
+#         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/MAPPING_TO_REF",
+
+#     shell:
+#         """
+
+#         printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] MAPPING_TO_REF {params.cend}"
+
+#         {params.env}
+#         path_to_pipline=`dirname {params.path_snk}`
+        
+#         mkdir -p {params.work_directory}/MAPPING_TO_REF/
+
+#         awk 'NR>1 && OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' {input.TE_INS} > {params.work_directory}/INS.bed
+
+#         echo "---view---" | tee {log}.out
+#         #samtools view -h {params.preset_view} -b {input.bam} -L INS.bed > {output.sam}.bam 2>> {log}.err;
+#         run_cmd "samtools view -h {params.preset_view} {input.bam} -L {params.work_directory}/INS.bed | tee {params.work_directory}/MAPPING_TO_REF/TE_INSIDER.sam" "{log}" "SAMTOOLS_VIEW" "False";
+
+
+
+#         awk 'substr($0, 1, 1) != "@" {print $1}' {params.work_directory}/MAPPING_TO_REF/TE_INSIDER.sam | sort -u > {params.work_directory}/ID_READS.txt
+
+#         samtools fqidx {input.read} -r {params.work_directory}/ID_READS.txt > {params.work_directory}/TE_INSIDER.fastq
+
+#         run_cmd "minimap2 -x  {params.preset} -d {input.ref}.mmi {input.genome}" "{log}" "MINIMAP2_INDEX" "False" ;
+
+#         (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+#         run_cmd "minimap2 -ax {params.preset} {params.option} {input.ref} {params.work_directory}/TE_INSIDER.fastq | tee {params.work_directory}/TE_INSIDER.sam" "{log}" "MINIMAP2" "False"; 
+#         sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+
+#         echo "---view---" | tee {log}.out
+#         #samtools view -h {params.preset_view} -b {input.bam} -L INS.bed > {output.sam}.bam 2>> {log}.err;
+#         run_cmd "samtools view -h {params.preset_view} -b {params.work_directory}/TE_INSIDER.sam | tee {params.work_directory}/MAPPING_TO_REF/TE_INSIDER.bam" "{log}" "SAMTOOLS_VIEW" "False";
+
+#         echo "---sort---" | tee -a {log}.out
+#         #samtools sort {params.preset_sort} {output.sam}.bam -o {output.sam}.sorted.bam 2>> {log}.err;
+#         run_cmd "samtools sort {params.preset_sort} {params.work_directory}/MAPPING_TO_REF/TE_INSIDER.bam -o {params.work_directory}/MAPPING_TO_REF/TE_INSIDER.sorted.bam" "{log}" "SAMTOOLS_SORT" "False";
+
+#         echo "---calmd---" | tee -a {log}.out
+#         #samtools calmd {params.preset_callmd} -b {output.sam}.sorted.bam {input.ref} > {output} 2>> {log}.err; #CALL MD for sniffles
+#         run_cmd "samtools calmd {params.preset_callmd} -b {params.work_directory}/MAPPING_TO_REF/TE_INSIDER.sorted.bam {input.ref} | tee {params.work_directory}/MAPPING_TO_REF/TE_INSIDER_MD.sorted.bam" "{log}" "SAMTOOLS_CALLMD" "False";#CALL MD for sniffles
+
+#         (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+#         run_cmd "svim alignment --read_names --insertion_sequences --minimum_depth 1 {params.work_directory}/SVIM_RESULT_REF {params.work_directory}/MAPPING_TO_REF/TE_INSIDER_MD.sorted.bam {input.ref}" "{log}" "SVIM" "False";
+#         sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+        
+
+
+#         """
+
+
+
+rule FREQ_GLOBAL:
+    input:  
+        TE_INS   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_INSIDER/INSERTION.csv",
+        bam      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SAMPLE_mapping_GENOME_MD.sorted.bam",
+
+    output:
+        DEPTH = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv",
+        tmp   = output_link=[],
+
+    params:
+        path_snk       = path_snk,
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        env            = env,
+        
+        #COLOR 
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+    log:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FREQ_GLOBAL",
+
+    shell:
+        """
+
+        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] FREQ_GLOBAL {params.cend}"
+
+        {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+        
+        mkdir -p {params.work_directory}/MAPPING_TO_REF/
+
+        cat {input.TE_INS} | cut -f 2 | \
+        awk -v margin_flank=1000 -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]-margin_flank, a[1]-margin_flank+1; print $5, a[2]+margin_flank, a[2]+margin_flank+1}}' > FLANK_TE.bed
+
+        cat {input.TE_INS} | cut -f 2 | \
+        awk -v margin_flank=5 -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]+margin_flank, a[1]+margin_flank+1; print $5, a[2]-margin_flank, a[2]-margin_flank+1}}' > FLANK_TE_PASS2.bed
+
+        samtools view -h -b {input.bam} -F 2048 -L FLANK_TE.bed > tmp_flank_TE_OUT.bam
+        samtools index tmp_flank_TE_OUT.bam
+
+        samtools view -h tmp_flank_TE_OUT.bam > tmp_flank_TE_OUT.sam
+
+        #INTERN TO TE
+        # samtools view -h -b tmp_flank_TE_OUT.bam -F 2048 -L FLANK_TE_PASS2.bed > tmp_flank_TE_IN.bam
+        # samtools index tmp_flank_TE_IN.bam
+
+        awk 'NR>1 && OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' \
+        {input.TE_INS} > INSERTION_TE.bed
+
+        printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n"  > {output.DEPTH}
+        
+        number_lines=`cat INSERTION_TE.bed | wc -l`
+        i=0;
+
+        show_step="$i/$number_lines TE"
+        number_of_char=`echo "$show_step" | wc -c`
+        number_of_char=$(($number_of_char-1));
+        printf "\b%.0s" `seq 1 $number_of_char`
+        printf "$show_step";
+
+        while read line; do
+            chrom=`echo $line | awk '{{print $1}}'`
+            start=`echo $line | awk '{{print $2}}'`
+            end=`echo $line | awk '{{print $3}}'`
+            info=`echo $line | awk '{{print $4}}'`
+
+            ###echo "info : $info"
+            TE=`echo $line | awk '{{print $4}}' | cut -d "|" -f 1`
+
+            size_TE=$(($end-$start))
+
+            ###echo "size_TE : $size_TE"
+
+            echo $line | tr " " "\\t" | cut -f 1-3 > tmp.bed
+
+            ###cat tmp.bed
+
+            samtools view tmp_flank_TE_OUT.bam -F 2048 -L tmp.bed > tmp_tmp_flank_TE_OUT.sam
+
+            if test -s tmp_tmp_flank_TE_OUT.sam; then
+                NB_DEL=`cat tmp_tmp_flank_TE_OUT.sam | cut -f 6 | grep "[0-9]*D" -o | tr -d "D" | awk -v size="$size_TE" -v marge="20" '($0 <= size+marge && $0 >= size) || ($0 >= size+marge && $0 <= size-1 )' | wc -l`
+
+                rm -f tmp_tmp_flank_TE_OUT.sam tmp.bed
+
+                ###echo "NB_DEL : $NB_DEL"#deletion
+                
+                depth_fk_left=`samtools depth tmp_flank_TE_OUT.bam -r $chrom:$(($start-20))-$(($start-20)) | cut -f 3`;
+                depth_fk_right=`samtools depth tmp_flank_TE_OUT.bam -r $chrom:$(($end+20))-$(($end+20)) | cut -f 3`;
+
+                if [ -n "$depth_fk_left" ] && [ -n "$depth_fk_right" ] ; then
+
+                    depth_total_mean=$((($depth_fk_left+$depth_fk_right)/2));
+                    ###echo "depth_total_mean : $depth_total_mean"
+                    if [ $depth_total_mean -ne 0 ]; then
+                        NB_TE=$(($depth_total_mean-$NB_DEL))
+
+                        #echo "NB_TE : $NB_TE"
+
+                        if [ -n "$depth_total_mean" ]; then
+                            ###echo "$i : $info : $depth : RS=$RS : NB_depth=$NB_depth"
+                            printf "$chrom\t$start\t$depth_total_mean\t$NB_DEL\t$NB_TE\t%.4f\t$TE\t$info\\n" "$(((10**6 * $NB_TE/$depth_total_mean) * 100))e-6" | tr "," "." >> {output.DEPTH}
+                        else
+                            printf "$chrom\t$start\t-1\t$NB_DEL\t-1\t%.4f\t$TE\tinfo|ERROR\\n" "0" | tr "," "." >> {output.DEPTH}
+                            message_fail "ERROR FOR ${{info}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
+                        fi;
+                    fi;
+                fi;
+            fi;
+            i=$(($i+1));
+
+            show_step="$i/$number_lines TE"
+            number_of_char=`echo "$show_step" | wc -c`
+            number_of_char=$(($number_of_char-1));
+            printf "\b%.0s" `seq 1 $number_of_char`
+            printf "$show_step";
+
+        done < INSERTION_TE.bed;
+        echo
+
+
+        """
+
+
+#END FREQ_GLOBAL
 
 
 
@@ -1017,7 +1639,7 @@ rule DETECTION_TE :
         all_te    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
         depth_te  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DEPTH_TE.csv",
         bam       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/MAPPING_POSTION_TE.bam",
-        
+
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -1039,25 +1661,29 @@ rule DETECTION_TE :
     shell:
         """
         {params.env}
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] DETECTION_TE [^-^] {params.cend}"
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
         # GET SEQUENCE REPORT #
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCES VARIANTS [^-^] {params.cend}"
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCE VARIANT [^-^] {params.cend}"
         python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py -m 150 {input.vcf} {output.snif_seqs} -c {params.CHROM_KEEP} ;
+        test -s {output.snif_seqs} || (message_fail "ERROR NO SEQUENCE SV FOUND" && exit 1)
 
-        cp {output.snif_seqs} {params.work_directory}/tmp_seq.fasta
+        #cp {output.snif_seqs} {params.work_directory}/tmp_seq.fasta
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] BLAST SV TO TE [^-^] {params.cend}"
+        
         # BLAST SEQUENCE VCF on DATABASE TE #
         makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.blastn}.err;
         blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} 2>> {log.blastn}.err;
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] BLAST DONE CHECK logfile=={log.blastn} {params.cend}"
+        
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`] BLAST DONE CHECK logfile => {log.blastn} {params.cend}"
 
-        cp {output.bln} {params.work_directory}/tmp_blast.bln
+        #cp {output.bln} {params.work_directory}/tmp_blast.bln
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] FILTER TE BLAST [^-^] {params.cend}"
+        
         # FILTER TE BLAST #
         python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} \
         {input.fasta_TE} {output.all_te} -c \
@@ -1068,7 +1694,16 @@ rule DETECTION_TE :
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] CALCUL FREQUENCE TE [^-^] {params.cend}"
         
         # CALCUL FREQUENCE #
+        number_lines=`cat {output.all_te} | wc -l`
         i=0;
+
+        show_step="$i/$number_lines"
+        number_of_char=`echo "$show_step" | wc -c`
+        number_of_char=$(($number_of_char-1));
+        printf "\b%.0s" `seq 1 $number_of_char`
+        printf "$show_step";
+
+
         while read line; do
             
             if [ $i -ne 0 ]; then
@@ -1082,24 +1717,35 @@ rule DETECTION_TE :
 
                 if [ -n "$depth" ]; then
                     ###echo "$i : $info_TE : $depth : RS=$RS : NB_depth=$NB_depth"
-                    printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t$info_TE\n" "$(((10**6 * $RS/$NB_depth) * 100))e-6" | tr "," "." >> {output.depth_te}
+                    printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t$info_TE\\n" "$(((10**6 * $RS/$NB_depth) * 100))e-6" | tr "," "." >> {output.depth_te}
                 else
                     printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t${{info_TE}}|ERROR\n" "0" | tr "," "." >> {output.depth_te}
-                    message_fail "ERROR FOR ${{info_TE}} \n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\n";
+                    message_fail "ERROR FOR ${{info_TE}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
                 fi;
-
             else
-                printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\n"  > {output.depth_te}
+                printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n"  > {output.depth_te}
             fi;
             
             i=$(($i+1));
 
+            show_step="$i/$number_lines"
+            number_of_char=`echo "$show_step" | wc -c`
+            number_of_char=$(($number_of_char-1));
+            printf "\b%.0s" `seq 1 $number_of_char`
+            printf "$show_step";
+
         done < {output.all_te};
 
+
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET BAM TE [^-^] {params.cend}"
+        
         # GET BAM TE
         awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -v size="15" -F ":" 'OFS="\t"{{print $1, $3-size, $3+size, $5":"$9}}' > {params.work_directory}/POSITION_START_TE.bed
         samtools view -h -b {input.bam} -L {params.work_directory}/POSITION_START_TE.bed > {params.work_directory}/MAPPING_POSTION_TE.bam
+        
+
+        # REMOVE
+        #rm -f {params.work_directory}/POSITION_START_TE.bed;
         """
 
 
@@ -1115,10 +1761,11 @@ rule svim :
         bam    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SAMPLE_mapping_GENOME_MD.sorted.bam",
 
     output:
-        svim = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SVIM_RESULT/variants.vcf", 
-        sv   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SV.vcf",
+        svim   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SVIM_RESULT/variants.vcf", 
+        sv     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SV.vcf",
         
     params:
+        path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
         env            = env, #source environnement
@@ -1135,17 +1782,21 @@ rule svim :
     shell:
         """
         {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] SVIM DETECTION VARIANT [^-^] {params.cend}"
+
+        samtools index {input.bam} 2> {log}.err
 
         # svim alignment --read_names \
         #      --insertion_sequences \
         #      --minimum_depth 1 {params.work_directory}/SVIM_RESULT {input.bam} {input.genome} 2> {log}.err
 
-        ##printf "%s\\n" "{params.cmess} [SNK]--[`date`] SVIM DONE CHECK logfile=={log} {params.cend}"
+        ##printf "%s\\n" "{params.cmess} [SNK]--[`date`] SVIM DONE CHECK logfile : {log}.err, {log}.out {params.cend}"
 
-        samtools index {input.bam} 2> {log}.err
-
+        (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
         run_cmd "svim alignment --read_names --insertion_sequences --minimum_depth 1 {params.work_directory}/SVIM_RESULT {input.bam} {input.genome}" "{log}" "SVIM" "False";
+        sh ${{path_to_pipline}}/lib/bash/end_load.sh;
 
         cp {params.work_directory}/SVIM_RESULT/variants.vcf {output.sv}
         """
@@ -1163,6 +1814,7 @@ rule sniffles :
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/SV.vcf", 
         
     params:
+        path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
         env            = env, #source environnement
@@ -1177,12 +1829,32 @@ rule sniffles :
     shell:
         """
         {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
 
         samtools index {input} 2> {log}.err
 
-        #sniffles --report-seq -s 1 -m {input} -v {output} -n -1 ;
-        run_cmd "sniffles --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES" "False";
+        #sniffles --report-seq -s 1 -m {input} -v {output} -n -1 2> {log}.err;
+        
+        version=`sniffles -h 2> tmp_version_sniffles.txt && grep "Version:" tmp_version_sniffles.txt | cut -d " " -f 2 && rm -f tmp_version_sniffles.txt`
+
+        if [ $version = "1.1.10" ]; then
+
+            (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+            run_cmd "sniffles --report_seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.1.10" "False";
+            sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+
+        elif [ $version = "1.1.12" ]; then
+
+            (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+            run_cmd "sniffles --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.1.12" "False";
+            sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+
+        else
+            message_fail "[SNK] -- [`data`] -- [ERROR] YOU HAVE NOT THE GOOD VERSION OF SNIFFLES, PLEASE GET VERSION 1.1.10 or 1.1.12"
+            exit 2
+        fi
 
 
         """
@@ -1216,12 +1888,12 @@ rule samtools :
         cend           = bcolors.END,
 
     log:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/samtools"
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/samtools",
 
     shell:
         """
         {params.env}
-        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
+        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
         echo "---view---" | tee {log}.out
         #samtools view -h {params.preset_view} -b {input.sam} > {input.sam}.bam 2>> {log}.err;
@@ -1232,10 +1904,8 @@ rule samtools :
         run_cmd "samtools sort {params.preset_sort} {input.sam}.bam -o {input.sam}.sorted.bam" "{log}" "SAMTOOLS_SORT" "False";
 
         echo "---calmd---" | tee -a {log}.out
-        #samtools calmd {params.preset_callmd} -b {input.sam}.sorted.bam {input.genome} > {output} 2>> {log}; #CALL MD for sniffles
+        #samtools calmd {params.preset_callmd} -b {input.sam}.sorted.bam {input.genome} > {output} 2>> {log}.err; #CALL MD for sniffles
         run_cmd "samtools calmd {params.preset_callmd} -b {input.sam}.sorted.bam {input.genome} | tee {output}" "{log}" "SAMTOOLS_CALLMD" "False";#CALL MD for sniffles
-
-        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS DONE CHECK logfile=={log}"
 
         rm -f {input.sam} \
         {input.sam}.bam \
@@ -1281,12 +1951,12 @@ rule mapping :
         {params.env};
         path_to_pipline=`dirname {params.path_snk}`
 
-        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
+        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
         
-        #minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} 2> {log};
+        #minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} 2> {log}.err;
         run_cmd "minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome}" "{log}" "MINIMAP2_INDEX" "False" ;
         
-        #minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} 2>> {log};
+        #minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} 2>> {log}.err;
         
         (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
         run_cmd "minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} | tee {output}" "{log}" "MINIMAP2" "False"; 
@@ -1306,14 +1976,15 @@ rule mapping :
 
 
 
+
 rule TE_INSIDER:
     input:  
-        ref   = config["DATA"]["REFERENCE"],
-        query = config["DATA"]["GENOME"],
-        sam   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam",
-        delta = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam.delta",
-        bed   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_structural_variants.bed",
-        stats = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_assembly_stats.txt",
+        ref      = config["DATA"]["REFERENCE"],
+        query    = config["DATA"]["GENOME"],
+        sam      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam",
+        delta    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/pm_against_ref.sam.delta",
+        bed      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_structural_variants.bed",
+        stats    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/assemblytics_out.Assemblytics_assembly_stats.txt",
 
         fasta_TE = config["DATA"]["TE_DB"],
 
@@ -1338,7 +2009,7 @@ rule TE_INSIDER:
     shell:
         """
 
-        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
+        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -1348,10 +2019,11 @@ rule TE_INSIDER:
         array_type=( "INSERTION" "Repeat_expansion" "Tandem_expansion" );
         for type in "${{array_type[@]}}"
         do
-            echo "type=$type";
+            ###echo "type=$type";
             grep -i $type {input.bed} | awk '{{print $10":"$4}}' | awk -v type="$type" -F ":" 'OFS="\t"{{split($2, a, "-"); print $1 , a[1], a[2], $4":"$3":"type}}' > {params.work_directory}/TE_INSIDER/${{type}}.bed
             
-            bedtools getfasta -fi {input.query} -bed {params.work_directory}/TE_INSIDER/${{type}}.bed -name > {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta
+            test -s {params.work_directory}/TE_INSIDER/${{type}}.bed && \
+                bedtools getfasta -fi {input.query} -bed {params.work_directory}/TE_INSIDER/${{type}}.bed -name > {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta
         done;
 
         cat {params.work_directory}/TE_INSIDER/Tandem_expansion_SEQ.fasta {params.work_directory}/TE_INSIDER/Repeat_expansion_SEQ.fasta {params.work_directory}/TE_INSIDER/INSERTION_SEQ.fasta > {params.work_directory}/TE_INSIDER/INSERTION_SEQ_ALL.fasta
@@ -1360,9 +2032,11 @@ rule TE_INSIDER:
         array_type_deletion=( "DELETION" "Repeat_contraction" "Tandem_contraction" );
         for type in "${{array_type_deletion[@]}}"
         do
+
             grep -i ${{type}}  {input.bed} | awk  -v type="$type" 'OFS="\t"{{print $1, $2, $3, $4":"$6":"type}}' > {params.work_directory}/TE_INSIDER/${{type}}.bed
 
-            bedtools getfasta -fi {input.ref}  -bed {params.work_directory}/TE_INSIDER/${{type}}.bed -name > {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta
+            test -s {params.work_directory}/TE_INSIDER/${{type}}.bed && \
+                bedtools getfasta -fi {input.ref}  -bed {params.work_directory}/TE_INSIDER/${{type}}.bed -name > {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta
         done;
 
         cat {params.work_directory}/TE_INSIDER/Tandem_contraction_SEQ.fasta {params.work_directory}/TE_INSIDER/Repeat_contraction_SEQ.fasta {params.work_directory}/TE_INSIDER/DELETION_SEQ.fasta > {params.work_directory}/TE_INSIDER/DELETION_SEQ_ALL.fasta
@@ -1372,22 +2046,26 @@ rule TE_INSIDER:
         array_type=( "INSERTION" "Repeat_expansion" "Tandem_expansion" "DELETION" "Repeat_contraction" "Tandem_contraction" )
         for type in "${{array_type[@]}}"
         do
-            echo "type=$type";
+            echo "TYPE : $type";
 
-            makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
-            blastn -db {input.fasta_TE} \
-            -query {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta \
-            -outfmt 6 \
-            -out {params.work_directory}/TE_INSIDER/${{type}}.bln 2> {log}.err 1> {log}.out;
+            if test -s {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta ; then
+
+                makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
+                blastn -db {input.fasta_TE} \
+                -query {params.work_directory}/TE_INSIDER/${{type}}_SEQ.fasta \
+                -outfmt 6 \
+                -out {params.work_directory}/TE_INSIDER/${{type}}.bln 2> {log}.err 1> {log}.out;
+                
+                test -s {params.work_directory}/TE_INSIDER/${{type}}.bln && \
+                    python3 ${{path_to_pipline}}/lib/python/global_sv.py --combine_name {params.work_directory}/TE_INSIDER/${{type}}_COMBINE_TE.csv \
+                        {params.work_directory}/TE_INSIDER/${{type}}.bln \
+                        {input.fasta_TE} \
+                        {params.work_directory}/TE_INSIDER/${{type}}.csv 2>> {log}.err 1>> {log}.out;
+
+                awk 'NR>1{{print $1}}' {params.work_directory}/TE_INSIDER/${{type}}.csv | sort | uniq -c | sort -k 1 -n | \
+                    awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > {params.work_directory}/TE_INSIDER/${{type}}_COUNT_TE.csv
             
-            test -s {params.work_directory}/TE_INSIDER/${{type}}.bln && \
-                python3 ${{path_to_pipline}}/lib/python/global_sv.py --combine_name {params.work_directory}/TE_INSIDER/${{type}}_COMBINE_TE.csv \
-                    {params.work_directory}/TE_INSIDER/${{type}}.bln \
-                    {input.fasta_TE} \
-                    {params.work_directory}/TE_INSIDER/${{type}}.csv 
-
-            awk 'NR>1{{print $1}}' {params.work_directory}/TE_INSIDER/${{type}}.csv | sort | uniq -c | sort -k 1 -n | \
-                awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > {params.work_directory}/TE_INSIDER/${{type}}_COUNT_TE.csv
+            fi;
         done;
 
         cd {params.work_directory}/TE_INSIDER/
@@ -1403,7 +2081,7 @@ rule TE_INSIDER:
 
 
 
-rule sv_insider:
+rule SV_INSIDER:
     input:  
         ref         = config["DATA"]["REFERENCE"],
         genome      = config["DATA"]["GENOME"],
@@ -1429,25 +2107,23 @@ rule sv_insider:
     shell:
         """
 
-        printf "\n%s\n\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
+        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
 
         mkdir -p {params.work_directory}/INSIDER/
         mkdir -p {params.work_directory}/log/
-        #cd {params.work_directory}/INSIDER/
 
         path_to_pipline=`dirname {params.path_snk}`
 
+        #COMPARE GENOME
         minimap2 -ax asm5 --cs -t3 {input.ref} {input.genome} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
-        
         python3 ${{path_to_pipline}}/lib/python/sam2delta.py {output.sam};
         
-
+        #GET SV
         python3 ${{path_to_pipline}}/lib/python/Assemblytics_uniq_anchor.py \
         --delta {output.delta} \
         --unique-length 10000 \
         --out {params.work_directory}/INSIDER/assemblytics_out \
         --keep-small-uniques;
-
 
         perl ${{path_to_pipline}}/lib/perl/Assemblytics_between_alignments.pl \
         {params.work_directory}/INSIDER/assemblytics_out.coords.tab \
@@ -1457,34 +2133,29 @@ rule sv_insider:
         exclude-longrange \
         bed > {params.work_directory}/INSIDER/assemblytics_out.variants_between_alignments.bed;
 
-
         python3 ${{path_to_pipline}}/lib/python/Assemblytics_within_alignment.py \
         --delta {params.work_directory}/INSIDER/assemblytics_out.Assemblytics.unique_length_filtered_l10000.delta \
         --min 50 > {params.work_directory}/INSIDER/assemblytics_out.variants_within_alignments.bed;
-
 
         cat {params.work_directory}/INSIDER/assemblytics_out.variants_between_alignments.bed \
         {params.work_directory}/INSIDER/assemblytics_out.variants_within_alignments.bed \
         > {output.bed}
         
+        test -s {output.bed} || (message_fail "[SNK ERROR `date`] NO SV FOUND" && exit 1)
+
         path_ref=`readlink -f {input.ref}`
         path_genome=`readlink -f {input.genome}`
-        
         old_path=`pwd`
         
         cd {params.work_directory}/INSIDER/
         python3 ${{path_to_pipline}}/lib/python/filter_gap_SVs.py ${{path_ref}} ${{path_genome}}
         cd ${{old_path}}
 
-
-        ## delet '/' for command sed
-        name_ref=`echo {input.ref} | grep "[/]*[^/]*$" -o | tr -d "/"`
-        name_query=`echo {input.genome} | grep "[/]*[^/]*$" -o | tr -d "/"`
-
+        name_ref=`basename {input.ref}`
+        name_query=`basename {input.genome}`
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`]--[INFO] REFERENCE : $name_ref {params.cend}"
-        printf "%s\n\n" "{params.cmess} [SNK]--[`date`]--[INFO] GENOME : $name_query {params.cend}"
-
+        printf "%s\\n\\n" "{params.cmess} [SNK]--[`date`]--[INFO] GENOME : $name_query {params.cend}"
 
         sed -i "s/file1/${{name_ref}}/g" {output.stats}
         sed -i "s/file2/${{name_query}}/g" {output.stats}
@@ -1492,146 +2163,5 @@ rule sv_insider:
         """
 
 
-#END sv_insider
-
-
-
-####
-####
-############# ASSEMBLY GENOME
-####
-####
-
-#TODO?????????
-rule ragoo :
-    input:  
-        read          = config["DATA"]["SAMPLE"],
-        assembly_flye = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FLYE_OUT/assembly.fasta",
-        contigs       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/tempData/tempRef.4.fasta",
-        ref           = config["DATA"]["REFERENCE"],
-
-    output:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/asm/ragoo_output/ragoo.fasta",
-    
-    params:
-        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
-
-        preset         = config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["PRESET_OPTION"] if config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["PRESET_OPTION"] != "" else "--nano-raw",
-        option         = config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["OPTIONS"],
-
-        #COLOR 
-        cmess          = bcolors.CYAN,
-        cfail          = bcolors.FAIL,
-        cend           = bcolors.END,
-    shell:
-        """
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] RAGOO {params.cend}"
-
-        mkdir -p {params.work_directory}/asm/
-        path_contig=`readlink -f {input.contigs}`
-        path_ref=`readlink -f {input.ref}`
-
-        cd {params.work_directory}/asm/
-
-        ln -s ${{path_contig}} .
-        ln -s ${{path_ref}} .
-
-        ragoo.py ${{path_contig}} ${{path_ref}} -s
-
-        """
-
-
-#END ragoo
-
-
-
-
-rule polishing :
-    input:  
-        read          = config["DATA"]["SAMPLE"],
-        assembly_flye = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FLYE_OUT/assembly.fasta",
-
-    output:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/tempData/tempRef.4.fasta",
-    
-    params:
-        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
-
-        preset         = config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["PRESET_OPTION"] if config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["PRESET_OPTION"] != "" else "--nano-raw",
-        option         = config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["OPTIONS"],
-
-        #COLOR 
-        cmess          = bcolors.CYAN,
-        cfail          = bcolors.FAIL,
-        cend           = bcolors.END,
-    shell:
-        """
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] RACON POLISHING {params.cend}";
-
-        j={input.assembly_flye};
-        base="base";
-        for round in {{1..4}}
-        do
-            echo -e "\t$base round $round";
-            minimap2 -t 2 -x map-ont -t 20 $j {input.read}_format.fastq| gzip -1 > {params.work_directory}/tempData/$base.$round.paf.gz
-            racon -t 2 {input.read}_format.fastq {params.work_directory}/tempData/$base.$round.paf.gz $j > {params.work_directory}/tempData/tempRef.$round.fasta
-            j={params.work_directory}/tempData/tempRef.$round.fasta
-            #rm -rf {params.work_directory}/tempData/$base.$round.paf.gz
-        done;
-
-        #rm -fr tempData
-
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`]   STATISTICS {params.cend}";
-        #assembly-stats -t {params.work_directory}/tempData/*.fasta > {params.work_directory}/Stats/polisehdGlobalStats.csv
-
-
-        """
-
-
-#END polishing
-
-
-#TODO
-rule flye_genome :
-    input:  
-        read   = config["DATA"]["SAMPLE"],
-
-    output:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/FLYE_OUT/assembly.fasta",
-    
-    params:
-        path_snk       = path_snk,
-        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
-
-        preset         = config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["PRESET_OPTION"] if config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["PRESET_OPTION"] != "" else "--nano-raw",
-        option         = config["PARAMS"]["ASSEMBLY_GENOME"]["FLYE"]["OPTIONS"],
-
-        #COLOR 
-        cmess          = bcolors.CYAN,
-        cfail          = bcolors.FAIL,
-        cend           = bcolors.END,
-    shell:
-        """
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY READS WITH FLYE {params.cend}"
-
-        path_to_pipline=`dirname {params.path_snk}`
-
-        python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
-        {input.read} \
-        {input.read}_format.fastq
-
-        echo "VERSION FLYE " `flye -v`;
-        flye {params.option} {params.preset} {input.read}_format.fastq --out-dir {params.work_directory}/FLYE_OUT --plasmids
-
-        """
-
-
-#END flye_genome
-
-
-
-
-
-
-
+#END SV_INSIDER
 

@@ -55,21 +55,21 @@ for i, instruct in enumerate(instructions[::-1]):
     
     if len(instruct.split(":")) == 1  :
         if i == len(instructions) - 1 :
-            os.system("sed -i 's/input_link=\[\],//g' tmpo" + str(i) + ".snk")
-            os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + name_rule + "\")),/g' tmpo" + str(i) + ".snk")
+            os.system("sed -i '/input_link=\[\],/d' tmpo" + str(i) + ".snk")
+            os.system("sed -i 's/output_link=\[\],/temp(touch(\"tmp_snk\/rule_tmp_" + name_rule + "\")),/g' tmpo" + str(i) + ".snk")
         else  :
-            os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + name_rule + "\")),/g' tmpo" + str(i) + ".snk")
-            os.system("sed -i 's/input_link=\[\],/cout=[\"" + list_name_rule[::-1][i+1] + "\"],/g' tmpo"+ str(i) + ".snk")
+            os.system("sed -i 's/output_link=\[\],/temp(touch(\"tmp_snk\/rule_tmp_" + name_rule + "\")),/g' tmpo" + str(i) + ".snk")
+            os.system("sed -i 's/input_link=\[\],/cout=[\"tmp_snk\/rule_tmp_" + list_name_rule[::-1][i+1] + "\"],/g' tmpo"+ str(i) + ".snk")
     #suppression des input et output improviser
     elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "N":
-        os.system("sed -i 's/input_link=\[.*\],//g' tmpo"+str(i)+".snk")
+        os.system("sed -i '/input_link=\[.*\],/d' tmpo"+str(i)+".snk")
         os.system("sed -i 's/output_link=\[.*\],//g' tmpo" + str(i) + ".snk")
     elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "NI":
-        os.system("sed -i 's/input_link=\[.*\],//g' tmpo"+str(i)+".snk")
-        os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + name_rule + "\")),/g' tmpo" + str(i) + ".snk")
+        os.system("sed -i '/input_link=\[.*\],/d' tmpo"+str(i)+".snk")
+        os.system("sed -i 's/output_link=\[\],/temp(touch(\"tmp_snk\/rule_tmp_" + name_rule + "\")),/g' tmpo" + str(i) + ".snk")
     elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "NO":
-        os.system("sed -i 's/output_link=\[.*\],//g' tmpo" + str(i) + ".snk")
-        os.system("sed -i 's/input_link=\[\],/cout=[\"" + list_name_rule[::-1][i+1] + "\"],/g' tmpo"+ str(i) + ".snk")
+        os.system("sed -i '/output_link=\[.*\],/d' tmpo" + str(i) + ".snk")
+        os.system("sed -i 's/input_link=\[\],/cout=[\"tmp_snk\/rule_tmp_" + list_name_rule[::-1][i+1] + "\"],/g' tmpo"+ str(i) + ".snk")
 
     #print("grep \"rule " + str(name_rule) +"\" " + name_file_rules + " -A " + str(nb_line_file_rules) + " | grep \"^#END " + name_rule + "$\" -B 100000000 | grep -v \"^#END\" >> " + name_out)
     #os.system("grep \"rule "+ str(name_rule) +"\" list_rules.txt -A " + str(nb_line_file_rules) + " | grep \"^#END " + name_rule + "$\" -B 10000000 | grep -v \"^#END\" >> tmp.snk")

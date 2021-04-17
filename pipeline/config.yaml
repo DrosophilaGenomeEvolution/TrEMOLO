@@ -10,7 +10,6 @@ DATA:
 
 CHOICE:
     PIPELINE:
-        ASSEMBLY_GENOME: False
         OUTSIDER_VARIANT: True
         INSIDER_VARIANT: True
         REPORT: True
@@ -18,10 +17,10 @@ CHOICE:
         LOCAL_ASSEMBLY:
             FLYE: False
             WTDGB: False
-        CALL_SV: "svim" #Posibiliti (sniffles, svim)
+        CALL_SV: "svim" #Posibiliti (sniffles, svim) # Warning sniffles 1.10 -------------
         INTEGRATE_TE_TO_GENOME: True
-        INCREASE_FREQUENCE: True
-
+        OPTIMIZE_FREQUENCE: True
+    INTERMEDIATE_FILE: True
 
 
 PARAMS:
@@ -47,10 +46,5 @@ PARAMS:
             PUT_ID: True
             PUT_SEQUENCE_DB_TE: True
         PARS_BLN_OPTION: ""
-
-    ASSEMBLY_GENOME:
-        FLYE:
-            OPTIONS: ''
-            PRESET_OPTION: '--nano-raw'
         
         

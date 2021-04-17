@@ -184,13 +184,13 @@ while not find and size_k > 3 :
                         chaine += ">"+head+"\n"+seq_and_tsd+"\n"
                     chaine += format_alignment(*alignments[ind])
                     tab_gap.append(chaine)
-            # else :
-            #   chaine += "("+", ".join([sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[KO:"+id_elem+"]", str(i), str(e), str(size_k)])+")\n"
-            #   seq_and_tsd = sequence_1[0:i] + "++:" + sequence_1[i:i+size_k] + ":++" + sequence_1[i+size_k:].strip() + "--|" + TE.strip() + "|--" + sequence_2[0:e] +  "++:" + sequence_2[e:e+size_k] + ":++" + sequence_2[e+size_k:].strip() 
-            #   if report_seq :
-            #           #print(">"+head+"\n"+seq_and_tsd+"\n")
-            #           chaine += ">"+head+"\n"+seq_and_tsd+"\n"
-            #   tab_ko.append(chaine)
+            else :
+              chaine += "("+", ".join([sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[KO:"+id_elem+"]", str(i), str(e), str(size_k)])+")\n"
+              seq_and_tsd = sequence_1[0:i] + "++:" + sequence_1[i:i+size_k] + ":++" + sequence_1[i+size_k:].strip() + "--|" + TE.strip() + "|--" + sequence_2[0:e] +  "++:" + sequence_2[e:e+size_k] + ":++" + sequence_2[e+size_k:].strip() 
+              if report_seq :
+                      #print(">"+head+"\n"+seq_and_tsd+"\n")
+                      chaine += ">"+head+"\n"+seq_and_tsd+"\n"
+              tab_ko.append(chaine)
             if find :
                 break
         if find :
