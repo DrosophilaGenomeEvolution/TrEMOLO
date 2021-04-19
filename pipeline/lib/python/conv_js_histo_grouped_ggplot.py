@@ -3,6 +3,7 @@ import pandas as pd
 import sys
 import re
 import os
+from collections import OrderedDict
 
 
 name_input = sys.argv[1]
@@ -24,18 +25,21 @@ for i, v in enumerate(df[["x", "y"]].values):
 
 df["total"] = list_count
 
-df = df.sort_values(by="total")
+df = df.sort_values(by=["total"])
 
 already_work = []
 liste        = []
 
 for i, v in enumerate(df[["x", "y"]].values):
-    TE = v[0]
-    value = v[1]
-    dico = {"group": TE}
+    TE     = v[0]
+    value  = v[1]
+    dico   = {"group": TE}
+    #dico   = OrderedDict()
+    #dico["group"] = TE
     df_tmp = df[df["x"] == TE]
     
     if TE not in already_work:
+        df_tmp = df_tmp.sort_values(by=["condition"], ascending=False)
         for e, w in enumerate(df_tmp.values):
             dico[df_tmp["condition"].values[e]] = str(df_tmp["y"].values[e])
 

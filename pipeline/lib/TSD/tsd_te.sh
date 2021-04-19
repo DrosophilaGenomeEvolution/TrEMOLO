@@ -47,7 +47,7 @@
 #ARGS
 FIND_FA=$1
 REPO_READS=$2
-REPO_READS_FA=$3
+REPO_READS_FA=$3 #FASTA FOR BLASTN
 DB_TE=$4
 FLANK_SIZE=$5
 TSD_SIZE=$6
@@ -159,6 +159,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         blastn -db ${DB_TE} -query sequence_TE.fasta -outfmt 6 -out TE_vs_databaseTE.bln
 
 
+#COMBINE AWK
 # sstart_global=`awk 'NR==1 {print $7}' test.bln`
 # send_global=`awk 'NR==1 {print $8}' test.bln`
 # qstart_global=`awk 'NR==1 {print $9}' test.bln`

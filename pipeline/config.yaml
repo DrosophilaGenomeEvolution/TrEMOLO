@@ -46,5 +46,7 @@ PARAMS:
             PUT_ID: True
             PUT_SEQUENCE_DB_TE: True
         PARS_BLN_OPTION: ""
+    INSIDER_VARIANT:
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
         
         

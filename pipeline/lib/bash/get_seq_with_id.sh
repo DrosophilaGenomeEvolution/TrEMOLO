@@ -65,5 +65,4 @@ get_seq_with_id () {
     }' | grep "[0-9]" > $2
 }
 
-echo "GET"
 get_seq_with_id $1 $2

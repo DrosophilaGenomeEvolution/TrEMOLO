@@ -52,24 +52,23 @@
     </head>
     <body>
         <!-- BioCircos.js, Jquery.js and D3.js import -->
-        <script src="./lib/jquery.js"></script>
-        <script src="./lib/d3.js"></script>
-        <script src="./lib/biocircos-1.1.0.js"></script>
-        <!-- Prepare a <div> tag with "biocircos" id to set the picture position your will draw in html -->
+        <script src="../js/lib/jquery.js"></script>
+        <script src="../js/lib/d3.js"></script>
+        <script src="../js/lib/biocircos-1.1.0.js"></script>
+          <!-- Prepare a <div> tag with "biocircos" id to set the picture position your will draw in html -->
         <div id="biocircos"></div>
 
-    <script src="js/HISTOGRAM.js"></script>
-    <script src="js/histo_TE_BACKGROUND.js"></script>
+        <script src="../js/HISTOGRAM.js"></script> <!-- a generer-->
+        <script src="../js/histo_TE_BACKGROUND.js"></script>
+        
+        <div class="box">
+           <select id="pet-select">
+              <option value="all">all</option>
+           </select>
+        </div>
 
-
-    <div class="box">
-        <select id="pet-select">
-            <option value="all">all</option>
-        </select>
-    </div>
-
-
-    <script src="js/histo_circos.js"></script>
+        <script src="../js/bioCircosGenome.js"></script> <!-- a generer-->
+        <script src="../js/histo_circos.js"></script>
     
     </body>
 </html>

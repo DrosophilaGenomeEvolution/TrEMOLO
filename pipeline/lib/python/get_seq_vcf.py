@@ -92,9 +92,9 @@ parser.add_argument("-i", "--idrs", default=False, action='store_true',
                     help='for make all id reads support')
 
 
-print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta --keep --chrom \".\" " )
-print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta --keep --chrom chrX,chrY " )
-print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta \n" )
+# print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta --keep --chrom \".\" " )
+# print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta --keep --chrom chrX,chrY " )
+# print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta \n" )
 args = parser.parse_args()
 
 #file in
@@ -124,7 +124,7 @@ def regex_in_list(value, liste):
 line = file.readline()
 
 version_vcf =  line.split("=")[1].strip()
-print("version_vcf=", version_vcf)
+print("Version VCF :", version_vcf)
 ##fileformat=VCFv4.3
 #Check format vcf file
 if version_vcf != "VCFv4.3" and version_vcf != "VCFv4.2" and version_vcf != "VCFv4.1":

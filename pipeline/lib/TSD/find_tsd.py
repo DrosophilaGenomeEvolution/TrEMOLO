@@ -136,7 +136,7 @@ find         = False
 report_seq   = True
 tab_ko       = []
 tab_gap      = []
-
+tab_none     = []
 
 while not find and size_k > 3 :
 
@@ -170,10 +170,13 @@ while not find and size_k > 3 :
                 tab_ko.append(chaine)
                 if find:
                     print(chaine)
+                    file.close()
+                    file_sequence_TE.close()
+                    exit(0)
                     # tmp_file = open("all_flank.fasta", "a")
                     # tmp_file.write(sequence_1[i:i+size_k]+"\n"+sequence_2[e:e+size_k]+"\n")
                     # tmp_file.close()
-                    break
+                    # break
             elif aln and aln[2] == size_k - 1 and size_k >= 4 :
                 if i == len(sequence_1.strip()) - size_k and e == 0 and ((size_tsd != -1 and size_k == size_tsd) or (size_tsd == -1)) :
                     #print(sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[OK]", i, e, size_k)
@@ -185,16 +188,16 @@ while not find and size_k > 3 :
                     chaine += format_alignment(*alignments[ind])
                     tab_gap.append(chaine)
             else :
-              chaine += "("+", ".join([sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[KO:"+id_elem+"]", str(i), str(e), str(size_k)])+")\n"
+              chaine += "("+", ".join([sequence_1[i:i+size_k], sequence_2[e:e+size_k], "[NONE:"+id_elem+"]", str(i), str(e), str(size_k)])+")\n"
               seq_and_tsd = sequence_1[0:i] + "++:" + sequence_1[i:i+size_k] + ":++" + sequence_1[i+size_k:].strip() + "--|" + TE.strip() + "|--" + sequence_2[0:e] +  "++:" + sequence_2[e:e+size_k] + ":++" + sequence_2[e+size_k:].strip() 
               if report_seq :
                       #print(">"+head+"\n"+seq_and_tsd+"\n")
                       chaine += ">"+head+"\n"+seq_and_tsd+"\n"
-              tab_ko.append(chaine)
-            if find :
-                break
-        if find :
-            break
+              tab_none.append(chaine)
+        #     if find :
+        #         break
+        # if find :
+        #     break
 
     size_k -= 1
 
@@ -206,6 +209,9 @@ if not find :
 
     elif len(tab_ko) :
         print(tab_ko[0])
+
+    else:
+        print(tab_none[0])
 
 
 file.close()

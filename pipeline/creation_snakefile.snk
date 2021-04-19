@@ -45,10 +45,8 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def message_color(color, text):
-    return color + text + bcolors.END
-
-
+if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
+    config["DATA"]["WORK_DIRECTORY"] = "output"
 
 # Create ouput folder
 os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"])
@@ -61,7 +59,6 @@ with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as 
 
 # Get path snakefile
 path_snk = ""
-
 
 i = 0
 while i < len(sys.argv) and path_snk == "" :
@@ -94,7 +91,7 @@ os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 # onerror:
 #     print("An error occurred")
 onsuccess:
-     print("Workflow finished, no error")
+     print("WORKFLOW FINISHED, NO ERROR DETECTED.")
      shell("rm -fr tmp_snk/;")
 
 
@@ -154,6 +151,10 @@ rule create_snake_file :
 
         if [ {params.choice_insider_sv} = "True" ]; then
 
+            echo -e "\n\t###"
+            echo -e "\t#INSIDER"
+            echo -e "\t###\n\n"
+
             rm -f {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
 
             ## Exemple les instructions par default obligatoir
@@ -196,6 +197,11 @@ rule create_snake_file :
         ###
 
         if [ {params.choice_outsider_sv} = "True" ]; then
+
+            echo -e "\n\t###"
+            echo -e "\t#OUTSIDER"
+            echo -e "\t###\n\n"
+
 
             rm -f {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
             
@@ -263,10 +269,21 @@ rule create_snake_file :
             fi;
         fi;
 
+
+        ## pour les plus malin ^^
+        if [ {params.choice_insider_sv} != "True" ] && [ {params.choice_outsider_sv} != "True" ]; then
+            printf "%s\\n" "{params.cfail} [SNK] NO WORKFLOW SELECTED PLEASE CHECK YOUR CONFIG FILE {params.cend}"
+            printf "%s\\n" "{params.cmess} [SNK] OR TAKE A COFFEE {params.cend}"
+            printf "%s\\n" "{params.cfail}    [SNK] PUT OPTION : OUTSIDER_VARIANT or INSIDER_VARIANT at True {params.cend}"
+            touch ${{path_to_pipline}}/Snakefile
+        fi;
+
         touch tmp_snk/tmp_end_pipeline.end
         ##rm -f ${{path_to_pipline}}/Snakefile*
 
-        
 
         """
+
+
+
 

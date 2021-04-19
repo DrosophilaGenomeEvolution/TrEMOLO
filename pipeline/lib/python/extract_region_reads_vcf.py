@@ -118,8 +118,8 @@ file = open(args.vcf_file, "r")
 type_list   = args.type.split(",")#NOT KEEP THIS
 chrom_list  = args.chrom.split(",")#KEEP ON
 
-print("exclude type : ", type_list)
-print("chromosome liste : ", chrom_list)
+print("[" + str(sys.argv[0]) + "]", "exclude type : ", type_list)
+print("[" + str(sys.argv[0]) + "]", "chromosome liste : ", chrom_list)
 
 dico_chrom = {}#just for resume
 
@@ -182,4 +182,4 @@ while line:
 
 file.close()
 
-print("resume number by chrom : ", dico_chrom)
+print("[" + str(sys.argv[0]) + "] resume TE number by chromosome : ", dico_chrom)
