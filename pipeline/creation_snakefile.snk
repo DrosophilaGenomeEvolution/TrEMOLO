@@ -160,10 +160,16 @@ rule create_snake_file :
             ## Exemple les instructions par default obligatoir
             printf "%s" "SV_INSIDER > TE_INSIDER:N " > instruction.txt
 
+            if [ {params.choice_outsider_sv} != "True" ]; then
+                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
+                printf "%s" "> TSD " >> instruction.txt
+            fi;
+
+
             if [ {params.REPORT} ] && [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
                 printf "%s" "> REPORT " >> instruction.txt
-            fi
+            fi;
             
             echo "" >> instruction.txt
 
@@ -182,6 +188,8 @@ rule create_snake_file :
 
             snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --dryrun \
                 || (message_fail "\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\n\n" && exit 1)
+
+            printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN DONE [ ✔ ] {params.cend}"
             
             if [ $? -eq 0 ]; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
@@ -207,7 +215,15 @@ rule create_snake_file :
             
             ## Exemple les instruction par default obligatoir
             if [ {params.OPTIMIZE_FREQUENCE} = True ]; then
-                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > FREQ_GLOBAL > FREQUENCE > extract_read " > instruction.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE " > instruction.txt
+                
+                if [ {params.choice_insider_sv} = "True" ]; then
+                    printf "> FREQ_GLOBAL > FREQUENCE " >> instruction.txt
+                else
+                    printf "> FREQUENCE:NI " >> instruction.txt
+                fi;
+                
+                printf "> extract_read " >> instruction.txt
             else
                 printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > extract_read:NI " > instruction.txt
             fi
@@ -233,10 +249,10 @@ rule create_snake_file :
             else
                 if [ {params.INTEGRATE_TE_TO_GENOME} = True ]; then
                     printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
-                    printf "%s" "> TSD" >> instruction.txt
+                    printf "%s" "> TSD " >> instruction.txt
                 else
                     #:NI = NO INPUT
-                    printf "%s" "> TSD:NI" >> instruction.txt
+                    printf "%s" "> TSD:NI " >> instruction.txt
                 fi;
             fi;
 
@@ -261,6 +277,8 @@ rule create_snake_file :
 
             snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --dryrun \
                 || (message_fail "\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\n\n" && exit 1)
+
+            printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN DONE [ ✔ ] {params.cend}"
             
             if [ $? -eq 0 ]; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"

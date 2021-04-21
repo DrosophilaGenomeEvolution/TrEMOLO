@@ -96,13 +96,12 @@ rule REPORT:
 
         rm -f .tmp_index.fai
 
+        #COUNT TE OUTSIDER
         if test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed; then
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed && \
-            awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1]}}' {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed > {params.work_directory}/POSITION_START_TE_V2.bed
+            awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1]}}' {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed > {params.work_directory}/POSITION_START_TE_OUTSIDER.bed
             
-            #head {params.work_directory}/POSITION_START_TE_V2.bed
-
-            bedtools intersect -a dm6_cut_chrom.bed -b {params.work_directory}/POSITION_START_TE_V2.bed -wa | tr "\t" ":" \
+            bedtools intersect -a dm6_cut_chrom.bed -b {params.work_directory}/POSITION_START_TE_OUTSIDER.bed -wa | tr "\t" ":" \
                 | sort | uniq -c | sort -k 1 -n \
                 | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
                 | bedtools sort > HISTOGRAM.txt
@@ -113,9 +112,9 @@ rule REPORT:
             python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM.txt > js/HISTOGRAM.js
             echo "dico_histo = {{}}" >> js/HISTOGRAM.js
 
-            awk '{{print $4}}' {params.work_directory}/POSITION_START_TE_V2.bed | cut -d "|" -f 1 | sort | uniq > TE_NAME.txt
+            awk '{{print $4}}' {params.work_directory}/POSITION_START_TE_OUTSIDER.bed | cut -d "|" -f 1 | sort | uniq > TE_NAME.txt
             for TE in `cat TE_NAME.txt`; do
-                grep "\\s${{TE}}|" {params.work_directory}/POSITION_START_TE_V2.bed > POS_TE_$TE.bed
+                grep "\\s${{TE}}|" {params.work_directory}/POSITION_START_TE_OUTSIDER.bed > POS_TE_$TE.bed
 
                 TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
 
@@ -124,13 +123,56 @@ rule REPORT:
                     | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 2, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
                     | bedtools sort > HISTOGRAM_${{TE_NAME}}.txt
 
-                echo "TE_NAME = $TE_NAME"
+                ###echo "TE_NAME = $TE_NAME"
                 
                 python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > js/HISTOGRAM_${{TE_NAME}}.js
                 
                 echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> js/HISTOGRAM_${{TE_NAME}}.js
                 echo -e "\n" >> js/HISTOGRAM.js
                 cat js/HISTOGRAM_${{TE_NAME}}.js >> js/HISTOGRAM.js
+
+                rm -f HISTOGRAM_${{TE_NAME}}.txt POS_TE_$TE.bed HISTOGRAM.txt TE_NAME.txt
+                rm -f js/HISTOGRAM_${{TE_NAME}}.js
+            done;
+        fi;
+
+
+        #COUNT TE INSIDER
+        if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed; then
+            test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && \
+            ###awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed > {params.work_directory}/POSITION_START_TE_INSIDER.bed
+            cat {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed > {params.work_directory}/POSITION_START_TE_INSIDER.bed
+
+
+            bedtools intersect -a dm6_cut_chrom.bed -b {params.work_directory}/POSITION_START_TE_INSIDER.bed -wa | tr "\t" ":" \
+                | sort | uniq -c | sort -k 1 -n \
+                | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
+                | bedtools sort > HISTOGRAM.txt
+
+            max_value_histo_circos=`cat HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
+
+
+            python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM.txt > js/HISTOGRAM_INSIDER.js
+            echo "dico_histo = {{}}" >> js/HISTOGRAM_INSIDER.js
+
+            awk '{{print $4}}' {params.work_directory}/POSITION_START_TE_INSIDER.bed | cut -d "|" -f 1 | sort | uniq > TE_NAME.txt
+            for TE in `cat TE_NAME.txt`; do
+                grep "\\s${{TE}}|" {params.work_directory}/POSITION_START_TE_INSIDER.bed > POS_TE_$TE.bed
+
+                TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
+
+                bedtools intersect -a dm6_cut_chrom.bed -b POS_TE_$TE.bed -wa | tr "\t" ":" \
+                    | sort | uniq -c | sort -k 1 -n \
+                    | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 2, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
+                    | bedtools sort > HISTOGRAM_${{TE_NAME}}.txt
+
+                ###echo "TE_NAME = $TE_NAME"
+                
+                python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > js/HISTOGRAM_${{TE_NAME}}.js
+                
+                echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> js/HISTOGRAM_${{TE_NAME}}.js
+                echo -e "\n" >> js/HISTOGRAM.js
+                cat js/HISTOGRAM_${{TE_NAME}}.js >> js/HISTOGRAM_INSIDER.js
 
                 rm -f HISTOGRAM_${{TE_NAME}}.txt POS_TE_$TE.bed HISTOGRAM.txt TE_NAME.txt
                 rm -f js/HISTOGRAM_${{TE_NAME}}.js
@@ -145,36 +187,20 @@ rule REPORT:
         cd {params.work_directory}/REPORT/mini_report/
 
 
-        if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv ; then
-            sed -i 's/r insider1, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-            
-            #DELET LINE INUTILE
-            sed -i '/INSIDER/d' index.Rmd
-            sed -i '/TE_INSIDER/d' index.Rmd
+        
+        #INSIDER
+        if [ {params.choice_insider_sv} != "True" ]; then
+            rm -f insider.Rmd
         else
-            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv  > test.csv
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py test.csv data > js/COUNT_TE_INSIDER.js
-            rm -f test.csv
+            ! test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
+               sed -i 's/r FREQIN, eval=TRUE,/r FREQIN, eval=FALSE,/g' insider.Rmd  && \
+               sed -i '/FREQUENCE/d' insider.Rmd
+            cat insider.Rmd >> index.Rmd
+            mv insider.Rmd insider.Rmd.tmp
         fi;
 
 
-        if ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv ; then
-            sed -i 's/r NB_OUTSIDER, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-            sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-            sed -i 's/r FREQ, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-
-            sed -i '/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE/d' index.Rmd
-        else
-            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv  > test.csv
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py test.csv data > js/COUNT_TE_OUTSIDER.js
-            rm -f test.csv
-        fi;
-
-        if ! test -e ../../VALUES_TSD_GROUP.csv; then
-            sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-        fi;
-
-
+        #OUTSIDER
         if [ {params.choice_outsider_sv} != "True" ]; then
             rm -f outsider.Rmd
         else
@@ -182,11 +208,35 @@ rule REPORT:
             mv outsider.Rmd outsider.Rmd.tmp
         fi;
 
-        if [ {params.choice_insider_sv} != "True" ]; then
-            rm -f insider.Rmd
+        #REMOVE OR COUNT INSIDER
+        if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv ; then
+            sed -i 's/r insider1, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+            
+            #DELET LINE INUTILE
+            sed -i '/INSIDER/d' index.Rmd
+            sed -i '/TE_INSIDER/d' index.Rmd
         else
-            cat insider.Rmd >> index.Rmd
-            mv insider.Rmd insider.Rmd.tmp
+            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv  > tmp.csv
+            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER.js
+            rm -f tmp.csv
+        fi;
+
+
+        #REMOVE OR COUNT OUTSIDER
+        if ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv ; then
+            sed -i 's/r NB_OUTSIDER, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+            sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+            sed -i 's/r FREQ, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+
+            sed -i '/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE/d' index.Rmd
+        else
+            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv  > tmp.csv
+            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_OUTSIDER.js
+            rm -f tmp.csv
+        fi;
+
+        if ! test -e ../../VALUES_TSD_GROUP.csv; then
+            sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
         fi;
 
         make
@@ -197,7 +247,7 @@ rule REPORT:
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`]--[INFO] CHECK $path_to_report [^-^] {params.cend}"
 
-        rm -f dm6_cut_chrom.bed {params.work_directory}/POSITION_START_TE_V2.bed
+        rm -f dm6_cut_chrom.bed {params.work_directory}/POSITION_START_TE_OUTSIDER.bed
 
         """
 
@@ -249,7 +299,7 @@ rule TSD :
 
         rm -f {log}.*
 
-        echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
+        ###echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
         echo -e "x\ty\tcondition" > {params.work_directory}/VALUES_TSD_GROUP.csv
 
         printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] --- TSD --- {params.cend}"
@@ -259,6 +309,8 @@ rule TSD :
         
         read_directory="{params.work_directory}/OUTSIDER/READ_FASTQ_TE"
         fasta_dir_find="{params.work_directory}/OUTSIDER/FASTA_FIND"
+
+        echo "   SIZE FLANKING SEQUENCE : {params.SIZE_FLANK}"
 
         if [ {params.choice_outsider_sv} = "True" ]; then
 
@@ -367,9 +419,9 @@ rule TSD :
                 ###KO=$(($NB_TSD_KO-$NB_TSD_OK_corrected))
                 KO=$(($TOTAL-$OK_K_gap_O));
 
-                echo "TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ;   TSD CORRECTED [KO]:$NB_TSD_OK_corrected ;  "
+                echo "TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ✔;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ✘;   TSD CORRECTED [KO]:$NB_TSD_OK_corrected ;  "
 
-                echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD.csv
+                ###echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD.csv
 
                 echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD [OK]" >> {params.work_directory}/VALUES_TSD_GROUP.csv
                 echo -e "${{nameTE}}\t${{KO}}\tTSD [KO]" >> {params.work_directory}/VALUES_TSD_GROUP.csv
@@ -386,7 +438,7 @@ rule TSD :
                 
             rm -f {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
 
-            echo "[SNK] TSD TE ASSEMBLED"
+            printf "\\n%s\\n\\n" "{params.cmess} [SNK] TSD TE ASSEMBLED {params.cend}"
             mkdir -p {params.work_directory}/INSIDER/TE_DETECTION/TSD/
             
             awk 'NR>1 {{ print $1 }}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | sort -u > TE_name.txt
@@ -503,7 +555,9 @@ rule TSD :
         #rm -f {params.work_directory}/TE_REPORT_total_find.fasta;
         rm -f TSM_OK.txt;
         rm -fr {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/DIR_SEQ_TE_READ_POS
-        mv DIR_SEQ_TE_READ_POS {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/
+        test -d DIR_SEQ_TE_READ_POS && \
+        test -d {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/ && \
+        mv DIR_SEQ_TE_READ_POS {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/ || echo
 
         """
 
@@ -602,7 +656,7 @@ rule FIND_TE_ON_REF :
         array_type=( "INSERTION" "Repeat_expansion" "Tandem_expansion" "DELETION" "Repeat_contraction" "Tandem_contraction" )
         for type in "${{array_type[@]}}"
         do
-            echo "TYPE : $type";
+            echo -e "\nTYPE : $type";
 
             if test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta; then
                 
@@ -1396,9 +1450,11 @@ rule FREQUENCE :
 
         pars_bln_option = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
 
-        env            = env, #source environnement
+        env             = env, #source environnement
 
-        CHROM_KEEP     = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
+        call_sv         = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
+
+        CHROM_KEEP      = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
 
 
         cfail          = bcolors.FAIL,
@@ -1458,16 +1514,36 @@ rule FREQUENCE :
         samtools view -b -h {params.work_directory}/FREQ_AFTER/tmp_MAPPING_POSTION_TE_MD.sorted.bam > {params.work_directory}/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam
         samtools index {params.work_directory}/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam
 
+        # VARIANT CALLING 
+        if [ {params.call_sv} = "svim" ]; then
+            
+            svim alignment --read_names \
+                --insertion_sequences \
+                --minimum_depth 1 {params.work_directory}/FREQ_AFTER \
+                {params.work_directory}/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam \
+                {input.genome} 2> svim.log
+        else
+            version=`sniffles -h 2>&1 | grep Version | cut -d " " -f 2`
 
-        svim alignment --read_names \
-            --insertion_sequences \
-            --minimum_depth 1 {params.work_directory}/FREQ_AFTER \
-            {params.work_directory}/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam \
-            {input.genome} 2> svim.log
+            ## version work
+            if [ "$version" = "1.0.10" ]; then
+
+                (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+                run_cmd "sniffles --report_seq -s 1 -m {params.work_directory}/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/FREQ_AFTER/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.10" "False";
+                sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+
+            elif [ "$version" = "1.0.12" ]; then
+
+                (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+                run_cmd "sniffles --report-seq -s 1 -m {params.work_directory}/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/FREQ_AFTER/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.12" "False";
+                sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+            fi;
+
+        fi;
 
 
         python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py {params.work_directory}/FREQ_AFTER/variants.vcf \
-        {params.work_directory}/FREQ_AFTER/variants.fasta        
+        {params.work_directory}/FREQ_AFTER/variants.fasta
 
         makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log}.err;
         blastn -db {input.fasta_TE} \
@@ -1508,9 +1584,9 @@ rule FREQUENCE :
 
         done < {params.work_directory}/FREQ_AFTER/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv;
 
-
         ##
         rm -f {params.work_directory}/MAPPING_POSTION_TE.sam
+        #rm -fr {params.work_directory}/FREQ_AFTER
 
         """
 
@@ -2005,6 +2081,8 @@ rule samtools :
         #samtools view -h {params.preset_view} -b {input.sam} > {input.sam}.bam 2>> {log}.err;
         run_cmd "samtools view -h {params.preset_view} -b {input.sam} | tee {input.sam}.bam" "{log}" "SAMTOOLS_VIEW" "False";
 
+        rm -f {log}.out
+
         echo "---sort---" | tee -a {log}.out
         #samtools sort {params.preset_sort} {input.sam}.bam -o {input.sam}.sorted.bam 2>> {log}.err;
         run_cmd "samtools sort {params.preset_sort} {input.sam}.bam -o {input.sam}.sorted.bam" "{log}" "SAMTOOLS_SORT" "False";
@@ -2063,12 +2141,14 @@ rule mapping :
         
         #minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} 2> {log}.err;
         run_cmd "minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome}" "{log}" "MINIMAP2_INDEX" "False" ;
-        
+
         #minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} 2>> {log}.err;
         
         (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
         run_cmd "minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} | tee {output}" "{log}" "MINIMAP2" "False"; 
         sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+
+        rm -f {log}.out
 
         """
 
@@ -2098,8 +2178,9 @@ rule TE_INSIDER:
 
 
     output:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION.csv",
-        output_link=[],
+        csv = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION.csv",
+        bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION_TE.bed",
+        tmp = output_link=[],
 
     params:
         path_snk       = path_snk,
@@ -2184,7 +2265,7 @@ rule TE_INSIDER:
             fi;
         done;
 
-        awk 'NR>1 && OFS="\t"{{ split($2,   a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed
+        awk 'NR>1 && OFS="\t"{{ split($2,   a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {output.bed} #{params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed 
 
         cd {params.work_directory}/INSIDER/TE_DETECTION/
         

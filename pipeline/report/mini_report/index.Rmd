@@ -63,6 +63,6 @@ print(paste("VARIANT CALLING : ", params$CHOICE$OUTSIDER_VARIANT$CALL_SV))
 
 
 
-## TE ANALYSIS
-
+<!-- ## TE ANALYSIS
+ -->
 

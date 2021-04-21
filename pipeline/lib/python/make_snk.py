@@ -63,7 +63,7 @@ for i, instruct in enumerate(instructions[::-1]):
     #suppression des input et output improviser
     elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "N":
         os.system("sed -i '/input_link=\[.*\],/d' tmpo"+str(i)+".snk")
-        os.system("sed -i 's/output_link=\[.*\],//g' tmpo" + str(i) + ".snk")
+        os.system("sed -i '/output_link=\[.*\],/d' tmpo" + str(i) + ".snk")
     elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "NI":
         os.system("sed -i '/input_link=\[.*\],/d' tmpo"+str(i)+".snk")
         os.system("sed -i 's/output_link=\[\],/temp(touch(\"tmp_snk\/rule_tmp_" + name_rule + "\")),/g' tmpo" + str(i) + ".snk")

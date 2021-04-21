@@ -1,5 +1,9 @@
 
-### INSIDER
+## INSIDER
+
+INSIDER is TE assembled on genome
+
+### NUMBER OF TE
 
 Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/INSERTION.csv", sep="\t"); nrow(data);`**
 
@@ -78,6 +82,53 @@ graph
 <iframe src="lib/template_COUNT_TE_INSIDER.html" style="width: 100%; height: 1000px; border: none; overflow: hidden;"></iframe>
 
 
+### FREQUENCE
+
+
+```{bash FREQB2, eval=TRUE, include=TRUE, results=TRUE}
+
+test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && python3 ../lib/freq_graph.py ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv FREQ_TE.csv || echo ;
+
+```
+
+
+
+```{r FREQIN, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+
+data = read.csv("FREQ_TE.csv", sep="\t")
+data = tail(data, 50)
+
+data$x <- factor(data$x, levels = order_TE)
+
+#orderc = order frequence
+order <- read.table("orderc.txt", header = FALSE)
+data$condition <- factor(data$condition, levels = order$V1)
+
+p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
+        geom_bar(position="stack", stat="identity") +
+        xlab("TE") +
+        ylab("NUMBER") +
+        labs(fill = "FREQUENCE") +
+        #scale_fill_viridis(discrete = T) +
+        scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
+        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+            panel.background = element_rect(fill="white", colour="white", 
+                                          linetype="solid", color="white"))
+
+p
+#ggsave(p, file=output)
+
+```
+
+
+### TSD
+
+<iframe src="lib/template_TSD_INSIDER_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+
+
+### TE POSITION
+
+<iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_INSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 
 ```{bash, eval=TRUE, include=TRUE, results=TRUE}
 

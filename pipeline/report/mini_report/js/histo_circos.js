@@ -18,7 +18,7 @@ function init(name_TE) {
     $("#biocircos").html("");
 
     var var_histo = null
-    if (name_TE != "all") {
+    if (name_TE != "ALL") {
       var_histo = dico_histo[name_TE];
     }
     else{
@@ -71,7 +71,7 @@ function init(name_TE) {
 }
 
 
-init("all");
+init("ALL");
 
 
 $(document).on('change', '#pet-select', function(){

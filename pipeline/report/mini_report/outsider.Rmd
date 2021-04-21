@@ -1,5 +1,12 @@
 
-## SV ANALYSIS
+
+
+
+## OUTSIDER
+
+** OUTSIDER ** is TE no assembled on genome
+
+### SV ANALYSIS
 
 Informations of **SV.vcf** file.
 
@@ -43,10 +50,7 @@ p
 
 ```
 
-
-### OUTSIDER
-
-#### NUMBER
+### NUMBER OF TE
 
 Total number of **TE : `r data=read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv", sep="\t"); nrow(data);`**
 
@@ -123,24 +127,25 @@ graph
 <iframe src="lib/template_COUNT_TE_OUTSIDER.html" style="width: 100%; height: 1000px; border: none; overflow: hidden;"></iframe>
 
 
-#### FREQUENCE
+### FREQUENCE
 
 ```{bash FREQB, eval=TRUE, include=TRUE, results=TRUE}
 
-python3 ../lib/freq_graph.py ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv   FREQ_TE.csv
+(test -s ../../OUTSIDER/FREQ_AFTER/DEPTH_TE.csv && \
+  python3 ../lib/freq_graph.py ../../OUTSIDER/FREQ_AFTER/DEPTH_TE.csv FREQ_TE.csv) || \
+  (test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
+  python3 ../lib/freq_graph.py ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv FREQ_TE.csv)
 
 ```
 
 
 
-```{r FREQ, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+```{r FREQOUT, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
 data = read.csv("FREQ_TE.csv", sep="\t")
 data = tail(data, 50)
 
 data$x <- factor(data$x, levels = order_TE)
-
-
 
 order <- read.table("orderc.txt", header = FALSE)
 data$condition <- factor(data$condition, levels = order$V1)
@@ -164,7 +169,7 @@ p
 
 
 
-#### TSD
+### TSD
 
 ```{r TSD, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
@@ -192,9 +197,8 @@ p
 
 <iframe src="lib/template_TSD.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 
-<iframe src="lib/template_TSD_INSIDER_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 
-<iframe src="lib/template_TSD_ALL_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+<!-- <iframe src="lib/template_TSD_ALL_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe> -->
 
 
 ### TE POSITION
