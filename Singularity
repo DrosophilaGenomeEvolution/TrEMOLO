@@ -86,6 +86,7 @@ _EOF_
         assemblytics \
         r-base \
         perl \
+				pandoc-citeproc \
         libfontconfig1-dev
 
 
