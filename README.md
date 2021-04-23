@@ -79,7 +79,7 @@ Using a reference genome and an assembled one (preferentially using long contigs
 Once the requirements fullfilled, just git clone
 
 ```
-  git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
+git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 ```
 
 ### Using Singularity<a name="singularity"></a>
@@ -89,8 +89,13 @@ A [*Singularity* container](https://sylabs.io/) is available with all tools comp
 The *def* file provided can be compiled as such:
 
 ```
-singularity build Singularity Singularity.TrEMOLO-2.0.def
+sudo singularity build TrEMOLO.simg TrEMOLO/Singularity
+```
 
+after downloading the data
+
+```
+singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile data_test_TrEMOLO/config.yml
 ```
 
 **YOU MUST BE ROOT for compiling**
@@ -175,11 +180,6 @@ Main parameters
 snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path/to/your_config.yaml
 ```
 
-after to dowload data test
-
-```
-snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile data_test_TrEMOLO/config.yml
-```
 
 # Summarize output files :open_file_folder:<a name="output"></a>
 
