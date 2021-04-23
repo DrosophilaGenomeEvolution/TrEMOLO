@@ -82,7 +82,6 @@ _EOF_
         ncbi-blast+ \
         bedtools \
         minimap2 \
-        sniffles \
         snakemake \
         assemblytics \
         r-base \
@@ -125,6 +124,18 @@ _EOF_
 		./configure
 		make all all-htslib
 		make install install-htslib
+
+		#installing Sniffles 1.0.12+
+		cd $TOOLDIR
+		wget https://github.com/fritzsedlazeck/Sniffles/archive/master.tar.gz -O Sniffles.tar.gz
+		tar xzvf Sniffles.tar.gz
+		cd Sniffles-master/
+		mkdir -p build/
+		cd build/
+		cmake ..
+		make
+		cd ../bin/sniffles*
+		ln -s $PWD/sniffles /usr/bin/sniffles
 
 
     #installing Flye 2.8+

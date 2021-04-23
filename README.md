@@ -53,7 +53,7 @@ TrEMOLO used long reads, raw or their assemblies to detect
   - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
   - [Minimap2](https://github.com/lh3/minimap2) 2.16+
   - [Samtools](http://www.htslib.org/) 1.10+
-  - [Sniffles](https://github.com/fritzsedlazeck/Sniffles) 1.0.10+
+  - [Sniffles 1.012+](https://github.com/fritzsedlazeck/Sniffles) 1.0.10+
   - [Flye 2.8+ - optional](https://github.com/fenderglass/Flye)
   - [WTDGB2 - optional](https://github.com/ruanjue/wtdbg2)
   - Python libs
