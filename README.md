@@ -27,12 +27,17 @@ TrEMOLO used long reads, raw or their assemblies to detect
 
 ## Global variations, the inliers<a name="in"></a>
 
-Using a reference genome and an assembled one (preferentially using long contigs or even better a chrosomome-scale assembly), TrEMOLO will extract the variant transposable elements (TEs) and tag them. You will obtain a set of files with the location of these variable insertions.
+Using a reference genome and an assembled one (preferentially using long contigs or even better a chrosomome-scale assembly), TrEMOLO will extract the **insiders**, *i.e.* variant transposable elements (TEs) present globally in the assembly, and tag them. Indeed, assemblers will provide the most frequent haplotype at each locus, and thus an assembly represent just the "consensus" of all haplotypes present at each locus.
+You will obtain a [set of files](#output) with the location of these variable insertions.
 
 ## Populational variations, the outliers<a name="out"></a>
 
+Through remapping of reads that have been used to assemble the genome of interest, TrEMOLO will identify the populational variations (or even somatic ones) within the initial dataset of reads, and thus of DNA/individuals sampled. These variant TEs are the **outsiders**, present only in a subpart of the population.
+In the same way as for insiders, you will obtain a [set of files](#output) with the location of these variable insertions.
 
-## Requirements<a name="requirements"></a>
+# Requirements<a name="requirements"></a>
+
+Numerous tools are used by TrEMOLO. We recommand to use the [Singularity installation](#singularity) to be sure to have all of them in the good configuration.
 
 - For both approaches
   - Python 3.6+
@@ -72,9 +77,9 @@ Using a reference genome and an assembled one (preferentially using long contigs
     - [intervaltree](https://pypi.org/project/intervaltree/)
   - Perl v5.26.2+
 
-## Installation<a name="Installation"></a>
+# Installation<a name="Installation"></a>
 
-### Using Git<a name="git"></a>
+## Using Git<a name="git"></a>
 
 Once the requirements fullfilled, just git clone
 
@@ -82,9 +87,9 @@ Once the requirements fullfilled, just git clone
 git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 ```
 
-### Using Singularity<a name="singularity"></a>
+## Using Singularity<a name="singularity"></a>
 
-#### Compiling yourself
+### Compiling yourself
 A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in.
 The *def* file provided can be compiled as such:
 
@@ -100,7 +105,7 @@ singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/creation_snakefile.s
 
 **YOU MUST BE ROOT for compiling**
 
-#### Pulling from SingularityHub
+### Pulling from SingularityHub
 
 This option is disabled since Singularity Hub is for the moment in read-only
 
@@ -108,39 +113,39 @@ This option is disabled since Singularity Hub is for the moment in read-only
 
 # Configuration of the parameter file<a name="configuration"></a>
 
-You will first have to enter your parameters in a *.yaml* file (see example *config.yaml* file). The necessary parameters are :
+TrEMOLO uses snakemake to perform its analyses. You have then first to provide your parameters in a *.yaml* file (see an example in the *config.yaml* file). Parameters are :
 
 ```
-# all path can be relatif or absolute
+# all path can be relative or absolute
 DATA:
-    REFERENCE:       "/path/to/reference_file.fasta"   #reference genome (fasta file) only if INSIDER_VARIANT = True [optional]
     GENOME:          "/path/to/genome_file.fasta"      #genome (fasta file) [required]
-    SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq file) only if OUTSIDER_VARIANT = True [optional]
-    WORK_DIRECTORY:  "/path/to/directory_work"         #name of output directory [required or empty]
     TE_DB:           "/path/to/database_TE.fasta"      #Database of TE (a fasta file) [required]
-
+    REFERENCE:       "/path/to/reference_file.fasta"   #reference genome (fasta file) only if INSIDER_VARIANT = True [optional]
+    SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq file) only if OUTSIDER_VARIANT = True [optional]
+    #At least, provide either REFERENCE or SAMPLE. Both can be provided
+    WORK_DIRECTORY:  "/path/to/directory"         #name of output directory [optional, will be created as 'output']
 
 
 CHOICE:
     PIPELINE:
-        OUTSIDER_VARIANT: True  # TE no assembled (out of genome)
-        INSIDER_VARIANT: True   # TE assembled (in genome)
-        REPORT: True            # for getting report.html with graph
+        OUTSIDER_VARIANT: True  # outsiders, TE not assembled (out of assembly)
+        INSIDER_VARIANT: True   # insiders, TE assembled (in assembly)
+        REPORT: True            # for getting a report.html file with graphics
     OUTSIDER_VARIANT:
         LOCAL_ASSEMBLY:
             FLYE: False # (True, False)
             WTDGB: False # (True, False)
-        CALL_SV: "svim" # possibility (sniffles, svim)
-        INTEGRATE_TE_TO_GENOME: True # (True, False) xxx
+        CALL_SV: "svim" # possibilities: sniffles, svim
+        INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) xxx
-    INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them.
+    INTERMEDIATE_FILE: True     # to conserve the intermediate analyses files to process them.
 
 
 PARAMS:
     OUTSIDER_VARIANT:
         MINIMAP2:
-            PRESET_OPTION: 'map-ont' # minimap2 preset option is map-ont by default (map-pb, map-ont etc)
-            OPTION: '-t 8' # more option of minimap2
+            PRESET_OPTION: 'map-ont' # minimap2 option is map-ont by default (map-pb, map-ont)
+            OPTION: '-t 8' # more option of minimap2 can be trasnfered here
         SAMTOOLS_VIEW:
             PRESET_OPTION: ''
         SAMTOOLS_SORT:
@@ -148,30 +153,28 @@ PARAMS:
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
         FLYE:
-            OPTIONS: '--plasmids -t 8' #
+            OPTIONS: '--plasmids -t 8' # push Flye options for local reassembly here
             PRESET_OPTION: '--nano-raw' #
         TSD:
-            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt"
-            SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4
+            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for reference elements
+            SIZE_FLANK: 30  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
-            CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3[RL],X" ; Put "." for keep all chromosome
+            CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
         INTEGRATE_TE_TO_GENOME:
-            PUT_ID: True # (True, False) xxx
-            PUT_SEQUENCE_DB_TE: True # (True, False) xxx
-        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option of TrEMOLO/lib/python/parse_blast_main.py d'ont put -c option
+            PUT_ID: True # (True, False) Provide an ID for each integration
+            PUT_SEQUENCE_DB_TE: True # (True, False) Integrate the canonical sequence of the element instead of the one identified in the reads
+        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option for TrEMOLO/lib/python/parse_blast_main.py - don,t put -c option
     INSIDER_VARIANT:
-        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
 
 
 ```
+The main parameters are:
 
-Main parameters
-
-`REFERENCE` : Reference genome (fasta file) only if INSIDER_VARIANT = True
-`WORK_DIRECTORY` : Directory that will contain the output files (if the directory does not exist it will be created). default value is "output".
-`GENOME` : Genome assembly (fasta file)
-`SAMPLE` : File containing the reads of genome assembly.
-`TE_DB`  : **fasta** file containing the sequence of transposable elements.
+- `GENOME` : Assembly of the sample of interest (or mix of samples), fasta file.\
+- `TE_DB`  : **Multifasta** file containing the canonical sequence of transposable elements. You can add also copy sequences but results will be more complex to interpretate.
+- `WORK_DIRECTORY` : Directory that will contain the output files. If the directory does not exist it will be created;  default value is *output*.\
+- `SAMPLE` : File containing the reads used for the sample assembly.\
 
 
 # Usage<a name="usage"></a>
@@ -181,9 +184,9 @@ snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path
 ```
 
 
-# Summarize output files :open_file_folder:<a name="output"></a>
+# Output files summary :open_file_folder:<a name="output"></a>
 
-Example of output file obtained after using the pipeline.
+Here is the structure of the output files obtained after running the pipeline.
 
 ```
 WORK_DIRECTORY
@@ -372,17 +375,24 @@ WORK_DIRECTORY
 
 The most useful output files are :
 
-* The html report in **REPORT/report.html** with the graphs
-* The positions of TE **POSITION_TE_INSIDER.bed**, **POSITION_TE_OUTSIDER.bed**
+* The html report in **REPORT/report.html** with summary graphics
+* The TE position files, **POSITION_TE_INSIDER.bed** and **POSITION_TE_OUTSIDER.bed**
 
-Some csv file (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) has precise information on the identification of TE :
+These BED files are tabulated ones:
+````
+Chr Start   Stop    Information For TE 1
+Chr Start   Stop    Information For TE 2
+
+````
+
+Some csv files (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) have precise information on the identification of TE; for instance:
 
 | sseqid | qseqid | pident | size_per | size_el | mismatch | gapopen | qstart | qend | sstart | send | evalue | bitscore |
 | ------ | ------ | ------ | -------- | ------- | -------- | ------- | ------ | ---- | ------ | ---- | ------ | -------- |
 | ZAM | 2R:\<INS\>:12136769:12145149:33748:4:IMPRECISE:- | 95.494 | 99.0 | 8347 | 123 | 178 | 5 | 8352 | 8435 | 1 | 0.0 | 13369.0 |
 | blood | 3R:\<INS\>:22519173:22526514:100924:1:PRECISE:+ | 94.259 | 99.0 | 7338 | 164 | 189 | 3 | 7341 | 7410 |  1 | 0.0 | 11230.0 |
 
-## Description of header .csv file :
+##### Description of the header of .csv files (similar to blast format 6) :
 
  1.    `qseqid` : query (e.g., gene) sequence id
  2.    `sseqid` : subject (e.g., reference genome) sequence id
@@ -398,7 +408,7 @@ Some csv file (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) has preci
  12.   `evalue`   : expect value
  13.   `bitscore`   : bit score
 
-You can find the description here : [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6](http://www.metagenomics.wiki/tools/blast/blastn-output-format-6)
+You can find a more detailed description here : [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6](http://www.metagenomics.wiki/tools/blast/blastn-output-format-6)
 
 
 # Licence and Citation<a name="citation"></a>
