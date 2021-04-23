@@ -9,7 +9,7 @@ NAME_FILE=`echo $FILE_TSD | sed 's/.txt//g'`
 grep -A 2 -B 2 "KO:" $FILE_TSD > ${NAME_FILE}_KO.txt 
 grep -B 1 KO ${NAME_FILE}_KO.txt | grep ">" | tr -d ">" | awk -F":" -v s_fk="$SIZE_FLANK" 'OFS="\t" {print $1, $3-s_fk, $3, $5":FLANK_LEFT\n"$1, $3, $3+s_fk, $5":FLANK_RIGHT"}' > empty_site_KO.bed
 
-bedtools getfasta -fi $GENOME -bed empty_site_KO.bed -name > empty_site_KO.fasta
+bedtools getfasta -fi $GENOME -bed empty_site_KO.bed -name+ > empty_site_KO.fasta
 
 echo ${NAME_FILE}_KO_corrected.txt;
 python `dirname $0`/revise_TSD.py empty_site_KO.fasta ${NAME_FILE}_KO.txt $SIZE_KMER > ${NAME_FILE}_KO_corrected.txt
@@ -32,7 +32,7 @@ grep -o "SVI=[A-Z]*" ${NAME_FILE}_KO_corrected.txt | cut -d"=" -f 2 >> TSM_OK.tx
 grep -A 2 -B 2 OK $FILE_TSD > ${NAME_FILE}_OK.txt 
 grep -B 1 OK ${NAME_FILE}_OK.txt | grep ">" | tr -d ">" | awk -F":" -v s_fk="$SIZE_FLANK" 'OFS="\t" {print $1, $3-s_fk, $3, $5":FLANK_LEFT\n"$1, $3, $3+s_fk, $5":FLANK_RIGHT"}' > empty_site_OK.bed
 
-bedtools getfasta -fi $GENOME -bed empty_site_OK.bed -name > empty_site_OK.fasta
+bedtools getfasta -fi $GENOME -bed empty_site_OK.bed -name+ > empty_site_OK.fasta
 
 cat empty_site_OK.fasta empty_site_KO.fasta > all_empty_site.fasta
 

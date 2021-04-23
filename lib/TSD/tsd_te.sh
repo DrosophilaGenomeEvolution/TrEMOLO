@@ -151,7 +151,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
 
 
         bedtools getfasta -fi $reads -bed flank_TE.bed > flank_TE.fasta
-        bedtools getfasta -fi $reads -bed sequence_TE.bed -name > sequence_TE.fasta
+        bedtools getfasta -fi $reads -bed sequence_TE.bed -name+ > sequence_TE.fasta
 
         echo "[$0] *********BLAST 2 TE VS DBTE**********"
         echo ${DB_TE}

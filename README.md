@@ -31,7 +31,7 @@ TrEMOLO used long reads, raw or their assemblies to detect
   - Python 3.6+
 - For Global variation tool
   - [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download) 2.2+
-  - [Bedtools](https://bedtools.readthedocs.io/en/latest/) v2
+  - [Bedtools 2.27.1](https://bedtools.readthedocs.io/en/latest/) v2
   - [Assemblytics](http://assemblytics.com/) or
   - [RaGOO](https://github.com/malonge/RaGOO)
 - For Populational variation tool
@@ -52,15 +52,17 @@ TrEMOLO used long reads, raw or their assemblies to detect
     - knitr
   - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
   - [Minimap2](https://github.com/lh3/minimap2) 2.16+
-  - [Samtools](http://www.htslib.org/) 1.10+
-  - [Sniffles 1.012+](https://github.com/fritzsedlazeck/Sniffles) 1.0.10+
+  - [Samtools](http://www.htslib.org/) 1.9+
+  - [Sniffles 1.0.12](https://github.com/fritzsedlazeck/Sniffles)
   - [Flye 2.8+ - optional](https://github.com/fenderglass/Flye)
   - [WTDGB2 - optional](https://github.com/ruanjue/wtdbg2)
+  - pandoc-citeproc 0.17
   - Python libs
     - [Biopython](https://biopython.org/)
     - [Pandas](https://pandas.pydata.org/)
     - [Numpy](https://numpy.org/)
     - [pylab](https://matplotlib.org/)
+    - [intervaltree](https://pypi.org/project/intervaltree/)
   - Perl v5.26.2+
 
 ## Installation<a name="Installation"></a>
@@ -90,7 +92,6 @@ singularity build Singularity Singularity.TrEMOLO-2.0.def
 This option is disabled since Singularity Hub is for the moment in read-only
 
 
-<div id='config_file'/>
 
 # Configuration of the parameter file<a name="configuration"></a>
 
@@ -144,7 +145,7 @@ PARAMS:
         INTEGRATE_TE_TO_GENOME:
             PUT_ID: True # (True, False) xxx
             PUT_SEQUENCE_DB_TE: True # (True, False) xxx
-        PARS_BLN_OPTION: "" # option of TrEMOLO/lib/python/parse_blast_main.py d'ont put -c option
+        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option of TrEMOLO/lib/python/parse_blast_main.py d'ont put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
 
@@ -159,7 +160,6 @@ Main parameters
 `SAMPLE` : File containing the reads of genome assembly.
 `TE_DB`  : **fasta** file containing the sequence of transposable elements.
 
-<div id='start_pipeline'/>
 
 # Usage<a name="usage"></a>
 
@@ -365,7 +365,7 @@ WORK_DIRECTORY
 The most useful output files are :
 
 * The html report in **REPORT/report.html** with the graphs
-* The positions of **TE POSITION_TE_INSIDER.bed**, **POSITION_TE_OUTSIDER.bed**
+* The positions of TE **POSITION_TE_INSIDER.bed**, **POSITION_TE_OUTSIDER.bed**
 
 Some csv file (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) has precise information on the identification of TE :
 
