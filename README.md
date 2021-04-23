@@ -67,6 +67,8 @@ Once the requirements fullfilled, just git clone
 ```
 
 #### Using Singularity
+
+##### Compiling yourself
 A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in. The *def* file provided can be compiled as such:
 
 ```
@@ -74,8 +76,9 @@ singularity build TrEMOLO.simg Singularity.TrEMOLO-2.0.def
 
 ```
 
-**YOU MUST BE ROOT**
+**YOU MUST BE ROOT for compiling**
 
+##### Pulling from SingularityHub
 
 
 <div id='config_file'/>

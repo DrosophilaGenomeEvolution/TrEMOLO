@@ -3,42 +3,42 @@ From: ubuntu:20.04
 %help
     Container for TrEmolo v2.0
     https://github.com/DrosophilaGenomeEvolution/TrEMOLO
-    Includes 
+    Includes
         Blast 2.2+
         Bedtools2
-        RaGOO v1.1 
+        RaGOO v1.1
         Assemblytics
         Snakemake 5.5.2+
         Minimap2 2.16+
-        Samtools 1.10+
+        Samtools 1.9
         Sniffles 1.0.10+
         SVIM 1.4.2+
         Flye 2.8+
         WTDBG 2.5+
-        libfontconfig1-dev 
+        libfontconfig1-dev
         Python libs
             Biopython
             Pandas
             Numpy
             pylab
-            intervaltree 
+            intervaltree
         R libs
             ggplot2
             RColorBrewer
             extrafont
-            rmarkdown 
+            rmarkdown
             kableExtra
             dplyr
-            reshape2 
-            forcats 
-            ggthemes 
-            rjson 
-            viridisLite 
-            viridis 
-            bookdown 
-            knitr 
+            reshape2
+            forcats
+            ggthemes
+            rjson
+            viridisLite
+            viridis
+            bookdown
+            knitr
         Perl v5.26.2
-        
+
 %labels
     VERSION "TrEMOLO v2.0"
     Maintainer Francois Sabot <francois.sabot@ird.fr>
@@ -80,7 +80,6 @@ _EOF_
         locales \
         python3-pip \
         ncbi-blast+ \
-        samtools \
         bedtools \
         minimap2 \
         sniffles \
@@ -106,45 +105,56 @@ _EOF_
     R --slave -e 'install.packages("viridis")'
     R --slave -e 'install.packages("bookdown")'
     R --slave -e 'install.packages("knitr")'
-    
+
     #Python libs
     python3 -m pip install biopython pandas numpy matplotlib svim intervaltree scipy svim
-       
+
     # build variables
     export TOOLDIR=/opt/tools
 
 	#Preparing Directories
 	mkdir -p $TOOLDIR
 
-    
+		#installing SamTools 1.9
+		cd $TOOLDIR
+		mkdir samtools1.9
+		cd samtools1.9
+		wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
+		tar -xf samtools-1.9.tar.bz2
+		cd samtools-1.9
+		./configure
+		make all all-htslib
+		make install install-htslib
+
+
     #installing Flye 2.8+
-	cd $TOOLDIR
+		cd $TOOLDIR
     git clone https://github.com/fenderglass/Flye
     cd Flye
     python3 setup.py install
 
-    
+
     #install RaGOO
     cd $TOOLDIR
     git clone https://github.com/malonge/RaGOO.git
     cd RaGOO
     python3 setup.py install
-    
+
     #install WTDBG2
     cd $TOOLDIR
     git clone https://github.com/ruanjue/wtdbg2
     cd wtdbg2
     make
-    
 
-	
+
+
 	#install TrEMOLO
 	cd $TOOLDIR
 	git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
-    
+
 %environment
     export PATH=$TOOLDIR/wtdbg2/:$TOOLDIR/RaGOO/:$TOOLDIR/Flye/:$TOOLDIR/TrEMOLO/:$PATH
 
-	
+
 %runscript
     exec "$@"
