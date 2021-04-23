@@ -4,7 +4,7 @@
 
 ## OUTSIDER
 
-** OUTSIDER ** is TE no assembled on genome
+**OUTSIDER** are TE no assembled on genome
 
 ### SV ANALYSIS
 
@@ -171,9 +171,15 @@ p
 
 ### TSD
 
+TSD [OK] : these are the TE with TSD
+
+
+TSD [KO] : these are the TE without TSD
+
+
 ```{r TSD, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
-data = read.csv("../../VALUES_TSD_GROUP.csv", sep="\t")
+data = read.csv("../../VALUES_TSD_GROUP_OUTSIDER.csv", sep="\t")
 data = tail(data, 50)
 
 
@@ -197,6 +203,7 @@ p
 
 <iframe src="lib/template_TSD.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 
+hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20
 
 <!-- <iframe src="lib/template_TSD_ALL_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe> -->
 
@@ -205,3 +212,5 @@ p
 
 
 <iframe src="lib/template_histo_circos.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+
+Select TE family

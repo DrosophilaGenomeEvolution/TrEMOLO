@@ -39,7 +39,7 @@ for i, v in enumerate(df[["x", "y"]].values):
     df_tmp = df[df["x"] == TE]
     
     if TE not in already_work:
-        df_tmp = df_tmp.sort_values(by=["condition"], ascending=False)
+        df_tmp = df_tmp.sort_values(by=["condition"], ascending=True)
         for e, w in enumerate(df_tmp.values):
             dico[df_tmp["condition"].values[e]] = str(df_tmp["y"].values[e])
 

@@ -1,7 +1,7 @@
 
 ## INSIDER
 
-INSIDER is TE assembled on genome
+**INSIDER** are TE assembled on genome
 
 ### NUMBER OF TE
 
@@ -81,6 +81,8 @@ graph
 
 <iframe src="lib/template_COUNT_TE_INSIDER.html" style="width: 100%; height: 1000px; border: none; overflow: hidden;"></iframe>
 
+hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20
+
 
 ### FREQUENCE
 
@@ -123,12 +125,20 @@ p
 
 ### TSD
 
+TSD [OK] : these are the TE with TSD
+
+
+TSD [KO] : these are the TE without TSD
+
 <iframe src="lib/template_TSD_INSIDER_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 
+hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20
 
 ### TE POSITION
 
 <iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_INSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+
+Select TE family
 
 ```{bash, eval=TRUE, include=TRUE, results=TRUE}
 

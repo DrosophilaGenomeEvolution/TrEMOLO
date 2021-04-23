@@ -19,8 +19,8 @@ CHOICE:
             FLYE: False # (True, False)
             WTDGB: False # (True, False)
         CALL_SV: "svim" # possibility (sniffles, svim) 
-        INTEGRATE_TE_TO_GENOME: True # (True, False)
-        OPTIMIZE_FREQUENCE: True # (True, False)
+        INTEGRATE_TE_TO_GENOME: True # (True, False) xxx
+        OPTIMIZE_FREQUENCE: True # (True, False) xxx
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
 
 
@@ -44,9 +44,9 @@ PARAMS:
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3[RL],X" ; Put "." for keep all chromosome
         INTEGRATE_TE_TO_GENOME:
-            PUT_ID: True # (True, False)
-            PUT_SEQUENCE_DB_TE: True # (True, False)
-        PARS_BLN_OPTION: "" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py d'ont put -c option
+            PUT_ID: True # (True, False) xxx
+            PUT_SEQUENCE_DB_TE: True # (True, False) xxx
+        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py d'ont put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" 
         

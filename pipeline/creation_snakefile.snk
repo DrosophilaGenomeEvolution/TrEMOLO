@@ -91,7 +91,7 @@ os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 # onerror:
 #     print("An error occurred")
 onsuccess:
-     print("WORKFLOW FINISHED, NO ERROR DETECTED.")
+     print("WORKFLOW FINISHED, NO ERROR DETECTED. ✔")
      shell("rm -fr tmp_snk/;")
 
 
@@ -100,7 +100,7 @@ rule create_snake_file :
     input:  
 
     output:
-        temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
+        #temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
         temp("tmp_snk/tmp_end_pipeline.end"),
     
     params:

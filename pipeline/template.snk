@@ -61,7 +61,7 @@ path_snk = ""
 i = 0
 while i < len(sys.argv) and path_snk == "" :
     if sys.argv[i] == "--snakefile" :
-        path_snk = sys.argv[i + 1]
+        path_snk = os.path.realpath(sys.argv[i + 1])
 
     i += 1
 #

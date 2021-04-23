@@ -65,4 +65,4 @@ print(paste("VARIANT CALLING : ", params$CHOICE$OUTSIDER_VARIANT$CALL_SV))
 
 <!-- ## TE ANALYSIS
  -->
-
+**INFO : all static graphs are limited to a maximum of 50 values ​​for visibility, dynamic graphs are not limited in number of values.**
