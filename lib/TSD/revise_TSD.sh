@@ -12,7 +12,7 @@ grep -B 1 KO ${NAME_FILE}_KO.txt | grep ">" | tr -d ">" | awk -F":" -v s_fk="$SI
 bedtools getfasta -fi $GENOME -bed empty_site_KO.bed -name+ > empty_site_KO.fasta
 
 echo ${NAME_FILE}_KO_corrected.txt;
-python `dirname $0`/revise_TSD.py empty_site_KO.fasta ${NAME_FILE}_KO.txt $SIZE_KMER > ${NAME_FILE}_KO_corrected.txt
+python3 `dirname $0`/revise_TSD.py empty_site_KO.fasta ${NAME_FILE}_KO.txt $SIZE_KMER > ${NAME_FILE}_KO_corrected.txt
 
 #GET TSD
 grep "OK:" $FILE_TSD | cut -d"," -f 2 | tr -d " " > ${NAME_FILE}_TSD_OK.txt
