@@ -1,3 +1,5 @@
+<img src="images/TrEMOLO9.png">
+
 # TrEMOLO
 Transposable Elements MOvement detection using LOng reads
 
