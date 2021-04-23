@@ -6,6 +6,8 @@
 <img src="images/TrEMOLO9.png">
 
 - [Introduction](#introduction)
+    - [Global variations](#in)
+    - [Populational variations](#out)
 - [Requirements](#requirements)
 - [Installation](#installation)
     - [Using Git](#git)
@@ -23,6 +25,11 @@ TrEMOLO used long reads, raw or their assemblies to detect
 - Global TE variations between two assembled genomes
 - Populational/somatic variation in TE insertions
 
+## Global variations, the inliers<a name="in"></a>
+
+Using a reference genome and an assembled one (preferentially using long contigs or even better a chrosomome-scale assembly), TrEMOLO will extract the variant transposable elements (TEs) and tag them. You will obtain a set of files with the location of these variable insertions.
+
+## Populational variations, the outliers<a name="out"></a>
 
 
 ## Requirements<a name="requirements"></a>
@@ -78,7 +85,8 @@ Once the requirements fullfilled, just git clone
 ### Using Singularity<a name="singularity"></a>
 
 #### Compiling yourself
-A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in. The *def* file provided can be compiled as such:
+A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in.
+The *def* file provided can be compiled as such:
 
 ```
 singularity build Singularity Singularity.TrEMOLO-2.0.def
