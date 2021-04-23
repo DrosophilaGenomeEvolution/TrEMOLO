@@ -5,27 +5,35 @@
 
 <img src="images/TrEMOLO9.png">
 
-# TrEMOLO
-Transposable Elements MOvement detection using LOng reads
+- [Introduction](#introduction)
+- [Requirements](#requirements)
+- [Installation](#installation)
+    - [Using Git](#git)
+    - [Using Singularity](#singularity)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Output files](#output)
+- [Citation & Licence](#citation)
 
-TrEMOLO used long reads and their assemblies to detect
-- [Global TE variations between two assembled genomes](#global)  
-- [Populational/somatic variation in TE insertions](#population)
 
-It is licencied under [CeCill-C](Licence_CeCILL-C_V1-en.txt) and [GPLv3](LICENSE).
+# TrEMOLO<a name="introduction"></a>
+**Transposable Elements MOvement detection using LOng reads**
 
-Please cite if using TrEMOLO:
+TrEMOLO used long reads, raw or their assemblies to detect
+- Global TE variations between two assembled genomes
+- Populational/somatic variation in TE insertions
 
-[Mohamed, M.; Dang, N. .-M.; Ogyama, Y.; Burlet, N.; Mugat, B.; Boulesteix, M.; Mérel, V.; Veber, P.; Salces-Ortiz, J.; Severac, D.; Pélisson, A.; Vieira, C.; Sabot, F.; Fablet, M.; Chambeyron, S. A Transposon Story: From TE Content to TE Dynamic Invasion of Drosophila Genomes Using the Single-Molecule Sequencing Technology from Oxford Nanopore. Cells 2020, 9, 1776.](https://www.mdpi.com/2073-4409/9/8/1776)
 
-### Requirements:
+
+## Requirements<a name="requirements"></a>
 
 - For both approaches
   - Python 3.6+
 - For Global variation tool
   - [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download) 2.2+
   - [Bedtools](https://bedtools.readthedocs.io/en/latest/) v2
-  - [Assemblytics](http://assemblytics.com/) or [RaGOO](https://github.com/malonge/RaGOO) output
+  - [Assemblytics](http://assemblytics.com/) or
+  - [RaGOO](https://github.com/malonge/RaGOO)
 - For Populational variation tool
   - R 3.3+ libs
     - [ggplot2](https://ggplot2.tidyverse.org/)
@@ -46,9 +54,8 @@ Please cite if using TrEMOLO:
   - [Minimap2](https://github.com/lh3/minimap2) 2.16+
   - [Samtools](http://www.htslib.org/) 1.10+
   - [Sniffles](https://github.com/fritzsedlazeck/Sniffles) 1.0.10+
-  - RaGOO v1.1
-  - Flye 2.8+ [optionel]
-  - WTDGB [optionel]
+  - [Flye 2.8+ - optional](https://github.com/fenderglass/Flye)
+  - [WTDGB2 - optional](https://github.com/ruanjue/wtdbg2)
   - Python libs
     - [Biopython](https://biopython.org/)
     - [Pandas](https://pandas.pydata.org/)
@@ -56,9 +63,9 @@ Please cite if using TrEMOLO:
     - [pylab](https://matplotlib.org/)
   - Perl v5.26.2+
 
-### Installation:
+## Installation<a name="Installation"></a>
 
-#### Using Git
+### Using Git<a name="git"></a>
 
 Once the requirements fullfilled, just git clone
 
@@ -66,26 +73,28 @@ Once the requirements fullfilled, just git clone
   git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 ```
 
-#### Using Singularity
+### Using Singularity<a name="singularity"></a>
 
-##### Compiling yourself
+#### Compiling yourself
 A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in. The *def* file provided can be compiled as such:
 
 ```
-singularity build TrEMOLO.simg Singularity.TrEMOLO-2.0.def
+singularity build Singularity Singularity.TrEMOLO-2.0.def
 
 ```
 
 **YOU MUST BE ROOT for compiling**
 
-##### Pulling from SingularityHub
+#### Pulling from SingularityHub
+
+This option is disabled since Singularity Hub is for the moment in read-only
 
 
 <div id='config_file'/>
 
-## Configuration of the parameter file
+# Configuration of the parameter file<a name="configuration"></a>
 
-You will first have to enter your parameters in a **.yaml** file (see example config.yaml file). The necessary parameters are :
+You will first have to enter your parameters in a *.yaml* file (see example *config.yaml* file). The necessary parameters are :
 
 ```
 # all path can be relatif or absolute
@@ -152,7 +161,7 @@ Main parameters
 
 <div id='start_pipeline'/>
 
-## Usage
+# Usage<a name="usage"></a>
 
 ```
 snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path/to/your_config.yaml
@@ -164,7 +173,7 @@ after to dowload data test
 snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile data_test_TrEMOLO/config.yml
 ```
 
-### Summarize output files :open_file_folder:
+# Summarize output files :open_file_folder:<a name="output"></a>
 
 Example of output file obtained after using the pipeline.
 
@@ -365,7 +374,7 @@ Some csv file (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) has preci
 | ZAM | 2R:\<INS\>:12136769:12145149:33748:4:IMPRECISE:- | 95.494 | 99.0 | 8347 | 123 | 178 | 5 | 8352 | 8435 | 1 | 0.0 | 13369.0 |
 | blood | 3R:\<INS\>:22519173:22526514:100924:1:PRECISE:+ | 94.259 | 99.0 | 7338 | 164 | 189 | 3 | 7341 | 7410 |  1 | 0.0 | 11230.0 |
 
-##### Description of header .csv file :
+## Description of header .csv file :
 
  1.    `qseqid` : query (e.g., gene) sequence id
  2.    `sseqid` : subject (e.g., reference genome) sequence id
@@ -382,3 +391,12 @@ Some csv file (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) has preci
  13.   `bitscore`   : bit score
 
 You can find the description here : [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6](http://www.metagenomics.wiki/tools/blast/blastn-output-format-6)
+
+
+# Licence and Citation<a name="citation"></a>
+
+It is licencied under [CeCill-C](Licence_CeCILL-C_V1-en.txt) and [GPLv3](LICENSE).
+
+If you use TrEMOLO, please cite:
+
+[Mohamed, M.; Dang, N. .-M.; Ogyama, Y.; Burlet, N.; Mugat, B.; Boulesteix, M.; Mérel, V.; Veber, P.; Salces-Ortiz, J.; Severac, D.; Pélisson, A.; Vieira, C.; Sabot, F.; Fablet, M.; Chambeyron, S. A Transposon Story: From TE Content to TE Dynamic Invasion of Drosophila Genomes Using the Single-Molecule Sequencing Technology from Oxford Nanopore. Cells 2020, 9, 1776.](https://www.mdpi.com/2073-4409/9/8/1776)
