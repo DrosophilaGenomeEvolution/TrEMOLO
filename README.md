@@ -1,11 +1,16 @@
+
+
+[![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/5391)
+
+
 <img src="images/TrEMOLO9.png">
 
 # TrEMOLO
 Transposable Elements MOvement detection using LOng reads
 
-TrEMOLO used long reads assemblies to detect
+TrEMOLO used long reads and their assemblies to detect
 - [Global TE variations between two assembled genomes](#global)  
-- [Populational variation in TE insertions](#population)
+- [Populational/somatic variation in TE insertions](#population)
 
 It is licencied under [CeCill-C](Licence_CeCILL-C_V1-en.txt) and [GPLv3](LICENSE).
 
@@ -32,16 +37,16 @@ Please cite if using TrEMOLO:
     - reshape2
     - forcats
     - ggthemes
-    - rjson 
-    - viridisLite 
-    - viridis 
-    - bookdown 
+    - rjson
+    - viridisLite
+    - viridis
+    - bookdown
     - knitr
   - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
   - [Minimap2](https://github.com/lh3/minimap2) 2.16+
   - [Samtools](http://www.htslib.org/) 1.10+
   - [Sniffles](https://github.com/fritzsedlazeck/Sniffles) 1.0.10+
-  - RaGOO v1.1 
+  - RaGOO v1.1
   - Flye 2.8+ [optionel]
   - WTDGB [optionel]
   - Python libs
@@ -52,21 +57,36 @@ Please cite if using TrEMOLO:
   - Perl v5.26.2+
 
 ### Installation:
+
+#### Using Git
+
 Once the requirements fullfilled, just git clone
 
 ```
   git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 ```
 
-<div id='config_file'/> 
+#### Using Singularity
+A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in. The *def* file provided can be compiled as such:
 
-## Configuration of the parameter file 
+```
+singularity build TrEMOLO.simg Singularity.TrEMOLO-2.0.def
+
+```
+
+**YOU MUST BE ROOT**
+
+
+
+<div id='config_file'/>
+
+## Configuration of the parameter file
 
 You will first have to enter your parameters in a **.yaml** file (see example config.yaml file). The necessary parameters are :
 
 ```
 # all path can be relatif or absolute
-DATA: 
+DATA:
     REFERENCE:       "/path/to/reference_file.fasta"   #reference genome (fasta file) only if INSIDER_VARIANT = True [optional]
     GENOME:          "/path/to/genome_file.fasta"      #genome (fasta file) [required]
     SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq file) only if OUTSIDER_VARIANT = True [optional]
@@ -84,10 +104,10 @@ CHOICE:
         LOCAL_ASSEMBLY:
             FLYE: False # (True, False)
             WTDGB: False # (True, False)
-        CALL_SV: "svim" # possibility (sniffles, svim) 
+        CALL_SV: "svim" # possibility (sniffles, svim)
         INTEGRATE_TE_TO_GENOME: True # (True, False) xxx
         OPTIMIZE_FREQUENCE: True # (True, False) xxx
-    INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
+    INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them.
 
 
 PARAMS:
@@ -96,17 +116,17 @@ PARAMS:
             PRESET_OPTION: 'map-ont' # minimap2 preset option is map-ont by default (map-pb, map-ont etc)
             OPTION: '-t 8' # more option of minimap2
         SAMTOOLS_VIEW:
-            PRESET_OPTION: '' 
+            PRESET_OPTION: ''
         SAMTOOLS_SORT:
             PRESET_OPTION: ''
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
         FLYE:
             OPTIONS: '--plasmids -t 8' #
-            PRESET_OPTION: '--nano-raw' # 
+            PRESET_OPTION: '--nano-raw' #
         TSD:
             FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt"
-            SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4 
+            SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3[RL],X" ; Put "." for keep all chromosome
         INTEGRATE_TE_TO_GENOME:
@@ -114,9 +134,9 @@ PARAMS:
             PUT_SEQUENCE_DB_TE: True # (True, False) xxx
         PARS_BLN_OPTION: "" # option of TrEMOLO/lib/python/parse_blast_main.py d'ont put -c option
     INSIDER_VARIANT:
-        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" 
-        
-        
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
+
+
 ```
 
 Main parameters
@@ -127,7 +147,7 @@ Main parameters
 `SAMPLE` : File containing the reads of genome assembly.
 `TE_DB`  : **fasta** file containing the sequence of transposable elements.
 
-<div id='start_pipeline'/> 
+<div id='start_pipeline'/>
 
 ## Usage
 
@@ -135,7 +155,7 @@ Main parameters
 snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path/to/your_config.yaml
 ```
 
-after to dowload data test 
+after to dowload data test
 
 ```
 snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile data_test_TrEMOLO/config.yml
@@ -359,4 +379,3 @@ Some csv file (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) has preci
  13.   `bitscore`   : bit score
 
 You can find the description here : [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6](http://www.metagenomics.wiki/tools/blast/blastn-output-format-6)
-
