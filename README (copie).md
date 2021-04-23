@@ -1,5 +1,5 @@
 
-<img src="images/TrEMOLO4.png">
+<img src="images/TrEMOLO9.png">
 
 # TrEMOLO
 
@@ -134,11 +134,6 @@ snakemake --snakefile /path/to/TrEMOLO/pipeline/creation_snakefile.snk --configf
 ```
 
 
-### Test
-
-```
-snakemake --snakefile TrEMOLO/pipeline/creation_snakefile.snk --configfile TrEMOLO/test/config.yml
-```
 
 
 ### Summarize output files :open_file_folder:
@@ -335,7 +330,7 @@ The most useful output files are :
 * The html report in **REPORT/report.html** with the graphs
 * The positions of **TE POSITION_TE_INSIDER.bed**, **POSITION_TE_OUTSIDER.bed**
 
-*** :
+Some csv file (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) has precise information on the identification of TE :
 
 | sseqid | qseqid | pident | size_per | size_el | mismatch | gapopen | qstart | qend | sstart | send | evalue | bitscore |
 | ------ | ------ | ------ | -------- | ------- | -------- | ------- | ------ | ---- | ------ | ---- | ------ | -------- |
@@ -344,10 +339,10 @@ The most useful output files are :
 
 ##### Description of header .csv file :
 
- 1.    `qseqid` :   query (e.g., gene) sequence id
+ 1.    `qseqid` : query (e.g., gene) sequence id
  2.    `sseqid` : subject (e.g., reference genome) sequence id
- 3.    `pident` :  percentage of identical matches
- 4.    `size_per`    :   percentage of size TE
+ 3.    `pident` : percentage of identical matches
+ 4.    `size_per` :   percentage of size TE
  5.    `size_el` :  size sequence TE aligned
  6.    `mismatch` : number of mismatches
  7.    `gapopen` :  number of gap openings
@@ -361,3 +356,4 @@ The most useful output files are :
 You can find the description here : [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6](http://www.metagenomics.wiki/tools/blast/blastn-output-format-6)
 
 
+...

@@ -76,6 +76,6 @@ onsuccess:
 
 onerror:
     print("An error occurred")
-    shell("kill -s 9 `ps -f | grep \"TrEMOLO/pipeline/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'`")
+    shell("kill -s 9 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'`")
 
 
