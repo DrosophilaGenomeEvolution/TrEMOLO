@@ -25,12 +25,12 @@ TrEMOLO used long reads, raw or their assemblies to detect
 - Global TE variations between two assembled genomes
 - Populational/somatic variation in TE insertions
 
-## Global variations, the inliers<a name="in"></a>
+## Global variations, the insiders<a name="in"></a>
 
 Using a reference genome and an assembled one (preferentially using long contigs or even better a chrosomome-scale assembly), TrEMOLO will extract the **insiders**, *i.e.* variant transposable elements (TEs) present globally in the assembly, and tag them. Indeed, assemblers will provide the most frequent haplotype at each locus, and thus an assembly represent just the "consensus" of all haplotypes present at each locus.
 You will obtain a [set of files](#output) with the location of these variable insertions.
 
-## Populational variations, the outliers<a name="out"></a>
+## Populational variations, the outsiders<a name="out"></a>
 
 Through remapping of reads that have been used to assemble the genome of interest, TrEMOLO will identify the populational variations (or even somatic ones) within the initial dataset of reads, and thus of DNA/individuals sampled. These variant TEs are the **outsiders**, present only in a subpart of the population.
 In the same way as for insiders, you will obtain a [set of files](#output) with the location of these variable insertions.
@@ -199,7 +199,6 @@ WORK_DIRECTORY
 │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv
 │   ├── MAPPING_POSTION_TE_MD.sorted.bam
 │   ├── MAPPING_POSTION_TE_MD.sorted.bam.bai
-│   ├── TE_POSITION_SIZE.txt
 │   ├── variants.bln
 │   ├── variants.fasta
 │   └── variants.vcf
@@ -385,7 +384,7 @@ Chr Start   Stop    Information For TE 2
 
 ````
 
-Some csv files (INSERTION.csv, FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv) have precise information on the identification of TE; for instance:
+Some csv files (**INSERTION.csv**, **FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv**) have precise information on the identification of TE; for instance:
 
 | sseqid | qseqid | pident | size_per | size_el | mismatch | gapopen | qstart | qend | sstart | send | evalue | bitscore |
 | ------ | ------ | ------ | -------- | ------- | -------- | ------- | ------ | ---- | ------ | ---- | ------ | -------- |

@@ -39,10 +39,10 @@ PARAMS:
             OPTIONS: '--plasmids -t 8' #
             PRESET_OPTION: '--nano-raw' # 
         TSD:
-            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt"
+            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # path file or empty value [optional]
             SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4 
         TE_DETECTION:
-            CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3[RL],X" ; Put "." for keep all chromosome
+            CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "[23][RL],4,X" ; Put "." for keep all chromosome
         INTEGRATE_TE_TO_GENOME:
             PUT_ID: True # (True, False) xxx
             PUT_SEQUENCE_DB_TE: True # (True, False) xxx

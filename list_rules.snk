@@ -276,6 +276,7 @@ rule REPORT:
         rm -f COMBINE_TE.csv
         rm -f chrom.txt
         rm -f test.csv
+        rm -f {params.work_directory}/params.log;
         """
 
 
@@ -363,7 +364,7 @@ rule TSD :
 
                     #echo "TE=$nameTE ; SIZE TSD=$SIZE_TSD" 
                     
-                    (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+                    ###(bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
                     sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
                        ${{read_directory}} \
                        ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
@@ -388,14 +389,14 @@ rule TSD :
                         {params.SIZE_FLANK} \
                         $SIZE_TSD >> {log}.out 2>> {log}.err;
                         
-                    sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+                    ###sh ${{path_to_pipline}}/lib/bash/end_load.sh;
                 else
                     SIZE_TSD=-1;
                     #echo "SIZE-TSD = $SIZE_TSD"
 
                     #echo "TE=$nameTE ; SIZE TSD=?" 
                     
-                    (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+                    ###(bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
                     sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
                        ${{read_directory}} \
                        ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
@@ -423,7 +424,7 @@ rule TSD :
                             $SIZE_TSD_MOY >> {log}.out 2>> {log}.err;
                     fi;
                         
-                    sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+                    ###sh ${{path_to_pipline}}/lib/bash/end_load.sh;
                 fi;
                 
                 TOTAL=`grep "^OK/total" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 2`
