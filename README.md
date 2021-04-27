@@ -97,10 +97,10 @@ The *def* file provided can be compiled as such:
 sudo singularity build TrEMOLO.simg TrEMOLO/Singularity
 ```
 
-after downloading the data
+#### Test
 
 ```
-singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile data_test_TrEMOLO/config.yml
+singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
 ```
 
 **YOU MUST BE ROOT for compiling**
@@ -181,6 +181,12 @@ The main parameters are:
 
 ```
 snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path/to/your_config.yaml
+```
+
+## Test
+
+```
+snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
 ```
 
 
