@@ -131,8 +131,8 @@ graph
 
 ```{bash FREQB, eval=TRUE, include=TRUE, results=TRUE}
 
-(test -s ../../OUTSIDER/FREQ_AFTER/DEPTH_TE.csv && \
-  python3 ../lib/freq_graph.py ../../OUTSIDER/FREQ_AFTER/DEPTH_TE.csv FREQ_TE.csv) || \
+(test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
+  python3 ../lib/freq_graph.py ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv FREQ_TE.csv) || \
   (test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
   python3 ../lib/freq_graph.py ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv FREQ_TE.csv)
 
@@ -173,7 +173,6 @@ p
 
 TSD [OK] : these are the TE with TSD
 
-
 TSD [KO] : these are the TE without TSD
 
 
@@ -203,7 +202,7 @@ p
 
 <iframe src="lib/template_TSD.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 
-hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20
+Hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20
 
 <!-- <iframe src="lib/template_TSD_ALL_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe> -->
 

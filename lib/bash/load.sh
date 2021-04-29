@@ -1,7 +1,7 @@
-trap "echo END --; exit 1" SIGTERM SIGINT SIGKILL
+trap 'printf "\b%.0s" `seq 1 46` >&2; echo -e "\nEND LOAD\n" >&2; exit 1' SIGTERM SIGINT
 sleep 1
 #printf "LOADING..."
-chain="...................................";
+chain="...................................                            \b\b\b\b\b\b\b\b\b\b ";
 while [ 0 ]; do
     array_load=( 'LOADING----' 'LOADING.---' 'LOADING..--' 'LOADING...-' 'LOADING....' )
     for show_load in ${array_load[@]}; do
@@ -12,18 +12,14 @@ while [ 0 ]; do
         #printf "\033[%d;%dH\b" "1" "1";
         
         if [ `echo $chain | grep -o ".$"` = ">" ]; then
-            chain=`echo $chain | sed '0,/>/s//./'`
+            chain=`echo -e $chain | sed '0,/>/s//./'`
         else
-            chain=`echo $chain | sed '0,/\./s//>/'`
+            chain=`echo -e $chain | sed '0,/\./s//>/'`
         fi
         
 
         #printf "\b%.0s" `seq 1 $number_of_char`
-        printf "%s" "$show_load $chain";
-        printf "\033[A";
-        printf "\033[A";
-        printf "\033[A";
-        printf "\033[A";
+        printf "%s" "$show_load $chain" ;
         number_of_char=`echo "$show_load" | wc -c`
         number_of_char=$(($number_of_char-1));
         printf "\033[u";
@@ -35,7 +31,7 @@ while [ 0 ]; do
         # printf "\033[u";
 
     done;
-done;
+done >&2;
 
 
 

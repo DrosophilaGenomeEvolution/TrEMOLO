@@ -134,14 +134,27 @@ if version_vcf != "VCFv4.3" and version_vcf != "VCFv4.2" and version_vcf != "VCF
 
 
 contig_vcf = []
+contigs_vcf_org = []
 while line and line[:2] == "##":
     #line.split("=")[2].split(",")[1] == chrom
-    if "contig=" in line and regex_in_list(line.split("=")[2].split(",")[0], chrom_list):
-        contig_vcf.append(line.split("=")[2].split(",")[0])
+    if "contig=" in line:
+        contig = line.split("=")[2].split(",")[0]
+        contigs_vcf_org.append(contig)
+
+        if regex_in_list(contig, chrom_list):
+            contig_vcf.append(contig)
         
     line = file.readline()
 
+
 print("[" + str(sys.argv[0]) + "] : contig keeping = " + str(contig_vcf))
+if len(contig_vcf) == 0:
+    print("[" + str(sys.argv[0]) + "] : ERROR your regex chrom d'osnt match with any chromosome in your vcf file")
+    print("[" + str(sys.argv[0]) + "] : ERROR please change your regex (-c option) > regex=" + str(args.chrom) + " :: list=" + str(chrom_list))
+    print("[" + str(sys.argv[0]) + "] : ERROR your regex must match on " + str(contigs_vcf_org))
+    exit(2)
+
+
 count = 0
 if version_vcf == "VCFv4.3":
     

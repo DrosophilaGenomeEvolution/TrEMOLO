@@ -1433,9 +1433,9 @@ rule extract_read :
             number_of_char=$(($number_of_char-1));
             printf "\b%.0s" `seq 1 $number_of_char`
             printf "$show_step";
-        done;
+        done; 
 
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] EXTRACT DONE ! {params.cend}"
+        printf "\\n%s\\n" "{params.cmess} [SNK]--[`date`] EXTRACT DONE ! {params.cend}"
 
         NB_REGION=`ls {params.work_directory}/OUTSIDER/ID_READS_TE | wc -l`;
         NB_READS=`ls {params.work_directory}/OUTSIDER/READ_FASTQ_TE | wc -l`;
@@ -1478,7 +1478,7 @@ rule FREQUENCE :
 
     output:
         output_link=[],
-        depth_te  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQ_AFTER/DEPTH_TE.csv",
+        depth_te  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv",
         
         
     params:
@@ -1508,7 +1508,7 @@ rule FREQUENCE :
         path_to_pipline=`dirname {params.path_snk}`
 
         #mkdir -p {params.work_directory}/FREQ_BEFORE
-        mkdir -p {params.work_directory}/OUTSIDER/FREQ_AFTER
+        mkdir -p {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
 
 
         samtools index {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam 
@@ -1534,31 +1534,31 @@ rule FREQUENCE :
 
 
         # awk 'OFS="\t"{{split($2, a, ":"); print a[1], a[3], $5}}' {params.work_directory}/FREQ_BEFORE/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv \
-        # > TE_POSITION_SIZE.txt
+        # | sort -k 1 > TE_POSITION_SIZE.txt
 
         ## Warning TODO BEFORE
         awk 'OFS="\t"{{split($2, a, ":"); print a[1], a[3], $5}}' {input.all_te} \
-        > {params.work_directory}/OUTSIDER/FREQ_AFTER/TE_POSITION_SIZE.txt
+        | sort -k 1 > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
 
 
-        ${{path_to_pipline}}/lib/bash/awk_not_cliping.sh {params.work_directory}/OUTSIDER/FREQ_AFTER/TE_POSITION_SIZE.txt \
+        ${{path_to_pipline}}/lib/bash/awk_not_cliping.sh {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt \
         {params.work_directory}/MAPPING_POSTION_TE.sam \
-        {params.work_directory}/OUTSIDER/FREQ_AFTER/tmp_MAPPING_POSTION_TE.sam
+        {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sam
 
 
-        samtools sort {params.work_directory}/OUTSIDER/FREQ_AFTER/tmp_MAPPING_POSTION_TE.sam > {params.work_directory}/OUTSIDER/FREQ_AFTER/tmp_MAPPING_POSTION_TE.sorted.bam
-        samtools index {params.work_directory}/OUTSIDER/FREQ_AFTER/tmp_MAPPING_POSTION_TE.sorted.bam
-        samtools calmd {params.work_directory}/OUTSIDER/FREQ_AFTER/tmp_MAPPING_POSTION_TE.sorted.bam {input.genome} > {params.work_directory}/OUTSIDER/FREQ_AFTER/tmp_MAPPING_POSTION_TE_MD.sorted.bam 2> {log}.err
-        samtools view -b -h {params.work_directory}/OUTSIDER/FREQ_AFTER/tmp_MAPPING_POSTION_TE_MD.sorted.bam > {params.work_directory}/OUTSIDER/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam
-        samtools index {params.work_directory}/OUTSIDER/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam
+        samtools sort {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sam > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam
+        samtools index {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam
+        samtools calmd {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam {input.genome} > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE_MD.sorted.bam 2> {log}.err
+        samtools view -b -h {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE_MD.sorted.bam > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam
+        samtools index {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam
 
         # VARIANT CALLING 
         if [ {params.call_sv} = "svim" ]; then
             
             svim alignment --read_names \
                 --insertion_sequences \
-                --minimum_depth 1 {params.work_directory}/OUTSIDER/FREQ_AFTER \
-                {params.work_directory}/OUTSIDER/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam \
+                --minimum_depth 1 {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED \
+                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam \
                 {input.genome} 2> svim.log
         else
             version=`sniffles -h 2>&1 | grep Version | cut -d " " -f 2`
@@ -1567,40 +1567,44 @@ rule FREQUENCE :
             if [ "$version" = "1.0.10" ]; then
 
                 (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
-                run_cmd "sniffles --report_seq -s 1 -m {params.work_directory}/OUTSIDER/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/OUTSIDER/FREQ_AFTER/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.10" "False";
+                run_cmd "sniffles --report_seq -s 1 -m {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.10" "False";
                 sh ${{path_to_pipline}}/lib/bash/end_load.sh;
 
             elif [ "$version" = "1.0.12" ]; then
 
                 (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
-                run_cmd "sniffles --report-seq -s 1 -m {params.work_directory}/OUTSIDER/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/OUTSIDER/FREQ_AFTER/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.12" "False";
+                run_cmd "sniffles --report-seq -s 1 -m {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.12" "False";
                 sh ${{path_to_pipline}}/lib/bash/end_load.sh;
             fi;
-
         fi;
 
 
-        python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py {params.work_directory}/OUTSIDER/FREQ_AFTER/variants.vcf \
-        {params.work_directory}/OUTSIDER/FREQ_AFTER/variants.fasta
+        python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.vcf \
+        {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.fasta
+
 
         makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log}.err;
+
+
+        (test -s {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.fasta && \
         blastn -db {input.fasta_TE} \
-        -query {params.work_directory}/OUTSIDER/FREQ_AFTER/variants.fasta \
+        -query {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.fasta \
         -outfmt 6 \
-        -out {params.work_directory}/OUTSIDER/FREQ_AFTER/variants.bln 2>> {log}.err;
+        -out {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.bln 2>> {log}.err) || (echo "ERROR NOT TE FOUND TO MAKE FREQUENCE" && exit 1)
 
 
+        test -s {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.bln && \
         python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py \
-            {params.work_directory}/OUTSIDER/FREQ_AFTER/variants.bln \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.bln \
             {input.fasta_TE} \
-            {params.work_directory}/OUTSIDER/FREQ_AFTER/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv -c {params.pars_bln_option}
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv -c {params.pars_bln_option}
 
         i=0;
         while read line; do
             
             if [ $i -ne 0 ]; then
                 region=`echo $line | awk '{{print $2}}' | awk -F ":" '{{print $1":"$3"-"$3}}'`
-                depth=`samtools depth {params.work_directory}/OUTSIDER/FREQ_AFTER/MAPPING_POSTION_TE_MD.sorted.bam -r $region`;
+                depth=`samtools depth {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -r $region`;
                 NB_depth=`echo $depth | awk '{{print $3}}'`
 
                 TE=`echo $line | awk '{{print $1}}'`
@@ -1620,13 +1624,13 @@ rule FREQUENCE :
             
             i=$(($i+1));
 
-        done < {params.work_directory}/OUTSIDER/FREQ_AFTER/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv;
+        done < {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv;
 
         ##
         rm -f {params.work_directory}/MAPPING_POSTION_TE.sam
-        rm -f {params.work_directory}/OUTSIDER/FREQ_AFTER/tmp*
-        rm -f {params.work_directory}/OUTSIDER/FREQ_AFTER/TE_POSITION_SIZE.txt
-        #rm -fr {params.work_directory}/OUTSIDER/FREQ_AFTER
+        rm -f {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp*
+        rm -f {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
+        #rm -fr {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
 
         """
 
@@ -1881,7 +1885,9 @@ rule DETECTION_TE :
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/
 
+
         #** GET SEQUENCE REPORT **#
+        echo "   GET SEQUENCE REPORT..."
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCE VARIANT [^-^] {params.cend}"
         python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py -m 150 {input.vcf} {output.snif_seqs} -c {params.CHROM_KEEP} ;
         test -s {output.snif_seqs} || (message_fail "ERROR NO SEQUENCE SV FOUND" && exit 1)
@@ -1891,6 +1897,7 @@ rule DETECTION_TE :
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] BLAST SV TO TE [^-^] {params.cend}"
         
         #** BLAST SEQUENCE VCF on DATABASE TE **#
+        echo "   BLAST SEQUENCE SV on DATABASE TE..."
         makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.blastn}.err;
         blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} 2>> {log.blastn}.err;
         
@@ -1902,6 +1909,7 @@ rule DETECTION_TE :
         
         
         #** FILTER TE BLAST **#
+        echo "   FILTER TE BLAST..."
         python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} \
         {input.fasta_TE} {output.all_te} -c \
         --combine_name {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv {params.pars_bln_option};
@@ -1912,6 +1920,7 @@ rule DETECTION_TE :
         
         
         #** CALCUL FREQUENCE **#
+        echo "   CALCUL FREQUENCE..."
         number_lines=`cat {output.all_te} | wc -l`
         i=0;
 
@@ -1958,6 +1967,7 @@ rule DETECTION_TE :
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET BAM TE [^-^] {params.cend}"
         
         #** GET BAM TE **#
+        echo "   GET BAM TE..."
         awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -v size="15" -F ":" 'OFS="\t"{{print $1, $3-size, $3+size, $5":"$9}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/tmp_POSITION_START_TE.bed
         samtools view -h -b {input.bam} -L {params.work_directory}/OUTSIDER/TE_DETECTION/tmp_POSITION_START_TE.bed > {output.bam}
 
@@ -2302,6 +2312,7 @@ rule TE_INSIDER:
                         {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.csv 2>> {log}.err 1>> {log}.out;
 
                 echo "   Count TE..."
+                test -s {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.csv && \
                 awk 'NR>1{{print $1}}' {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.csv | sort | uniq -c | sort -k 1 -n | \
                     awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv
 

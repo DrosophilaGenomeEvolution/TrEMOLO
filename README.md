@@ -47,6 +47,21 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
   - [Assemblytics](http://assemblytics.com/) or
   - [RaGOO](https://github.com/malonge/RaGOO)
 - For Populational variation tool
+  - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
+  - [Minimap2](https://github.com/lh3/minimap2) 2.16+
+  - [Samtools](http://www.htslib.org/) 1.9+
+  - [Sniffles 1.0.12](https://github.com/fritzsedlazeck/Sniffles)
+  - [Flye 2.8+ - optional](https://github.com/fenderglass/Flye)
+  - [WTDGB2 - optional](https://github.com/ruanjue/wtdbg2)
+  - pandoc-citeproc 0.17
+  - Python libs
+    - [Biopython](https://biopython.org/)
+    - [Pandas](https://pandas.pydata.org/)
+    - [Numpy](https://numpy.org/)
+    - [pylab](https://matplotlib.org/)
+    - [intervaltree](https://pypi.org/project/intervaltree/)
+  - Perl v5.26.2+
+- For report
   - R 3.3+ libs
     - [ggplot2](https://ggplot2.tidyverse.org/)
     - [RColorBrewer](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)
@@ -62,20 +77,6 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
     - viridis
     - bookdown
     - knitr
-  - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
-  - [Minimap2](https://github.com/lh3/minimap2) 2.16+
-  - [Samtools](http://www.htslib.org/) 1.9+
-  - [Sniffles 1.0.12](https://github.com/fritzsedlazeck/Sniffles)
-  - [Flye 2.8+ - optional](https://github.com/fenderglass/Flye)
-  - [WTDGB2 - optional](https://github.com/ruanjue/wtdbg2)
-  - pandoc-citeproc 0.17
-  - Python libs
-    - [Biopython](https://biopython.org/)
-    - [Pandas](https://pandas.pydata.org/)
-    - [Numpy](https://numpy.org/)
-    - [pylab](https://matplotlib.org/)
-    - [intervaltree](https://pypi.org/project/intervaltree/)
-  - Perl v5.26.2+
 
 # Installation<a name="Installation"></a>
 

@@ -75,7 +75,7 @@ onsuccess:
     print("DONE NO ERROR DETECTED\n")
 
 onerror:
-    print("An error occurred")
-    shell("kill -s 9 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'`")
+    print("AN ERROR OCCURRED")
+    shell("kill -s 2 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log && rm -f tmp.log")
 
 
