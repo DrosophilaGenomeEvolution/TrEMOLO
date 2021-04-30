@@ -94,6 +94,10 @@ onsuccess:
      print("WORKFLOW FINISHED, NO ERROR DETECTED. ✔")
      shell("rm -fr tmp_snk/;")
 
+onerror:
+    print("AN ERROR OCCURRED")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log && rm -f tmp.log")
+
 
 #Map reads on assembly genome
 rule create_snake_file :
@@ -222,7 +226,7 @@ rule create_snake_file :
             if [ {params.OPTIMIZE_FREQUENCE} = True ]; then
                 printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE " > instruction.txt
                 
-                if [ {params.choice_insider_sv} = "True" ]; then
+                if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
                     printf "> FREQ_GLOBAL > FREQUENCE " >> instruction.txt
                 else
                     printf "> FREQUENCE:NI " >> instruction.txt
@@ -287,7 +291,7 @@ rule create_snake_file :
             
             if [ $? -eq 0 ]; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} | tee {params.work_directory}/log/Snakefile_outsider.log \
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} | tee -i --output-error {params.work_directory}/log/Snakefile_outsider.log \
                     || (message_fail "\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\n\n" && \
                     echo "snake log file : {params.work_directory}/log/Snakefile_outsider.log" && rm -f ${{path_to_pipline}}/Snakefile*)
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_outsider.log

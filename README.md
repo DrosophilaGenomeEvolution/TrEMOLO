@@ -8,6 +8,7 @@
 - [Introduction](#introduction)
     - [Global variations](#in)
     - [Populational variations](#out)
+- [Release note](#release)
 - [Requirements](#requirements)
 - [Installation](#installation)
     - [Using Git](#git)
@@ -34,6 +35,9 @@ You will obtain a [set of files](#output) with the location of these variable in
 
 Through remapping of reads that have been used to assemble the genome of interest, TrEMOLO will identify the populational variations (or even somatic ones) within the initial dataset of reads, and thus of DNA/individuals sampled. These variant TEs are the **outsiders**, present only in a subpart of the population.
 In the same way as for insiders, you will obtain a [set of files](#output) with the location of these variable insertions.
+
+
+# Release notes<a name="release"></a>
 
 # Requirements<a name="requirements"></a>
 

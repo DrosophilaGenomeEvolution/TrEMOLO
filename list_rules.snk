@@ -148,8 +148,9 @@ rule REPORT:
         
         #COUNT TE INSIDER
         if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed; then
-            test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && \
+            #test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && \
             ###awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed > {params.work_directory}/POSITION_TE_INSIDER.bed
+            
             cat {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed > {params.work_directory}/POSITION_TE_INSIDER.bed
 
 
@@ -477,11 +478,11 @@ rule TSD :
 
             e=0;
 
-            show_step="$e/$NB_TE : TSD TE ASSEMBLED "
-            number_of_char=`echo "$show_step" | wc -c`
-            number_of_char=$(($number_of_char-1));
-            printf "\b%.0s" `seq 1 $number_of_char`
-            printf "$show_step";
+            # show_step="$e/$NB_TE : TSD TE ASSEMBLED "
+            # number_of_char=`echo "$show_step" | wc -c`
+            # number_of_char=$(($number_of_char-1));
+            # printf "\b%.0s" `seq 1 $number_of_char`
+            # printf "$show_step";
 
             for TE in `cat TE_name.txt`; do
                 #echo "$TE"
@@ -515,12 +516,12 @@ rule TSD :
                 rm -f TE.fasta FLANK.fasta ;
 
                 e=$(($e+1));
-
-                show_step="$e/$NB_TE : TSD TE ASSEMBLED "
-                number_of_char=`echo "$show_step" | wc -c`
-                number_of_char=$(($number_of_char-1));
-                printf "\b%.0s" `seq 1 $number_of_char`
-                printf "$show_step";
+                echo "$e/$NB_TE : TSD TE ASSEMBLED "
+                # show_step="$e/$NB_TE : TSD TE ASSEMBLED "
+                # number_of_char=`echo "$show_step" | wc -c`
+                # number_of_char=$(($number_of_char-1));
+                # printf "\b%.0s" `seq 1 $number_of_char`
+                # printf "$show_step";
 
                 
                 TOTAL=`grep "^OK/total" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 2`
@@ -1864,6 +1865,7 @@ rule DETECTION_TE :
 
         env            = env, #source environnement
 
+        call_sv         = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         CHROM_KEEP      = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
         pars_bln_option = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
 
@@ -1973,8 +1975,11 @@ rule DETECTION_TE :
 
         rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/tmp_POSITION_START_TE.bed
         
-
-        awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -F ":" 'OFS="\t"{{print $1, $3, $3+1, $5":"$9, $8}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed
+        if [ {params.call_sv} = "sniffles" ]; then
+            awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -F ":" 'OFS="\t"{{print $1, $3, $3+1, $5":"$9, $8}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed
+        elif [ {params.call_sv} = "svim" ]; then
+            awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -F ":" 'OFS="\t"{{print $1, $3, $3+1, $5":"$10, $9}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed
+        fi;
 
 
         #** REMOVE **#
@@ -2317,12 +2322,16 @@ rule TE_INSIDER:
                     awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv
 
                 echo
+                test -s {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv && \
                 tail {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv | awk -F "\t" 'OFS="\t"{{if(NR!=1){{print $2, $3}}else{{print "TE\tNUMBER"}}}}'
                 echo -e "......\n"
             fi;
         done;
 
-        awk 'NR>1 && OFS="\t"{{ split($2,   a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1], a[7]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {output.bed} #{params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed 
+        test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv && \
+           awk 'NR>1 && OFS="\t"{{ split($2,   a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1], a[7]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {output.bed} #{params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed 
+
+        test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv || message_fail "  WARNING NO TE INSERTION FOUND\n";
 
         cd {params.work_directory}/INSIDER/TE_DETECTION/
         

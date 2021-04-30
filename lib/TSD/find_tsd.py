@@ -97,9 +97,12 @@ TE               = seq_lines[1].strip()
 
 def rev_comp(seq):
     seq_out = ""
-    comp = {"A":"T", "T":"A", "G":"C", "C":"G"}
+    comp = {"A":"T", "T":"A", "G":"C", "C":"G", "N":"N"}
     for i, v in enumerate(seq[::-1]) :
-        seq_out += comp[v]
+        if v in comp:
+            seq_out += comp[v]
+        else:
+            seq_out += comp["N"]
 
     return seq_out
 

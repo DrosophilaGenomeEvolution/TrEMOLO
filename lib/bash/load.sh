@@ -1,7 +1,7 @@
 trap 'printf "\b%.0s" `seq 1 46` >&2; echo -e "\nEND LOAD\n" >&2; exit 1' SIGTERM SIGINT
 sleep 1
 #printf "LOADING..."
-chain="...................................                            \b\b\b\b\b\b\b\b\b\b ";
+chain="...................................      ";
 while [ 0 ]; do
     array_load=( 'LOADING----' 'LOADING.---' 'LOADING..--' 'LOADING...-' 'LOADING....' )
     for show_load in ${array_load[@]}; do
@@ -11,10 +11,10 @@ while [ 0 ]; do
         printf "\033[s"
         #printf "\033[%d;%dH\b" "1" "1";
         
-        if [ `echo $chain | grep -o ".$"` = ">" ]; then
-            chain=`echo -e $chain | sed '0,/>/s//./'`
+        if [ `echo $chain | grep -e "[.>]*" -o | grep -o ".$"` = ">" ]; then
+            chain=`echo -e "$chain" | sed '0,/>/s//./'`
         else
-            chain=`echo -e $chain | sed '0,/\./s//>/'`
+            chain=`echo -e "$chain" | sed '0,/\./s//>/'`
         fi
         
 
@@ -24,6 +24,7 @@ while [ 0 ]; do
         number_of_char=$(($number_of_char-1));
         printf "\033[u";
         sleep 0.2
+        #sed '/\x8/d' <&2;
         # printf "\033[s"
         # printf "\033[%d;%dH\b" "1" "1";
         # printf "\b%.0s" `seq 1 $number_of_char`
