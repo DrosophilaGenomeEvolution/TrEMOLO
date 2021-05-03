@@ -70,17 +70,17 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
     - [ggplot2](https://ggplot2.tidyverse.org/)
     - [RColorBrewer](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)
     - [extrafont](https://cran.r-project.org/web/packages/extrafont/README.html)
-    - rmarkdown
-    - kableExtra
-    - dplyr
-    - reshape2
-    - forcats
-    - ggthemes
-    - rjson
-    - viridisLite
-    - viridis
-    - bookdown
-    - knitr
+    - [rmarkdown](https://rmarkdown.rstudio.com/)
+    - [kableExtra](https://bookdown.org/yihui/rmarkdown-cookbook/kableextra.html)
+    - [dplyr](https://www.r-project.org/nosvn/pandoc/dplyr.html)
+    - [reshape2](https://www.r-project.org/nosvn/pandoc/dplyr.html)
+    - [forcats](https://rdrr.io/cran/forcats/)
+    - [ggthemes](https://github.com/jrnold/ggthemes)
+    - [rjson](https://rdrr.io/cran/rjson/)
+    - [viridisLite](https://github.com/sjmgarnier/viridisLite)
+    - [viridis](https://www.rdocumentation.org/packages/viridis/versions/0.3.4)
+    - [bookdown](https://bookdown.org/yihui/bookdown/get-started.html)
+    - [knitr](https://www.r-project.org/nosvn/pandoc/knitr.html)
 
 # Installation<a name="Installation"></a>
 
@@ -102,7 +102,7 @@ The *def* file provided can be compiled as such:
 sudo singularity build TrEMOLO.simg TrEMOLO/Singularity
 ```
 
-#### Test
+Test TrEMOLO with singularity
 
 ```
 singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
@@ -232,12 +232,10 @@ WORK_DIRECTORY
 │   │   ├── INSERTION_TE.bed
 │   │   └── TSD
 │   │       ├── TSD_TE_NAME.txt
-│   │       ├── TSD_17.6.txt
 │   │       ├── TSD_blood.txt
 │   │       ├── TSD_Idefix.txt
-│   │       ├── TSD_roo.txt
-│   │       ├── TSD_rover.txt
 │   │       └── TSD_ZAM.txt
+...
 │   ├── TE_INSIDER_VR
 │   │   ├── DELETION.bed
 │   │   ├── DELETION.bln
@@ -283,31 +281,14 @@ WORK_DIRECTORY
 │   └── TSD.out
 ├── OUTSIDER
 │   ├── ET_FIND_FA
-│   │   ├── TE_REPORT_FOUND_17.6.fasta
-│   │   ├── TE_REPORT_FOUND_297.fasta
-│   │   ├── TE_REPORT_FOUND_3S18.fasta
-│   │   ├── TE_REPORT_FOUND_412.fasta
+│   │   ├── TE_REPORT_FOUND_TE_NAME.fasta
 │   │   ├── TE_REPORT_FOUND_blood.fasta
-│   │   ├── TE_REPORT_FOUND_Burdock.fasta
-│   │   ├── TE_REPORT_FOUND_copia.fasta
-│   │   ├── TE_REPORT_FOUND_gtwin.fasta
 │   │   └── TE_REPORT_FOUND_ZAM.fasta
 ...
-│   ├── FASTA_FIND
-│   │   ├── reads_2L_RaGOO_RaGOO:100:1621121-1621132.fasta
-│   │   ├── reads_2L_RaGOO_RaGOO:122:1727638-1727638.fasta
-
 │   ├── FIND_TE_ON_REF
 │   ├── FREQ_AFTER
 │   │   └── DEPTH_TE.csv
 │   ├── ID_BEST_READ_TE.txt
-│   ├── ID_READS_TE
-│   │   ├── reads_2L_RaGOO_RaGOO:100:1621121-1621132.txt
-│   │   ├── reads_2L_RaGOO_RaGOO:122:1727638-1727638.txt
-│   │   ├── reads_2L_RaGOO_RaGOO:145:2570185-2570185.txt
-│   │   ├── reads_2L_RaGOO_RaGOO:166:4083207-4083207.txt
-│   │   ├── reads_2L_RaGOO_RaGOO:167:4091408-4091408.txt
-
 │   ├── INSIDER_VR
 │   │   ├── assemblytics_out.Assemblytics_assembly_stats.txt
 │   │   ├── assemblytics_out.Assemblytics_structural_variants.bed
@@ -326,12 +307,10 @@ WORK_DIRECTORY
 │   ├── MAPPING_TO_REF
 │   │   └── INSERTION_TE.bed
 │   ├── READ_FASTQ_TE
+│   │   ├── reads_chrom:ID_SV:start-end.fastq
 │   │   ├── reads_2L_RaGOO_RaGOO:100:1621121-1621132.fastq
 │   │   ├── reads_2L_RaGOO_RaGOO:122:1727638-1727638.fastq
-│   │   ├── reads_2L_RaGOO_RaGOO:145:2570185-2570185.fastq
-│   │   ├── reads_2L_RaGOO_RaGOO:166:4083207-4083207.fastq
-│   │   ├── reads_2L_RaGOO_RaGOO:167:4091408-4091408.fastq
-
+...
 │   ├── TE_DETECTION
 │   │   ├── BLAST_SEQUENCE_INDEL_vs_DBTE.bln
 │   │   ├── COMBINE_TE.csv
@@ -345,14 +324,6 @@ WORK_DIRECTORY
 │   │       ├── TSD_17.6_TSD_OK.txt
 │   │       ├── TSD_17.6_TSM_OK.txt
 │   │       ├── TSD_17.6.txt
-│   │       ├── TSD_297.txt
-│   │       ├── TSD_3S18.txt
-│   │       ├── TSD_412_KO_corrected.txt
-│   │       ├── TSD_412_KO.txt
-│   │       ├── TSD_412_OK.txt
-│   │       ├── TSD_412_TSD_OK.txt
-│   │       ├── TSD_412_TSM_OK.txt
-│   │       ├── TSD_412.txt
 │   │       ├── TSD_blood_KO_corrected.txt
 │   │       ├── TSD_blood_KO.txt
 │   │       ├── TSD_blood_OK.txt
@@ -361,14 +332,11 @@ WORK_DIRECTORY
 ...
 │   ├── TE_TOWARD_GENOME
 │   │   ├── genome.out.fasta       #pseudo genome
-│   │   ├── genome.out.fasta.fai
 │   │   ├── TRUE_POSITION_TE.bed   #nouvelle emplacement des TE intégré
 │   │   └── TRUE_POSITION_TE.fasta #sequence des TE intégré
 │   └── VARIANT_CALLING
 │       ├── SEQUENCE_INDEL.fasta
-│       ├── SEQUENCE_INDEL.fasta.fai
 │       └── SV.vcf
-├── params.log
 ├── params.yaml
 ├── POSITION_TE_INSIDER.bed
 ├── POSITION_TE_OUTSIDER.bed
@@ -402,7 +370,7 @@ Some csv files (**INSERTION.csv**, **FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv**) 
 | ZAM | 2R:\<INS\>:12136769:12145149:33748:4:IMPRECISE:- | 95.494 | 99.0 | 8347 | 123 | 178 | 5 | 8352 | 8435 | 1 | 0.0 | 13369.0 |
 | blood | 3R:\<INS\>:22519173:22526514:100924:1:PRECISE:+ | 94.259 | 99.0 | 7338 | 164 | 189 | 3 | 7341 | 7410 |  1 | 0.0 | 11230.0 |
 
-##### Description of the header of .csv files (similar to blast format 6) :
+## Description of the header of .csv files (similar to blast format 6) :
 
  1.    `qseqid` : query (e.g., gene) sequence id
  2.    `sseqid` : subject (e.g., reference genome) sequence id

@@ -119,8 +119,7 @@ output           = args.output_file.name
 name_out         = output.split("/")[-1].split(".")[0]
 dir_out          = "/".join(output.split("/")[:-1])
 
-print("------------------------")
-print("PREFIX OUTPUT :", name_out)
+print("[" + str(sys.argv[0]) + "] : PREFIX OUTPUT :", name_out)
 
 
 if dir_out != "":
@@ -142,11 +141,9 @@ if args.db_file_te != None:
 
     file.close()
 
-else :#default dm6 canonnical TE
-    #size_et = {'Idefix': 7411, '17.6': 7439, '1731': 4648, '297': 6995, '3S18': 6126, '412': 7567, 'aurora-element': 4263, 'Burdock': 6411, 'copia': 5143, 'gypsy': 7469, 'mdg1': 7480, 'mdg3': 5519, 'micropia': 5461, 'springer': 7546, 'Tirant': 8526, 'flea': 5034, 'opus': 7521, 'roo': 9092, 'blood': 7410, 'ZAM': 8435, 'GATE': 8507, 'Transpac': 5249, 'Circe': 7450, 'Quasimodo': 7387, 'HMS-Beagle': 7062, 'diver': 6112, 'Tabor': 7345, 'Stalker': 7256, 'gtwin': 7411, 'gypsy2': 6841, 'accord': 7404, 'gypsy3': 6973, 'invader1': 4032, 'invader2': 5124, 'invader3': 5484, 'gypsy4': 6852, 'invader4': 3105, 'gypsy5': 7369, 'gypsy6': 7826, 'invader5': 4038, 'diver2': 4917, 'Dm88': 4558, 'frogger': 2483, 'rover': 7318, 'Tom1': 410, 'rooA': 7621, 'accord2': 7650, 'McClintock': 6450, 'Stalker4': 7359, 'Stalker2': 7672, 'Max-element': 8556, 'gypsy7': 5486, 'gypsy8': 4955, 'gypsy9': 5349, 'gypsy10': 6006, 'gypsy11': 4428, 'gypsy12': 10218, 'invader6': 4885, 'Helena': 1317, 'HMS-Beagle2': 7220, 'Osvaldo': 1543}
+else :
     print("[" + str(sys.argv[0]) + "] : ERROR fasta file Database TE Not Found")
     exit(1)
-    #print("SIZE TE DEFAULT", list(size_et.keys())[:5], "...")
 
 #GET BLAST OUTFMT 
 
@@ -156,19 +153,18 @@ df = pd.read_csv(name_file, "\t", header=None)
 df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
 
 #KEEP ONLY TE on the LIST (GET_SIZE CANNONICAL TE)
-##print("ok", df.shape)
 df = df[df["sseqid"].isin(size_et.keys())]
 #print(df[df["sseqid"].isin(size_et.keys())].to_dict())
 df.index = [int(i) for i in range(0, len(df.values))]
 #print(df.head())
-print("KEEP ONLY TE on DB, NUMBER :", len(df.values))
+print("[" + str(sys.argv[0]) + "] : KEEP ONLY TE on DB, NUMBER :", len(df.values))
 
 #IDENTITI
 #df = df[df["pident"] >= min_pident]
 
 #df = df[df["evalue"] == 0]
 
-print("FILTER BEST bitscore...")
+print("[" + str(sys.argv[0]) + "] : FILTER BEST bitscore...")
 #keep the TE with the highest score
 best_score_match = []
 best_score_match_index = []
@@ -223,12 +219,12 @@ for index, row in enumerate(df.values):
 #df = df.iloc[best_score_match_index]
 
 df_best = df.iloc[best_score_match_index]
-print("NUMBER BEST TE SCORE MATCH :", len(df_best.values))
+print("[" + str(sys.argv[0]) + "] : NUMBER BEST TE SCORE MATCH :", len(df_best.values))
 #df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
 
 if combine :
     
-    print("COMBINE BLAST TE...")
+    print("[" + str(sys.argv[0]) + "] : COMBINE BLAST TE...")
     #COMBINE
     dic_comb = {"qseqid": [], "sseqid": [], "grain_pident":[], "qstart": [], "qend": [], "sstart": [], "send": []}
     for i, v in enumerate(df_best.values) :
@@ -364,7 +360,7 @@ df = df[["sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapop
 #df = df[["sseqid", "qseqid", "size_per", "size_el", "qstart", "qend", "sstart", "send"]]
 
 
-print("NUMBER TE with minimum size percentage>=" + str(min_size_percent) + ", minimum percent identity>=" + str(min_pident)+" :", len(df.values))
+print("[" + str(sys.argv[0]) + "] : NUMBER TE with minimum size percentage>=" + str(min_size_percent) + ", minimum percent identity>=" + str(min_pident)+" :", len(df.values))
 df.to_csv(output, sep="\t", index=None)
 
 #*********** COUNT TE FOR GGPLOT *************
@@ -375,11 +371,11 @@ d = {'x': [" "] * len(df_count.iloc[:, 0].values), 'y': df_count.index, 'z': df_
 df_o = pd.DataFrame(data=d)
 df_o = df_o.sort_values(by="z")
 
-print("BUILD :", dir_out + name_out + "_COUNT.csv")
+print("[" + str(sys.argv[0]) + "] : BUILD :", dir_out + name_out + "_COUNT.csv")
 df_o.to_csv(dir_out + name_out + "_COUNT.csv", sep="\t", index=None)
 
-print("NUMBER TE TOTAL :", sum(df_o["z"].values))
-print("LIST of TE :")
+print("[" + str(sys.argv[0]) + "] : NUMBER TE TOTAL :", sum(df_o["z"].values))
+print("[" + str(sys.argv[0]) + "] : LIST of TE :")
 df_o.columns = ["x", "TE", "NB_TE"]
 print(df_o[["TE", "NB_TE"]])
 

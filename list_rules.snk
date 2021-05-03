@@ -583,11 +583,11 @@ rule TSD :
             mv {params.work_directory}/tmp.csv {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
         fi;
 
-        #rm -f {params.work_directory}/TE_REPORT_total_find.fasta;
         rm -f TSM_OK.txt;
         rm -fr {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/DIR_SEQ_TE_READ_POS
-        rm -f {params.work_directory}/OUTSIDER/FASTA_FIND/*.fasta.*
+        #rm -f {params.work_directory}/OUTSIDER/FASTA_FIND/*.fasta.*
         rm -fr DIR_SEQ_TE_READ_POS
+        rm -fr {params.work_directory}/OUTSIDER/FASTA_FIND
         #test -d DIR_SEQ_TE_READ_POS && \
         #test -d {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/ && \
         #mv DIR_SEQ_TE_READ_POS {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/ || echo
@@ -848,7 +848,6 @@ rule FIND_SV_ON_REF :
 
 rule TE_TOWARD_GENOME :
     input:
-        #config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_REPORT_total_find.fasta",
         input_link=[],
         fasta_TE     = config["DATA"]["TE_DB"],
         genome       = config["DATA"]["GENOME"],
@@ -993,8 +992,8 @@ rule TE_TOWARD_GENOME :
         
         rm -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/genome.out.fasta.fai #important to delet this
         rm -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/ID.txt;
-        rm -f {params.work_directory}/TE_REPORT_total_find.fasta
         rm -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_TE*
+        rm -f `find {params.work_directory} -name "*.fai"`
         """
 
 #END TE_TOWARD_GENOME
@@ -1011,7 +1010,6 @@ rule GET_SEQ_TE :
 
     output:
         directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/ET_FIND_FA/"),
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_REPORT_total_find.fasta",
         output_link=[],
 
     params:
@@ -1052,8 +1050,7 @@ rule GET_SEQ_TE :
         rm -f {params.work_directory}/.tmp*
         rm -f {params.work_directory}/OUTSIDER/ET_FIND_FA/*.bed ;
         rm -f {params.work_directory}/tmp*
-        cat {params.work_directory}/OUTSIDER/ET_FIND_FA/* > {params.work_directory}/TE_REPORT_total_find.fasta ;
-
+        rm -f `find {params.work_directory} -name "*.fai"`
         """
 
 
@@ -1417,10 +1414,10 @@ rule extract_read :
                  {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq) || echo "$id NOT FOUND" >> {log}.err ;
 
                 ## FORMAT FASTQ
-                test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq && \
-                python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
-                 {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq \
-                 {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq >> {log}.out 2>> {log}.err;
+                (test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq && \
+                    python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
+                         {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq \
+                         {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq >> {log}.out 2>> {log}.err) || ( message_fail "READ EXTRACT id=$id FAIL NOT FOUND \\n" && exit 1);
 
                 test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq || echo "[ERROR EXTRACT READ] $id" >> {log}.err
                 
@@ -1458,7 +1455,8 @@ rule extract_read :
         done;
 
         rm -f {params.work_directory}/ID_RD_SEQ.txt {params.work_directory}/ID_TE_SV_REPORT.txt
-
+        rm -f `find {params.work_directory} -name "*.fai"`
+        rm -fr {params.work_directory}/OUTSIDER/ID_READS_TE
         """
 
 
@@ -1555,12 +1553,12 @@ rule FREQUENCE :
 
         # VARIANT CALLING 
         if [ {params.call_sv} = "svim" ]; then
-            
+            echo "svim..." >> {log}.err
             svim alignment --read_names \
                 --insertion_sequences \
                 --minimum_depth 1 {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED \
                 {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam \
-                {input.genome} 2> svim.log
+                {input.genome} 2>> {log}.err
         else
             version=`sniffles -h 2>&1 | grep Version | cut -d " " -f 2`
 
@@ -1632,7 +1630,7 @@ rule FREQUENCE :
         rm -f {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp*
         rm -f {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
         #rm -fr {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
-
+        rm -f `find {params.work_directory} -name "*.fai"`
         """
 
 
@@ -1836,7 +1834,7 @@ rule FREQ_GLOBAL:
 
         rm -f {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp*
         rm -f {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE*
-
+        rm -f `find {params.work_directory} -name "*.fai"`
         """
 
 
@@ -1984,6 +1982,7 @@ rule DETECTION_TE :
 
         #** REMOVE **#
         #rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed;
+        rm -f `find {params.work_directory} -name "*.fai"`
         """
 
 
