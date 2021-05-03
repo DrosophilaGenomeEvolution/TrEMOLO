@@ -37,6 +37,9 @@ bedtools getfasta -fi $GENOME -bed empty_site_OK.bed -name+ > empty_site_OK.fast
 cat empty_site_OK.fasta empty_site_KO.fasta > all_empty_site.fasta
 
 rm -f all_empty_site* empty_site*
+rm -f *TSM*
+rm -f *TSD_OK.txt
+rm -f *KO.txt
 
 # echo
 # echo ${NAME_FILE}_TSM.txt;

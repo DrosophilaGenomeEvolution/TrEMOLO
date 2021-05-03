@@ -263,10 +263,8 @@ WORK_DIRECTORY
 │   ├── extract_read.out
 │   ├── FIND_TE_ON_REF.err
 │   ├── FIND_TE_ON_REF.out
-│   ├── FREQ_GLOBAL
 │   ├── FREQUENCE.err
 │   ├── FREQUENCE.out
-│   ├── minimap2
 │   ├── minimap2.err
 │   ├── pm_contigs_against_ref.sam.log
 │   ├── samtools.err
@@ -319,16 +317,10 @@ WORK_DIRECTORY
 │   │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv
 │   │   ├── POSITION_START_TE.bed
 │   │   └── TSD
-│   │       ├── TSD_17.6_KO.txt
-│   │       ├── TSD_17.6_OK.txt
-│   │       ├── TSD_17.6_TSD_OK.txt
-│   │       ├── TSD_17.6_TSM_OK.txt
 │   │       ├── TSD_17.6.txt
+│   │       ├── TSD_17.6_KO_corrected.txt
+│   │       ├── TSD_blood.txt
 │   │       ├── TSD_blood_KO_corrected.txt
-│   │       ├── TSD_blood_KO.txt
-│   │       ├── TSD_blood_OK.txt
-│   │       ├── TSD_blood_TSD_OK.txt
-│   │       ├── TSD_blood_TSM_OK.txt
 ...
 │   ├── TE_TOWARD_GENOME
 │   │   ├── genome.out.fasta       #pseudo genome
@@ -340,6 +332,7 @@ WORK_DIRECTORY
 ├── params.yaml
 ├── POSITION_TE_INSIDER.bed
 ├── POSITION_TE_OUTSIDER.bed
+├── POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed
 ├── REPORT
 │   ├── mini_report
 │   └── report.html
@@ -358,8 +351,9 @@ The most useful output files are :
 
 These BED files are tabulated ones:
 ````
-Chr Start   Stop    Information For TE 1
+Chr Start   Stop    TE_NAME|ID_SV   strand
 Chr Start   Stop    Information For TE 2
+Chr Start   Stop    Information For TE 3
 
 ````
 

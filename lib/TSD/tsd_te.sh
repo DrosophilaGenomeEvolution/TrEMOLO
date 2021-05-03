@@ -229,6 +229,3 @@ echo "K-O/total : $number_k_o/$number_total" >> total_results_tsd.txt
 echo "OK+K-O/total : $(($number_ok+$number_k_o))/$number_total" >> total_results_tsd.txt
 echo "OK% : $(($number_ok*100/$number_total))%" >> total_results_tsd.txt
 
-
-
-

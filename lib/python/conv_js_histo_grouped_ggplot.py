@@ -4,6 +4,7 @@ import sys
 import re
 import os
 from collections import OrderedDict
+import json
 
 
 name_input = sys.argv[1]
@@ -33,20 +34,20 @@ liste        = []
 for i, v in enumerate(df[["x", "y"]].values):
     TE     = v[0]
     value  = v[1]
-    dico   = {"group": TE}
-    #dico   = OrderedDict()
-    #dico["group"] = TE
+    #dico   = {"group": TE}
+    dico   = OrderedDict()
+    dico["group"] = TE
     df_tmp = df[df["x"] == TE]
     
     if TE not in already_work:
         df_tmp = df_tmp.sort_values(by=["condition"], ascending=True)
-        for e, w in enumerate(df_tmp.values):
+        for e, w in enumerate(df_tmp.values[::-1]):
             dico[df_tmp["condition"].values[e]] = str(df_tmp["y"].values[e])
 
         already_work.append(TE)
-        liste.append(dico)
+        liste.append(json.dumps(dico))
 
-print("var " + name_var + " = " + str(liste).replace("'", "\""))
+print("var " + name_var + " = " + str(liste).replace("'", ""))
 print(name_var + "[\"columns\"] = " + str(["group"] + list(df["condition"].unique())).replace("'", "\""))
 
 

@@ -486,7 +486,8 @@ rule TSD :
 
             for TE in `cat TE_name.txt`; do
                 #echo "$TE"
-                grep "^$TE\s" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | awk 'OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' > INS_$TE.bed
+                grep "^$TE\s" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | \
+                    awk 'OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' > INS_$TE.bed
                 rm -f total_results_tsd.txt
                 
                 for i in `cat INS_$TE.bed | tr "\t" ":"`; 
@@ -591,6 +592,7 @@ rule TSD :
         #test -d DIR_SEQ_TE_READ_POS && \
         #test -d {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/ && \
         #mv DIR_SEQ_TE_READ_POS {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/ || echo
+        rm -f `find {params.work_directory} -name "*.fai"`
 
         """
 
@@ -984,6 +986,8 @@ rule TE_TOWARD_GENOME :
         bedtools getfasta -fi {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/genome.out.fasta \
         -bed {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE.bed \
         -name+ > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE.fasta
+
+        cat {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE.bed | tr ":" "|" > {params.work_directory}/POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed
 
         TOTAL_TE=`awk 'NR>1' {input.all_te} | wc -l`
         NB_SEQ_FOUND=`grep -w -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE.fasta {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta -c`
