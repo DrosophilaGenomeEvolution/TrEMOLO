@@ -201,10 +201,7 @@ Here is the structure of the output files obtained after running the pipeline.
 
 ```
 WORK_DIRECTORY
-├── params.log
 ├── params.yaml
-├── POSITION_START_TE_INSIDER.bed
-├── POSITION_START_TE_OUTSIDER.bed
 ├── FREQ_AFTER
 │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv
 │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv
@@ -214,6 +211,7 @@ WORK_DIRECTORY
 │   ├── variants.fasta
 │   └── variants.vcf
 ├── INSIDER
+│   ├── instructions.txt
 │   ├── FREQ_GLOBAL
 │   │   └── DEPTH_TE_INSIDER.csv
 │   ├── TE_DETECTION
@@ -278,6 +276,7 @@ WORK_DIRECTORY
 │   ├── TSD.err
 │   └── TSD.out
 ├── OUTSIDER
+│   ├── instructions.txt
 │   ├── ET_FIND_FA
 │   │   ├── TE_REPORT_FOUND_TE_NAME.fasta
 │   │   ├── TE_REPORT_FOUND_blood.fasta

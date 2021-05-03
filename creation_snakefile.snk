@@ -205,7 +205,7 @@ rule create_snake_file :
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_insider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_insider.log
             fi;
-            mv instruction.txt {params.work_directory}/instructions.txt
+            mv instruction.txt {params.work_directory}/INSIDER/instructions.txt
         fi;
 
         
@@ -298,7 +298,7 @@ rule create_snake_file :
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_outsider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_outsider.log
             fi;
-            mv instruction.txt {params.work_directory}/instructions.txt
+            mv instruction.txt {params.work_directory}/OUTSIDER/instructions.txt
         fi;
 
 
