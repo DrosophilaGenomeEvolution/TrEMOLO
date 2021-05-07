@@ -188,7 +188,7 @@ The main parameters are:
 snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path/to/your_config.yaml
 ```
 
-## Test
+Start test
 
 ```
 snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
@@ -202,7 +202,7 @@ Here is the structure of the output files obtained after running the pipeline.
 ```
 WORK_DIRECTORY
 ├── params.yaml
-├── FREQ_AFTER
+├── FREQ_OPTIMIZED
 │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv
 │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv
 │   ├── MAPPING_POSTION_TE_MD.sorted.bam
@@ -322,7 +322,7 @@ WORK_DIRECTORY
 │   │       ├── TSD_blood_KO_corrected.txt
 ...
 │   ├── TE_TOWARD_GENOME
-│   │   ├── genome.out.fasta       #pseudo genome
+│   │   ├── pseudo_genome.fasta    #pseudo genome with TE OUTSIDER integrated
 │   │   ├── TRUE_POSITION_TE.bed   #nouvelle emplacement des TE intégré
 │   │   └── TRUE_POSITION_TE.fasta #sequence des TE intégré
 │   └── VARIANT_CALLING
@@ -350,11 +350,15 @@ The most useful output files are :
 
 These BED files are tabulated ones:
 ````
-Chr Start   Stop    TE_NAME|ID_SV   strand
-Chr Start   Stop    Information For TE 2
-Chr Start   Stop    Information For TE 3
+Chr   Start   Stop    TE_NAME|ID_SV   strand
+Chr   Start   Stop    Information For TE 2
+Chr   Start   Stop    Information For TE 3
 
 ````
+
+The **DEPTH_TE** files give some informations of fréquencie of TE.
+
+
 
 Some csv files (**INSERTION.csv**, **FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv**) have precise information on the identification of TE; for instance:
 
