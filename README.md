@@ -3,7 +3,7 @@
 [![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/5391)
 
 
-<img src="images/TrEMOLO9.png">
+<img src="images/TrEMOLO10.png">
 
 - [Introduction](#introduction)
     - [Global variations](#in)
@@ -128,7 +128,7 @@ DATA:
     REFERENCE:       "/path/to/reference_file.fasta"   #reference genome (fasta file) only if INSIDER_VARIANT = True [optional]
     SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq file) only if OUTSIDER_VARIANT = True [optional]
     #At least, provide either REFERENCE or SAMPLE. Both can be provided
-    WORK_DIRECTORY:  "/path/to/directory"         #name of output directory [optional, will be created as 'output']
+    WORK_DIRECTORY:  "/path/to/directory"         #name of output directory [optional, will be created as 'TrEMOLO_OUTPUT']
 
 
 CHOICE:
@@ -182,6 +182,10 @@ The main parameters are:
 - `SAMPLE` : File containing the reads used for the sample assembly.\
 
 
+You can take **config_INSIDER.yaml** for only **INSIDER** analysis or **config_OUTSIDER.yaml** for only **OUTSIDER** analysis.
+
+
+
 # Usage<a name="usage"></a>
 
 ```
@@ -202,6 +206,13 @@ Here is the structure of the output files obtained after running the pipeline.
 ```
 WORK_DIRECTORY
 ├── params.yaml
+├── POSITION_TE_INSIDER.bed
+├── POSITION_TE_OUTSIDER.bed
+├── POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed
+├── VALUES_TSD_ALL_GROUP.csv
+├── VALUES_TSD_GROUP_OUTSIDER.csv
+├── VALUES_TSD_INSIDER_GROUP.csv
+├── TE_INFO.csv
 ├── FREQ_OPTIMIZED
 │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv
 │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv
@@ -328,60 +339,42 @@ WORK_DIRECTORY
 │   └── VARIANT_CALLING
 │       ├── SEQUENCE_INDEL.fasta
 │       └── SV.vcf
-├── params.yaml
-├── POSITION_TE_INSIDER.bed
-├── POSITION_TE_OUTSIDER.bed
-├── POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed
 ├── REPORT
 │   ├── mini_report
 │   └── report.html
 ├── SNAKE_USED
 │   ├── Snakefile_insider.snk
-│   └── Snakefile_outsider.snk
-├── VALUES_TSD_ALL_GROUP.csv
-├── VALUES_TSD_GROUP_OUTSIDER.csv
-└── VALUES_TSD_INSIDER_GROUP.csv
+└── └── Snakefile_outsider.snk
 ```
+
+## Output files
 
 The most useful output files are :
 
 * The html report in **REPORT/report.html** with summary graphics
-* The TE position files, **POSITION_TE_INSIDER.bed** and **POSITION_TE_OUTSIDER.bed**
 
-These BED files are tabulated ones:
-````
-Chr   Start   Stop    TE_NAME|ID_SV   strand
-Chr   Start   Stop    Information For TE 2
-Chr   Start   Stop    Information For TE 3
+The output file **TE_INFO.csv** gathers all the necessary information.
 
-````
-
-The **DEPTH_TE** files give some informations of fréquencie of TE.
+|      chrom      |  start   | end      |   TE\|ID  |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ   | FREQ_OPTIMIZED | 
+| --------------- | -------- | -------- | --------- | --------- | -------- | ------- | ---------------- | ------- | -------------- |
+|  2R_RaGOO_RaGOO | 16943971 | 16943972 | 3S18|3105 |     +     |   NONE   | NONE    | DEFAULT:16943971 | 28.5714 |    28.5714     |
+|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM|7644  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     | 
 
 
-
-Some csv files (**INSERTION.csv**, **FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv**) have precise information on the identification of TE; for instance:
-
-| sseqid | qseqid | pident | size_per | size_el | mismatch | gapopen | qstart | qend | sstart | send | evalue | bitscore |
-| ------ | ------ | ------ | -------- | ------- | -------- | ------- | ------ | ---- | ------ | ---- | ------ | -------- |
-| ZAM | 2R:\<INS\>:12136769:12145149:33748:4:IMPRECISE:- | 95.494 | 99.0 | 8347 | 123 | 178 | 5 | 8352 | 8435 | 1 | 0.0 | 13369.0 |
-| blood | 3R:\<INS\>:22519173:22526514:100924:1:PRECISE:+ | 94.259 | 99.0 | 7338 | 164 | 189 | 3 | 7341 | 7410 |  1 | 0.0 | 11230.0 |
 
 ## Description of the header of .csv files (similar to blast format 6) :
 
- 1.    `qseqid` : query (e.g., gene) sequence id
- 2.    `sseqid` : subject (e.g., reference genome) sequence id
- 3.    `pident` : percentage of identical matches
- 4.    `size_per` :   percentage of size TE
- 5.    `size_el` :  size sequence TE aligned
- 6.    `mismatch` : number of mismatches
- 7.    `gapopen` :  number of gap openings
- 8.    `qstart` :  start of alignment in query
- 9.    `qend`  : end of alignment in query
- 10.   `sstart`   : start of alignment in subject
- 11.   `send`   : end of alignment in subject
- 12.   `evalue`   : expect value
- 13.   `bitscore`   : bit score
+ 1.    `chrom` : chromosome
+ 2.    `start` : start TE
+ 3.    `end` : end TE
+ 4.    `TE|ID` :   TE name and ID in **SV.vcf** (for OUTSIDER) or **assemblytics_out.Assemblytics_structural_variants.bed** (for INSIDER)
+ 5.    `strand` :  strand TE
+ 6.    `TSD` : TSD SEQUENCE 
+ 7.    `SIZE_TE` :  TE size calculate if you have TSD
+ 8.    `NEW_POS` :  position corrected iwith calculate TSD (only for OUTSIDER) 
+ 9.    `FREQ`  : frequence normal
+ 10.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped
+
 
 You can find a more detailed description here : [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6](http://www.metagenomics.wiki/tools/blast/blastn-output-format-6)
 

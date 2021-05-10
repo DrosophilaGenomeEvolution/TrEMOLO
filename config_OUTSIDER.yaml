@@ -1,7 +1,6 @@
 
 # all path can be relatif or absolute
 DATA: 
-    REFERENCE:       "/path/to/reference_file.fasta"   #reference genome (fasta file) only if INSIDER_VARIANT = True [optional]
     GENOME:          "/path/to/genome_file.fasta"      #genome (fasta file) [required]
     SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq file) only if OUTSIDER_VARIANT = True [optional]
     WORK_DIRECTORY:  "TrEMOLO_OUTPUT"                   #name of output directory [required or empty]
@@ -12,7 +11,7 @@ DATA:
 CHOICE:
     PIPELINE:
         OUTSIDER_VARIANT: True  # TE no assembled (out of genome)
-        INSIDER_VARIANT: True   # TE assembled (in genome)
+        INSIDER_VARIANT: False   # D'ont change it
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
         LOCAL_ASSEMBLY:
@@ -46,7 +45,7 @@ PARAMS:
         INTEGRATE_TE_TO_GENOME:
             PUT_ID: True # (True, False) xxx
             PUT_SEQUENCE_DB_TE: True # (True, False) xxx
-        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py  Warning d'ont put -c option
+        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py d'ont put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" 
         

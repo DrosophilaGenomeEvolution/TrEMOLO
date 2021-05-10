@@ -356,6 +356,7 @@ ID = ""
 while line :
 
     if line[0] == ">" :
+        #fomat parsed >6511:FLANK_LEFT::3R:29769649-29769659
         ID       = line[1:].strip().split(":")[0]
         chrom    = line.strip().split(":")[3]
         position = line.strip().split(":")[4].split("-")[1] 
@@ -389,10 +390,10 @@ while line :
             #search(ID, empty_site_seq_l, empty_site_seq_r, tab_old_line, name_file_tsd, precision)
             find = search(ID, empty_site_seq_l, empty_site_seq_r, tab_old_line, name_file_tsd, "IMPRECIS")
             if not find:
-                print("precise not find")
+                print("##precise not find")
                 origine_position_sniffle = len(empty_site_seq_l)
                 #empty_site = empty_site_seq_l[origine_position_sniffle - (kmer_size*2):] + empty_site_seq_r[:kmer_size*2] ##all region
-               # empty_site = empty_site_seq_l + empty_site_seq_r ##all region
+                #empty_site = empty_site_seq_l + empty_site_seq_r ##all region
                 #origine_position_sniffle = len(empty_site_seq_l[origine_position_sniffle - (kmer_size*2):])
                 #print("empty --", empty_site)
                 #pos_l = find_decale_svi(empty_site, origine_position_sniffle, origine_position_sniffle - (kmer_size * 2))
@@ -401,20 +402,29 @@ while line :
 
                 empty_site = empty_site_seq_l + empty_site_seq_r ##all region
                 origine_position_sniffle = len(empty_site_seq_l)
+                #middle to begin
                 pos_l = find_decale_svi(empty_site, origine_position_sniffle, kmer_size - 1)
 
+                #middle to end
                 pos_r = find_decale_svi(empty_site, origine_position_sniffle, len(empty_site) - kmer_size)
 
+                #chose pos near to SV position
                 if pos_r["find"] and pos_l["find"] and abs(pos_r["pos"] - origine_position_sniffle) < abs(pos_l["pos"] - origine_position_sniffle) :
                     print(pos_r["text"])
+                    new_pos = int(position) + (int(pos_r["pos"]) - origine_position_sniffle)
+                    print("NEW_POS=" + str( new_pos ) + ":" + str(int(pos_r["pos"])) + ":" + str(int(pos_r["pos"]) - origine_position_sniffle) )
                     nb_OK += 1
 
                 elif pos_l["find"]:
                     print(pos_l["text"])
+                    new_pos = int(position) - ( origine_position_sniffle - int(pos_l["pos"]) )
+                    print("NEW_POS=" + str( new_pos ) + ":" + str(int(pos_l["pos"])) + ":" + str( origine_position_sniffle - int(pos_l["pos"]) ))
                     nb_OK += 1
 
                 elif pos_r["find"]:
                     print(pos_r["text"])
+                    new_pos = int(position) + (int(pos_r["pos"]) - origine_position_sniffle)
+                    print("NEW_POS=" + str( new_pos ) + ":" + str(int(pos_r["pos"])) + ":" + str(int(pos_r["pos"]) - origine_position_sniffle) )
                     nb_OK += 1
                 else:
                     print(False)
@@ -442,14 +452,20 @@ while line :
                 #position more wear
                 if pos_r["find"] and pos_l["find"] and abs(pos_r["pos"] - origine_position_sniffle) < abs(pos_l["pos"] - origine_position_sniffle) :
                     print(pos_r["text"])
+                    new_pos = int(position) + (int(pos_r["pos"]) - origine_position_sniffle)
+                    print("NEW_POS=" + str( new_pos ) + ":" + str(int(pos_r["pos"])) + ":" + str(int(pos_r["pos"]) - origine_position_sniffle) )
                     nb_OK += 1
 
                 elif pos_l["find"]:
                     print(pos_l["text"])
+                    new_pos = int(position) - ( origine_position_sniffle - int(pos_l["pos"]) )
+                    print("NEW_POS=" + str( new_pos ) + ":" + str(int(pos_l["pos"])) + ":" + str( origine_position_sniffle - int(pos_l["pos"]) ))
                     nb_OK += 1
 
                 elif pos_r["find"]:
                     print(pos_r["text"])
+                    new_pos = int(position) + (int(pos_r["pos"]) - origine_position_sniffle)
+                    print("NEW_POS=" + str( new_pos ) + ":" + str(int(pos_r["pos"])) + ":" + str(int(pos_r["pos"]) - origine_position_sniffle) )
                     nb_OK += 1
                 else:
                     print(False)

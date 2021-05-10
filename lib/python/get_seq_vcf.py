@@ -240,14 +240,19 @@ if version_vcf == "VCFv4.1":
             chrom   = spl[0]
             start   = spl[1]
             ID      = spl[2]
-            seq     = spl[4]
+            seq     = "" 
             
             if re.search("END=([0-9]+)", spl[7]) != None and re.search("RE=([0-9]+)", spl[7]) != None :
                 end     = re.search("END=([0-9]+)", spl[7]).group(1)
                 precise = spl[7].split(";")[0]
                 read_support = re.search("RE=([0-9]+)", spl[7]).group(1)
-            
+                
                 type_v  = re.search("SVTYPE=([A-Z]+)", spl[7]).group(1)
+
+                if type_v in "INS":
+                    seq     = spl[4]
+                elif type_v in "DEL":
+                    seq     = spl[3]
 
                 #seq     = spl[4]
                 #seq    = spl[7].split(";")[-2].split("=")[1]

@@ -313,7 +313,6 @@ rule create_snake_file :
         touch tmp_snk/tmp_end_pipeline.end
         ##rm -f ${{path_to_pipline}}/Snakefile*
 
-
         """
 
 
