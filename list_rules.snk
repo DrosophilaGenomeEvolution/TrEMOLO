@@ -61,8 +61,6 @@ rule REPORT :
         ###BUILD CSV ALL INFOS
 
         
-        
-        
         #OUTSIDER
         NB_TE_OUT=`(test -s {params.work_directory}/POSITION_TE_OUTSIDER.bed && cat {params.work_directory}/POSITION_TE_OUTSIDER.bed | wc -l) || echo 0`
         NB_TE_IN=`(test -s {params.work_directory}/POSITION_TE_INSIDER.bed && cat {params.work_directory}/POSITION_TE_INSIDER.bed | wc -l) || echo 0`
@@ -100,7 +98,7 @@ rule REPORT :
             if [ ! -n "$TSD_OK" ]; then
                 TSD_OK="NONE"
             else
-                SIZE_TE=`grep "OK:$ID]" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_copia.txt -A 2 | grep -e "--|[A-Z]*|--" -o | grep "[A-Z]*" -o | awk '{{print length($0)}}' || echo "NONE"`
+                SIZE_TE=`grep "OK:$ID]" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{TE}}.txt -A 2 | grep -e "--|[A-Z]*|--" -o | grep "[A-Z]*" -o | awk '{{print length($0)}}' || echo "NONE"`
             fi;
             #echo "TSD_OK : $TSD_OK";
 
@@ -173,7 +171,7 @@ rule REPORT :
             if [ ! -n "$TSD_OK" ]; then
                 TSD_OK="NONE"
             else
-                SIZE_TE=`grep "OK:$ID]" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_copia.txt -A 2 | grep -e "--|[A-Z]*|--" -o | grep "[A-Z]*" -o | awk '{{print length($0)}}' || echo "NONE"`
+                SIZE_TE=`grep "OK:$ID]" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{TE}}.txt -A 2 | grep -e "--|[A-Z]*|--" -o | grep "[A-Z]*" -o | awk '{{print length($0)}}' || echo "NONE"`
             fi;
             #echo "TSD_OK : $TSD_OK";
 
@@ -200,7 +198,6 @@ rule REPORT :
             printf "\b%.0s" `seq 1 $number_of_char`
             printf "$show_step";
         done < {params.work_directory}/POSITION_TE_INSIDER.bed;
-
 
 
 
