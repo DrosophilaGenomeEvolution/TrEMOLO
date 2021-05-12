@@ -347,7 +347,7 @@ WORK_DIRECTORY
 └── └── Snakefile_outsider.snk
 ```
 
-## Output files
+### Most useful output
 
 The most useful output files are :
 
@@ -355,8 +355,8 @@ The most useful output files are :
 
 The output file **TE_INFO.csv** gathers all the necessary information.
 
-|      chrom      |  start   | end      |   TE\|ID  |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ   | FREQ_OPTIMIZED | 
-| --------------- | -------- | -------- | --------- | --------- | -------- | ------- | ---------------- | ------- | -------------- |
+|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ   | FREQ_OPTIMIZED | 
+| --------------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- |
 |  2R_RaGOO_RaGOO | 16943971 | 16943972 | 3S18\|3105 |     +     |   NONE   | NONE    | DEFAULT:16943971 | 28.5714 |    28.5714     |
 |  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|7644  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     | 
 

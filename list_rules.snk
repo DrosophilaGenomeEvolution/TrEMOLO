@@ -49,7 +49,8 @@ rule REPORT :
         # done;
 
         {params.env}
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT [^-^] {params.cend}"
+
+        printf "\\n###\\n%s###\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT [^-^] {params.cend}"
 
         rm -fr {params.work_directory}/REPORT/
         mkdir -p {params.work_directory}/REPORT/
@@ -97,8 +98,9 @@ rule REPORT :
             TSD_OK=`grep "OK:$ID]" tmp.txt -A 2 | grep "++:[A-Z]*:++--" -o | grep -o -E "[A-Z]+" || echo "NONE"`
             if [ ! -n "$TSD_OK" ]; then
                 TSD_OK="NONE"
+                SIZE_TE=`grep ":$ID:[0-9]*:[IP]" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv | cut -f 7 || echo "NONE"`
             else
-                SIZE_TE=`grep "OK:$ID]" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{TE}}.txt -A 2 | grep -e "--|[A-Z]*|--" -o | grep "[A-Z]*" -o | awk '{{print length($0)}}' || echo "NONE"`
+                SIZE_TE=`grep "OK:$ID]" tmp.txt -A 3 | grep -e "--|[A-Z]*|--" -o | grep "[A-Z]*" -o | awk '{{print length($0)}}' || echo "NONE"`
             fi;
             #echo "TSD_OK : $TSD_OK";
 
@@ -170,6 +172,7 @@ rule REPORT :
             TSD_OK=`grep "OK:$ID]" tmp.txt -A 2 | grep "++:[A-Z]*:++--" -o | grep -o -E "[A-Z]+" || echo "NONE"`
             if [ ! -n "$TSD_OK" ]; then
                 TSD_OK="NONE"
+                SIZE_TE=`grep ":$ID:[0-9]*:[IP]" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 7 || echo "NONE"`
             else
                 SIZE_TE=`grep "OK:$ID]" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{TE}}.txt -A 2 | grep -e "--|[A-Z]*|--" -o | grep "[A-Z]*" -o | awk '{{print length($0)}}' || echo "NONE"`
             fi;
@@ -198,6 +201,7 @@ rule REPORT :
             printf "\b%.0s" `seq 1 $number_of_char`
             printf "$show_step";
         done < {params.work_directory}/POSITION_TE_INSIDER.bed;
+
 
 
 
@@ -418,6 +422,7 @@ rule REPORT :
             rm -f  {params.work_directory}/VALUES_TSD*
         fi
 
+        printf "%s\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT DONE, CHECK {params.work_directory}/REPORT/report.html [^-^] {params.cend}"
 
         rm -f COMBINE_TE.csv
         rm -f chrom.txt
@@ -476,8 +481,8 @@ rule TSD :
 
         ###echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
         echo -e "x\ty\tcondition" > {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
-
-        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] --- TSD --- {params.cend}"
+        
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] <<< TSD >>> {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/TSD ;
         path_to_pipline=`dirname {params.path_snk}`
@@ -795,7 +800,7 @@ rule FIND_TE_ON_REF :
         mkdir -p {params.work_directory}/OUTSIDER/FIND_TE_ON_REF/
         rm -f {log}.*
         
-        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -925,8 +930,7 @@ rule FIND_SV_ON_REF :
 
         rm -f {log}.*
         
-        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
-
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/INSIDER_VR/
         mkdir -p {params.work_directory}/log/
@@ -1032,6 +1036,8 @@ rule TE_TOWARD_GENOME :
         """
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
+
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] PUT TE OUTSIDER ON GENOME... {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/
         rm -f {log}.*
@@ -1164,8 +1170,17 @@ rule GET_SEQ_TE :
 
         env            = env, #source environnement
 
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+        cbold          = bcolors.BOLD,
+
     shell:
         """
+        
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCE OF TE [^-^] {params.cend}"
+
+
         {params.env}
         mkdir -p {params.work_directory}/OUTSIDER/ET_FIND_FA ;
         
@@ -1363,7 +1378,8 @@ rule assembly_wdtgb :
 
     shell:
         """
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY WTDGB [^-^] {params.cend}"
+        
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY WTDGB [^-^] {params.cend}"
 
         rm -f {log}.err
         path_to_pipline=`dirname {params.path_snk}`
@@ -1511,7 +1527,8 @@ rule extract_read :
         {params.env}
         rm -f {log}*
 
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET READS AND ASSEMBLY [^-^] {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET READS [^-^] {params.cend}"
+
 
         rm -fr {params.work_directory}/OUTSIDER/READ_FASTQ_TE
         mkdir -p {params.work_directory}/OUTSIDER/READ_FASTQ_TE ;
@@ -1649,7 +1666,8 @@ rule FREQUENCE :
     shell:
         """
         {params.env}
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] FREQUENCE [^-^] {params.cend}"
+
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] FREQUENCE [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
@@ -1884,7 +1902,7 @@ rule FREQ_GLOBAL:
     shell:
         """
 
-        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] FREQ_GLOBAL {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] FREQ_GLOBAL {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -2026,7 +2044,7 @@ rule DETECTION_TE :
     shell:
         """
         {params.env}
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE [^-^] {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
@@ -2171,7 +2189,7 @@ rule svim :
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
 
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] SVIM DETECTION VARIANT [^-^] {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] SVIM DETECTION VARIANT [^-^] {params.cend}"
 
         samtools index {input.bam} 2> {log}.err
 
@@ -2220,7 +2238,7 @@ rule sniffles :
 
         mkdir -p {params.work_directory}/OUTSIDER/VARIANT_CALLING/
 
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
 
         samtools index {input} 2> {log}.err
 
@@ -2283,7 +2301,7 @@ rule samtools :
     shell:
         """
         {params.env}
-        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
 
@@ -2347,7 +2365,7 @@ rule mapping :
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
 
-        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
         
         #minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} 2> {log}.err;
         run_cmd "minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome}" "{log}" "MINIMAP2_INDEX" "False" ;
@@ -2410,7 +2428,7 @@ rule TE_INSIDER:
     shell:
         """
 
-        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -2457,7 +2475,7 @@ rule TE_INSIDER:
                 -outfmt 6 \
                 -out {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bln 2> {log}.err 1> {log}.out;
                 
-                echo "   Get TE..."
+                echo "   Getting TE..."
                 test -s {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bln && \
                     python3 ${{path_to_pipline}}/lib/python/global_sv.py {params.pars_bln_option_insider} \
                         --combine_name {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COMBINE_TE.csv \
@@ -2521,7 +2539,7 @@ rule SV_INSIDER:
     shell:
         """
 
-        printf "\\n%s\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
+        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
 
         mkdir -p {params.work_directory}/INSIDER/VARIANT_CALLING/
         mkdir -p {params.work_directory}/log/

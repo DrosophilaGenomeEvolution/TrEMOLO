@@ -72,7 +72,7 @@ while i < len(sys.argv) and path_snk == "" :
 env="source `dirname " + path_snk + "`/define_env.sh" 
 
 onsuccess:
-    print("DONE NO ERROR DETECTED\n")
+    print("DONE NO ERROR DETECTED ✔ \n")
 
 onerror:
     print("AN ERROR OCCURRED")
