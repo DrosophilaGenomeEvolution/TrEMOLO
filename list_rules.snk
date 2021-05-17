@@ -14,8 +14,6 @@ rule REPORT :
 
     output:
         
-
-    group: "complement_optionnel",
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -350,6 +348,7 @@ rule REPORT :
 
         
         #INSIDER
+        ## TODO GESTION DE SUPPRESSION
         if [ {params.choice_insider_sv} != "True" ]; then
             rm -f insider.Rmd
         else
@@ -362,6 +361,7 @@ rule REPORT :
 
         
         #OUTSIDER
+        ## TODO GESTION DE SUPPRESSION
         if [ {params.choice_outsider_sv} != "True" ]; then
             rm -f outsider.Rmd
         else
@@ -372,20 +372,36 @@ rule REPORT :
         
 
         #REMOVE OR COUNT INSIDER
+        ## TODO GESTION DE SUPPRESSION
         if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv ; then
             sed -i 's/r insider1, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
             
             #DELET LINE INUTILE
             sed -i '/INSIDER/d' index.Rmd
-            sed -i '/TE_INSIDER/d' index.Rmd
+            sed -i '/TE_INSIDER.[a-z]/d' index.Rmd
         else
             awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv  > tmp.csv
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER.js
             rm -f tmp.csv
         fi;
 
+        #REMOVE OR COUNT INSIDER DELETION
+        ## TODO GESTION DE SUPPRESSION
+        if ! test -s ../../INSIDER/TE_DETECTION/DELETION.csv ; then
+            sed -i 's/r insider11, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+            
+            #DELET LINE INUTILE
+            #sed -i '/INSIDER/d' index.Rmd
+            sed -i '/TE_INSIDER_DEL/d' index.Rmd
+        else
+            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv  > tmp.csv
+            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER_DEL.js
+            rm -f tmp.csv
+        fi;
+
         
         #REMOVE OR COUNT OUTSIDER
+        ## TODO GESTION DE SUPPRESSION
         if ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv ; then
             sed -i 's/r NB_OUTSIDER, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
             sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
@@ -428,6 +444,7 @@ rule REPORT :
         rm -f chrom.txt
         rm -f test.csv
         rm -f {params.work_directory}/params.log;
+        rm -fr {params.work_directory}/tmp* ;
         """
 
 
@@ -450,7 +467,6 @@ rule TSD :
         #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "TSD"),
         output_link=[],
 
-    group: "complement_optionnel",
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -482,7 +498,7 @@ rule TSD :
         ###echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
         echo -e "x\ty\tcondition" > {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
         
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] <<< TSD >>> {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] <<< TSD >>> {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/TSD ;
         path_to_pipline=`dirname {params.path_snk}`
@@ -635,9 +651,20 @@ rule TSD :
             for TE in `cat TE_name.txt`; do
                 #echo "$TE"
                 grep "^$TE\s" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | \
-                    awk 'OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' > INS_$TE.bed
-                rm -f total_results_tsd.txt
+                    awk 'OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' > INS_$TE.bed;
                 
+                rm -f total_results_tsd.txt;
+
+                NB_TE_FM=`cat INS_$TE.bed | wc -l`
+
+                a=0;
+
+                show_step="$a/$NB_TE_FM : TSD TE ASSEMBLED "
+                number_of_char=`echo "$show_step" | wc -c`
+                number_of_char=$(($number_of_char-1));
+                printf "\b%.0s" `seq 1 $number_of_char`
+                printf "$show_step";
+
                 for i in `cat INS_$TE.bed | tr "\t" ":"`; 
                 do 
                     echo $i | tr ":" "\t" > TE.bed;
@@ -653,6 +680,14 @@ rule TSD :
                     bedtools getfasta -fi {input.genome} -bed FLANK.bed > FLANK.fasta
 
                     python3 ${{path_to_pipline}}/lib/TSD/find_tsd.py FLANK.fasta TE.fasta {params.SIZE_FLANK} $ID $strand -1 >> total_results_tsd.txt 
+                
+                    a=$(($a+1));
+
+                    show_step="$a/$NB_TE_FM : TSD TE ASSEMBLED "
+                    number_of_char=`echo "$show_step" | wc -c`
+                    number_of_char=$(($number_of_char-1));
+                    printf "\b%.0s" `seq 1 $number_of_char`
+                    printf "$show_step";
                 done;
 
                 bash ${{path_to_pipline}}/lib/TSD/TSD_VG.sh {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv {input.genome}
@@ -684,7 +719,7 @@ rule TSD :
 
                 KO=$(($TOTAL-$OK_K_gap_O));
 
-                echo "TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ;"
+                echo "TE:$TE ;  TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ;"
 
                 ##echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD_INSIDER.csv
 
@@ -766,8 +801,6 @@ rule FIND_TE_ON_REF :
     output:
         output_link=[],
         
-
-    group: "complement_optionnel",
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -800,7 +833,7 @@ rule FIND_TE_ON_REF :
         mkdir -p {params.work_directory}/OUTSIDER/FIND_TE_ON_REF/
         rm -f {log}.*
         
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -901,7 +934,6 @@ rule FIND_SV_ON_REF :
         stats = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/INSIDER_VR/assemblytics_out.Assemblytics_assembly_stats.txt",
         
 
-    group: "complement_optionnel",
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -930,7 +962,7 @@ rule FIND_SV_ON_REF :
 
         rm -f {log}.*
         
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/INSIDER_VR/
         mkdir -p {params.work_directory}/log/
@@ -1007,7 +1039,6 @@ rule TE_TOWARD_GENOME :
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_TOWARD_GENOME/pseudo_genome.fasta",
         output_link=[],
 
-    group: "complement_optionnel",
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -1037,7 +1068,7 @@ rule TE_TOWARD_GENOME :
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] PUT TE OUTSIDER ON GENOME... {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] PUT TE OUTSIDER ON GENOME... {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/
         rm -f {log}.*
@@ -1178,7 +1209,7 @@ rule GET_SEQ_TE :
     shell:
         """
         
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCE OF TE [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCE OF TE [^-^] {params.cend}"
 
 
         {params.env}
@@ -1211,7 +1242,7 @@ rule GET_SEQ_TE :
 
         rm -f {params.work_directory}/.tmp*
         rm -f {params.work_directory}/OUTSIDER/ET_FIND_FA/*.bed ;
-        rm -f {params.work_directory}/tmp*
+        rm -f {params.work_directory}/tmp*.*
         rm -f `find {params.work_directory} -name "*.fai"`
         """
 
@@ -1230,8 +1261,6 @@ rule assembly_flye :
 
     output:
         output_link = [],
-
-    group: "assembly"
 
     params:
         path_snk       = path_snk,
@@ -1359,8 +1388,6 @@ rule assembly_wdtgb :
     output:
         output_link=[],
 
-    group: "assembly"
-
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -1379,7 +1406,7 @@ rule assembly_wdtgb :
     shell:
         """
         
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY WTDGB [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] ASSEMBLY WTDGB [^-^] {params.cend}"
 
         rm -f {log}.err
         path_to_pipline=`dirname {params.path_snk}`
@@ -1527,7 +1554,7 @@ rule extract_read :
         {params.env}
         rm -f {log}*
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET READS [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET READS [^-^] {params.cend}"
 
 
         rm -fr {params.work_directory}/OUTSIDER/READ_FASTQ_TE
@@ -1630,7 +1657,7 @@ rule extract_read :
 
 
 
-#BLASt database of TE against SV (Structural variant)
+#BLAST database of TE against SV (Structural variant)
 rule FREQUENCE :
     input:
         fasta_TE = config["DATA"]["TE_DB"],
@@ -1667,7 +1694,7 @@ rule FREQUENCE :
         """
         {params.env}
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] FREQUENCE [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] FREQUENCE [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
@@ -1902,7 +1929,7 @@ rule FREQ_GLOBAL:
     shell:
         """
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] FREQ_GLOBAL {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] FREQ_GLOBAL {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -2044,7 +2071,7 @@ rule DETECTION_TE :
     shell:
         """
         {params.env}
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
@@ -2189,7 +2216,7 @@ rule svim :
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] SVIM DETECTION VARIANT [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] SVIM DETECTION VARIANT [^-^] {params.cend}"
 
         samtools index {input.bam} 2> {log}.err
 
@@ -2238,7 +2265,7 @@ rule sniffles :
 
         mkdir -p {params.work_directory}/OUTSIDER/VARIANT_CALLING/
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
 
         samtools index {input} 2> {log}.err
 
@@ -2301,7 +2328,7 @@ rule samtools :
     shell:
         """
         {params.env}
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
 
@@ -2365,7 +2392,7 @@ rule mapping :
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
         
         #minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome} 2> {log}.err;
         run_cmd "minimap2 -x  {params.preset} -d {input.genome}.mmi {input.genome}" "{log}" "MINIMAP2_INDEX" "False" ;
@@ -2428,7 +2455,7 @@ rule TE_INSIDER:
     shell:
         """
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -2539,7 +2566,7 @@ rule SV_INSIDER:
     shell:
         """
 
-        printf "###\\n%s\\n###\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
 
         mkdir -p {params.work_directory}/INSIDER/VARIANT_CALLING/
         mkdir -p {params.work_directory}/log/

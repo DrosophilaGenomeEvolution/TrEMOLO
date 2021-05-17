@@ -144,9 +144,9 @@ tab_none     = []
 while not find and size_k > 3 :
 
     for i in reversed(range(len(sequence_1)-size_k+1)):
-        chaine = ""
+        #chaine = ""
         for e in range(len(sequence_2)-size_k+1):
-
+            chaine = ""
             seq_and_tsd = sequence_1[0:i] + "++:" + sequence_1[i:i+size_k] + ":++" + sequence_1[i+size_k:].strip() + "--|" + TE.strip() + "|--" + sequence_2[0:e] +  "++:" + sequence_2[e:e+size_k] + ":++" + sequence_2[e+size_k:].strip() 
             head = ""
             if strands :
@@ -197,6 +197,7 @@ while not find and size_k > 3 :
                       #print(">"+head+"\n"+seq_and_tsd+"\n")
                       chaine += ">"+head+"\n"+seq_and_tsd+"\n"
               tab_none.append(chaine)
+
         #     if find :
         #         break
         # if find :

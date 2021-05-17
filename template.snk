@@ -44,11 +44,22 @@ class bcolors:
     END       = '\033[0m'
     UNDERLINE = '\033[4m'
 
+
 def message_color(color, text):
     return color + text + bcolors.END
 
+# if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
+#     config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
+
 # Create ouput folder
-os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"])
+os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA")
+
+
+
+# os.system("test -s " + str(config["DATA"]["TE_DB"]) + " && ln -sf " + str(config["DATA"]["TE_DB"]) + " " + str(config["DATA"]["WORK_DIRECTORY"].rstrip("/")) + "/DATA/`basename " + str(config["DATA"]["TE_DB"]) + "`")
+# config["DATA"]["TE_DB"]=config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA/" + os.path.basename( str(config["DATA"]["TE_DB"]) ) 
+
+#print("DB : ", config["DATA"]["TE_DB"])
 
 # Remember the parameters associated with the output folder
 with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as file:
@@ -72,7 +83,7 @@ while i < len(sys.argv) and path_snk == "" :
 env="source `dirname " + path_snk + "`/define_env.sh" 
 
 onsuccess:
-    print("DONE NO ERROR DETECTED ✔ \n")
+    print("\nDONE NO ERROR DETECTED ✔ \n")
 
 onerror:
     print("AN ERROR OCCURRED")
