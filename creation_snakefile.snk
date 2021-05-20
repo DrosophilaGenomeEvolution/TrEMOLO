@@ -89,8 +89,8 @@ env="source `dirname " + path_snk + "`/define_env.sh"
 os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 onerror:
-    print("AN ERROR OCCURRED")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log && rm -f tmp.log")
+    print("AN ERROR OCCURRED ")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log && rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && ls | grep -v \"\.\" | rm -f ")
 
 
 #Map reads on assembly genome
@@ -253,7 +253,7 @@ rule create_snake_file :
 
             if [ {params.choice_insider_sv} = "True" ]; then
                 printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
-                printf "%s" "> FIND_SV_ON_REF" >> instruction.txt
+                printf "%s" "> FIND_SV_ON_REF " >> instruction.txt
                 printf "%s" "> FIND_TE_ON_REF " >> instruction.txt
                 printf "%s" "> TSD" >> instruction.txt
             else

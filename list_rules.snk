@@ -850,9 +850,10 @@ rule FIND_TE_ON_REF :
             bedtools getfasta -fi {input.genome_real} -bed {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed -name+ > {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta
             test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta || echo "[SNK  INFO]: tmp_${{type}}_SEQ.fasta IS EMPTY"
             
-            test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta && sh ${{path_to_pipline}}/lib/bash/get_seq_with_id.sh {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta || echo fin
+            ( test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta && \
+                sh ${{path_to_pipline}}/lib/bash/get_seq_with_id.sh {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta ) || echo "SEQUENCE $type NOT FOUND"
             
-            test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta || echo "[SNK  INFO]: ${{type}}_SEQ.fasta IS EMPTY"
+            ( test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta && echo "NUMBER OF SEQUENCE" `grep ">" {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta -c ` ) || echo "[SNK  INFO]: ${{type}}_SEQ.fasta IS EMPTY"
         done;
         
         cat {params.work_directory}/INSIDER/TE_INSIDER_VR/Tandem_expansion_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/Repeat_expansion_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta
@@ -1715,8 +1716,7 @@ rule FREQUENCE :
         # blastn -db {input.fasta_TE} \
         # -query {params.work_directory}/FREQ_BEFORE/variants.fasta \
         # -outfmt 6 \
-        # -out {params.work_directory}/FREQ_BEFORE/variants.fasta \
-        # {params.work_directory}/FREQ_BEFORE/variants.bln 2>> {log}.err;
+        # -out {params.work_directory}/FREQ_BEFORE/variants.bln 2>> {log}.err;
 
         # python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py \
         #     {params.work_directory}/FREQ_BEFORE/variants.bln \

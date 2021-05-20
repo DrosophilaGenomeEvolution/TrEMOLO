@@ -48,8 +48,8 @@ class bcolors:
 def message_color(color, text):
     return color + text + bcolors.END
 
-# if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
-#     config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
+if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
+    config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
 
 # Create ouput folder
 os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA")
@@ -57,7 +57,7 @@ os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA")
 
 
 # os.system("test -s " + str(config["DATA"]["TE_DB"]) + " && ln -sf " + str(config["DATA"]["TE_DB"]) + " " + str(config["DATA"]["WORK_DIRECTORY"].rstrip("/")) + "/DATA/`basename " + str(config["DATA"]["TE_DB"]) + "`")
-# config["DATA"]["TE_DB"]=config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA/" + os.path.basename( str(config["DATA"]["TE_DB"]) ) 
+# config["DATA"]["TE_DB"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA/" + os.path.basename( str(config["DATA"]["TE_DB"]) ) 
 
 #print("DB : ", config["DATA"]["TE_DB"])
 
@@ -86,7 +86,7 @@ onsuccess:
     print("\nDONE NO ERROR DETECTED ✔ \n")
 
 onerror:
-    print("AN ERROR OCCURRED")
+    print("AN ERROR OCCURRED -"+env)
     shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log && rm -f tmp.log")
 
 
