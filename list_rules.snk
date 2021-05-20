@@ -833,7 +833,7 @@ rule FIND_TE_ON_REF :
         mkdir -p {params.work_directory}/OUTSIDER/FIND_TE_ON_REF/
         rm -f {log}.*
         
-        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] ANNOT TE ON REF {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -905,9 +905,66 @@ rule FIND_TE_ON_REF :
         
         rm -f {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_*
 
+        REF=`realpath -s {input.ref}`
+        QUERY=`realpath -s {input.genome_real}`
+        TREMOLO_PATH=`readlink -f ${{path_to_pipline}}`
+
         
+
+        echo "REF :$REF"
+        echo "QUERY :$QUERY"
+        echo "TREMOLO_PATH :$TREMOLO_PATH"
+
+        awk 'NR>1' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | cut -f 2 | cut -d ":" -f 1 | sort -u > ID.txt
+        grep -w -f ID.txt {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 1-4 > POS_TE_VG_ON_REF.bed
+
         cd {params.work_directory}/INSIDER/TE_INSIDER_VR/
+
+        awk '{{print $2}}' INSERTION.csv | cut -d ":" -f 1 > ID_asm.txt
+        grep -w -f ID_asm.txt ../../OUTSIDER/INSIDER_VR/assemblytics_out.Assemblytics_structural_variants.bed | awk 'OFS="\t"{{print $1, $2, $3, $4"|"$7}}' > TE_FOUND.bed
+
+
+        grep -v "INSERTION" INSERTION.csv | awk -v size="4000" 'NR>1 && OFS="\t"{{split($2, a, ":"); 
+            split(a[6], b, "-"); 
+            print a[5] , b[1]-size, b[1], a[1]":LEFT\\n" a[5], b[2], b[2]+size, a[1]":RIGTH"
+        }}' > tmp_Repeat_expension.bed
+
+
+        bedtools getfasta -fi $QUERY -bed tmp_Repeat_expension.bed -name+ > tmp_Repeat_expension.fasta
+
+        makeblastdb -in $REF -dbtype nucl
+        blastn -db $REF \
+        -query tmp_Repeat_expension.fasta \
+        -outfmt 6 \
+        -out position_Repeat_expension.bln
+
+        rm -f pos_TE_expension.bed pos_TE_insertion.bed pos_TE_insertion.csv
+
+        if test -s position_Repeat_expension.bln ; then
+            awk '{{if(!dic[$1]){{dic[$1]=$1; print $0 }} }}' position_Repeat_expension.bln | awk '$3>80 && $4>1500' > position_Repeat_expension_best_score.csv
+
+            python3 $TREMOLO_PATH/lib/python/global_position_expansion.py position_Repeat_expension_best_score.csv position_Repeat_expension_best_score_size_pos.csv
+
+            cat position_Repeat_expension_best_score_size_pos.csv | cut -f 3 | awk -F ":" 'NR>1 {{print $1}} ' > ID.txt
+
+            awk 'OFS="\t"{{ split($4, a, "|"); print $0, a[1], a[2] }}' TE_FOUND.bed > TE_FOUND.csv
+
+            awk 'NR>1 && OFS="\t"{{split($3, a, ":"); print $0, a[1], a[2]":"a[3]}}' position_Repeat_expension_best_score_size_pos.csv > pos_expension.csv
+
+            ## sort le fichier pos_TE_expension.csv
+            python3 $TREMOLO_PATH/lib/python/global_position_all.py TE_FOUND.csv INSERTION.csv pos_expension.csv pos_TE_expension.csv
+
+            awk 'NR>1 && OFS="\t" {{print $1, $2, $2+1, $7}}'  pos_TE_expension.csv > pos_TE_expension.bed
+        fi;
+
+
+        awk 'NR>1 && OFS="\t"{{ print $17, $18, $18+1, $19 }}' pos_TE_insertion.csv > pos_TE_insertion.bed
+        cat pos_TE_expension.bed pos_TE_insertion.bed > POS_TE_VR_ON_REF.bed
+
+        rm -f ID_*.txt
+
         
+        rm -f pos_*
         rm -f Repeat*
         rm -f Tandem*
         rm -f *SEQ_ALL.fasta
