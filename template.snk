@@ -53,7 +53,7 @@ if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
     config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
 
 # Create ouput folder
-os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA")
+#os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA")
 
 
 
