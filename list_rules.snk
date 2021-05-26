@@ -93,7 +93,7 @@ rule REPORT :
             #TSD
             #grep "OK:$ID]" tmp.txt || echo "NONE : $ID";
             SIZE_TE="";
-            TSD_OK=`grep "OK:$ID]" tmp.txt -A 2 | grep "++:[A-Z]*:++--" -o | grep -o -E "[A-Z]+" || echo "NONE"`
+            TSD_OK=`grep "OK:$ID]" tmp.txt -A 2 | grep "++:[A-Z]*:++--" -o | grep -o -E "[A-Z]+" || echo ""`
             if [ ! -n "$TSD_OK" ]; then
                 TSD_OK="NONE"
                 SIZE_TE=`grep ":$ID:[0-9]*:[IP]" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv | cut -f 7 || echo "NONE"`
@@ -167,10 +167,10 @@ rule REPORT :
             #TSD
             #grep "OK:$ID]" tmp.txt || echo "NONE";
             SIZE_TE="";
-            TSD_OK=`grep "OK:$ID]" tmp.txt -A 2 | grep "++:[A-Z]*:++--" -o | grep -o -E "[A-Z]+" || echo "NONE"`
+            TSD_OK=`grep "OK:$ID]" tmp.txt -A 2 | grep "++:[A-Z]*:++--" -o | grep -o -E "[A-Z]+" || echo ""`
             if [ ! -n "$TSD_OK" ]; then
                 TSD_OK="NONE"
-                SIZE_TE=`grep ":$ID:[0-9]*:[IP]" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 7 || echo "NONE"`
+                SIZE_TE=`grep "$ID:[+-]:" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 7 || echo "NONE"`
             else
                 SIZE_TE=`grep "OK:$ID]" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{TE}}.txt -A 2 | grep -e "--|[A-Z]*|--" -o | grep "[A-Z]*" -o | awk '{{print length($0)}}' || echo "NONE"`
             fi;

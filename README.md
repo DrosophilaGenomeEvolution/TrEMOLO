@@ -358,7 +358,7 @@ The most useful output files are :
 
 The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
 
-|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ   | FREQ_OPTIMIZED | 
+|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | 
 | --------------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- |
 |  2R_RaGOO_RaGOO | 16943971 | 16943972 | 3S18\|3105 |     +     |   NONE   | NONE    | DEFAULT:16943971 | 28.5714 |    28.5714     |
 |  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|7644  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     | 
@@ -370,7 +370,7 @@ The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary i
  4.    `TE|ID` :   TE name and ID in **SV.vcf** (for OUTSIDER) or **assemblytics_out.Assemblytics_structural_variants.bed** (for INSIDER)
  5.    `strand` :  strand TE
  6.    `TSD` : TSD SEQUENCE 
- 7.    `SIZE_TE` :  TE size calculate if you have TSD
+ 7.    `SIZE_TE` :  TE size
  8.    `NEW_POS` :  position corrected iwith calculate TSD (only for OUTSIDER) 
  9.    `FREQ`  : frequence normal
  10.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped
