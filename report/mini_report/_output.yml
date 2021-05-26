@@ -5,7 +5,7 @@ bookdown::gitbook:
       before: |
         <li><a href="./">Mini report</a></li>
       after: |
-        <li><a href="#" target="blank">Published with bookdown</a></li>
+        <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
     edit: null
     sharing: null
     download: ["pdf"]

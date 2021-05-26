@@ -94,6 +94,9 @@ git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 
 ## Using Singularity<a name="singularity"></a>
 
+
+[*Singularity* installation Debian/Ubuntu with package](https://sylabs.io/guides/3.0/user-guide/installation.html#install-the-debian-ubuntu-package-using-apt)
+
 ### Compiling yourself
 A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in.
 The *def* file provided can be compiled as such:
@@ -243,7 +246,7 @@ WORK_DIRECTORY
 │   │       ├── TSD_TE_NAME.txt
 │   │       ├── TSD_blood.txt
 │   │       ├── TSD_Idefix.txt
-│   │       └── TSD_ZAM.txt
+│   │       ├── TSD_ZAM.txt
 ...
 │   ├── TE_INSIDER_VR
 │   │   ├── DELETION.bed
@@ -351,18 +354,15 @@ WORK_DIRECTORY
 
 The most useful output files are :
 
-* The html report in **REPORT/report.html** with summary graphics
+* The html report in **your_work_direcetory/REPORT/report.html** with summary graphics
 
-The output file **TE_INFO.csv** gathers all the necessary information.
+The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
 
 |      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ   | FREQ_OPTIMIZED | 
 | --------------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- |
 |  2R_RaGOO_RaGOO | 16943971 | 16943972 | 3S18\|3105 |     +     |   NONE   | NONE    | DEFAULT:16943971 | 28.5714 |    28.5714     |
 |  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|7644  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     | 
 
-
-
-## Description of the header of .csv files (similar to blast format 6) :
 
  1.    `chrom` : chromosome
  2.    `start` : start TE
@@ -374,9 +374,6 @@ The output file **TE_INFO.csv** gathers all the necessary information.
  8.    `NEW_POS` :  position corrected iwith calculate TSD (only for OUTSIDER) 
  9.    `FREQ`  : frequence normal
  10.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped
-
-
-You can find a more detailed description here : [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6](http://www.metagenomics.wiki/tools/blast/blastn-output-format-6)
 
 
 # Licence and Citation<a name="citation"></a>

@@ -129,7 +129,7 @@ graph
 
 ### FREQUENCE
 
-```{bash FREQB, eval=TRUE, include=TRUE, results=TRUE}
+```{bash FREQB_out, eval=TRUE, include=TRUE, results=TRUE}
 
 (test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
   python3 ../lib/freq_graph.py ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv FREQ_TE.csv) || \
@@ -171,16 +171,28 @@ p
 
 ### TSD
 
-TSD [OK] : these are the TE with TSD
+<!-- calcul number of TE TSD -->
 
-TSD [KO] : these are the TE without TSD
+
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+grep "OK" ../../VALUES_TSD_GROUP_OUTSIDER.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD NOT FOUND"
+
+grep "KO" ../../VALUES_TSD_GROUP_OUTSIDER.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_KO.txt || echo
+
+awk 'BEGIN{somme=0} NR>1 {somme+=$2}END{print somme}' ../../VALUES_TSD_GROUP_OUTSIDER.csv > .tmp_TE_TSD_TOTAL.txt || echo
+
+```
+
+TSD [OK] : these are the TE with TSD **`r readLines(".tmp_TE_TSD_OK.txt");`/`r readLines(".tmp_TE_TSD_TOTAL.txt");`**
+
+TSD [KO] : these are the TE without TSD **`r readLines(".tmp_TE_TSD_KO.txt");`/`r readLines(".tmp_TE_TSD_TOTAL.txt");`**
 
 
 ```{r TSD, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
 data = read.csv("../../VALUES_TSD_GROUP_OUTSIDER.csv", sep="\t")
 data = tail(data, 50)
-
 
 data$x <- factor(data$x, levels = order_TE)
 
@@ -200,7 +212,7 @@ p
 
 ```
 
-<iframe src="lib/template_TSD.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_TSD_OUTSIDER_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 
 Hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20
 
@@ -210,6 +222,20 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 ### TE POSITION
 
 
-<iframe src="lib/template_histo_circos.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_OUTSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 
 Select TE family
+
+
+<!-- remove inutiles files -->
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+
+rm -f FREQ_TE.csv
+rm -f .tmp_*v;
+
+
+```
+
+
+

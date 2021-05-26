@@ -48,7 +48,7 @@ rule REPORT :
 
         {params.env}
 
-        printf "\\n###\\n%s###\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT [^-^] {params.cend}"
 
         rm -fr {params.work_directory}/REPORT/
         mkdir -p {params.work_directory}/REPORT/
@@ -66,7 +66,7 @@ rule REPORT :
 
         NB_TE=$(($NB_TE_OUT + $NB_TE_IN));
 
-        i=1;
+        i=0;
         show_step="$i/$NB_TE TE"
         number_of_char=`echo "$show_step" | wc -c`
         number_of_char=$(($number_of_char-1));
@@ -149,7 +149,7 @@ rule REPORT :
         printf "\b%.0s" `seq 1 10`
 
         #INSIDER
-        while read line;
+        test -s {params.work_directory}/POSITION_TE_INSIDER.bed && while read line;
         do
             ID=`echo "$line" | cut -f 4 | cut -d "|" -f 2`
             TE=`echo "$line" | cut -f 4 | cut -d "|" -f 1`
@@ -199,9 +199,7 @@ rule REPORT :
             printf "\b%.0s" `seq 1 $number_of_char`
             printf "$show_step";
         done < {params.work_directory}/POSITION_TE_INSIDER.bed;
-
-
-
+        echo ...
 
         ######
 
@@ -336,17 +334,59 @@ rule REPORT :
             done;
         fi;
 
-        
 
+
+        #COUNT TE INOUTSIDER
+        if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed; then
+            #test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && \
+            ###awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed > {params.work_directory}/POSITION_TE_INSIDER.bed
+            
+            cat {params.work_directory}/POSITION_TE_INSIDER.bed {params.work_directory}/POSITION_TE_OUTSIDER.bed > {params.work_directory}/POSITION_TE_INOUTSIDER.bed
+
+
+            bedtools intersect -a dm6_cut_chrom.bed -b {params.work_directory}/POSITION_TE_INOUTSIDER.bed -wa | tr "\t" ":" \
+                | sort | uniq -c | sort -k 1 -n \
+                | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
+                | bedtools sort > HISTOGRAM.txt
+
+            max_value_histo_circos=`cat HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
+
+
+            python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM.txt > js/HISTOGRAM_INOUTSIDER.js
+            echo "dico_histo = {{}}" >> js/HISTOGRAM_INOUTSIDER.js
+
+            awk '{{print $4}}' {params.work_directory}/POSITION_TE_INOUTSIDER.bed | cut -d "|" -f 1 | sort | uniq > TE_NAME.txt
+            for TE in `cat TE_NAME.txt`; do
+                grep "\\s${{TE}}|" {params.work_directory}/POSITION_TE_INOUTSIDER.bed > POS_TE_$TE.bed
+
+                TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
+
+                bedtools intersect -a dm6_cut_chrom.bed -b POS_TE_$TE.bed -wa | tr "\t" ":" \
+                    | sort | uniq -c | sort -k 1 -n \
+                    | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 2, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
+                    | bedtools sort > HISTOGRAM_${{TE_NAME}}.txt
+
+                ###echo "TE_NAME = $TE_NAME"
+                
+                python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > js/HISTOGRAM_${{TE_NAME}}.js
+                
+                echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> js/HISTOGRAM_${{TE_NAME}}.js
+                echo -e "\n" >> js/HISTOGRAM.js
+                cat js/HISTOGRAM_${{TE_NAME}}.js >> js/HISTOGRAM_INOUTSIDER.js
+
+                rm -f HISTOGRAM_${{TE_NAME}}.txt POS_TE_$TE.bed HISTOGRAM.txt TE_NAME.txt
+                rm -f js/HISTOGRAM_${{TE_NAME}}.js
+            done;
+        fi;
+
+        
         cp js/* {params.work_directory}/REPORT/mini_report/js/
         rm -fr js
         rm -f dm6_cut_chrom.bed
 
-        pwd
-        old_path=`readlink -f {params.work_directory}/..`
+        old_path=`pwd`
         cd {params.work_directory}/REPORT/mini_report/
 
-        
         #INSIDER
         ## TODO GESTION DE SUPPRESSION
         if [ {params.choice_insider_sv} != "True" ]; then
@@ -369,6 +409,20 @@ rule REPORT :
             mv outsider.Rmd outsider.Rmd.tmp
         fi;
 
+
+
+        #INOUTSIDER
+        ## TODO GESTION DE SUPPRESSION
+        if [ {params.choice_outsider_sv} != "True" ] || [ {params.choice_insider_sv} != "True" ]; then
+            rm -f inoutsider.Rmd
+        else
+            ! test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
+               sed -i 's/r FREQ_INOUT, eval=TRUE,/r FREQ_INOUT, eval=FALSE,/g' inoutsider.Rmd  && \
+               sed -i '/FREQUENCE/d' inoutsider.Rmd
+            cat inoutsider.Rmd >> index.Rmd
+            mv inoutsider.Rmd outsider.Rmd.tmp
+        fi;
+
         
 
         #REMOVE OR COUNT INSIDER
@@ -384,6 +438,7 @@ rule REPORT :
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER.js
             rm -f tmp.csv
         fi;
+
 
         #REMOVE OR COUNT INSIDER DELETION
         ## TODO GESTION DE SUPPRESSION
@@ -415,9 +470,28 @@ rule REPORT :
             rm -f tmp.csv
         fi;
 
+
+        #REMOVE OR COUNT INOUTSIDER
+        ## TODO GESTION DE SUPPRESSION
+        if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv || ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv; then
+            echo "ERROR NO TE INSERTION FOUND";
+        else
+            ls ../../TE_INFO.csv
+            test -s ../../TE_INFO.csv && echo "okokplmlm";
+            test -s ../../TE_INFO.csv && \
+                awk '{{split($4, sp, "|"); print sp[1]}}' ../../TE_INFO.csv | sort | uniq -c | awk '{{print $1"\t"$2}}' | sort -k 1 -n | awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > tmp_ALL_TE_COUNT.csv
+            
+            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' tmp_ALL_TE_COUNT.csv  > tmp.csv
+            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INOUTSIDER.js
+            rm -f tmp.csv
+            rm -f tmp_ALL_TE_COUNT.csv
+        fi;
+
         if ! test -e ../../VALUES_TSD_GROUP_OUTSIDER.csv; then
             sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
         fi;
+
+        echo "MAKE REPORT"
 
         make
 
@@ -438,12 +512,12 @@ rule REPORT :
             rm -f  {params.work_directory}/VALUES_TSD*
         fi
 
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT DONE, CHECK {params.work_directory}/REPORT/report.html [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT DONE, CHECK {params.work_directory}/REPORT/report.html [^-^] {params.cend}"
 
         rm -f COMBINE_TE.csv
         rm -f chrom.txt
         rm -f test.csv
-        rm -f {params.work_directory}/params.log;
+        #rm -f {params.work_directory}/params.log;
         rm -fr {params.work_directory}/tmp* ;
         """
 
@@ -1230,7 +1304,7 @@ rule TE_TOWARD_GENOME :
         TOTAL_TE=`awk 'NR>1' {input.all_te} | wc -l`
         NB_SEQ_FOUND=`grep -w -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE.fasta {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta -c`
         
-        echo "NB_TE INTEGRATE: $NB_SEQ_FOUND ;   TOTAL_TE: $TOTAL_TE ;"
+        echo "TOTAL TE: $TOTAL_TE ;  TE INTEGRATE ON GENOME: $NB_SEQ_FOUND ;"
         
         rm -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/pseudo_genome.fasta.fai #important to delet this
         rm -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/ID.txt;
