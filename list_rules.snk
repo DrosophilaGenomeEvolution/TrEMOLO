@@ -59,6 +59,13 @@ rule REPORT :
 
         ###BUILD CSV ALL INFOS
 
+        ##TODO enlever les commandes doublons en bas
+        test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && \
+            cat {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed > {params.work_directory}/POSITION_TE_INSIDER.bed
+
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed && \
+            awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1], $5}}' {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed > {params.work_directory}/POSITION_TE_OUTSIDER.bed
+            
         
         #OUTSIDER
         NB_TE_OUT=`(test -s {params.work_directory}/POSITION_TE_OUTSIDER.bed && cat {params.work_directory}/POSITION_TE_OUTSIDER.bed | wc -l) || echo 0`
@@ -147,6 +154,8 @@ rule REPORT :
         rm -f tmp.txt
 
         printf "\b%.0s" `seq 1 10`
+
+
 
         #INSIDER
         test -s {params.work_directory}/POSITION_TE_INSIDER.bed && while read line;
@@ -904,6 +913,13 @@ rule FIND_TE_ON_REF :
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
 
+        rm -f `find {params.work_directory} -name "*.fai"`
+        rm -f `find -name "*.fa*.fai"`
+
+        samtools faidx {input.genome_real}
+        samtools faidx {input.ref}
+        samtools faidx {input.fasta_TE}
+
         mkdir -p {params.work_directory}/OUTSIDER/FIND_TE_ON_REF/
         rm -f {log}.*
         
@@ -990,7 +1006,7 @@ rule FIND_TE_ON_REF :
         echo "TREMOLO_PATH :$TREMOLO_PATH"
 
         awk 'NR>1' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | cut -f 2 | cut -d ":" -f 1 | sort -u > ID.txt
-        grep -w -f ID.txt {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 1-4 > POS_TE_VG_ON_REF.bed
+        grep -w -f ID.txt {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 1-4 > {params.work_directory}/POS_TE_VG_ON_REF.bed
 
         cd {params.work_directory}/INSIDER/TE_INSIDER_VR/
 
@@ -1031,9 +1047,17 @@ rule FIND_TE_ON_REF :
             awk 'NR>1 && OFS="\t" {{print $1, $2, $2+1, $7}}'  pos_TE_expension.csv > pos_TE_expension.bed
         fi;
 
+        if test -s TE_FOUND.bed; then
+            for ID in `cat TE_FOUND.bed | cut -f 4 | cut -d "|" -f 1`; do 
+                TE=`grep -w "$ID" INSERTION.csv | cut -f 1`; 
+                line=`grep "$ID" TE_FOUND.bed`; 
+                echo "$line|$TE" >> position_alt_TE_VR_ON_REF.bed;
+            done;
+        fi;
 
-        awk 'NR>1 && OFS="\t"{{ print $17, $18, $18+1, $19 }}' pos_TE_insertion.csv > pos_TE_insertion.bed
-        cat pos_TE_expension.bed pos_TE_insertion.bed > POS_TE_VR_ON_REF.bed
+        test -s pos_TE_insertion.csv && awk 'NR>1 && OFS="\t"{{ print $17, $18, $18+1, $19 }}' pos_TE_insertion.csv > pos_TE_insertion.bed
+        test -s pos_TE_expension.bed && cat pos_TE_expension.bed > POS_TE_VR_ON_REF.bed
+        test -s pos_TE_insertion.bed && cat pos_TE_insertion.bed >> POS_TE_VR_ON_REF.bed
 
         rm -f ID_*.txt
 
@@ -2521,6 +2545,8 @@ rule mapping :
         {params.env};
         path_to_pipline=`dirname {params.path_snk}`
 
+        rm -f `find -name "*.fa*.fai"`
+
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
@@ -2703,6 +2729,8 @@ rule SV_INSIDER:
         mkdir -p {params.work_directory}/log/
 
         path_to_pipline=`dirname {params.path_snk}`
+
+        rm -f `find -name "*.fa*.fai"`
 
         #COMPARE GENOME
         minimap2 -ax asm5 --cs -t3 {input.ref} {input.genome} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
