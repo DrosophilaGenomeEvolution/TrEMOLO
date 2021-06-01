@@ -51,6 +51,23 @@ if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
 # Create ouput folder
 os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"])
 
+#Create input folder
+
+CWD = os.getcwd()
+
+os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"] + "/INPUT")
+os.system("ln -s " + "/" + config["DATA"]["REFERENCE"] + " " + CWD + "/" +  config["DATA"]["WORK_DIRECTORY"] + "/INPUT/reference.fasta")
+config["DATA"]["REFERENCE"] = config["DATA"]["WORK_DIRECTORY"] + "/INPUT/reference.fasta"
+
+os.system("ln -s " + "/" + config["DATA"]["GENOME"] + " " + CWD + "/" + config["DATA"]["WORK_DIRECTORY"] + "/INPUT/genome.fasta")
+config["DATA"]["GENOME"] = config["DATA"]["WORK_DIRECTORY"] + "/INPUT/genome.fasta"
+
+
+os.system("ln -s " + "/" + config["DATA"]["SAMPLE"] + " " + CWD + "/" + config["DATA"]["WORK_DIRECTORY"] + "/INPUT/sample.fastq")
+config["DATA"]["SAMPLE"] = config["DATA"]["WORK_DIRECTORY"] + "/INPUT/sample.fastq"
+
+os.system("ln -s "  + "/" + config["DATA"]["TE_DB"] + " " + CWD + "/" + config["DATA"]["WORK_DIRECTORY"] + "/INPUT/lib.fa")
+config["DATA"]["TE_DB"] = config["DATA"]["WORK_DIRECTORY"] + "/INPUT/lib.fa"
 
 # Remember the parameters associated with the output folder
 with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as file:
