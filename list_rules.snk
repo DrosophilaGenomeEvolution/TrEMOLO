@@ -614,7 +614,7 @@ rule TSD :
 
                     #echo "TE=$nameTE ; SIZE TSD=$SIZE_TSD" 
                     
-                    ###(bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+                    ###begin_load
                     sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
                        ${{read_directory}} \
                        ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
@@ -638,14 +638,14 @@ rule TSD :
                         {params.SIZE_FLANK} \
                         $SIZE_TSD >> {log}.out 2>> {log}.err;
                         
-                    ###sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+                    ###end_load
                 else
                     SIZE_TSD=-1;
                     #echo "SIZE-TSD = $SIZE_TSD"
 
                     #echo "TE=$nameTE ; SIZE TSD=?" 
                     
-                    ###(bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+                    ###begin_load
                     sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
                        ${{read_directory}} \
                        ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
@@ -673,7 +673,7 @@ rule TSD :
                             $SIZE_TSD_MOY >> {log}.out 2>> {log}.err;
                     fi;
                         
-                    ###sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+                    ###end_load
                 fi;
                 
                 TOTAL=`grep "^OK/total" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 2`
@@ -1396,10 +1396,15 @@ rule GET_SEQ_TE :
                 | grep -o "_[^_]*\." | grep -o "[^_]*" | sed 's/\.$//g'`.fasta; 
         done ;
 
+        echo "IN {params.work_directory}/OUTSIDER/ET_FIND_FA NUMBER OF FAMILY : `ls {params.work_directory}/OUTSIDER/ET_FIND_FA | wc -l`"
+
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GETTING DONE ! [^-^] {params.cend}"
+
         rm -f {params.work_directory}/.tmp*
         rm -f {params.work_directory}/OUTSIDER/ET_FIND_FA/*.bed ;
         rm -f {params.work_directory}/tmp*.*
         rm -f `find {params.work_directory} -name "*.fai"`
+        rm -f test.csv
         """
 
 
@@ -1912,15 +1917,15 @@ rule FREQUENCE :
             ## version work
             if [ "$version" = "1.0.10" ]; then
 
-                (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+                begin_load
                 run_cmd "sniffles --report_seq -s 1 -m {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.10" "False";
-                sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+                end_load
 
             elif [ "$version" = "1.0.12" ]; then
 
-                (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+                begin_load
                 run_cmd "sniffles --report-seq -s 1 -m {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.12" "False";
-                sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+                end_load
             fi;
         fi;
 
@@ -2033,9 +2038,9 @@ rule FREQUENCE :
 
 #         run_cmd "minimap2 -x  {params.preset} -d {input.ref}.mmi {input.genome}" "{log}" "MINIMAP2_INDEX" "False" ;
 
-#         (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+#         begin_load
 #         run_cmd "minimap2 -ax {params.preset} {params.option} {input.ref} {params.work_directory}/INSIDER/TE_INSIDER.fastq | tee {params.work_directory}/INSIDER/TE_INSIDER.sam" "{log}" "MINIMAP2" "False"; 
-#         sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+#         end_load
 
 #         echo "---view---" | tee {log}.out
 #         #samtools view -h {params.preset_view} -b {input.bam} -L INSERTION_TE.bed > {output.sam}.bam 2>> {log}.err;
@@ -2049,9 +2054,9 @@ rule FREQUENCE :
 #         #samtools calmd {params.preset_callmd} -b {output.sam}.sorted.bam {input.ref} > {output} 2>> {log}.err; #CALL MD for sniffles
 #         run_cmd "samtools calmd {params.preset_callmd} -b {params.work_directory}/MAPPING_TO_REF/TE_INSIDER.sorted.bam {input.ref} | tee {params.work_directory}/MAPPING_TO_REF/TE_INSIDER_MD.sorted.bam" "{log}" "SAMTOOLS_CALLMD" "False";#CALL MD for sniffles
 
-#         (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+#         begin_load
 #         run_cmd "svim alignment --read_names --insertion_sequences --minimum_depth 1 {params.work_directory}/OUTSIDER/VARIANT_CALLING/SVIM_RESULT_REF {params.work_directory}/MAPPING_TO_REF/TE_INSIDER_MD.sorted.bam {input.ref}" "{log}" "SVIM" "False";
-#         sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+#         end_load
         
 
 
@@ -2127,7 +2132,7 @@ rule FREQ_GLOBAL:
             info=`echo $line | awk '{{print $4}}'`
 
             ###echo "info : $info"
-            TE=`echo $line | awk '{{print $4}}' | cut -d "|" -f 1`
+            TE=`echo "$line" | awk '{{print $4}}' | cut -d "|" -f 1`
 
             size_TE=$(($end-$start))
 
@@ -2165,8 +2170,14 @@ rule FREQ_GLOBAL:
                             printf "$chrom\t$start\t-1\t$NB_DEL\t-1\t%.4f\t$TE\tinfo|ERROR\\n" "0" | tr "," "." >> {output.DEPTH}
                             message_fail "ERROR FOR ${{info}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
                         fi;
+                    else
+                        printf "$chrom\t$start\t0\t0\t0\t%.4f\t$TE\t$info\\n" "0" | tr "," "." >> {output.DEPTH}
                     fi;
+                else
+                    printf "$chrom\t$start\t0\t0\t0\t%.4f\t$TE\t$info\\n" "0" | tr "," "." >> {output.DEPTH}
                 fi;
+            else
+                 printf "$chrom\t$start\t0\t0\t0\t%.4f\t$TE\t$info\\n" "0" | tr "," "." >> {output.DEPTH}
             fi;
             i=$(($i+1));
 
@@ -2381,9 +2392,9 @@ rule svim :
 
         ##printf "%s\\n" "{params.cmess} [SNK]--[`date`] SVIM DONE CHECK log file : {log}.err, {log}.out {params.cend}"
 
-        (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+        begin_load
         run_cmd "svim alignment --read_names --insertion_sequences --minimum_depth 1 {params.work_directory}/OUTSIDER/VARIANT_CALLING/SVIM_RESULT {input.bam} {input.genome}" "{log}" "SVIM" "False";
-        sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+        end_load
 
         cp {output.svim} {output.sv}
         """
@@ -2431,15 +2442,15 @@ rule sniffles :
         ## version work
         if [ "$version" = "1.0.10" ]; then
 
-            (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+            begin_load
             run_cmd "sniffles --report_seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.10" "False";
-            sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+            end_load
 
         elif [ "$version" = "1.0.12" ]; then
 
-            (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+            begin_load
             run_cmd "sniffles --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.12" "False";
-            sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+            end_load
 
         else
             message_fail "[SNK] -- [`date`] -- [ERROR] version $version YOU HAVE NOT THE GOOD VERSION OF SNIFFLES, PLEASE GET VERSION 1.0.10 or 1.0.12"
@@ -2556,9 +2567,9 @@ rule mapping :
 
         #minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} 2>> {log}.err;
         
-        (bash ${{path_to_pipline}}/lib/bash/load.sh &) || echo
+        begin_load
         run_cmd "minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} | tee {output}" "{log}" "MINIMAP2" "False"; 
-        sh ${{path_to_pipline}}/lib/bash/end_load.sh;
+        end_load
 
         rm -f {log}.out
 
@@ -2673,9 +2684,11 @@ rule TE_INSIDER:
                     awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv
 
                 echo
+                #test -s {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv && \
+                #tail {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv | awk -F "\t" 'OFS="\t"{{if(NR!=1){{print $2, $3}}else{{print "TE\tNUMBER"}}}}'
                 test -s {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv && \
-                tail {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv | awk -F "\t" 'OFS="\t"{{if(NR!=1){{print $2, $3}}else{{print "TE\tNUMBER"}}}}'
-                echo -e "......\n"
+                    awk -F "\t" 'BEGIN{{ NB_FAMILY=0; Count_TE=0; }} OFS="\t"{{ if(NR!=1){{ NB_FAMILY += 1; Count_TE+=$3;}}  }} END{{print "NUMBER OF FAMILY := "NB_FAMILY"\\nNUMBER OF TE := "Count_TE;}}' {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_COUNT_TE.csv
+                echo -e "\n"
             fi;
         done;
 

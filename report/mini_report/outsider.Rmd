@@ -111,16 +111,14 @@ theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
   #,panel.border = element_rect(linetype = "dashed", fill = NA)
   #, panel.grid.major = element_line(colour = "black")
 ) +
-geom_segment( aes(x = 3, y = 1, xend = 3, yend = nb_diff_TE ), colour = "black", alpha=0.5, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
+geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
 
     labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
 geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 3) 
 
 order_TE = data$y
 
-#graph
 graph
-#ggsave(name_output)
 
 ```
 
@@ -162,7 +160,6 @@ p = ggplot(data, aes(fill=condition, y=y, x=x)) +
                                           linetype="solid", color="white"))
 
 p
-#ggsave(p, file=output)
 
 ```
 

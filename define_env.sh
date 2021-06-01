@@ -49,3 +49,13 @@ message_fail () {
     #echo -e "${RED} ${message} ${END}"
     printf "%b" "${RED} ${message} ${END}"
 }
+
+
+begin_load (){
+    (bash ${path_to_pipline}/lib/bash/load.sh &) || echo
+}
+
+
+end_load (){
+    sh ${path_to_pipline}/lib/bash/end_load.sh;
+}
