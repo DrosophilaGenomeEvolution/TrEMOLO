@@ -54,10 +54,10 @@ if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
 
 # Attach new data
 
-config["DATA"]["REFERENCE"] = config["DATA"]["WORK_DIRECTORY"] + "/INPUT/reference.fasta"
-config["DATA"]["GENOME"] = config["DATA"]["WORK_DIRECTORY"] + "/INPUT/genome.fasta"
-config["DATA"]["SAMPLE"] = config["DATA"]["WORK_DIRECTORY"] + "/INPUT/sample.fastq"
-config["DATA"]["TE_DB"] = config["DATA"]["WORK_DIRECTORY"] + "/INPUT/lib.fa"
+config["DATA"]["REFERENCE"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/reference.fasta"
+config["DATA"]["GENOME"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/genome.fasta"
+config["DATA"]["SAMPLE"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/sample.fastq"
+config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/lib.fa"
 
 # Create ouput folder
 #os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA")
