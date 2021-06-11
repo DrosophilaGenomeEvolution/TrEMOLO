@@ -124,7 +124,7 @@ This option is disabled since Singularity Hub is for the moment in read-only
 TrEMOLO uses snakemake to perform its analyses. You have then first to provide your parameters in a *.yaml* file (see an example in the *config.yaml* file). Parameters are :
 
 ```
-# all path can be relative or absolute
+# all path can be relative or absolute depending of your tree. It is advised to only use absolute path if you are not familiar with computer science or the importance of folder trees structure. 
 DATA:
     GENOME:          "/path/to/genome_file.fasta"      #genome (fasta file) [required]
     TE_DB:           "/path/to/database_TE.fasta"      #Database of TE (a fasta file) [required]
@@ -180,13 +180,15 @@ PARAMS:
 The main parameters are:
 
 - `GENOME` : Assembly of the sample of interest (or mix of samples), fasta file.\
-- `TE_DB`  : **Multifasta** file containing the canonical sequence of transposable elements. You can add also copy sequences but results will be more complex to interpretate.
+- `TE_DB`  : **Multifasta** file containing the canonical sequence of transposable elements. You can add also copy sequences but results will be more complex to interpretate. Make sure the headers of this multifasta do not contains this caracters : ":", "|" or "/".\
+- `REFERENCE` : Fasta file containing the reference genome of the sample of interest.\
 - `WORK_DIRECTORY` : Directory that will contain the output files. If the directory does not exist it will be created;  default value is *output*.\
 - `SAMPLE` : File containing the reads used for the sample assembly.\
 
 
 You can take **config_INSIDER.yaml** for only **INSIDER** analysis or **config_OUTSIDER.yaml** for only **OUTSIDER** analysis.
-
+To analyse **INSIDER**, only the `REFERENCE` , the `GENOME`, the `TE_DB` and the `WORK_DIRECTORY` are required. 
+To analyse **OUTSIDER**, only the `SAMPLE` , the `GENOME`, the `TE_DB` and the `WORK_DIRECTORY` are required. 
 
 
 # Usage<a name="usage"></a>
