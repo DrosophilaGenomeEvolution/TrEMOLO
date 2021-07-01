@@ -222,6 +222,6 @@ d3.select("#search").on("input", function() {
 size_x   = data.length;
 size     = parseInt(size_x) - parseInt(max_nb_x)
 
-update(data.slice(1, 30))
+update(data.slice(0, 30));
 document.getElementById("slider").max   = size.toString();
 document.getElementById("slider").value = "0"

@@ -11,9 +11,7 @@ df  = pd.read_csv(name_input, sep="\t")
 tab_per = ["0-2", "2-9", "9-15", "15-50", "50-100"]
 dico = {"x":[], "y":[], "condition":[]}
 
-for i, v in enumerate(df["TE"].unique()):
-    TE       = v
-
+for i, TE in enumerate(df["TE"].unique()):
     COUNT_TE = 0
     df_tmp = df[df["TE"] == TE]
     #print(TE, "TE")
@@ -21,7 +19,11 @@ for i, v in enumerate(df["TE"].unique()):
         mini = float(e.split("-")[0])
         maxi = float(e.split("-")[1])
         
-        df_tmp_mini =  df_tmp[df_tmp["read_support_percent"] > mini]
+        if mini == float(0):
+            df_tmp_mini =  df_tmp[df_tmp["read_support_percent"] >= mini]
+        else :
+            df_tmp_mini =  df_tmp[df_tmp["read_support_percent"] > mini]
+
         if len(df_tmp_mini.values) :
             df_tmp_maxi = df_tmp_mini[df_tmp_mini["read_support_percent"] <= maxi]
             if len(df_tmp_maxi.values) :

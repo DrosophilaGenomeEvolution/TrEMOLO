@@ -9,7 +9,7 @@ awk -v size_windows_pos="15" -v max_size_TE_fk="30000"  -v size="10" 'BEGIN{
         nuc  = nuc"N"
         qual = qual"8"
     };
-
+    ##print "" > "number_clipped.txt"
 }
 
 function parse_cig_length(cigar){
@@ -37,13 +37,13 @@ function parse_cig_length(cigar){
     
     NR == FNR {  
         if(chrom == $1){
-            dico[$1, i] = $2":"$3
+            dico[$1, i] = $2":"$3":"$4
             i+=1
         }
         else{
             i=1
             chrom = $1
-            dico[$1, i] = $2":"$3
+            dico[$1, i] = $2":"$3":"$4
             i+=1
         }
         next;
@@ -65,6 +65,7 @@ OFS="\t"{
         split(dico[$3, i], pos_and_size, ":")
         position = pos_and_size[1]
         size_in  = pos_and_size[2]
+        TE_ID    = pos_and_size[3]
 
         if((position - size_windows_pos <= $4 && $4 <= position + size_windows_pos)){
             position_debut_read=(position - size_windows_pos <= $4 && $4 <= position + size_windows_pos)
@@ -83,7 +84,8 @@ OFS="\t"{
     # }
 
     if( position_debut_read || position_end_read){
-        
+        ##print $1":"$3":"position":"size":"TE_ID >> "number_clipped.txt"
+
         if(len >= 2 && n != 0){
             rest=size_in-CIG[1]
 
@@ -131,6 +133,7 @@ OFS="\t"{
             }
         }
         else {
+            ##print $1":"$3":"position":"size":"TE_ID >> "number_clipped.txt"
             #HARD
             len=split($6, CIG,"H"); 
             n=match(CIG[1], /^[0-9]+$/); 

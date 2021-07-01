@@ -173,7 +173,11 @@ hover your mouse over the bars or navigate with the slider if the number of diff
 
 ```{bash FREQB2, eval=TRUE, include=TRUE, results=TRUE}
 
-test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && python3 ../lib/freq_graph.py ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv FREQ_TE.csv || echo ;
+test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && awk -F "\t" 'NR>1 {print $2}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv | tail -n 50 > .tmp_orderc.txt
+
+
+test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && python3 ../lib/freq_graph.py ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv .tmp_FREQ_TE.csv && echo -e "x\ty\tcondition" > FREQ_TE.csv && grep -w -f .tmp_orderc.txt .tmp_FREQ_TE.csv >> FREQ_TE.csv || echo ;
+
 
 ```
 
@@ -182,13 +186,15 @@ test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && python3 ../lib/freq_gr
 ```{r FREQIN, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
 data = read.csv("FREQ_TE.csv", sep="\t")
-data = tail(data, 50)
 
-data$x <- factor(data$x, levels = order_TE)
+#data$x <- factor(data$x, levels = order_TE)
 
-#orderc = order frequence
+#order condition percent
 order <- read.table("orderc.txt", header = FALSE)
 data$condition <- factor(data$condition, levels = order$V1)
+
+orderx <- read.table(".tmp_orderc.txt", header = FALSE)
+data$x <- factor(data$x, levels = orderx$V1)
 
 p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
         geom_bar(position="stack", stat="identity") +
@@ -202,7 +208,6 @@ p = ggplot(data, aes(fill=condition, y=y, x=x)) +
                                           linetype="solid", color="white"))
 
 p
-#ggsave(p, file=output)
 
 ```
 

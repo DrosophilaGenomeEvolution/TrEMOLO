@@ -52,13 +52,14 @@ DB_TE=$4
 FLANK_SIZE=$5
 TSD_SIZE=$6
 COMBINE=$7
+OUTPUT=$8
 
 path_this_script=`dirname $0`
 echo $path_this_script ;
 
 
 #ERROR
-if [ "$#" -ne 7 ]; then
+if [ "$#" -ne 8 ]; then
     echo "ERROR : need 6 arguments. You have put $# arguments" ;
     echo "usage: tsd_te.sh <file_find_nameTE.fasta> <DIRECTORY_READS_SUPPORT> <DIRECTORY_READS_SUPPORT_FASTA> <database_TE_fasta> <flank_size> <tsd_size>"
     exit 1 ;
@@ -85,7 +86,7 @@ REPO_READS_FA=`echo ${REPO_READS_FA} | sed 's/[/]$//g'`
 #for e in `ls all_fasta_element/ | grep -o "d_.*\." | grep -o "_.*[^.]" | grep -o "[^_]*"`; do
 #elem=$e
 echo "[$0] <<<<<<<<<<<<<<<<<<< TSD >>>>>>>>>>>>>>>>>>>>"
-echo " " > total_results_tsd.txt
+echo " " > ${OUTPUT}
 number_element=`grep ">" $FIND_FA | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | grep -o ":[A-Za-z\.0-9]*:" | grep -o "[A-Za-z\.0-9]*" | wc -l`
 i=0
 for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | grep -o ":[A-Za-z\.0-9]*:" | grep -o "[A-Za-z\.0-9]*"`; do
@@ -200,13 +201,13 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         head -n 1 TE_vs_databaseTE.bln
 
         strand=`awk 'NR==1 {if ($9 < $10){print "+"} else {print "-"}}' TE_vs_databaseTE.bln`
-        echo $reads >> total_results_tsd.txt
-        echo $head  >> total_results_tsd.txt
+        echo $reads >> ${OUTPUT}
+        echo $head  >> ${OUTPUT}
 
         # FIND TSD
         # Warning : path
         echo "[$0] flank_TE.fasta    sequence_TE.fasta     $FLANK_SIZE     $id     $strand     $TSD_SIZE"
-        python3 ${path_this_script}/find_tsd.py flank_TE.fasta sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> total_results_tsd.txt
+        python3 ${path_this_script}/find_tsd.py flank_TE.fasta sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> ${OUTPUT}
 done
 
 
@@ -215,17 +216,17 @@ rm -f sequence_TE.fasta sequence_TE.bln sequence_TE.bed
 rm -f flank_TE.fasta flank_TE.bed
 
 
-number_ok=`grep "OK" total_results_tsd.txt -c`
-number_ko=`grep "KO" total_results_tsd.txt -c`
-number_total=`grep "reads" total_results_tsd.txt -c`
-number_k_o=`grep "K-O" total_results_tsd.txt  -c`
+number_ok=`grep "OK" ${OUTPUT} -c`
+number_ko=`grep "KO" ${OUTPUT} -c`
+number_total=`grep "reads" ${OUTPUT} -c`
+number_k_o=`grep "K-O" ${OUTPUT}  -c`
 
 
 #RESUME
-echo "OK/total : $number_ok/$number_total" >> total_results_tsd.txt
-echo "KO/total : $number_ko/$number_total" >> total_results_tsd.txt
-echo "OK+KO/total : $(($number_ok+$number_ko))/$number_total" >> total_results_tsd.txt
-echo "K-O/total : $number_k_o/$number_total" >> total_results_tsd.txt
-echo "OK+K-O/total : $(($number_ok+$number_k_o))/$number_total" >> total_results_tsd.txt
-echo "OK% : $(($number_ok*100/$number_total))%" >> total_results_tsd.txt
+echo "OK/total : $number_ok/$number_total" >> ${OUTPUT}
+echo "KO/total : $number_ko/$number_total" >> ${OUTPUT}
+echo "OK+KO/total : $(($number_ok+$number_ko))/$number_total" >> ${OUTPUT}
+echo "K-O/total : $number_k_o/$number_total" >> ${OUTPUT}
+echo "OK+K-O/total : $(($number_ok+$number_k_o))/$number_total" >> ${OUTPUT}
+echo "OK% : $(($number_ok*100/$number_total))%" >> ${OUTPUT}
 

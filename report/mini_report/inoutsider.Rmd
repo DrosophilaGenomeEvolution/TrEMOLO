@@ -13,7 +13,7 @@
 ```{bash, eval=TRUE, include=TRUE, results=TRUE}
 
 (test -s ../../TE_INFO.csv && \
-    awk '{split($4, sp, "|"); print sp[1]}' ../../TE_INFO.csv | sort | uniq -c | awk '{print $1"\t"$2}' | sort -k 1 -n | awk 'BEGIN{print "x\ty\tz"} OFS="\t"{print "", $2, $1}' > .tmp_ALL_TE_COUNT.csv)
+    awk 'NR>1{split($4, sp, "|"); print sp[1]}' ../../TE_INFO.csv | sort | uniq -c | awk '{print $1"\t"$2}' | sort -k 1 -n | awk 'BEGIN{print "x\ty\tz"} OFS="\t"{print "", $2, $1}' > .tmp_ALL_TE_COUNT.csv)
 
 ```
 
@@ -94,12 +94,18 @@ graph
 
 ```{bash FREQB_inout, eval=TRUE, include=TRUE, results=TRUE}
 
+test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv | tail -n 50 > .tmp_orderc.txt || echo
+
+
 (test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
   cat ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv > .tmp_DEPTH_TE.csv) || \
   (test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
     cat ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > .tmp_DEPTH_TE.csv)
 
-test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && awk 'NR>1' ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv >> .tmp_DEPTH_TE.csv && python3 ../lib/freq_graph.py .tmp_DEPTH_TE.csv FREQ_TE.csv || echo ;
+
+(test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && awk 'NR>1' ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv >> .tmp_DEPTH_TE.csv && python3 ../lib/freq_graph.py .tmp_DEPTH_TE.csv FREQ_TE.csv) || echo ;
+
+(test -s FREQ_TE.csv && echo -e "x\ty\tcondition" > .tmp_depth.csv && grep -w -f .tmp_orderc.txt FREQ_TE.csv >> .tmp_depth.csv && mv .tmp_depth.csv FREQ_TE.csv) || echo
 
 ```
 
@@ -107,27 +113,33 @@ test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && awk 'NR>1' ../../INSID
 
 ```{r FREQ_INOUT, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
-data = read.csv("FREQ_TE.csv", sep="\t")
-data = tail(data, 50)
 
-data$x <- factor(data$x, levels = order_TE)
+if( file.exists("FREQ_TE.csv") ){
+  data = read.csv("FREQ_TE.csv", sep="\t")
 
-order <- read.table("orderc.txt", header = FALSE)
-data$condition <- factor(data$condition, levels = order$V1)
+  #data$x <- factor(data$x, levels = order_TE)
 
-p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
-        geom_bar(position="stack", stat="identity") +
-        xlab("TE") +
-        ylab("NUMBER") +
-        labs(fill = "FREQUENCE") +
-        #scale_fill_viridis(discrete = T) +
-        scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
-        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
-            panel.background = element_rect(fill="white", colour="white", 
-                                          linetype="solid", color="white"))
+  order <- read.table("orderc.txt", header = FALSE)
+  data$condition <- factor(data$condition, levels = order$V1)
 
-p
-#ggsave(p, file=output)
+  orderx <- read.table(".tmp_orderc.txt", header = FALSE)
+  data$x <- factor(data$x, levels = orderx$V1)
+
+
+  p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
+          geom_bar(position="stack", stat="identity") +
+          xlab("TE") +
+          ylab("NUMBER") +
+          labs(fill = "FREQUENCE") +
+          #scale_fill_viridis(discrete = T) +
+          scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
+          theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+              panel.background = element_rect(fill="white", colour="white", 
+                                            linetype="solid", color="white"))
+
+  p
+  #ggsave(p, file=output)
+}
 
 ```
 

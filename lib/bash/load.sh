@@ -1,7 +1,7 @@
 trap 'printf "\b%.0s" `seq 1 46` >&1; echo -e "\nEND LOAD\n" >&1; exit 1' SIGTERM SIGINT;
 sleep 1;
 chain="•••";
-#echo ".·’·.•’•.٭*"
+#echo ".·’·.•’•.٭* ⠁"
 while [ 0 ]; do
     array_load=( 'LOADING.    ' 'LOADING •   ' 'LOADING  *  ' 'LOADING   • ' 'LOADING    .' 'LOADING   • ' 'LOADING  *  ' 'LOADING •   ' 'LOADING.    ')
     for ((i = 0; i < ${#array_load[@]}; i++));
@@ -22,6 +22,6 @@ while [ 0 ]; do
         number_of_char=`echo "$show_load" | wc -c`
         number_of_char=$(($number_of_char-1));
         printf "\033[u";
-        sleep 0.2;
+        sleep 0.1;
     done;
 done >&1;

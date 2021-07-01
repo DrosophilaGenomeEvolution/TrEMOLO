@@ -56,22 +56,13 @@ with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as 
     file.write(json.dumps(config))
 
 #Create input folder
-
-CWD = os.getcwd()
-
 os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT")
 
-os.system("test -s `realpath " + config["DATA"]["REFERENCE"] + "` && ln -s  `realpath " + config["DATA"]["REFERENCE"] + "` " +  config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/reference.fasta")
-#config["DATA"]["REFERENCE"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/reference.fasta"
-
-os.system("test -s `realpath " + config["DATA"]["GENOME"] + "` && ln -s  `realpath " + config["DATA"]["GENOME"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/genome.fasta")
-#config["DATA"]["GENOME"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/genome.fasta"
-
-os.system("test -s `realpath " + config["DATA"]["SAMPLE"] + "` && ln -s  `realpath " + config["DATA"]["SAMPLE"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/sample.fastq")
-#config["DATA"]["SAMPLE"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/sample.fastq"
-
-os.system("test -s `realpath " + config["DATA"]["TE_DB"] + "` && ln -s  `realpath "  + config["DATA"]["TE_DB"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/lib.fa")
-#config["DATA"]["TE_DB"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/lib.fa"
+#create symbolic link input data
+os.system("test -s `realpath " + config["DATA"]["REFERENCE"] + "` && ln -s  `realpath " + config["DATA"]["REFERENCE"] + "` " +  config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"]))
+os.system("test -s `realpath " + config["DATA"]["GENOME"] + "` && ln -s  `realpath " + config["DATA"]["GENOME"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"]))
+os.system("test -s `realpath " + config["DATA"]["SAMPLE"] + "` && ln -s  `realpath " + config["DATA"]["SAMPLE"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"]))
+os.system("test -s `realpath " + config["DATA"]["TE_DB"] + "` && ln -s  `realpath "  + config["DATA"]["TE_DB"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"]))
 
 # Get path snakefile
 path_snk = ""
@@ -172,7 +163,7 @@ rule create_snake_file :
             rm -f {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
 
             ## Exemple les instructions par default obligatoir
-            printf "%s" "SV_INSIDER > TE_INSIDER:N " > instruction.txt
+            printf "%s" "SV_INSIDER > TE_INSIDER > TE_ALL_IN_ASSEMBLY " > instruction.txt
 
             if [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
@@ -211,19 +202,19 @@ rule create_snake_file :
 
             rm -f {params.work_directory}/log/Snakefile_insider.log
             
-            if [ $? -eq 0 ] && test -e dryrun_validate ; then
+            if test -e dryrun_validate ; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --nolock 2>> {params.work_directory}/log/Snakefile_insider.log | tee {params.work_directory}/log/Snakefile_insider.log \
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_insider.log | tee {params.work_directory}/log/Snakefile_insider.log \
                     || (message_fail "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_insider.snk\\n\\n" && \
                     echo "snake log file : {params.work_directory}/log/Snakefile_insider.log" && rm -f ${{path_to_pipline}}/Snakefile*);
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_insider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_insider.log
             fi;
 
+
             rm -f dryrun_validate;
             test -s instruction.txt && test -s {params.work_directory}/INSIDER && mv instruction.txt {params.work_directory}/INSIDER/instructions.txt
         fi;
-
         
 
         ###
@@ -267,18 +258,18 @@ rule create_snake_file :
             ## Exemple les instruction par default obligatoir
             printf "%s" "> GET_SEQ_TE " >> instruction.txt
 
-            if [ {params.choice_insider_sv} = "True" ]; then
+            if [ {params.choice_insider_sv} = "True" ] && [ {params.INTEGRATE_TE_TO_GENOME} = True ]; then
                 printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
                 printf "%s" "> FIND_SV_ON_REF " >> instruction.txt
                 printf "%s" "> FIND_TE_ON_REF " >> instruction.txt
-                printf "%s" "> TSD" >> instruction.txt
+                printf "%s" "> TSD" >> instruction.txtt
             else
                 if [ {params.INTEGRATE_TE_TO_GENOME} = True ]; then
                     printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
                     printf "%s" "> TSD " >> instruction.txt
                 else
                     #:NI = NO INPUT
-                    printf "%s" "> TSD:NI " >> instruction.txt
+                    printf "%s" "> TSD " >> instruction.txt
                 fi;
             fi;
 
@@ -310,10 +301,10 @@ rule create_snake_file :
 
             rm -f {params.work_directory}/log/Snakefile_outsider.log
 
-            if [ $? -eq 0 ] && test -e dryrun_validate; then
+            if test -e dryrun_validate; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --nolock 2>> {params.work_directory}/log/Snakefile_outsider.log | tee {params.work_directory}/log/Snakefile_outsider.log  \
-                    || (message_fail "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\\n\\n" && \
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_outsider.log | tee {params.work_directory}/log/Snakefile_outsider.log  \
+                     || (message_fail "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\\n\\n" && \
                     echo "snake log file : {params.work_directory}/log/Snakefile_outsider.log" && rm -f ${{path_to_pipline}}/Snakefile)
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_outsider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_outsider.log

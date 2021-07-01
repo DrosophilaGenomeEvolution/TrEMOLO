@@ -89,7 +89,7 @@ while line :
             start = df_tmp_chrom["start"].values[i]
             end   = df_tmp_chrom["end"].values[i]
             name  = df_tmp_chrom["name"].values[i]
-            ID    = name.split(":")[1]
+            ID    = name.split(":")[-1]
             #ID    = name.split(":")[1]
             #print("name:", name)
             out_line = find_seq_in_fa(":"+ID+":[0-9]*:[IP]", args.TE_seq_file, "-A 1")

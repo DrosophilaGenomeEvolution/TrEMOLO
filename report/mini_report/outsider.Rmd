@@ -129,10 +129,16 @@ graph
 
 ```{bash FREQB_out, eval=TRUE, include=TRUE, results=TRUE}
 
+test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv | tail -n 50 > .tmp_orderc.txt
+
+
+rm -f .tmp_FREQ_TE.csv
 (test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
-  python3 ../lib/freq_graph.py ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv FREQ_TE.csv) || \
+  python3 ../lib/freq_graph.py ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv .tmp_FREQ_TE.csv) || \
   (test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
-  python3 ../lib/freq_graph.py ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv FREQ_TE.csv)
+  python3 ../lib/freq_graph.py ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv .tmp_FREQ_TE.csv)
+
+test -s .tmp_FREQ_TE.csv && echo -e "x\ty\tcondition" > FREQ_TE.csv && grep -w -f .tmp_orderc.txt .tmp_FREQ_TE.csv >> FREQ_TE.csv
 
 ```
 
@@ -141,12 +147,15 @@ graph
 ```{r FREQOUT, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
 data = read.csv("FREQ_TE.csv", sep="\t")
-data = tail(data, 50)
 
-data$x <- factor(data$x, levels = order_TE)
+#data$x <- factor(data$x, levels = order_TE)
 
 order <- read.table("orderc.txt", header = FALSE)
 data$condition <- factor(data$condition, levels = order$V1)
+
+orderx <- read.table(".tmp_orderc.txt", header = FALSE)
+data$x <- factor(data$x, levels = orderx$V1)
+
 
 p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
         geom_bar(position="stack", stat="identity") +
