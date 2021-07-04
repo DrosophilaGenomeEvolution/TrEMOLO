@@ -163,11 +163,13 @@ rule create_snake_file :
             rm -f {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
 
             ## Exemple les instructions par default obligatoir
-            printf "%s" "SV_INSIDER > TE_INSIDER > TE_ALL_IN_ASSEMBLY " > instruction.txt
+            printf "%s" "SV_INSIDER > TE_INSIDER:N " > instruction.txt
 
             if [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-                printf "%s" "> TSD " >> instruction.txt
+                printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD " >> instruction.txt
+            else
+                printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> instruction.txt
             fi;
 
 
@@ -258,13 +260,13 @@ rule create_snake_file :
             ## Exemple les instruction par default obligatoir
             printf "%s" "> GET_SEQ_TE " >> instruction.txt
 
-            if [ {params.choice_insider_sv} = "True" ] && [ {params.INTEGRATE_TE_TO_GENOME} = True ]; then
+            if [ {params.choice_insider_sv} = "True" ] && [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                 printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
                 printf "%s" "> FIND_SV_ON_REF " >> instruction.txt
                 printf "%s" "> FIND_TE_ON_REF " >> instruction.txt
-                printf "%s" "> TSD" >> instruction.txtt
+                printf "%s" "> TSD" >> instruction.txt
             else
-                if [ {params.INTEGRATE_TE_TO_GENOME} = True ]; then
+                if [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                     printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
                     printf "%s" "> TSD " >> instruction.txt
                 else

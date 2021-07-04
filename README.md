@@ -88,7 +88,7 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
 
 Once the requirements fullfilled, just git clone
 
-```
+```bash
 git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 ```
 
@@ -101,13 +101,13 @@ git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in.
 The *def* file provided can be compiled as such:
 
-```
+```bash
 sudo singularity build TrEMOLO.simg TrEMOLO/Singularity
 ```
 
 Test TrEMOLO with singularity
 
-```
+```bash
 singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
 ```
 
@@ -123,7 +123,7 @@ This option is disabled since Singularity Hub is for the moment in read-only
 
 TrEMOLO uses snakemake to perform its analyses. You have then first to provide your parameters in a *.yaml* file (see an example in the *config.yaml* file). Parameters are :
 
-```
+```yaml
 # all path can be relative or absolute depending of your tree. It is advised to only use absolute path if you are not familiar with computer science or the importance of folder trees structure. 
 DATA:
     GENOME:          "/path/to/genome_file.fasta"      #genome (fasta file) [required]
@@ -168,15 +168,14 @@ PARAMS:
             SIZE_FLANK: 30  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
-        INTEGRATE_TE_TO_GENOME:
-            PUT_ID: True # (True, False) Provide an ID for each integration
-            PUT_SEQUENCE_DB_TE: True # (True, False) Integrate the canonical sequence of the element instead of the one identified in the reads
+            GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
         PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option for TrEMOLO/lib/python/parse_blast_main.py - don,t put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
 
 
 ```
+
 The main parameters are:
 
 - `GENOME` : Assembly of the sample of interest (or mix of samples), fasta file.\
@@ -193,13 +192,13 @@ To analyse **OUTSIDER**, only the `SAMPLE` , the `GENOME`, the `TE_DB` and the `
 
 # Usage<a name="usage"></a>
 
-```
+```bash
 snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path/to/your_config.yaml
 ```
 
 Start test
 
-```
+```bash
 snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
 ```
 
@@ -211,8 +210,13 @@ Here is the structure of the output files obtained after running the pipeline.
 ```
 WORK_DIRECTORY
 ├── params.yaml
+├── POSITION_TE_INOUTSIDER.bed
 ├── POSITION_TE_INSIDER.bed
 ├── POSITION_TE_OUTSIDER.bed
+├── POSITION_TE_OUTSIDER_IN_NEO_GENOME.bed  #POSITION TE SEQUENCE ON BEST READS SUPPORT INTEGRATED IN GENOME
+├── POS_TE_VG_ON_REF.bed  #POSITION TE INSIDER ON REFRENCE GENOME
+├── POS_TE_VR_ON_REF.bed  #POSITION TE OUTSIDER ON REFRENCE GENOME
+├── POSITION_TE_ON_REF.bed  #POSITION TE INSIDER AND OUTSIDER ON REFRENCE GENOME
 ├── POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed
 ├── VALUES_TSD_ALL_GROUP.csv
 ├── VALUES_TSD_GROUP_OUTSIDER.csv
@@ -231,6 +235,9 @@ WORK_DIRECTORY
 │   ├── FREQ_GLOBAL
 │   │   └── DEPTH_TE_INSIDER.csv
 │   ├── TE_DETECTION
+│   │   ├── ALL_TE.bed     #ALL TE IN ASSEMBLY NOT ONLY INSERTION
+│   │   ├── ALL_TE_COMBINE_TE.csv  #ALL TE IN ASSEMBLY NOT ONLY INSERTION
+│   │   ├── ALL_TE.csv    #ALL TE IN ASSEMBLY NOT ONLY INSERTION
 │   │   ├── DELETION.bed
 │   │   ├── DELETION.bln
 │   │   ├── DELETION_COMBINE_TE.csv

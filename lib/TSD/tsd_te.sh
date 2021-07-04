@@ -221,12 +221,16 @@ number_ko=`grep "KO" ${OUTPUT} -c`
 number_total=`grep "reads" ${OUTPUT} -c`
 number_k_o=`grep "K-O" ${OUTPUT}  -c`
 
+if [ $number_total -ne 0 ]; then
 
-#RESUME
-echo "OK/total : $number_ok/$number_total" >> ${OUTPUT}
-echo "KO/total : $number_ko/$number_total" >> ${OUTPUT}
-echo "OK+KO/total : $(($number_ok+$number_ko))/$number_total" >> ${OUTPUT}
-echo "K-O/total : $number_k_o/$number_total" >> ${OUTPUT}
-echo "OK+K-O/total : $(($number_ok+$number_k_o))/$number_total" >> ${OUTPUT}
-echo "OK% : $(($number_ok*100/$number_total))%" >> ${OUTPUT}
+    #RESUME
+    echo "OK/total : $number_ok/$number_total" >> ${OUTPUT}
+    echo "KO/total : $number_ko/$number_total" >> ${OUTPUT}
+    echo "OK+KO/total : $(($number_ok+$number_ko))/$number_total" >> ${OUTPUT}
+    echo "K-O/total : $number_k_o/$number_total" >> ${OUTPUT}
+    echo "OK+K-O/total : $(($number_ok+$number_k_o))/$number_total" >> ${OUTPUT}
+    echo "OK% : $(($number_ok*100/$number_total))%" >> ${OUTPUT}
 
+else
+    echo "ERROR NUMBER TOTAL OF TE EQUAL 0 " >> ${OUTPUT}
+fi;

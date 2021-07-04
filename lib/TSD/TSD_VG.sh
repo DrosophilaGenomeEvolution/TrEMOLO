@@ -40,13 +40,18 @@ number_total=`grep ">" ${OUTPUT} -c`
 number_k_o=`grep "K-O" ${OUTPUT} -c`
 
 #RESUME
-echo "OK/total : $number_ok/$number_total" >> ${OUTPUT}
-echo "KO/total : $number_ko/$number_total" >> ${OUTPUT}
-echo "OK+KO/total : $(($number_ok+$number_ko))/$number_total" >> ${OUTPUT}
-echo "K-O/total : $number_k_o/$number_total" >> ${OUTPUT}
-echo "OK+K-O/total : $(($number_ok+$number_k_o))/$number_total" >> ${OUTPUT}
-echo "OK% : $(($number_ok*100/$number_total))%" >> ${OUTPUT}
+if [ -n "$number_total" ]; then
+    
+    echo "OK/total : $number_ok/$number_total" >> ${OUTPUT}
+    echo "KO/total : $number_ko/$number_total" >> ${OUTPUT}
+    echo "OK+KO/total : $(($number_ok+$number_ko))/$number_total" >> ${OUTPUT}
+    echo "K-O/total : $number_k_o/$number_total" >> ${OUTPUT}
+    echo "OK+K-O/total : $(($number_ok+$number_k_o))/$number_total" >> ${OUTPUT}
+    echo "OK% : $(($number_ok*100/$number_total))%" >> ${OUTPUT}
     #mv ${OUTPUT} TSD_$TE.txt
-# done;
-# rm -f FLANK.bed TE.bed TE_name.txt
+    # done;
+    # rm -f FLANK.bed TE.bed TE_name.txt
+else
+    echo "ERROR : ${OUTPUT}";
+fi
 
