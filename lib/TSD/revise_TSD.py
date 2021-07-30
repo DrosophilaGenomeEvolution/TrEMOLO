@@ -2,128 +2,131 @@ import sys
 import os
 import subprocess
 
+#our
+from utils import *
+
 
 
 file = open(sys.argv[1], "r")#Empty sites
 name_file_tsd = sys.argv[2]#TSD
 
-def calcule_suff(P):
-    m = len(P) - 1
+# def calcule_suff(P):
+#     m = len(P) - 1
 
-    suff = [0] * (m + 1)
-    suff[m] = m
-    g = m
-    f = m
+#     suff = [0] * (m + 1)
+#     suff[m] = m
+#     g = m
+#     f = m
 
-    for i in range(m-1, 0, -1):
-        #print("here", i, m)
-        if i > g and suff[i+m-f] != i - g:
-            suff[i] = min(suff[i + m - f], i-g)
-        else :
-            f = i
-            g = min(g, i)
+#     for i in range(m-1, 0, -1):
+#         #print("here", i, m)
+#         if i > g and suff[i+m-f] != i - g:
+#             suff[i] = min(suff[i + m - f], i-g)
+#         else :
+#             f = i
+#             g = min(g, i)
 
-            while g > 0 and P[g] == P[g + m - f]:
-                g = g - 1
+#             while g > 0 and P[g] == P[g + m - f]:
+#                 g = g - 1
             
-            suff[i] = f - g
+#             suff[i] = f - g
 
-    return suff
-
-
-def calcule_D(P):
-
-    m = len(P) - 1
-    D = [0] * (m + 1)
-    suff = calcule_suff(P)
-
-    #print("suff: ", suff[1:])
-    #python m+1 = m
-    for i in range(1, m + 1):
-        D[i] = m
-
-    i = 1
-    for j in range(m-1, -1, -1):
-        if j == 0 or suff[j] == j:
-            while i <= m-j:
-                D[i] = m - j
-                i = i + 1
+#     return suff
 
 
-    for j in range(1, m):
-        D[m-suff[j]] = m - j
+# def calcule_D(P):
+
+#     m = len(P) - 1
+#     D = [0] * (m + 1)
+#     suff = calcule_suff(P)
+
+#     #print("suff: ", suff[1:])
+#     #python m+1 = m
+#     for i in range(1, m + 1):
+#         D[i] = m
+
+#     i = 1
+#     for j in range(m-1, -1, -1):
+#         if j == 0 or suff[j] == j:
+#             while i <= m-j:
+#                 D[i] = m - j
+#                 i = i + 1
 
 
-    return D
+#     for j in range(1, m):
+#         D[m-suff[j]] = m - j
 
 
-def calcule_R(P):
-    m = len(P) - 1
+#     return D
 
-    R = {"A":0, "T":1, "G":2, "C":3}
 
-    for i in range(1, m + 1):
-        R[P[i]] = i
+# def calcule_R(P):
+#     m = len(P) - 1
 
-    return R
+#     R = {"A":0, "T":1, "G":2, "C":3}
 
-#Boyer_moore
-def BM(P, T):
-    P = "#" + P
-    T = "#" + T
+#     for i in range(1, m + 1):
+#         R[P[i]] = i
 
-    all_position = []
+#     return R
+
+# #Boyer_moore
+# def BM(P, T):
+#     P = "#" + P
+#     T = "#" + T
+
+#     all_position = []
     
-    D = calcule_D(P)
-    R = calcule_R(P)
+#     D = calcule_D(P)
+#     R = calcule_R(P)
 
-    #print("D:", D[1:])
-    #print("R:", R)
-    m = len(P) - 1
-    n = len(T) - 1
+#     #print("D:", D[1:])
+#     #print("R:", R)
+#     m = len(P) - 1
+#     n = len(T) - 1
 
-    #print(P, T, m, n)
+#     #print(P, T, m, n)
 
-    i = 0
-    pos = 1
-    nb_compare = 0
+#     i = 0
+#     pos = 1
+#     nb_compare = 0
 
-    while  pos <= n - m + 1:
-        i = m
-        while i>0 and P[i] == T[pos+i-1]:
+#     while  pos <= n - m + 1:
+#         i = m
+#         while i>0 and P[i] == T[pos+i-1]:
 
-            nb_compare += 1
-            i -= 1
+#             nb_compare += 1
+#             i -= 1
 
-        if i > 0:
-            nb_compare += 1
+#         if i > 0:
+#             nb_compare += 1
 
-        if i == 0:
-            #print(P, "apparait ", pos)
-            all_position.append(pos - 1)
-            pos = pos + D[1]
+#         if i == 0:
+#             #print(P, "apparait ", pos)
+#             all_position.append(pos - 1)
+#             pos = pos + D[1]
             
-        else:
-            #print("Echec ", i, " motif et ", (pos + i -1), " du texte ", i, P[i])
-            pos = pos + max(D[i], i-R[T[pos+i-1]])
+#         else:
+#             #print("Echec ", i, " motif et ", (pos + i -1), " du texte ", i, P[i])
+#             pos = pos + max(D[i], i-R[T[pos+i-1]])
 
-    #print("comparaison", nb_compare)
-    return all_position
+#     #print("comparaison", nb_compare)
+#     return all_position
 
 
-def rev_comp(seq):
-    seq_out = ""
-    comp = {"A":"T", "T":"A", "G":"C", "C":"G"}
-    for i, v in enumerate(seq[::-1]) :
-        seq_out += comp[v]
+# def rev_comp(seq):
+#     seq_out = ""
+#     comp = {"A":"T", "T":"A", "G":"C", "C":"G"}
+#     for i, v in enumerate(seq[::-1]) :
+#         seq_out += comp[v]
 
-    return seq_out
+#     return seq_out
 
-def grep(motif, file, options=""):
-    proc = subprocess.Popen(["grep "+ options + " " + motif + " " + file], stdout=subprocess.PIPE, shell=True)
-    (out, err) = proc.communicate()
-    #print("youhou", str(out).split("\n"))
-    return str(out).split("\\n")
+# def grep(motif, file, options=""):
+#     proc = subprocess.Popen(["grep "+ options + " " + motif + " " + file], stdout=subprocess.PIPE, shell=True)
+#     (out, err) = proc.communicate()
+#     #print("youhou", str(out).split("\n"))
+#     return str(out).split("\\n")
 
 #print(grep("KO", "total_results_tsd_ZAM_KO*"))
 

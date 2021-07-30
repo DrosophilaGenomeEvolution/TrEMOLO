@@ -5,20 +5,20 @@ import random
 import warnings
 warnings.filterwarnings("ignore")
 
-name_TE_FOUND       =  "TE_FOUND.csv"
+#name_TE_FOUND       =  "TE_FOUND.csv"
 name_TE_FOUND       =  sys.argv[1]
 df_TE_FOUND         =  pd.read_csv(name_TE_FOUND, sep="\t", header=None)
 df_TE_FOUND.columns =  ["chrom", "start", "end", "ID", "IDR", "type"]
 #display(df_TE_FOUND.head())
 
-name_INS  = "INSERTION.csv"
+#name_INS  = "INSERTION.csv"
 name_INS  = sys.argv[2]
 
 df_INS    = pd.read_csv(name_INS, sep="\t")
 #display(df_INS.head())
 
 
-name_POS_expension       = "pos_expension.csv"
+#name_POS_expension       = "pos_expension.csv"
 name_POS_expension       = sys.argv[3]
 file                     = open(name_POS_expension, "r")
 

@@ -54,28 +54,31 @@ TSD_SIZE=$6
 COMBINE=$7
 OUTPUT=$8
 
+#NEW
+GENOME=$9
+
 path_this_script=`dirname $0`
 echo $path_this_script ;
 
 
 #ERROR
-if [ "$#" -ne 8 ]; then
+if [ "$#" -ne 9 ]; then
     echo "ERROR : need 6 arguments. You have put $# arguments" ;
-    echo "usage: tsd_te.sh <file_find_nameTE.fasta> <DIRECTORY_READS_SUPPORT> <DIRECTORY_READS_SUPPORT_FASTA> <database_TE_fasta> <flank_size> <tsd_size>"
+    echo "usage: tsd_te.sh <file_find_nameTE.fasta> <DIRECTORY_READS_SUPPORT> <DIRECTORY_READS_SUPPORT_FASTA> <database_TE_fasta> <flank_size> <tsd_size> <genome>"
     exit 1 ;
 fi;
 
 
 if [ ! -d "$REPO_READS" ]; then
     "$REPO_READS is not a directory"
-    echo "usage: tsd_te.sh <file_find_nameTE.fasta> <DIRECTORY_READS_SUPPORT> <DIRECTORY_READS_SUPPORT_FASTA> <database_TE_fasta> <flank_size> <tsd_size>"
+    echo "usage: tsd_te.sh <file_find_nameTE.fasta> <DIRECTORY_READS_SUPPORT> <DIRECTORY_READS_SUPPORT_FASTA> <database_TE_fasta> <flank_size> <tsd_size> <genome>"
     exit 1 ;
 fi;
 
 
 if [ ! -d "$REPO_READS_FA" ]; then
     "$REPO_READS_FA is not a directory"
-    echo "usage: tsd_te.sh <file_find_nameTE.fasta> <DIRECTORY_READS_SUPPORT> <DIRECTORY_READS_SUPPORT_FASTA> <database_TE_fasta> <flank_size> <tsd_size>"
+    echo "usage: tsd_te.sh <file_find_nameTE.fasta> <DIRECTORY_READS_SUPPORT> <DIRECTORY_READS_SUPPORT_FASTA> <database_TE_fasta> <flank_size> <tsd_size> <genome>"
     exit 1 ;
 fi;
 
@@ -160,40 +163,40 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         blastn -db ${DB_TE} -query sequence_TE.fasta -outfmt 6 -out TE_vs_databaseTE.bln
 
 
-#COMBINE AWK
-# sstart_global=`awk 'NR==1 {print $7}' test.bln`
-# send_global=`awk 'NR==1 {print $8}' test.bln`
-# qstart_global=`awk 'NR==1 {print $9}' test.bln`
-# qend_global=`awk 'NR==1 {print $10}' test.bln`
+    #COMBINE AWK
+    # sstart_global=`awk 'NR==1 {print $7}' test.bln`
+    # send_global=`awk 'NR==1 {print $8}' test.bln`
+    # qstart_global=`awk 'NR==1 {print $9}' test.bln`
+    # qend_global=`awk 'NR==1 {print $10}' test.bln`
 
 
-# awk -v ssg="$sstart_global" -v seg="$send_global" -v qsg="$qstart_global" -v qeg="$qend_global" '
-#     BEGIN{
-#         chrom=""
-#         sstart_global=ssg; 
-#         send_global=seg; 
-#         qstart_global=qsg; 
-#         qend_global=qeg; 
-#     }
+    # awk -v ssg="$sstart_global" -v seg="$send_global" -v qsg="$qstart_global" -v qeg="$qend_global" '
+    #     BEGIN{
+    #         chrom=""
+    #         sstart_global=ssg; 
+    #         send_global=seg; 
+    #         qstart_global=qsg; 
+    #         qend_global=qeg; 
+    #     }
 
-#      OFS="\t"  {
-#         chrom=$1
-#         TE=$2
-#         sstart = $7
-#         ssend  = $8
-#         qstart = $9
-#         qend   = $10
-#         if (sstart < sstart_global && send < send_global && qstart < qstart_global && qend < qend_global ){
-#             sstart_global = sstart
-#             qstart_global = qstart
-#         }
-#         else if ( sstart > sstart_global && send > send_global && qstart > qstart_global && qend > qend_global ){
-#             send_global   = send
-#             qend_global   = qend
-#         }
-#     }
+    #      OFS="\t"  {
+    #         chrom=$1
+    #         TE=$2
+    #         sstart = $7
+    #         ssend  = $8
+    #         qstart = $9
+    #         qend   = $10
+    #         if (sstart < sstart_global && send < send_global && qstart < qstart_global && qend < qend_global ){
+    #             sstart_global = sstart
+    #             qstart_global = qstart
+    #         }
+    #         else if ( sstart > sstart_global && send > send_global && qstart > qstart_global && qend > qend_global ){
+    #             send_global   = send
+    #             qend_global   = qend
+    #         }
+    #     }
 
-#    END{split(chrom, a, ":"); print chrom, sstart_global, send_global, TE"|"a[5]; }' test.bln
+    #    END{split(chrom, a, ":"); print chrom, sstart_global, send_global, TE"|"a[5]; }' test.bln
 
 
 
@@ -208,7 +211,20 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         # Warning : path
         echo "[$0] flank_TE.fasta    sequence_TE.fasta     $FLANK_SIZE     $id     $strand     $TSD_SIZE"
         python3 ${path_this_script}/find_tsd.py flank_TE.fasta sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> ${OUTPUT}
-done
+        OK=`grep "$head" ${OUTPUT} -A 2 | grep -o "OK" || echo ""`
+        
+        if [ -n "$OK" ]; then
+            TSD=`grep "$head" ${OUTPUT} -A 4 | grep "++:[A-Z]*:++" -o | head -n 1 | grep -o "[A-Z]*"`
+            echo "$head" | awk -v FLANK_SIZE="$FLANK_SIZE"  -F ":" 'OFS="\t"{print $1, $3-FLANK_SIZE, $3+FLANK_SIZE}' | tr -d ">" >> `dirname ${OUTPUT}`/tmp.bed
+            BED_FILE=`dirname ${OUTPUT}`/tmp.bed
+            empty_site=`bedtools getfasta -fi ${GENOME} -bed $BED_FILE | grep -v ">"`
+            position_TE_SV=`echo $head | cut -d ":" -f 3`
+
+            #echo "$TSD >> $empty_site >> $FLANK_SIZE >> $position_TE_SV"
+            python3 ${path_this_script}/find_svi.py $TSD $empty_site $FLANK_SIZE $position_TE_SV >> ${OUTPUT}
+            rm -f `dirname ${OUTPUT}`/tmp.bed
+        fi;
+done;
 
 
 rm -f TE_vs_databaseTE.bln

@@ -66,6 +66,9 @@ from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
 import argparse
 
+#our
+from utils import *
+
 parser = argparse.ArgumentParser()
 
 #MAIN ARGS
@@ -95,30 +98,33 @@ seq_lines        = file_sequence_TE.readlines()
 head_seq         = seq_lines[0].strip()
 TE               = seq_lines[1].strip()
 
-def rev_comp(seq):
-    seq_out = ""
-    comp = {"A":"T", "T":"A", "G":"C", "C":"G", "N":"N"}
-    for i, v in enumerate(seq[::-1]) :
-        if v in comp:
-            seq_out += comp[v]
-        else:
-            seq_out += comp["N"]
+# def rev_comp(seq):
+#     seq_out = ""
+#     comp = {"A":"T", "T":"A", "G":"C", "C":"G", "N":"N"}
+#     for i, v in enumerate(seq[::-1]) :
+#         if v in comp:
+#             seq_out += comp[v]
+#         else:
+#             seq_out += comp["N"]
 
-    return seq_out
+#     return seq_out
 
 
 #gere le forward et reverse
 strands = False #False + et True -
 if args.strands == "-":
     strands = True
-    sequence_1 = lines[3].strip()
-    sequence_2 = lines[1].strip()
-    sequence_1 = rev_comp(sequence_1)
-    sequence_2 = rev_comp(sequence_2)
-    TE = rev_comp(TE)
-else :
-    sequence_1 = lines[1].strip()
-    sequence_2 = lines[3].strip()
+    # sequence_1 = lines[3].strip()
+    # sequence_2 = lines[1].strip()
+    # sequence_1 = rev_comp(sequence_1)
+    # sequence_2 = rev_comp(sequence_2)
+    # TE = rev_comp(TE)
+# else :
+#     sequence_1 = lines[1].strip()
+#     sequence_2 = lines[3].strip()
+
+sequence_1 = lines[1].strip()
+sequence_2 = lines[3].strip()
 
 
 def align(alignments, size):
@@ -216,7 +222,6 @@ if not find :
 
     else:
         print(tab_none[0])
-
 
 file.close()
 file_sequence_TE.close()

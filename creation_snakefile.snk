@@ -62,7 +62,44 @@ os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT")
 os.system("test -s `realpath " + config["DATA"]["REFERENCE"] + "` && ln -s  `realpath " + config["DATA"]["REFERENCE"] + "` " +  config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"]))
 os.system("test -s `realpath " + config["DATA"]["GENOME"] + "` && ln -s  `realpath " + config["DATA"]["GENOME"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"]))
 os.system("test -s `realpath " + config["DATA"]["SAMPLE"] + "` && ln -s  `realpath " + config["DATA"]["SAMPLE"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"]))
-os.system("test -s `realpath " + config["DATA"]["TE_DB"] + "` && ln -s  `realpath "  + config["DATA"]["TE_DB"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"]))
+
+print("CHECKING OF DB TE...\n\n")
+
+file  = open(config["DATA"]["TE_DB"], "r")
+lines = file.readlines()
+
+#CHECK IF TE DB HAS NOT BAD CARACTERE
+creat_pseudo_db = False
+for line in lines :
+    if line[0] == ">" and (":" in line.strip() or "/" in line.strip() or "\\" in line.strip() or "|" in line.strip()) :
+        creat_pseudo_db = True
+        break
+
+#CREATE PSEUDO DB IF NECESSERY
+if creat_pseudo_db :
+
+    list_header_TE = open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/LIST_HEADER_DB_TE.csv", "w")
+    pseudo_DB      = open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta", "w")
+
+    list_header_TE.write("original\tpseudo")
+    for index, line in enumerate(lines) :
+        if line[0] == ">" :
+            list_header_TE.write("\noriginal=" + line.strip() + "\tpseudo=>TE" + str(index))
+            pseudo_DB.write(">TE" + str(index) + "\n")
+        else :
+            pseudo_DB.write(line)
+
+    #PSEUDO DB 
+    os.system("test -s `realpath " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta` && ln -s  `realpath "  + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta ` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"]))
+
+    list_header_TE.close()
+    pseudo_DB.close()
+
+else :
+    os.system("test -s `realpath " + config["DATA"]["TE_DB"] + "` && ln -s  `realpath "  + config["DATA"]["TE_DB"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"]))
+
+file.close()
+
 
 # Get path snakefile
 path_snk = ""
@@ -123,9 +160,6 @@ rule create_snake_file :
         #choice_asm          = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
         choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
 
-        LC_ASM_FLYE         = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["FLYE"],
-        LC_ASM_WTDGB        = config["CHOICE"]["OUTSIDER_VARIANT"]["LOCAL_ASSEMBLY"]["WTDGB"],
-
         INTEGRATE_TE_TO_GENOME = config["CHOICE"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"],
         OPTIMIZE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["OPTIMIZE_FREQUENCE"],
 
@@ -165,11 +199,16 @@ rule create_snake_file :
             ## Exemple les instructions par default obligatoir
             printf "%s" "SV_INSIDER > TE_INSIDER:N " > instruction.txt
 
+            # if [ {params.choice_outsider_sv} != "True" ]; then
+            #     sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
+            #     printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD " >> instruction.txt
+            # else
+            #     printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> instruction.txt
+            # fi;
+
             if [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-                printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD " >> instruction.txt
-            else
-                printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> instruction.txt
+                printf "%s" "> TSD " >> instruction.txtt
             fi;
 
 
@@ -246,16 +285,6 @@ rule create_snake_file :
             else
                 printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > extract_read:NI " > instruction.txt
             fi
-            
-            ## Depend du fichier de config
-            if [ {params.LC_ASM_FLYE} = "True" ]; then
-                printf "%s" "> assembly_flye "  >> instruction.txt
-            fi;
-
-            ## Depend du fichier de config
-            if [ {params.LC_ASM_WTDGB} = "True" ]; then
-                printf "%s" "> assembly_wdtgb "  >> instruction.txt
-            fi;
             
             ## Exemple les instruction par default obligatoir
             printf "%s" "> GET_SEQ_TE " >> instruction.txt

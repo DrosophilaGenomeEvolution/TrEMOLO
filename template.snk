@@ -57,12 +57,26 @@ if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
 config["DATA"]["REFERENCE"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"])
 config["DATA"]["GENOME"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"])
 config["DATA"]["SAMPLE"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"])
-config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"])
+
+#CHECKING CARACTERE OF TE DB 
+file  = open(config["DATA"]["TE_DB"], "r")
+lines = file.readlines()
+
+creat_pseudo_db = False
+for line in lines :
+    if line[0] == ">" and (":" in line.strip() or "/" in line.strip() or "\\" in line.strip() or "|" in line.strip()) :
+        creat_pseudo_db = True
+        break
+
+#GET PATH TO PSEUDO DB OR TE DB
+if creat_pseudo_db :
+    config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"])
+else :
+    config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"])
+
 
 # Create ouput folder
 #os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA")
-
-
 
 # os.system("test -s " + str(config["DATA"]["TE_DB"]) + " && ln -sf `readlink -f " + str(config["DATA"]["TE_DB"]) + "` " + str(config["DATA"]["WORK_DIRECTORY"].rstrip("/")) + "/DATA/`basename " + str(config["DATA"]["TE_DB"]) + "`")
 # config["DATA"]["TE_DB"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/DATA/" + os.path.basename( str(config["DATA"]["TE_DB"]) ) 
@@ -72,7 +86,6 @@ config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/I
 # Remember the parameters associated with the output folder
 with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as file:
     file.write(json.dumps(config))
-
 
 # Get path snakefile
 path_snk = ""

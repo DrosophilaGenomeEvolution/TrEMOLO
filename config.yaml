@@ -15,9 +15,6 @@ CHOICE:
         INSIDER_VARIANT: True   # TE assembled (in genome)
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
-        LOCAL_ASSEMBLY:
-            FLYE: False # (True, False)
-            WTDGB: False # (True, False)
         CALL_SV: "svim" # possibility (sniffles, svim) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) xxx
         OPTIMIZE_FREQUENCE: True # (True, False) xxx
@@ -35,9 +32,6 @@ PARAMS:
             PRESET_OPTION: ''
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
-        FLYE:
-            OPTIONS: '--plasmids -t 8' #
-            PRESET_OPTION: '--nano-raw' # 
         TSD:
             FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # path file or empty value [optional]
             SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4 
