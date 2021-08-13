@@ -1,9 +1,4 @@
 
-
-
-
-
-
 ## ALL
 
 
@@ -87,7 +82,7 @@ graph
 
 ```
 
-<iframe src="lib/template_COUNT_TE_INOUTSIDER.html" style="width: 100%; height: 1000px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_COUNT_TE_INOUTSIDER.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
 
 
 ### FREQUENCE

@@ -4,31 +4,47 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://code.jquery.com/jquery-migrate-1.4.1.min.js"></script> -->
 
+
+<link rel="stylesheet" type="text/css" href="../css/slider.css">
+
+
 <script src="lib/lib_dl/d3.v4.js"></script>
 <script src="lib/lib_dl/jquery/3.5.1/jquery.min.js"></script>
 <script src="lib/lib_dl/jquery/jquery-migrate-1.4.1.min.js"></script>
 
-
 <!-- Create a div where the graph will take place -->
 <div id="my_dataviz"></div>
 
-<input type="range" min="0" max="179" value="0" id="slider" style="width: 820px">
+<!-- <input type="range" min="0" max="179" value="0" id="slider" style="width: 820px"> -->
+
+<div class="container">
+  
+  <div class="range-slider">
+    <span  class="rs-label">0</span>
+    <input id="slider" class="rs-range" type="range" value="0" min="0" max="179">
+  </div>
+
+  <div class="box-minmax">
+    <span>0</span>  <span>?</span>
+  </div>
+
+</div>
 
 <form class="searchbox">
-<input id="search" name="searchbox" type="text" placeholder="TE name" />
-<input class="button-submit" type="submit" value="" disabled="" />
+  <input id="search" name="searchbox" type="text" placeholder="TE name" />
+  <input class="button-submit" type="submit" value="" disabled="" />
 </form>
 
 
 <form class="searchbox"  autocomplete="off">
-<input id="nBin" name="q" type="text" size="15" placeholder="number of barres" value="20" />
-<input class="button-submit" type="submit" value="" disabled="" />
+  <input id="nBin" name="q" type="text" size="15" placeholder="number of barres" value="20" />
+  <input class="button-submit" type="submit" value="" disabled="" />
 </form>
 
 <div class="counter col_fourth end">
-<i class="fa fa-bug fa-2x"></i>
-<h2 id="nb" class="timer count-title count-number" data-to="179" data-speed="1500"></h2>
-<p class="count-text "></p>
+  <i class="fa fa-bug fa-2x"></i>
+  <h2 id="nb" class="timer count-title count-number" data-to="179" data-speed="1500"></h2>
+  <p class="count-text "></p>
 </div>
 
 <link rel="stylesheet" href="style.css">

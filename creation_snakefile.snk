@@ -184,6 +184,9 @@ rule create_snake_file :
         
         printf "%s\\n" "{params.cmess} [SNK] CREATION SNAKEFILE {params.cend}"
         
+        mkdir -p ${{path_to_pipline}}/lib/C++/bin
+        g++ ${{path_to_pipline}}/lib/C++/chain_to_id.cpp -o ${{path_to_pipline}}/lib/C++/bin/chain_to_id;
+
         ###
         #INSIDER
         ###
@@ -245,9 +248,12 @@ rule create_snake_file :
             
             if test -e dryrun_validate ; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_insider.log | tee {params.work_directory}/log/Snakefile_insider.log \
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_insider.err | tee -p {params.work_directory}/log/Snakefile_insider.log \
                     || (message_fail "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_insider.snk\\n\\n" && \
-                    echo "snake log file : {params.work_directory}/log/Snakefile_insider.log" && rm -f ${{path_to_pipline}}/Snakefile*);
+                    echo "snake log file : {params.work_directory}/log/Snakefile_insider.log" && \
+                    echo " Error file : {params.work_directory}/log/Snakefile_insider.err" | tee -a {params.work_directory}/log/Snakefile_insider.log && \
+                        rm -f ${{path_to_pipline}}/Snakefile);
+
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_insider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_insider.log
             fi;
@@ -334,9 +340,12 @@ rule create_snake_file :
 
             if test -e dryrun_validate; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_outsider.log | tee {params.work_directory}/log/Snakefile_outsider.log  \
-                     || (message_fail "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\\n\\n" && \
-                    echo "snake log file : {params.work_directory}/log/Snakefile_outsider.log" && rm -f ${{path_to_pipline}}/Snakefile)
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_outsider.err | tee -p {params.work_directory}/log/Snakefile_outsider.log  \
+                     || (message_fail "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\\n    Check LOG   : {params.work_directory}/log/Snakefile_outsider.log\\n    Check ERROR : {params.work_directory}/log/Snakefile_outsider.err\\n" && \
+                    echo "    Check LOG   : {params.work_directory}/log/Snakefile_outsider.log" >> {params.work_directory}/log/Snakefile_outsider.log && \
+                    echo "    Check ERROR : {params.work_directory}/log/Snakefile_outsider.err" >> {params.work_directory}/log/Snakefile_outsider.log && \
+                        rm -f ${{path_to_pipline}}/Snakefile);
+
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_outsider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_outsider.log
             fi;

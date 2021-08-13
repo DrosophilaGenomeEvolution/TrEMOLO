@@ -80,9 +80,9 @@ graph
 
 ```
 
-<iframe src="lib/template_COUNT_TE_INSIDER.html" style="width: 100%; height: 1000px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_COUNT_TE_INSIDER.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
 
-hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20
+hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
 
 
 #### DELETION
@@ -162,9 +162,9 @@ graph
 ```
 
 
-<iframe src="lib/template_COUNT_TE_INSIDER_DEL.html" style="width: 100%; height: 1000px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_COUNT_TE_INSIDER_DEL.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
 
-hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20 <!-- TE_INSIDER_DEL -->
+hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20** <!-- TE_INSIDER_DEL -->
 
 
 
@@ -211,6 +211,12 @@ p
 
 ```
 
+<iframe src="lib/template_FREQ_TE_INSIDER.html" style="width: 100%; height: 1800px; border: none; overflow: hidden;"></iframe>
+
+
+Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
+
+
 
 ### TSD
 
@@ -228,9 +234,9 @@ TSD [OK] : these are the TE with TSD **`r readLines(".tmp_TE_TSD_OK.txt");`/`r r
 
 TSD [KO] : these are the TE without TSD **`r readLines(".tmp_TE_TSD_KO.txt");`/`r readLines(".tmp_TE_TSD_TOTAL.txt");`**
 
-<iframe src="lib/template_TSD_INSIDER_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_TSD_INSIDER_histo.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
 
-Hover your mouse over the bars or navigate with the slider if the number of different TE families is greater than 20
+Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
 
 ### TE POSITION
 

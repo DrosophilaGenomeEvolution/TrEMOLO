@@ -2,14 +2,11 @@ var max_nb_x = 20;
 var indice   = 1;
 var size_x   = 0;
 
-if (typeof(fill) == "undefined") {
-    var fill = "#FF0000";
-}
-
 // Initialize the plot with the first dataset
 var db_TE = [0, 0, 0, 0];
-var db = data;
-db_TE[0] = db;
+var data  = filtre_freq(data_freq, 0, 100, order);
+var db    = data;
+db_TE[0]  = db;
 
 const div = d3.select("body").append("div")
     .attr("class", "tooltip")         
@@ -31,7 +28,8 @@ var margin = {top: 10, right: 30, bottom: 90, left: 40},
 var svg = d3.select("#my_dataviz")
   .append("svg")
     .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    //.attr("height", height + margin.top + margin.bottom)
+    .attr("height", "50%")
   .append("g")
     .attr("transform",
           "translate(" + margin.left + "," + margin.top + ")");
@@ -62,7 +60,7 @@ function update(data) {
      .style("font-size", "1.4em");
      
   max_y = +d3.max(data, function(d) { return parseInt(d.value) });
-  console.log("max", parseInt(max_y), max_y)
+  //console.log("max", parseInt(max_y), max_y)
 
   // // Update the Y axis
   y.domain([0, parseInt(max_y) ]);
@@ -105,9 +103,8 @@ function update(data) {
       .attr("y", function(d) { return y(d.value); })
       .attr("width", x.bandwidth())
       .attr("height", function(d) { return height - y(d.value); })
-      .attr("fill", fill)//005EC7//E0583B
+      .attr("fill", "#203AE4")//005EC7//E0583B
 
-  // If less group in the new dataset, I delete the ones not in use anymore
   u
     .exit()
     .remove()
@@ -156,7 +153,7 @@ function search(name){
 // }
 
 function next() {
-    console.log("next")
+    //console.log("next")
 
     if( indice + max_nb_x <= size_x - max_nb_x ){
         indice += max_nb_x;
@@ -170,8 +167,6 @@ function next() {
 
 
 function pred() {
-    console.log("pred")
-
     if( indice - max_nb_x >= 0 ){
         indice -= max_nb_x;
     }
@@ -195,7 +190,7 @@ function position(value){
         indice = size_x - max_nb_x;
     }
 
-    console.log("value", value, "indice", indice)
+    //console.log("value", value, "indice", indice)
     data = db.slice(indice, indice + max_nb_x)
     update(data)
 }
@@ -205,10 +200,14 @@ d3.select("#nBin").on("input", function() {
     data     = db.slice(indice, indice + max_nb_x)
     size_x   = db.length;
     size     = parseInt(size_x) - parseInt(max_nb_x)
+    if (size<0) {
+        size = 0;
+    }
 
     update(data)
     document.getElementById("slider").max   = size.toString();
     document.getElementById("slider").value = "0"
+    $("#slider").closest(".container").closest(".container").find(".box-minmax span:nth-child(2)").text(size.toString());
 });
 
 
@@ -221,19 +220,131 @@ d3.select("#search").on("input", function() {
     search(this.value)
 });
 
+d3.select("#search").on("change input", function() {
+    search(this.value)
+});
+
 size_x   = data.length;
 size     = parseInt(size_x) - parseInt(max_nb_x)
 
 update(data.slice(0, 30));
 document.getElementById("slider").max   = size.toString();
-document.getElementById("slider").value = "0"
+document.getElementById("slider").value = "0";
 if (size<0) {
     size = 0;
 }
 $("#slider").closest(".container").closest(".container").find(".box-minmax span:nth-child(2)").text(size.toString());
 
+//FREQUENCE ****** ++++++++++++
+function filtre_freq(data_freq, min_percent=0, max_percent=100, order=null){
+    var data_count = {};
+    var data       = [];
+    var list_name  = [];
 
-//SLIDER
+    for (const element of data_freq) {
+        if (element.value <= max_percent && element.value >= min_percent) {
+            //console.log(element);
+            if (element.name in data_count) {
+                data_count[element.name] += 1;
+            }
+            else{
+                list_name.push(element.name);
+                data_count[element.name] = 1;
+            }
+        }
+    }
+
+    if (typeof(order) != "undefined" && order != null) {
+        for (const name of order) {
+            if(list_name.includes(name)){
+                data.push({"name": name, "value": data_count[name]});
+            }
+        }
+    }
+    else{
+        for (const name of list_name) {
+            data.push({"name": name, "value": data_count[name]});
+        }
+    }
+
+    data["columns"] = ["name", "value"];
+
+    return data;
+}
+
+document.getElementById("slider-percent-min").value = "0"
+document.getElementById("slider-percent-max").value = "100"
+
+//TODO rendre propre via class
+d3.select("#slider-percent-min").on("input", function() {
+    min = +document.getElementById("slider-percent-min").value;
+    max = +document.getElementById("slider-percent-max").value;
+
+    document.getElementById("slider-percent-max").min = document.getElementById("slider-percent-min").value;
+    document.getElementById("slider-percent-min").max = document.getElementById("slider-percent-max").value;
+
+    $("#slider-percent-max").closest(".container").closest(".container").find(".box-minmax span:nth-child(1)").text(document.getElementById("slider-percent-max").min);
+    $("#slider-percent-min").closest(".container").closest(".container").find(".box-minmax span:nth-child(2)").text(document.getElementById("slider-percent-min").max);
+
+    //console.log("slider-percent-min", +document.getElementById("slider-percent-min").value)
+    //console.log("slider-percent-max", +document.getElementById("slider-percent-max").value)
+
+    data     = filtre_freq(data_freq, min, max, order);
+    db_TE[0] = data;
+
+    size_x   = data.length;
+    size     = parseInt(size_x) - parseInt(max_nb_x)
+    if (size<0) {
+        size = 0;
+    }
+    $("#slider").closest(".container").closest(".container").find(".box-minmax span:nth-child(2)").text(size.toString());
+    update(data);
+});
+
+
+d3.select("#slider-percent-max").on("input", function() {
+    min = +document.getElementById("slider-percent-min").value;
+    max = +document.getElementById("slider-percent-max").value;
+
+    document.getElementById("slider-percent-max").min = document.getElementById("slider-percent-min").value;
+    document.getElementById("slider-percent-min").max = document.getElementById("slider-percent-max").value;
+
+    $("#slider-percent-max").closest(".container").closest(".container").find(".box-minmax span:nth-child(1)").text(document.getElementById("slider-percent-max").min);
+    $("#slider-percent-min").closest(".container").closest(".container").find(".box-minmax span:nth-child(2)").text(document.getElementById("slider-percent-min").max);
+
+    //console.log("slider-percent-min", +document.getElementById("slider-percent-min").value)
+    //console.log("slider-percent-max", +document.getElementById("slider-percent-max").value)
+
+    data     = filtre_freq(data_freq, min, max, order);
+    db_TE[0] = data;
+
+    size_x   = data.length;
+    size     = parseInt(size_x) - parseInt(max_nb_x)
+    if (size<0) {
+        size = 0;
+    }
+    $("#slider").closest(".container").closest(".container").find(".box-minmax span:nth-child(2)").text(size.toString());
+    update(data);
+});
+
+
+
+//NEUMORPHIC
+
+// $(function() {
+//     var rangePercent = $('[type="range"]').val();
+//     $('[type="range"]').on('change input', function() {
+//         //console.log("rangePercent", rangePercent)
+//         rangePercent = $(this).val();
+//         //console.log("rangePercent", rangePercent)
+//         $('h4').html(rangePercent+'<span></span>');
+//         $('[type="range"], h4>span').css('filter', 'hue-rotate(-' + rangePercent + 'deg)');
+//         // $('h4').css({'transform': 'translateX(calc(-50% - 20px)) scale(' + (1+(rangePercent/100)) + ')', 'left': rangePercent+'%'});
+//         //$('h4').css({'transform': 'translateX(-50%) scale(' + (1+(rangePercent/100)) + ')', 'left': rangePercent+'%'});
+//     });
+// });
+
+//https://codepen.io/mayuMPH/pen/ZjxGEY
 var rangeSliders = document.getElementsByClassName ("rs-range");
 var rangeBullets = document.getElementsByClassName("rs-label");
 
@@ -257,8 +368,3 @@ function showSliderValue(event) {
     var bulletPosition     = (rangeSlider.value /rangeSlider.max);
     rangeBullet.style.left = (bulletPosition * 578) + "px";
 }
-
-
-
-
-

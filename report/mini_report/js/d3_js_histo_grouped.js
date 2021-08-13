@@ -180,8 +180,40 @@ update(db, data.columns.slice(1))
 size = parseInt(size_x) - parseInt(max_nb_x)
 document.getElementById("slider").max   = size.toString();
 document.getElementById("slider").value = "0"
+if (size<0) {
+    size = 0;
+}
+$("#slider").closest(".container").closest(".container").find(".box-minmax span:nth-child(2)").text(size.toString());
 
 
 d3.select("#slider").on("input", function() {
     position(+this.value)
 });
+
+
+
+//https://codepen.io/mayuMPH/pen/ZjxGEY
+var rangeSliders = document.getElementsByClassName ("rs-range");
+var rangeBullets = document.getElementsByClassName("rs-label");
+
+Array.prototype.filter.call(rangeSliders, function(rangeSlider){
+    rangeSlider.addEventListener("input", showSliderValue, false);
+});
+
+Array.prototype.filter.call(rangeSliders, function(rangeSlider){
+    rangeBullet = rangeSlider.closest(".range-slider").children[0];
+
+    rangeBullet.innerHTML  = rangeSlider.value;
+    var bulletPosition     = (rangeSlider.value /rangeSlider.max);
+    rangeBullet.style.left = (bulletPosition * 578) + "px";
+});
+
+function showSliderValue(event) {
+    rangeSlider = event.target;
+    rangeBullet = rangeSlider.closest(".range-slider").children[0];
+
+    rangeBullet.innerHTML  = rangeSlider.value;
+    var bulletPosition     = (rangeSlider.value /rangeSlider.max);
+    rangeBullet.style.left = (bulletPosition * 578) + "px";
+}
+
