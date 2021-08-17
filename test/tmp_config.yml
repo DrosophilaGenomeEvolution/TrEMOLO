@@ -14,9 +14,6 @@ CHOICE:
         INSIDER_VARIANT: True
         REPORT: True
     OUTSIDER_VARIANT:
-        LOCAL_ASSEMBLY:
-            FLYE: False
-            WTDGB: False
         CALL_SV: "svim" #Posibiliti (sniffles, svim)
         INTEGRATE_TE_TO_GENOME: True
         OPTIMIZE_FREQUENCE: True
@@ -34,17 +31,12 @@ PARAMS:
             PRESET_OPTION: ''
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
-        FLYE:
-            OPTIONS: '--plasmids -t 30'
-            PRESET_OPTION: '--nano-raw'
         TSD:
             FILE_SIZE_TE_TSD: ""
             SIZE_FLANK: 10
         TE_DETECTION:
-            CHROM_KEEP: "^2L_,^2R_,^3[RL]_,^X_,^4_"  #regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3R,3L,X" ; put "." for keep all chromosome
-        INTEGRATE_TE_TO_GENOME:
-            PUT_ID: True
-            PUT_SEQUENCE_DB_TE: True
+            CHROM_KEEP: "^[23][RL]_,^X_,^4_"  #regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3R,3L,X" ; put "." for keep all chromosome
+            GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
         PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94"
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
