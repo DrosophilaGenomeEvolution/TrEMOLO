@@ -89,7 +89,7 @@ graph
 
 ```{bash FREQB_inout, eval=TRUE, include=TRUE, results=TRUE}
 
-test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv | tail -n 50 > .tmp_orderc.txt || echo
+test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv | tail -n 50 > .tmp_orderx.txt || echo
 
 
 (test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
@@ -98,15 +98,26 @@ test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT
     cat ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > .tmp_DEPTH_TE.csv)
 
 
+rm -f FREQ_TE.csv
 (test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && awk 'NR>1' ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv >> .tmp_DEPTH_TE.csv && python3 ../lib/freq_graph.py .tmp_DEPTH_TE.csv FREQ_TE.csv) || echo ;
 
-(test -s FREQ_TE.csv && echo -e "x\ty\tcondition" > .tmp_depth.csv && grep -w -f .tmp_orderc.txt FREQ_TE.csv >> .tmp_depth.csv && mv .tmp_depth.csv FREQ_TE.csv) || echo
+(test -s FREQ_TE.csv && echo -e "x\ty\tcondition" > .tmp_depth.csv && grep -w -f .tmp_orderx.txt FREQ_TE.csv >> .tmp_depth.csv && mv .tmp_depth.csv FREQ_TE.csv) || echo
+
+
+##NEW CHART
+test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv > .tmp_orderx.txt || echo
+
+test -s FREQ_TE.csv && \
+    python3 ../lib/conv_js_histo_grouped_ggplot.py FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_INOUTSIDER_CHART.js
+
+sed 's/%%VAR_JS%%/FREQ_INOUTSIDER_CHART.js/g' lib/template_FREQ_TE_CHART.html \
+    > lib/template_FREQ_TE_INOUTSIDER_CHART.html
 
 ```
 
 
 
-```{r FREQ_INOUT, eval=TRUE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+```{r FREQ_INOUT, eval=FALSE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
 
 
 if( file.exists("FREQ_TE.csv") ){
@@ -117,7 +128,7 @@ if( file.exists("FREQ_TE.csv") ){
   order <- read.table("orderc.txt", header = FALSE)
   data$condition <- factor(data$condition, levels = order$V1)
 
-  orderx <- read.table(".tmp_orderc.txt", header = FALSE)
+  orderx <- read.table(".tmp_orderx.txt", header = FALSE)
   data$x <- factor(data$x, levels = orderx$V1)
 
 
@@ -138,7 +149,7 @@ if( file.exists("FREQ_TE.csv") ){
 
 ```
 
-
+<iframe src="lib/template_FREQ_TE_INOUTSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
 
 ### TE POSITION
 

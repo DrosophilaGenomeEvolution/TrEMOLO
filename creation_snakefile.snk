@@ -241,10 +241,10 @@ rule create_snake_file :
                 || (message_fail "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && exit 0)
 
 
-
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN DONE [ ✔ ] {params.cend}"
 
             rm -f {params.work_directory}/log/Snakefile_insider.log
+            rm -f {params.work_directory}/log/Snakefile_insider.err
             
             if test -e dryrun_validate ; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
@@ -337,6 +337,7 @@ rule create_snake_file :
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN DONE [ ✔ ] {params.cend}"
 
             rm -f {params.work_directory}/log/Snakefile_outsider.log
+            rm -f {params.work_directory}/log/Snakefile_outsider.err
 
             if test -e dryrun_validate; then
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"

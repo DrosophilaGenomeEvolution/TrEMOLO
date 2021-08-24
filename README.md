@@ -140,9 +140,6 @@ CHOICE:
         INSIDER_VARIANT: True   # insiders, TE assembled (in assembly)
         REPORT: True            # for getting a report.html file with graphics
     OUTSIDER_VARIANT:
-        LOCAL_ASSEMBLY:
-            FLYE: False # (True, False)
-            WTDGB: False # (True, False)
         CALL_SV: "svim" # possibilities: sniffles, svim
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) xxx
@@ -160,11 +157,8 @@ PARAMS:
             PRESET_OPTION: ''
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
-        FLYE:
-            OPTIONS: '--plasmids -t 8' # push Flye options for local reassembly here
-            PRESET_OPTION: '--nano-raw' #
         TSD:
-            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for reference elements
+            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for reference elements (format="TE SIZE" by line)
             SIZE_FLANK: 30  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
@@ -210,12 +204,13 @@ Here is the structure of the output files obtained after running the pipeline.
 ```
 WORK_DIRECTORY
 ├── params.yaml
+├── POS_ALT_TE_OUTSIDER_ON_REF.bed -> INSIDER/TE_INSIDER_VR/POS_ALT_TE_OUTSIDER_ON_REF.bed
 ├── POSITION_TE_INOUTSIDER.bed
 ├── POSITION_TE_INSIDER.bed
 ├── POSITION_TE_OUTSIDER.bed
+├── POS_TE_INSIDER_ON_REF.bed -> INSIDER/TE_DETECTION/INSERTION_TE_ON_REF.bed #POSITION TE INSIDER ON REFRENCE GENOME
+├── POS_TE_OUTSIDER_ON_REF.bed #POSITION TE OUTSIDER ON REFRENCE GENOME
 ├── POSITION_TE_OUTSIDER_IN_NEO_GENOME.bed  #POSITION TE SEQUENCE ON BEST READS SUPPORT INTEGRATED IN GENOME
-├── POS_TE_VG_ON_REF.bed  #POSITION TE INSIDER ON REFRENCE GENOME
-├── POS_TE_VR_ON_REF.bed  #POSITION TE OUTSIDER ON REFRENCE GENOME
 ├── POSITION_TE_ON_REF.bed  #POSITION TE INSIDER AND OUTSIDER ON REFRENCE GENOME
 ├── POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed
 ├── VALUES_TSD_ALL_GROUP.csv
@@ -223,83 +218,14 @@ WORK_DIRECTORY
 ├── VALUES_TSD_INSIDER_GROUP.csv
 ├── TE_INFO.csv
 ├── FREQ_OPTIMIZED
-│   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv
-│   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv
-│   ├── MAPPING_POSTION_TE_MD.sorted.bam
-│   ├── MAPPING_POSTION_TE_MD.sorted.bam.bai
-│   ├── variants.bln
-│   ├── variants.fasta
-│   └── variants.vcf
-├── INSIDER
-│   ├── instructions.txt
-│   ├── FREQ_GLOBAL
-│   │   └── DEPTH_TE_INSIDER.csv
+├── INSIDER #FOLDER CONTAINS FILES TRAITEMENT INSIDER
+│   ├── FREQ_GLOBAL 
 │   ├── TE_DETECTION
-│   │   ├── ALL_TE.bed     #ALL TE IN ASSEMBLY NOT ONLY INSERTION
-│   │   ├── ALL_TE_COMBINE_TE.csv  #ALL TE IN ASSEMBLY NOT ONLY INSERTION
-│   │   ├── ALL_TE.csv    #ALL TE IN ASSEMBLY NOT ONLY INSERTION
-│   │   ├── DELETION.bed
-│   │   ├── DELETION.bln
-│   │   ├── DELETION_COMBINE_TE.csv
-│   │   ├── DELETION_COUNT_TE.csv
-│   │   ├── DELETION.csv
-│   │   ├── DELETION_SEQ.fasta
-│   │   ├── INSERTION.bed
-│   │   ├── INSERTION.bln
-│   │   ├── INSERTION_COMBINE_TE.csv
-│   │   ├── INSERTION_COUNT_TE.csv
-│   │   ├── INSERTION.csv
-│   │   ├── INSERTION_SEQ.fasta
-│   │   ├── INSERTION_TE.bed
 │   │   └── TSD
-│   │       ├── TSD_TE_NAME.txt
-│   │       ├── TSD_blood.txt
-│   │       ├── TSD_Idefix.txt
-│   │       ├── TSD_ZAM.txt
-...
 │   ├── TE_INSIDER_VR
-│   │   ├── DELETION.bed
-│   │   ├── DELETION.bln
-│   │   ├── DELETION_COUNT_TE.csv
-│   │   ├── DELETION.csv
-│   │   ├── DELETION_SEQ.fasta
-│   │   ├── INSERTION.bed
-│   │   ├── INSERTION.bln
-│   │   ├── INSERTION_COUNT_TE.csv
-│   │   ├── INSERTION.csv
-│   │   ├── INSERTION_SEQ.fasta
 │   └── VARIANT_CALLING
-│       ├── assemblytics_out.Assemblytics_assembly_stats.txt
-│       ├── assemblytics_out.Assemblytics_structural_variants.bed
-│       ├── assemblytics_out.Assemblytics.unique_length_filtered_l10000.delta
-│       ├── assemblytics_out.coords.csv
-│       ├── assemblytics_out.coords.tab
-│       ├── assemblytics_out.variants_between_alignments.bed
-│       ├── assemblytics_out.variants_within_alignments.bed
-│       ├── pm_against_ref.sam
-│       └── pm_against_ref.sam.delta
 ├── log  #log file to check if you have any error
-│   ├── DETECTION_TE.err
-│   ├── extract_read.err
-│   ├── extract_read.out
-│   ├── FIND_TE_ON_REF.err
-│   ├── FIND_TE_ON_REF.out
-│   ├── FREQUENCE.err
-│   ├── FREQUENCE.out
-│   ├── minimap2.err
-│   ├── pm_contigs_against_ref.sam.log
-│   ├── samtools.err
-│   ├── samtools.out
-│   ├── Snakefile_insider.log
-│   ├── Snakefile_outsider.log
-│   ├── sniffles.err
-│   ├── sniffles.out
-│   ├── TE_INSIDER.err
-│   ├── TE_INSIDER.out
-│   ├── TSD.err
-│   └── TSD.out
 ├── OUTSIDER
-│   ├── instructions.txt
 │   ├── ET_FIND_FA
 │   │   ├── TE_REPORT_FOUND_TE_NAME.fasta
 │   │   ├── TE_REPORT_FOUND_blood.fasta
@@ -308,49 +234,20 @@ WORK_DIRECTORY
 │   ├── FIND_TE_ON_REF
 │   ├── FREQ_AFTER
 │   │   └── DEPTH_TE.csv
-│   ├── ID_BEST_READ_TE.txt
 │   ├── INSIDER_VR
-│   │   ├── assemblytics_out.Assemblytics_assembly_stats.txt
-│   │   ├── assemblytics_out.Assemblytics_structural_variants.bed
-│   │   ├── assemblytics_out.Assemblytics.unique_length_filtered_l10000.delta
-│   │   ├── assemblytics_out.coords.csv
-│   │   ├── assemblytics_out.coords.tab
-│   │   ├── assemblytics_out.variants_between_alignments.bed
-│   │   ├── assemblytics_out.variants_within_alignments.bed
-│   │   ├── pm_against_ref.sam
-│   │   └── pm_against_ref.sam.delta
-│   ├── MAPPING
-│   │   ├── MAPPING_POSTION_TE.bam
-│   │   ├── MAPPING_POSTION_TE.bam.bai
-│   │   ├── SAMPLE_mapping_GENOME_MD.sorted.bam
-│   │   └── SAMPLE_mapping_GENOME_MD.sorted.bam.bai
-│   ├── MAPPING_TO_REF
-│   │   └── INSERTION_TE.bed
-│   ├── READ_FASTQ_TE
-│   │   ├── reads_chrom:ID_SV:start-end.fastq
-│   │   ├── reads_2L_RaGOO_RaGOO:100:1621121-1621132.fastq
-│   │   ├── reads_2L_RaGOO_RaGOO:122:1727638-1727638.fastq
-...
+│   ├── MAPPING #FOLDER CONTAINS FILES MAPPING ON GENOME
+│   ├── MAPPING_TO_REF #FOLDER CONTAINS FILES MAPPING ON REFERENCE GENOME
+│   ├── READ_FASTQ_TE #FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
 │   ├── TE_DETECTION
-│   │   ├── BLAST_SEQUENCE_INDEL_vs_DBTE.bln
-│   │   ├── COMBINE_TE.csv
-│   │   ├── DEPTH_TE.csv
-│   │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv
-│   │   ├── FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv
-│   │   ├── POSITION_START_TE.bed
 │   │   └── TSD
-│   │       ├── TSD_17.6.txt
-│   │       ├── TSD_17.6_KO_corrected.txt
-│   │       ├── TSD_blood.txt
-│   │       ├── TSD_blood_KO_corrected.txt
-...
-│   ├── TE_TOWARD_GENOME
-│   │   ├── pseudo_genome.fasta    #pseudo genome with TE OUTSIDER integrated
-│   │   ├── TRUE_POSITION_TE.bed   #nouvelle emplacement des TE intégré
-│   │   └── TRUE_POSITION_TE.fasta #sequence des TE intégré
-│   └── VARIANT_CALLING
-│       ├── SEQUENCE_INDEL.fasta
-│       └── SV.vcf
+│   ├── TE_TOWARD_GENOME #FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
+│   │   ├── NEO_GENOME.fasta   #GENOME CONTAINS TE OUTSIDER (the best sequence of svim/sniffles)
+│   │   ├── PSEUDO_GENOME_TE_DB_ID.fasta   #GENOME CONTAINS TE OUTSIDER (the sequence of database TE and the ID of svim/sniffles)
+│   │   ├── TRUE_POSITION_TE.bed   #POSITION IN PSEUDO GENOME
+│   │   ├── TRUE_POSITION_TE.fasta  #SEQUENCE INTEGRATE IN PSEUDO GENOME
+│   │   ├── TRUE_POSITION_TE_READS.bed  #POSITION IN NEO GENOME
+│   │   └── TRUE_POSITION_TE_READS.fasta  #SEQUENCE INTEGRATE IN NEO GENOME
+│   └── VARIANT_CALLING  #FOLDER CONTAINS FILES OF sniflles/svim
 ├── REPORT
 │   ├── mini_report
 │   └── report.html
@@ -367,10 +264,10 @@ The most useful output files are :
 
 The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
 
-|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | 
-| --------------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- |
-|  2R_RaGOO_RaGOO | 16943971 | 16943972 | 3S18\|3105 |     +     |   NONE   | NONE    | DEFAULT:16943971 | 28.5714 |    28.5714     |
-|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|7644  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     | 
+|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  |
+| --------------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- |
+|  2R_RaGOO_RaGOO | 16943971 | 16943972 | 3S18\|3105 |     +     |   NONE   | NONE    | DEFAULT:16943971 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  |
+|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|7644  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     |    INSIDER TE_ID_INSIDER.77237.Repeat_expansion.8 |
 
 
  1.    `chrom` : chromosome
@@ -383,6 +280,7 @@ The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary i
  8.    `NEW_POS` :  position corrected iwith calculate TSD (only for OUTSIDER) 
  9.    `FREQ`  : frequence normal
  10.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped
+ 11.   `ID_TrEMOLO`  : TrEMOLO ID
 
 
 # Licence and Citation<a name="citation"></a>

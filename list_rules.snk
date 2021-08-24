@@ -228,19 +228,33 @@ rule REPORT :
 
         cp -r ${{path_to_pipline}}/report/* {params.work_directory}/REPORT/
 
+        ## TSD
+
+        echo "TSD OK" >  {params.work_directory}/.tmp_orderc.txt
+        echo "TSD KO" >> {params.work_directory}/.tmp_orderc.txt
+
         test -s {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv && \
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
-            {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv data > {params.work_directory}/REPORT/mini_report/js/TSD_histo.js
+            {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_OUTSIDER.js && \
+            sed 's/%%VAR_JS%%/TSD_OUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
+             > {params.work_directory}/REPORT/mini_report/lib/template_TSD_OUTSIDER_CHART.html
 
         test -s {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv && \
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
-            {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv data > {params.work_directory}/REPORT/mini_report/js/TSD_INSIDER_histo.js \
-            || sed -i '/TSD_INSIDER_histo/d' {params.work_directory}/REPORT/mini_report/outsider.Rmd
+            {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_INSIDER.js && \
+            sed 's/%%VAR_JS%%/TSD_INSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
+             > {params.work_directory}/REPORT/mini_report/lib/template_TSD_INSIDER_CHART.html \
+            || sed -i '/TSD_INSIDER_histo/d' {params.work_directory}/REPORT/mini_report/insider.Rmd
 
         test -s {params.work_directory}/VALUES_TSD_ALL_GROUP.csv && \
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
-            {params.work_directory}/VALUES_TSD_ALL_GROUP.csv data > {params.work_directory}/REPORT/mini_report/js/TSD_ALL_histo.js \
-            || sed -i '/TSD_ALL_histo/d' {params.work_directory}/REPORT/mini_report/outsider.Rmd
+            {params.work_directory}/VALUES_TSD_ALL_GROUP.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_INOUSIDER.js && \
+            sed 's/%%VAR_JS%%/TSD_INOUSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
+             > {params.work_directory}/REPORT/mini_report/lib/template_TSD_INOUTSIDER_CHART.html\
+            || sed -i '/TSD_ALL_histo/d' {params.work_directory}/REPORT/mini_report/inoutsider.Rmd
+
+        rm -f {params.work_directory}/.tmp_orderc.txt
+
 
         samtools faidx {input.genome}
         echo {params.CHROM_KEEP} | tr "," "\n" > {params.work_directory}/chrom.txt 
@@ -285,8 +299,8 @@ rule REPORT :
             max_value_histo_circos=`cat {params.work_directory}/HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
 
 
-            python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM {params.work_directory}/HISTOGRAM.txt > {params.work_directory}/js/HISTOGRAM.js
-            echo "dico_histo = {{}}" >> {params.work_directory}/js/HISTOGRAM.js
+            python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM {params.work_directory}/HISTOGRAM.txt > {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
+            echo "dico_histo = {{}}" >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
 
             awk '{{print $4}}' {params.work_directory}/POSITION_TE_OUTSIDER.bed | cut -d "|" -f 1 | sort | uniq > {params.work_directory}/TE_NAME.txt
             for TE in `cat {params.work_directory}/TE_NAME.txt`; do
@@ -304,15 +318,19 @@ rule REPORT :
                 python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
                 
                 echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM.js
-                cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM.js
+                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
+                cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
 
                 rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
                 rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
             done;
+
+            ## BUILD HTML
+            sed 's/%%VAR_JS%%/HISTOGRAM_OUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
+             > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_OUTSIDER.html
         fi;
 
-        test -s {params.work_directory}/js/HISTOGRAM.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM.js
+        test -s {params.work_directory}/js/HISTOGRAM_OUTSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
 
         
 
@@ -349,12 +367,15 @@ rule REPORT :
                 python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
                 
                 echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM.js
+                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_INSIDER.js
                 cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_INSIDER.js
 
                 rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
                 rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
             done;
+
+            sed 's/%%VAR_JS%%/HISTOGRAM_INSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
+             > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_INSIDER.html
         fi;
 
         test -s {params.work_directory}/js/HISTOGRAM_INSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INSIDER.js
@@ -393,15 +414,19 @@ rule REPORT :
                 python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
                 
                 echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM.js
+                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
                 cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
 
                 rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
                 rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
             done;
+
+            sed 's/%%VAR_JS%%/HISTOGRAM_INOUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
+             > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_INOUTSIDER.html
         fi;
 
         test -s {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
+
 
         cp {params.work_directory}/js/* {params.work_directory}/REPORT/mini_report/js/
         
@@ -526,7 +551,7 @@ rule REPORT :
             echo "ERROR NO TE INSERTION FOUND";
         else
             test -s ../../TE_INFO.csv && \
-                awk '{{split($4, sp, "|"); print sp[1]}}' ../../TE_INFO.csv | sort | uniq -c | awk '{{print $1"\t"$2}}' | sort -k 1 -n | awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > tmp_ALL_TE_COUNT.csv
+                awk 'NR>1 {{split($4, sp, "|"); print sp[1]}}' ../../TE_INFO.csv | sort | uniq -c | awk '{{print $1"\t"$2}}' | sort -k 1 -n | awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > tmp_ALL_TE_COUNT.csv
             
             awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' tmp_ALL_TE_COUNT.csv  > tmp.csv
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INOUTSIDER.js
@@ -648,7 +673,6 @@ rule TSD :
                 ! test -s {params.FILE_SIZE_TE_TSD} && message_fail "  Warning FILE {params.FILE_SIZE_TE_TSD} NOT FOUND\n"
                 
                 SIZE_TSD=`test -n "{params.FILE_SIZE_TE_TSD}" && test -s {params.FILE_SIZE_TE_TSD} && grep -w "${{nameTE}}" {params.FILE_SIZE_TE_TSD} || echo "NONE"`; # EX: ZAM 4 :or: -1
-                #SIZE_TSD=`grep -w "${{nameTE}}" ${{path_to_pipline}}/lib/TSD/TE_SIZE_TSD.txt || echo "NONE"`; # EX: ZAM 4 :or: -1
                 
                 #echo "TE : $nameTE"
                 
@@ -746,8 +770,8 @@ rule TSD :
 
                 ###echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD.csv
 
-                echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD [OK]" >> {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
-                echo -e "${{nameTE}}\t${{KO}}\tTSD [KO]" >> {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
+                echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD OK" >> {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
+                echo -e "${{nameTE}}\t${{KO}}\tTSD KO" >> {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
                 
                 i=$(($i + 1)) ;
                 printf "%s\\n" "{params.cmess} [SNK]--[`date`] [TSD:snk] : $i/$NB_FILE {params.cend}"
@@ -861,8 +885,8 @@ rule TSD :
 
                 ## echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD_INSIDER.csv
 
-                echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD [OK]" >> {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
-                echo -e "${{nameTE}}\t${{KO}}\tTSD [KO]" >> {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+                echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD OK" >> {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+                echo -e "${{nameTE}}\t${{KO}}\tTSD KO" >> {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
                 
                 printf "%s\\n" "{params.cmess} [SNK]--[`date`] [TSD:snk] : $e/$NB_TE {params.cend}"
 
@@ -897,8 +921,8 @@ rule TSD :
                     NBKO2=0;
                 fi;
 
-                echo -e "$TE\t$(($NBOK1+$NBOK2))\tTSD [OK]" >> {params.work_directory}/VALUES_TSD_ALL_GROUP.csv;
-                echo -e "$TE\t$(($NBKO1+$NBKO2))\tTSD [KO]" >> {params.work_directory}/VALUES_TSD_ALL_GROUP.csv;
+                echo -e "$TE\t$(($NBOK1+$NBOK2))\tTSD OK" >> {params.work_directory}/VALUES_TSD_ALL_GROUP.csv;
+                echo -e "$TE\t$(($NBKO1+$NBKO2))\tTSD KO" >> {params.work_directory}/VALUES_TSD_ALL_GROUP.csv;
             done;
 
             awk 'BEGIN{{print "x\ty\tcondition"}}{{print $0}}' {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv > {params.work_directory}/tmp.csv

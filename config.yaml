@@ -33,7 +33,7 @@ PARAMS:
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
         TSD:
-            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # path file or empty value [optional]
+            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # path file or empty value [optional] (format="TE SIZE" by line)
             SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4 
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "[23][RL],4,X" ; Put "." for keep all chromosome

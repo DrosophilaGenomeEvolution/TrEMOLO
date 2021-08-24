@@ -1,0 +1,66 @@
+
+<style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      width: 100%;
+    }
+
+    #chartdiv {
+      width: 100%;
+      height: auto;
+    }
+</style>
+
+
+<!-- <script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script> -->
+<script src="../js/lib/charts/core.js"></script>
+<script src="../js/lib/charts/charts.js"></script>
+<script src="../js/lib/charts/themes/animated.js"></script>
+<script src="../js/lib/charts/themes/dataviz.js"></script>
+
+<div id="chartdiv"></div>
+
+
+<script>
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    am4core.useTheme(am4themes_dataviz);
+    // Themes end
+
+    // Create chart instance
+    var chart = am4core.create("chartdiv", am4charts.XYChart3D);
+
+    chart.data = [{
+      "type_SV": "INS",
+      "number": %%VALUE_INS%%,
+      "color": chart.colors.next()
+    }, {
+      "type_SV": "DUP",
+      "number": %%VALUE_DUP%%,
+      "color": chart.colors.next()
+    }, {
+      "type_SV": "DEL",
+      "number": %%VALUE_DEL%%,
+      "color": chart.colors.next()
+    }];
+
+    // Create axes
+    var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
+    categoryAxis.dataFields.category = "type_SV";
+    categoryAxis.numberFormatter.numberFormat = "#";
+    categoryAxis.renderer.inversed = true;
+
+    var  valueAxis = chart.xAxes.push(new am4charts.ValueAxis()); 
+
+    // Create series
+    var series = chart.series.push(new am4charts.ColumnSeries3D());
+    series.dataFields.valueX = "number";
+    series.dataFields.categoryY = "type_SV";
+    series.name = "number";
+    series.columns.template.propertyFields.fill = "color";
+    series.columns.template.tooltipText = "{valueX}";
+    series.columns.template.column3D.stroke = am4core.color("#fff");
+    series.columns.template.column3D.strokeOpacity = 0.2;
+</script>
