@@ -260,7 +260,7 @@ WORK_DIRECTORY
 
 The most useful output files are :
 
-* The html report in **your_work_direcetory/REPORT/report.html** with summary graphics, exemple [here](test/web/index.html)
+* The html report in **your_work_direcetory/REPORT/report.html** with summary graphics, exemple [here](https://raw.githack.com/DrosophilaGenomeEvolution/TrEMOLO/v2/test/web/index.html)
 
 The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
 
