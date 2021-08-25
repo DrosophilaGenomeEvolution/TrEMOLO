@@ -162,8 +162,8 @@ PARAMS:
             SIZE_FLANK: 30  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
-            GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
-        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option for TrEMOLO/lib/python/parse_blast_main.py - don,t put -c option
+            GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option of the sequence recovery file in the vcf
+        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
 
@@ -190,7 +190,7 @@ To analyse **OUTSIDER**, only the `SAMPLE` , the `GENOME`, the `TE_DB` and the `
 snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path/to/your_config.yaml
 ```
 
-Start test
+Run test
 
 ```bash
 snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
@@ -260,14 +260,14 @@ WORK_DIRECTORY
 
 The most useful output files are :
 
-* The html report in **your_work_direcetory/REPORT/report.html** with summary graphics
+* The html report in **your_work_direcetory/REPORT/report.html** with summary graphics, exemple [here](test/web/index.html)
 
 The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
 
 |      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  |
 | --------------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- |
-|  2R_RaGOO_RaGOO | 16943971 | 16943972 | 3S18\|3105 |     +     |   NONE   | NONE    | DEFAULT:16943971 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  |
-|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|7644  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     |    INSIDER TE_ID_INSIDER.77237.Repeat_expansion.8 |
+|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175 |     +     |   GTACA   | 9006    | DEFAULT:16943971 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  |
+|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     |    INSIDER TE_ID_INSIDER.77237.Repeat_expansion.8 |
 
 
  1.    `chrom` : chromosome
