@@ -143,6 +143,8 @@ CHOICE:
         CALL_SV: "svim" # possibilities: sniffles, svim
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) xxx
+    INSIDER_VARIANT:
+        DETECT_ALL_TE: False    # Warning it could be take several time on big genome
     INTERMEDIATE_FILE: True     # to conserve the intermediate analyses files to process them.
 
 

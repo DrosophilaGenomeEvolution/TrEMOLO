@@ -159,6 +159,7 @@ rule create_snake_file :
         choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
         #choice_asm          = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
         choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
+        DETECT_ALL_TE       = config["CHOICE"]["INSIDER_VARIANT"]["DETECT_ALL_TE"],
 
         INTEGRATE_TE_TO_GENOME = config["CHOICE"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"],
         OPTIMIZE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["OPTIMIZE_FREQUENCE"],
@@ -202,17 +203,19 @@ rule create_snake_file :
             ## Exemple les instructions par default obligatoir
             printf "%s" "SV_INSIDER > TE_INSIDER:N " > instruction.txt
 
-            # if [ {params.choice_outsider_sv} != "True" ]; then
-            #     sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-            #     printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD " >> instruction.txt
-            # else
-            #     printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> instruction.txt
-            # fi;
-
-            if [ {params.choice_outsider_sv} != "True" ]; then
+            if  [ {params.DETECT_ALL_TE} == "True" ] ; then
+                if [ {params.choice_outsider_sv} != "True" ] ; then
+                    sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
+                    printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD " >> instruction.txt
+                else
+                    printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> instruction.txt
+                fi;
+            elif [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
                 printf "%s" "> TSD " >> instruction.txtt
             fi;
+
+            
 
 
             if [ {params.REPORT} ] && [ {params.choice_outsider_sv} != "True" ]; then
@@ -279,7 +282,7 @@ rule create_snake_file :
             
             ## Exemple les instruction par default obligatoir
             if [ {params.OPTIMIZE_FREQUENCE} = True ]; then
-                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE " > instruction.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > SOFT_TE " > instruction.txt
                 
                 if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
                     printf "> FREQ_GLOBAL > FREQUENCE " >> instruction.txt

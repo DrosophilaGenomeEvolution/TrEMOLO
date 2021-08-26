@@ -607,7 +607,7 @@ rule TSD :
         
 
     output:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/VALUES_TSD_GROUP_OUTSIDER.csv" if config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"] == "True" else config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/VALUES_TSD_INSIDER_GROUP.csv",
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/VALUES_TSD_GROUP_OUTSIDER.csv" if config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"] == True else config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/VALUES_TSD_INSIDER_GROUP.csv",
         #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "TSD"),
         output_link=[],
 
@@ -1985,6 +1985,7 @@ rule FREQ_GLOBAL:
     input:  
         TE_INS   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION.csv",
         bam      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/MAPPING/SAMPLE_mapping_GENOME_MD.sorted.bam",
+        all_te   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.csv",
 
     output:
         DEPTH = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv",
@@ -2113,6 +2114,118 @@ rule FREQ_GLOBAL:
 #END FREQ_GLOBAL
 
 
+
+
+#
+rule SOFT_TE :
+    input:
+        fasta_TE = config["DATA"]["TE_DB"],
+        bam      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/MAPPING/SAMPLE_mapping_GENOME_MD.sorted.bam",
+        all_te   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
+
+    output:
+        all_te    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.csv",
+        bln       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.bln",
+        seqs      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.fasta",
+        vcf       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.vcf",
+
+    params:
+        path_snk       = path_snk,
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        env            = env, #source environnement
+
+        call_sv                = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
+        CHROM_KEEP             = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
+        GET_SEQ_REPORT_OPTION  = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["GET_SEQ_REPORT_OPTION"],
+
+        #COLORS
+        cfail          = bcolors.FAIL,
+        cmess          = bcolors.CYAN,
+        cend           = bcolors.END,
+
+    log:
+        soft = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/SOFT"
+
+
+    shell:
+        """
+        {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE IN SOFT READS [^-^] {params.cend}"
+
+        mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT
+
+        ## CREATE VCF SOFT
+        echo "CREATE VCF SOFT..."
+        python3 ${{path_to_pipline}}/lib/python/find_soft.py {input.bam} > {output.vcf};
+
+        ## GET SEQUENCE SOFT
+        echo "GET SEQUENCE SOFT..."
+        awk '{{
+            split($4, spL, ";"); 
+            split($5, spR, ";"); 
+            split(spL[3], spLSEQ, "=");
+            split(spR[3], spRSEQ, "="); 
+            if(spLSEQ[2] != "NONE"){{ 
+                print ">"$1":<SOFT>:"$2":"$2+1":"$3".L:1:PRECISE:0\\n"spLSEQ[2];
+            }} 
+
+            if(spRSEQ[2] != "NONE"){{
+                print ">"$1":<SOFT>:"$2":"$2+1":"$3".R:1:PRECISE:0\\n"spRSEQ[2] 
+            }}  
+        }}' {output.vcf} | grep -E ">[23][LR]_|>[4X]_" -A 1 | grep -v "^--" > {output.seqs};
+
+        ## BLAST TE
+        echo "BLAST TE..."
+        makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.soft}.err;
+        blastn -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log.soft}.err;
+
+        ## GET CANDIDATE TE
+        echo "GET CANDIDATE TE..."
+        python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} {input.fasta_TE} {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30
+
+
+        awk 'NR>1 {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv | awk -F ":" 'OFS="\t"{{print $1, $3, $4, $10"|"$5}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_SOFT.bed
+
+        ## EXCLUDE SOFT DETECTED BEFORE
+        echo "EXCLUDE SOFT DETECTED BEFORE..."
+        awk 'NR>1 && OFS="\t" {{ split($2, sp, ":"); print sp[1], sp[3], sp[4]+1, $1"|"sp[5] }}' {input.all_te} > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_INFO.bed;
+
+        bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_SOFT.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_INFO.bed -w 30 | awk '{{ split($4, sp1, "|"); split($8, sp2, "|"); if(sp1[1] == sp2[1]){{print sp1[2]}} }}' > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_NOT_KEEP.txt
+        grep -w -v -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_NOT_KEEP.txt {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv
+
+        awk 'NR>1 {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv | cut -d ":" -f 5 | sort -u | sed 's/.[RL]//g' | sort | uniq -c | sort -k 1 -n | awk '$1>1 {{print $2}}' \
+         > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_ALL_DOUBLON.txt
+
+
+
+        ## INFERIEUR au pourcentage attendu est uniq
+        PSIZE=`awk 'BEGIN{{min=100}} NR>1 {{ if(min>int($4)){{ min=int($4) }} }} END{{print int(min)}}' {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv`;
+
+        awk -v psize="$PSIZE" 'NR>1 && $4<psize {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv | cut -d ":" -f 5 | sort -u | sed 's/.[RL]//g' | sort | uniq -c | sort -k 1 -n | awk '$1==1 {{print $2}}' \
+         > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_SOFT_EXLUDE.txt
+
+        grep -v -w -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_SOFT_EXLUDE.txt {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP_V2.csv;
+
+        echo "GETTING TE..."
+        grep -w -v -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_ALL_DOUBLON.txt {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP_V2.csv > {output.all_te};
+        
+        awk 'NR>1 {{print $1}}' {output.all_te} | sort | uniq -c | sort -k 1 -n | awk 'BEGIN{{print "x\ty\tz";}} OFS="\t"{{print "", $2, $1}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/COUNT_SOFT_TE.csv
+
+        awk 'NR>1 && OFS="\t"{{split($2, sp, ":"); print sp[1], sp[3], sp[4], $1"|"sp[5]}}' {output.all_te} > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.bed
+        ln -s -f -r {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.bed {params.work_directory}/SOFT_TE.bed;
+
+        #** REMOVE **#
+        rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID*;
+        rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP*;
+        rm -f `find {params.work_directory} -name "*.fai"`
+        """
+
+
+
+#END SOFT_TE
 
 
 #BLASt database of TE against SV (Structural variant)
@@ -2281,7 +2394,7 @@ rule DETECTION_TE :
         if [ `cat {output.all_te} | wc -l` -eq 1 ]; then
             message_fail "ERROR EXIT PIPELINE BECAUSE NO TE FOUND\\n";
             exit 2;
-        fi
+        fi;
         #** REMOVE **#
         #rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed;
         rm -f `find {params.work_directory} -name "*.fai"`
@@ -2542,7 +2655,7 @@ rule TE_ALL_IN_ASSEMBLY:
 
     output:
         csv = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/ALL_TE.csv",
-        bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/ALL_TE.bed",
+        bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/POSITION_ALL_TE.bed",
         tmp = output_link=[],
 
     params:
@@ -2608,7 +2721,7 @@ rule TE_ALL_IN_ASSEMBLY:
                 --combine_name {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_COMBINE_TE.csv \
                 {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_2.bln  \
                 {input.fasta_TE} \
-                {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE.csv
+                {output.csv}
 
         else
             test -s {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_2.bln  && \
@@ -2616,10 +2729,11 @@ rule TE_ALL_IN_ASSEMBLY:
                 --combine_name {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_COMBINE_TE.csv \
                 {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_2.bln  \
                 {input.fasta_TE} \
-                {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE.csv
+                {output.csv}
         fi;
 
-        cat {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE.csv > {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE.bed
+        awk 'NR>1 && OFS="\t"{{ split($2, sp1, ":"); split(sp1[4], sp2, "-"); print sp1[3], sp2[1], sp2[2], $1"|"sp1[1] }}' {output.csv} > {output.bed}
+        ln -s -r -f {output.bed} {params.work_directory}/`basename {output.bed}`
 
         rm -f {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_1*
         rm -f {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_2*

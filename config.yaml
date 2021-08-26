@@ -18,6 +18,8 @@ CHOICE:
         CALL_SV: "svim" # possibility (sniffles, svim) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) xxx
         OPTIMIZE_FREQUENCE: True # (True, False) xxx
+    INSIDER_VARIANT:
+        DETECT_ALL_TE: False    # Warning it could be take several time on big genome
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
 
 
