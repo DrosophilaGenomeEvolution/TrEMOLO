@@ -17,6 +17,8 @@ CHOICE:
         CALL_SV: "svim" #Posibiliti (sniffles, svim)
         INTEGRATE_TE_TO_GENOME: True
         OPTIMIZE_FREQUENCE: True
+    INSIDER_VARIANT:
+        DETECT_ALL_TE: True
     INTERMEDIATE_FILE: True
 
 
