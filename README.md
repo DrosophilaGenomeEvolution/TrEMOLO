@@ -89,7 +89,7 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
 Once the requirements fullfilled, just git clone
 
 ```bash
-git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
+git clone --branch v2 https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 ```
 
 ## Using Singularity<a name="singularity"></a>
@@ -142,7 +142,7 @@ CHOICE:
     OUTSIDER_VARIANT:
         CALL_SV: "svim" # possibilities: sniffles, svim
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
-        OPTIMIZE_FREQUENCE: True # (True, False) xxx
+        OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATE WITH CLIPPING READS
     INSIDER_VARIANT:
         DETECT_ALL_TE: False    # Warning it could be take several time on big genome
     INTERMEDIATE_FILE: True     # to conserve the intermediate analyses files to process them.
@@ -269,7 +269,7 @@ The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary i
 |      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  |
 | --------------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- |
 |  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175 |     +     |   GTACA   | 9006    | DEFAULT:16943971 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  |
-|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     |    INSIDER TE_ID_INSIDER.77237.Repeat_expansion.8 |
+|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     | TE_ID_INSIDER.77237.Repeat_expansion.8 |
 
 
  1.    `chrom` : chromosome
