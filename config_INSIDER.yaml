@@ -14,8 +14,8 @@ CHOICE:
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
         CALL_SV: "svim" # possibility (sniffles, svim) 
-        INTEGRATE_TE_TO_GENOME: True # (True, False) xxx
-        OPTIMIZE_FREQUENCE: True # (True, False) xxx
+        INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
+        OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATE WITH CLIPPING READS
     INSIDER_VARIANT:
         DETECT_ALL_TE: False    # Warning can take long time
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
