@@ -59,9 +59,11 @@ with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as 
 os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT")
 
 #create symbolic link input data
-os.system("test -s `realpath " + config["DATA"]["REFERENCE"] + "` && ln -s  `realpath " + config["DATA"]["REFERENCE"] + "` " +  config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"]))
+if "REFERENCE" in config["DATA"] :
+    os.system("test -s `realpath " + config["DATA"]["REFERENCE"] + "` && ln -s  `realpath " + config["DATA"]["REFERENCE"] + "` " +  config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"]))
 os.system("test -s `realpath " + config["DATA"]["GENOME"] + "` && ln -s  `realpath " + config["DATA"]["GENOME"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"]))
-os.system("test -s `realpath " + config["DATA"]["SAMPLE"] + "` && ln -s  `realpath " + config["DATA"]["SAMPLE"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"]))
+if "SAMPLE" in config["DATA"] :
+    os.system("test -s `realpath " + config["DATA"]["SAMPLE"] + "` && ln -s  `realpath " + config["DATA"]["SAMPLE"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"]))
 
 print("CHECKING OF DB TE...\n\n")
 

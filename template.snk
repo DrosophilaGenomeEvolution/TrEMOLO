@@ -53,10 +53,11 @@ if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
     config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
 
 # Attach new data
-
-config["DATA"]["REFERENCE"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"])
+if "REFERENCE" in config["DATA"] :
+    config["DATA"]["REFERENCE"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"])
 config["DATA"]["GENOME"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"])
-config["DATA"]["SAMPLE"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"])
+if "SAMPLE" in config["DATA"] :
+    config["DATA"]["SAMPLE"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"])
 
 #CHECKING CARACTERE OF TE DB 
 file  = open(config["DATA"]["TE_DB"], "r")
