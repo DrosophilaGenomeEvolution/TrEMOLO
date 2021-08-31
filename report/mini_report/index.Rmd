@@ -62,7 +62,11 @@ print(paste("VARIANT CALLING : ", params$CHOICE$OUTSIDER_VARIANT$CALL_SV))
 ```
 
 
-
 <!-- ## TE ANALYSIS
  -->
 **INFO : All static graphs are limited to a maximum of 50 values ​​for visibility, dynamic graphs are not limited in number of values.**
+
+## Timeline
+
+<iframe src="lib/timeline.html" style="width: 100%; height: 1100px; border: none; overflow: hidden;"></iframe>
+
