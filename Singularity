@@ -86,7 +86,7 @@ _EOF_
         assemblytics \
         r-base \
         perl \
-				pandoc-citeproc \
+        pandoc-citeproc \
         libfontconfig1-dev
 
 
@@ -105,9 +105,30 @@ _EOF_
     R --slave -e 'install.packages("viridis")'
     R --slave -e 'install.packages("bookdown")'
     R --slave -e 'install.packages("knitr")'
+    R --slave -e 'install.packages("stringi")'
 
+    #samtools
+    cd /usr/bin
+    wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
+    tar -vxjf htslib-1.9.tar.bz2
+    cd htslib-1.9
+    make
+
+    cd ..
+    wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
+    tar -vxjf samtools-1.9.tar.bz2
+    cd samtools-1.9
+    make
+
+    wget https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2
+    tar -vxjf bcftools-1.9.tar.bz2
+    cd bcftools-1.9
+    make
+
+    cd
+    
     #Python libs
-    python3 -m pip install biopython pandas numpy matplotlib svim intervaltree scipy svim
+    python3 -m pip install biopython pandas numpy matplotlib svim==1.4.2 intervaltree scipy
 
     # build variables
     export TOOLDIR=/opt/tools
@@ -160,13 +181,15 @@ _EOF_
 
 
 
-	#install TrEMOLO
-	cd $TOOLDIR
-	git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
+    #install TrEMOLO
+    cd $TOOLDIR
+    git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 
 %environment
     export PATH=$TOOLDIR/wtdbg2/:$TOOLDIR/RaGOO/:$TOOLDIR/Flye/:$TOOLDIR/TrEMOLO/:$PATH
-
+    export PATH="$PATH:/usr/bin/bcftools-1.9"
+    export PATH="$PATH:/usr/bin/samtools-1.9"
+    export PATH="$PATH:/usr/bin/htslib-1.9"
 
 %runscript
     exec "$@"
