@@ -3,10 +3,8 @@ import os
 import sys
 import argparse
 
-
-
-
-parser = argparse.ArgumentParser(description="parse bam file to get sequence of insertion, at specific position in bed file", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+#TODO CHECK ALL METHODS
+parser = argparse.ArgumentParser(description="parse bam file to get sequence of insertion (soft reads), at specific position in bed file", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 #MAIN ARGS
 parser.add_argument("bam_file", metavar='<bam-file>', option_strings=['bam-file'], type=argparse.FileType('r'),
@@ -17,7 +15,7 @@ parser.add_argument("bam_file", metavar='<bam-file>', option_strings=['bam-file'
 parser.add_argument("-m", "--window", dest='window', type=int, default=50,
                     help="Maximum distance to group SV together.")
 parser.add_argument("-s", "--min-size", dest="min_size", type=int, default=30,
-                    help="minimum percentage of TE size.")
+                    help="minimum size of sequence.")
 args = parser.parse_args()
 
 name_bamfile = args.bam_file
@@ -38,7 +36,7 @@ for e, read in enumerate(bamfile.fetch()):
     read_name       = read.query_name
     REF             = read.reference_name
     
-    count_ref  = 0 #nombre de nucleotide sur la ref avant d'atteindre le site d'insertion
+    count_ref  = 0 #number of nucleotides on the ref before reaching the insertion site
     count_read = 0
 
     if read_name :
@@ -53,9 +51,6 @@ for e, read in enumerate(bamfile.fetch()):
 
             #if we have found INS to a good position
             if tupl[0] == 4 and tupl[1] >= min_size :
-                
-                #print(tupl)
-                #print("start", start, "name", name, "count_ref_ins", count_ref, "count_read", count_read, "pos", (reference_start+count_ref), "diff", ((reference_start+count_ref)-start))
                 
                 if ref_name_pred != REF :
                     ref_name_pred = REF
@@ -113,7 +108,6 @@ for e, read in enumerate(bamfile.fetch()):
                             dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":["NONE" ,  str(0), "NONE"],"BEST_RIGHT":[str(read_name) , str(tupl[1]), seq_vr], "RS_LEFT":[], "RS_RIGHT":[str(read_name)]})
                         
                         ID += 1
-
 
 
 for indice, dic in enumerate(dico_clust) :
