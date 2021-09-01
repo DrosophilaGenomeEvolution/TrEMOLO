@@ -1,0 +1,270 @@
+
+## INSIDER
+
+**INSIDER** are TE assembled on genome
+
+### NUMBER OF TE
+
+#### INSERTION
+
+Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/INSERTION.csv", sep="\t"); nrow(data);`**
+
+Number of family found : **`r data=read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t"); nrow(data);`**
+
+```{r insider1, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
+
+data = read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t")
+#kbl(data)
+
+data = tail(data, 50)
+
+
+uniqy = unique(data$y)
+uniqx = unique(data$x)
+
+for (y in uniqy)
+{
+  datay = data[data$y %in% y, ]
+  for(x in uniqx){
+    datax = datay[datay$x %in% x, ]
+    if(nrow(datax) != 1){
+      new_line_data <- data.frame(x, y, 0)
+      names(new_line_data) <- c("x", "y", "z")
+
+      data <- rbind(data, new_line_data)
+    }
+  }
+}
+
+
+max=0
+namx=""
+for(x in uniqx){
+  datax = data[data$x %in% x, ]
+  if(max(datax$z)>max){
+    max  = max(datax$z)
+    namx = x
+  }
+}
+
+datax = data[data$x %in% namx, ]
+datax = datax[order(datax$z), ]
+
+data$y <- factor(data$y, levels = datax$y)
+
+nb_diff_TE = length( unique(data$y) )
+
+xlabel = ''
+graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+    geom_tile() + 
+    ggtitle("") +
+    
+    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)) +
+    coord_fixed() +
+    scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
+    #scale_fill_viridis(option="heat") +
+theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
+  #,panel.border = element_rect(linetype = "dashed", fill = NA)
+  #, panel.grid.major = element_line(colour = "black")
+) +
+geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
+
+    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
+
+order_TE = data$y
+
+#graph
+graph
+#ggsave(name_output)
+
+```
+
+<iframe src="lib/template_COUNT_TE_INSIDER.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
+
+hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
+
+
+#### DELETION
+
+Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/DELETION.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_DEL -->
+
+Number of family found : **`r data=read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_DEL -->
+
+
+```{r insider11, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
+
+data = read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t")
+#kbl(data)
+
+data = tail(data, 50)
+
+
+uniqy = unique(data$y)
+uniqx = unique(data$x)
+
+for (y in uniqy)
+{
+  datay = data[data$y %in% y, ]
+  for(x in uniqx){
+    datax = datay[datay$x %in% x, ]
+    if(nrow(datax) != 1){
+      new_line_data <- data.frame(x, y, 0)
+      names(new_line_data) <- c("x", "y", "z")
+
+      data <- rbind(data, new_line_data)
+    }
+  }
+}
+
+
+max=0
+namx=""
+for(x in uniqx){
+  datax = data[data$x %in% x, ]
+  if(max(datax$z)>max){
+    max  = max(datax$z)
+    namx = x
+  }
+}
+
+datax = data[data$x %in% namx, ]
+datax = datax[order(datax$z), ]
+
+data$y <- factor(data$y, levels = datax$y)
+
+nb_diff_TE = length( unique(data$y) )
+
+    #print("ok--s")
+xlabel = ''
+graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+    geom_tile() + 
+    ggtitle("") +
+    
+    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)) +
+    coord_fixed() +
+    scale_fill_gradientn(colours=brewer.pal(n= 9, name="YlGnBu")) +
+    #scale_fill_viridis(option="heat") +
+theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
+  #,panel.border = element_rect(linetype = "dashed", fill = NA)
+  #, panel.grid.major = element_line(colour = "black")
+) +
+geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
+
+
+    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
+
+order_TE = data$y
+
+graph
+
+```
+
+
+<iframe src="lib/template_COUNT_TE_INSIDER_DEL.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
+
+hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20** <!-- TE_INSIDER_DEL -->
+
+
+
+### FREQUENCE
+
+
+```{bash FREQB2, eval=TRUE, include=TRUE, results=TRUE}
+
+test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && awk -F "\t" 'NR>1 {print $2}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv | tail -n 50 > .tmp_orderx.txt
+
+
+test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && python3 ../lib/freq_graph.py ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv .tmp_FREQ_TE.csv && echo -e "x\ty\tcondition" > FREQ_TE.csv && grep -w -f .tmp_orderx.txt .tmp_FREQ_TE.csv >> FREQ_TE.csv || echo ;
+
+
+##NEW CHART
+
+test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && awk -F "\t" 'NR>1 {print $2}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv > .tmp_orderx.txt
+
+
+test -s .tmp_FREQ_TE.csv && \
+    python3 ../lib/conv_js_histo_grouped_ggplot.py .tmp_FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_INSIDER_CHART.js
+
+sed 's/%%VAR_JS%%/FREQ_INSIDER_CHART.js/g' lib/template_FREQ_TE_CHART.html \
+    > lib/template_FREQ_TE_INSIDER_CHART.html
+
+```
+
+
+
+```{r FREQIN, eval=FALSE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+
+data = read.csv("FREQ_TE.csv", sep="\t")
+
+#data$x <- factor(data$x, levels = order_TE)
+
+#order condition percent
+order <- read.table("orderc.txt", header = FALSE)
+data$condition <- factor(data$condition, levels = order$V1)
+
+orderx <- read.table(".tmp_orderx.txt", header = FALSE)
+data$x <- factor(data$x, levels = orderx$V1)
+
+p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
+        geom_bar(position="stack", stat="identity") +
+        xlab("TE") +
+        ylab("NUMBER") +
+        labs(fill = "FREQUENCE") +
+        #scale_fill_viridis(discrete = T) +
+        scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
+        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+            panel.background = element_rect(fill="white", colour="white", 
+                                          linetype="solid", color="white"))
+
+p
+
+```
+
+<iframe src="lib/template_FREQ_TE_INSIDER.html" style="width: 100%; height: 1800px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_FREQ_TE_INSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
+
+
+Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
+
+
+
+### TSD
+
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+grep "OK" ../../VALUES_TSD_INSIDER_GROUP.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD"
+
+grep "KO" ../../VALUES_TSD_INSIDER_GROUP.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_KO.txt || echo "ERROR TSD"
+
+awk 'BEGIN{somme=0} NR>1 {somme+=$2}END{print somme}' ../../VALUES_TSD_INSIDER_GROUP.csv > .tmp_TE_TSD_TOTAL.txt || echo "ERROR TSD"
+
+```
+
+TSD [OK] : these are the TE with TSD **`r readLines(".tmp_TE_TSD_OK.txt");`/`r readLines(".tmp_TE_TSD_TOTAL.txt");`**
+
+TSD [KO] : these are the TE without TSD **`r readLines(".tmp_TE_TSD_KO.txt");`/`r readLines(".tmp_TE_TSD_TOTAL.txt");`**
+
+<!-- <iframe src="lib/template_TSD_INSIDER_histo.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe> -->
+<iframe src="lib/template_TSD_INSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
+
+Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
+
+### TE POSITION
+
+<iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_INSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+
+Select TE family
+
+
+<!-- remove inutile fiels -->
+
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+
+rm -f FREQ_TE.csv
+rm -f .tmp_*
+
+
+```

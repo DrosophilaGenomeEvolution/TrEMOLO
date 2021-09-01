@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>BioCircos.js</title>
+        <style type="text/css">
+            .box {
+              position: absolute;
+              /*top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);*/
+            }
+
+            .box select {
+              background-color: #0563af;
+              color: white;
+              padding: 12px;
+              width: 250px;
+              border: none;
+              font-size: 20px;
+              box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+              -webkit-appearance: button;
+              appearance: button;
+              outline: none;
+            }
+
+            .box::before {
+              content: "\f13a";
+              font-family: FontAwesome;
+              position: absolute;
+              top: 0;
+              right: 0;
+              width: 20%;
+              height: 100%;
+              text-align: center;
+              font-size: 28px;
+              line-height: 45px;
+              color: rgba(255, 255, 255, 0.5);
+              background-color: rgba(255, 255, 255, 0.1);
+              pointer-events: none;
+            }
+
+            .box:hover::before {
+              color: rgba(255, 255, 255, 0.6);
+              background-color: rgba(255, 255, 255, 0.2);
+            }
+
+            .box select option {
+              padding: 30px;
+            }
+    </style> 
+    </head>
+    <body>
+        <!-- BioCircos.js, Jquery.js and D3.js import -->
+        <script src="../js/lib/jquery.js"></script>
+        <script src="../js/lib/d3.js"></script>
+        <script src="../js/lib/biocircos-1.1.0.js"></script>
+          <!-- Prepare a <div> tag with "biocircos" id to set the picture position your will draw in html -->
+        <div id="biocircos"></div>
+
+        <script src="../js/HISTOGRAM_INSIDER.js"></script> <!-- a generer-->
+        <script src="../js/histo_TE_BACKGROUND.js"></script>
+        
+        <div class="box">
+           <select id="pet-select">
+              <option value="ALL">ALL</option>
+           </select>
+        </div>
+
+        <script src="../js/bioCircosGenome.js"></script> <!-- a generer-->
+        <script src="../js/histo_circos.js"></script>
+    
+    </body>
+</html>

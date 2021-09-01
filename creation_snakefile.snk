@@ -1,0 +1,379 @@
+###################################################################################################################################
+#
+# Copyright 2019-2020 IRD-CNRS-Lyon1 University
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/> or
+# write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+# You should have received a copy of the CeCILL-C license with this program.
+# If not see <http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.txt>
+#
+# Intellectual property belongs to authors and IRD, CNRS, and Lyon 1 University  for all versions
+# Version 0.1 written by Mourdas Mohamed
+#                                                                                                                                   
+####################################################################################################################################
+
+
+#IMPORT
+import json
+import os
+
+#Class Color
+class bcolors:
+    VIOLET    = '\033[95m'
+    RED       = '\033[91m'
+    BLUE      = '\033[94m'
+    CYAN      = '\033[96m'
+    GREEN     = '\033[92m'
+    WARNING   = '\033[93m'
+    FAIL      = '\033[91m'
+    BOLD      = '\033[1m'
+    END       = '\033[0m'
+    UNDERLINE = '\033[4m'
+
+
+if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
+    config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
+
+# Create ouput folder
+os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"])
+
+# Remember the parameters associated with the output folder
+with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as file:
+    file.write(json.dumps(config))
+
+#Create input folder
+os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT")
+
+#create symbolic link input data
+if "REFERENCE" in config["DATA"] :
+    os.system("test -s `realpath " + config["DATA"]["REFERENCE"] + "` && ln -s  `realpath " + config["DATA"]["REFERENCE"] + "` " +  config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"]))
+os.system("test -s `realpath " + config["DATA"]["GENOME"] + "` && ln -s  `realpath " + config["DATA"]["GENOME"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"]))
+if "SAMPLE" in config["DATA"] :
+    os.system("test -s `realpath " + config["DATA"]["SAMPLE"] + "` && ln -s  `realpath " + config["DATA"]["SAMPLE"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"]))
+
+print("CHECKING OF DB TE...\n\n")
+
+file  = open(config["DATA"]["TE_DB"], "r")
+lines = file.readlines()
+
+#CHECK IF TE DB HAS NOT BAD CARACTERE
+creat_pseudo_db = False
+for line in lines :
+    if line[0] == ">" and (":" in line.strip() or "/" in line.strip() or "\\" in line.strip() or "|" in line.strip()) :
+        creat_pseudo_db = True
+        break
+
+#CREATE PSEUDO DB IF NECESSERY
+if creat_pseudo_db :
+
+    list_header_TE = open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/LIST_HEADER_DB_TE.csv", "w")
+    pseudo_DB      = open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta", "w")
+
+    list_header_TE.write("original\tpseudo")
+    for index, line in enumerate(lines) :
+        if line[0] == ">" :
+            list_header_TE.write("\noriginal=" + line.strip() + "\tpseudo=>TE" + str(index))
+            pseudo_DB.write(">TE" + str(index) + "\n")
+        else :
+            pseudo_DB.write(line)
+
+    #PSEUDO DB 
+    os.system("test -s `realpath " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta` && ln -s  `realpath "  + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta ` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"]))
+
+    list_header_TE.close()
+    pseudo_DB.close()
+
+else :
+    os.system("test -s `realpath " + config["DATA"]["TE_DB"] + "` && ln -s  `realpath "  + config["DATA"]["TE_DB"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"]))
+
+file.close()
+
+
+# Get path snakefile
+path_snk = ""
+
+i = 0
+while i < len(sys.argv) and path_snk == "" :
+    if sys.argv[i] == "--snakefile" :
+        if "/" in sys.argv[i + 1] :
+            path_snk = sys.argv[i + 1]
+        else :
+            path_snk = "./" + sys.argv[i + 1]
+
+    i += 1
+#
+
+name_configfil = ""
+
+i = 0
+while i < len(sys.argv) and name_configfil == "" :
+    if sys.argv[i] == "--configfile" :
+        name_configfil = sys.argv[i + 1]
+
+    i += 1
+#
+os.system("cp " + name_configfil + " " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.yaml")
+
+#CMD DEFINE ENV
+env="source `dirname " + path_snk + "`/define_env.sh" 
+
+#SHOW TITLE
+os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
+
+onerror:
+    print("AN ERROR OCCURRED ")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log && rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && ls | grep -v \"\.\" | rm -f ")
+
+
+#Map reads on assembly genome
+rule create_snake_file :
+    input:  
+
+    output:
+        #temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
+        temp(directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/rep_tmp_snk")),
+    
+    params:
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+        config         = json.dumps(config),
+
+        path_snk       = path_snk,
+        name_configfil = name_configfil,
+
+        env            = env, #source environnement
+
+        #CHOICE
+        call_sv             = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
+        choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
+        #choice_asm          = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
+        choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
+        DETECT_ALL_TE       = config["CHOICE"]["INSIDER_VARIANT"]["DETECT_ALL_TE"],
+
+        INTEGRATE_TE_TO_GENOME = config["CHOICE"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"],
+        OPTIMIZE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["OPTIMIZE_FREQUENCE"],
+
+        REPORT                 = config["CHOICE"]["PIPELINE"]["REPORT"],
+
+        #COLOR 
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+
+    shell:
+        """
+        
+        {params.env};
+        path_to_pipline=`dirname {params.path_snk}`
+
+        mkdir -p {params.work_directory}/SNAKE_USED/
+        mkdir -p {params.work_directory}/log/
+        mkdir -p {params.work_directory}/rep_tmp_snk/
+
+        rm -f ${{path_to_pipline}}/Snakefile*
+        
+        printf "%s\\n" "{params.cmess} [SNK] CREATION SNAKEFILE {params.cend}"
+        
+        mkdir -p ${{path_to_pipline}}/lib/C++/bin
+        g++ ${{path_to_pipline}}/lib/C++/chain_to_id.cpp -o ${{path_to_pipline}}/lib/C++/bin/chain_to_id;
+
+        ###
+        #INSIDER
+        ###
+
+        if [ {params.choice_insider_sv} = "True" ]; then
+
+            echo -e "\\n\t###"
+            echo -e "\t#INSIDER"
+            echo -e "\t###\\n\\n"
+
+            rm -f {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
+
+            ## Exemple les instructions par default obligatoir
+            printf "%s" "SV_INSIDER > TE_INSIDER:N " > instruction.txt
+
+            if  [ {params.DETECT_ALL_TE} == "True" ] ; then
+                if [ {params.choice_outsider_sv} != "True" ] ; then
+                    sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
+                    printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD " >> instruction.txt
+                else
+                    printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> instruction.txt
+                fi;
+            elif [ {params.choice_outsider_sv} != "True" ]; then
+                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
+                printf "%s" "> TSD " >> instruction.txtt
+            fi;
+
+            
+
+
+            if [ {params.REPORT} ] && [ {params.choice_outsider_sv} != "True" ]; then
+                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
+                printf "%s" "> REPORT " >> instruction.txt
+            fi;
+            
+            echo "" >> instruction.txt
+
+            ## BUILD SNAKEFILE en fonctions des instructions
+            python3 ${{path_to_pipline}}/lib/python/make_snk.py \
+                instruction.txt \
+                ${{path_to_pipline}}/list_rules.snk \
+                ${{path_to_pipline}}/Snakefile \
+                -t ${{path_to_pipline}}/template.snk \
+                -n {params.work_directory}
+
+            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
+
+            printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE INSIDER DONE ! {params.cend}"
+
+            printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
+
+            rm -f dryrun_validate
+            snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --dryrun && touch dryrun_validate \
+                || (message_fail "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && exit 0)
+
+
+            printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN DONE [ ✔ ] {params.cend}"
+
+            rm -f {params.work_directory}/log/Snakefile_insider.log
+            rm -f {params.work_directory}/log/Snakefile_insider.err
+            
+            if test -e dryrun_validate ; then
+                printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_insider.err | tee -p {params.work_directory}/log/Snakefile_insider.log \
+                    || (message_fail "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_insider.snk\\n\\n" && \
+                    echo "snake log file : {params.work_directory}/log/Snakefile_insider.log" && \
+                    echo " Error file : {params.work_directory}/log/Snakefile_insider.err" | tee -a {params.work_directory}/log/Snakefile_insider.log && \
+                        rm -f ${{path_to_pipline}}/Snakefile);
+
+                sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_insider.log
+                sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_insider.log
+            fi;
+
+
+            rm -f dryrun_validate;
+            test -s instruction.txt && test -s {params.work_directory}/INSIDER && mv instruction.txt {params.work_directory}/INSIDER/instructions.txt
+        fi;
+        
+
+        ###
+        #OUTSIDER
+        ###
+
+        if [ {params.choice_outsider_sv} = "True" ]; then
+
+            echo -e "\\n\t###"
+            echo -e "\t#OUTSIDER"
+            echo -e "\t###\\n\\n"
+
+
+            rm -f {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
+            
+            ## Exemple les instruction par default obligatoir
+            if [ {params.OPTIMIZE_FREQUENCE} = True ]; then
+                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > SOFT_TE " > instruction.txt
+                
+                if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
+                    printf "> FREQ_GLOBAL > FREQUENCE " >> instruction.txt
+                else
+                    printf "> FREQUENCE:NI " >> instruction.txt
+                fi;
+                
+                printf "> extract_read " >> instruction.txt
+            else
+                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > extract_read:NI " > instruction.txt
+            fi
+            
+            ## Exemple les instruction par default obligatoir
+            printf "%s" "> GET_SEQ_TE " >> instruction.txt
+
+            if [ {params.choice_insider_sv} = "True" ] && [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
+                printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
+                printf "%s" "> FIND_SV_ON_REF " >> instruction.txt
+                printf "%s" "> FIND_TE_ON_REF " >> instruction.txt
+                printf "%s" "> TSD" >> instruction.txt
+            else
+                if [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
+                    printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
+                    printf "%s" "> TSD " >> instruction.txt
+                else
+                    #:NI = NO INPUT
+                    printf "%s" "> TSD " >> instruction.txt
+                fi;
+            fi;
+
+            if [ {params.REPORT} ]; then
+                printf "%s" "> REPORT " >> instruction.txt
+            fi
+            
+            echo "" >> instruction.txt
+
+            ## Creation du snake file en fonction des instructions
+            python3 ${{path_to_pipline}}/lib/python/make_snk.py \
+                instruction.txt \
+                ${{path_to_pipline}}/list_rules.snk \
+                ${{path_to_pipline}}/Snakefile \
+                -t ${{path_to_pipline}}/template.snk \
+                -n {params.work_directory}
+
+            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
+
+            printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE OUTSIDER DONE ! {params.cend}"
+
+            printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
+
+            rm -f dryrun_validate
+            snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --dryrun && touch dryrun_validate \
+                || (message_fail "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && rm -f ${{path_to_pipline}}/Snakefile)
+
+            printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN DONE [ ✔ ] {params.cend}"
+
+            rm -f {params.work_directory}/log/Snakefile_outsider.log
+            rm -f {params.work_directory}/log/Snakefile_outsider.err
+
+            if test -e dryrun_validate; then
+                printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
+                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_outsider.err | tee -p {params.work_directory}/log/Snakefile_outsider.log  \
+                     || (message_fail "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\\n    Check LOG   : {params.work_directory}/log/Snakefile_outsider.log\\n    Check ERROR : {params.work_directory}/log/Snakefile_outsider.err\\n" && \
+                    echo "    Check LOG   : {params.work_directory}/log/Snakefile_outsider.log" >> {params.work_directory}/log/Snakefile_outsider.log && \
+                    echo "    Check ERROR : {params.work_directory}/log/Snakefile_outsider.err" >> {params.work_directory}/log/Snakefile_outsider.log && \
+                        rm -f ${{path_to_pipline}}/Snakefile);
+
+                sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_outsider.log
+                sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_outsider.log
+            fi;
+
+            test -s instruction.txt && test -s {params.work_directory}/OUTSIDER && mv instruction.txt {params.work_directory}/OUTSIDER/instructions.txt
+            rm -f dryrun_validate
+        fi;
+
+
+        ## pour les plus malin ^^
+        if [ {params.choice_insider_sv} != "True" ] && [ {params.choice_outsider_sv} != "True" ]; then
+            printf "%s\\n" "{params.cfail} [SNK] NO WORKFLOW SELECTED PLEASE CHECK YOUR CONFIG FILE {params.cend}"
+            printf "%s\\n" "{params.cmess} [SNK] OR TAKE A COFFEE {params.cend}"
+            printf "%s\\n" "{params.cfail}    [SNK] PUT OPTION : OUTSIDER_VARIANT or INSIDER_VARIANT at True {params.cend}"
+            #touch ${{path_to_pipline}}/Snakefile
+        fi;
+
+        touch {params.work_directory}/rep_tmp_snk/tmp_end_pipeline.end
+        rm -f ${{path_to_pipline}}/Snakefile*
+
+        """
+
+
+
+

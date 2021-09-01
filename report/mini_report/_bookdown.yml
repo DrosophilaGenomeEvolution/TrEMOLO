@@ -1,0 +1,6 @@
+book_filename: "mini_report"
+language:
+  ui:
+    chapter_name: " "
+delete_merged_file: true
+output_dir: "./web"

@@ -1,0 +1,45 @@
+
+DATA: 
+    REFERENCE:       "TrEMOLO/test/tmp_ref.fasta"   #reference genome (fasta file)
+    GENOME:          "TrEMOLO/test/tmp_genome.fasta"   #genome (fasta file)
+    SAMPLE:          "TrEMOLO/test/tmp_sample.fastq"    #long reads (a fastq file)
+    WORK_DIRECTORY:  "work_test"      #name of output directory
+    TE_DB:           "TrEMOLO/test/canonical_TE.fa"   #Database of TE (a fasta file)
+
+
+
+CHOICE:
+    PIPELINE:
+        OUTSIDER_VARIANT: True
+        INSIDER_VARIANT: True
+        REPORT: True
+    OUTSIDER_VARIANT:
+        CALL_SV: "svim" #Posibiliti (sniffles, svim)
+        INTEGRATE_TE_TO_GENOME: True
+        OPTIMIZE_FREQUENCE: True
+    INSIDER_VARIANT:
+        DETECT_ALL_TE: True
+    INTERMEDIATE_FILE: True
+
+
+PARAMS:
+    OUTSIDER_VARIANT:
+        MINIMAP2:
+            PRESET_OPTION: 'map-ont' # -x minimap2 preset option is map-pb by default (map-pb, map-ont etc)
+            OPTION: '-t 8'
+        SAMTOOLS_VIEW:
+            PRESET_OPTION: ''
+        SAMTOOLS_SORT:
+            PRESET_OPTION: ''
+        SAMTOOLS_CALLMD:
+            PRESET_OPTION: ''
+        TSD:
+            FILE_SIZE_TE_TSD: ""
+            SIZE_FLANK: 10
+        TE_DETECTION:
+            CHROM_KEEP: "^[23][RL]_,^X_,^4_"  #regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3R,3L,X" ; put "." for keep all chromosome
+            GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
+        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94"
+    INSIDER_VARIANT:
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
+        

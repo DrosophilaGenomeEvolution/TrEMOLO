@@ -1,0 +1,31 @@
+<!-- <script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://code.jquery.com/jquery-migrate-1.4.1.min.js"></script> -->
+
+<link rel="stylesheet" type="text/css" href="../css/slider.css">
+
+
+<script src="lib/lib_dl/d3.v4.js"></script>
+<script src="lib/lib_dl/jquery/3.5.1/jquery.min.js"></script>
+<script src="lib/lib_dl/jquery/jquery-migrate-1.4.1.min.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<div class="container">
+  
+  <div class="range-slider">
+    <span  class="rs-label">0</span>
+    <input id="slider" class="rs-range" type="range" value="0" min="0" max="179">
+  </div>
+
+  <div class="box-minmax">
+    <span>0</span>  <span>?</span>
+  </div>
+
+</div>
+
+
+<script src="../js/%%VAR_JS%%"></script>
+
+<script src="../js/d3_js_histo_grouped.js"></script>

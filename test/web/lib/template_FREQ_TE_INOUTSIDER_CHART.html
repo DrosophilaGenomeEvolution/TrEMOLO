@@ -1,0 +1,54 @@
+
+<!-- GET on https://www.amcharts.com/demos/3d-stacked-column-chart/ -->
+
+<link rel="stylesheet" type="text/css" href="../css/slider.css">
+
+<style type="text/css">
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      width: 100%;
+    }
+
+    #chartdiv {
+      width: 100%;
+      height: 500px;
+    }
+</style>
+
+<!--  -->
+<script src="lib/lib_dl/d3.v4.js"></script>
+<script src="lib/lib_dl/jquery/3.5.1/jquery.min.js"></script>
+<script src="lib/lib_dl/jquery/jquery-migrate-1.4.1.min.js"></script>
+
+
+<!-- https://www.amcharts.com/demos/3d-stacked-column-chart/ -->
+<script src="../js/lib/charts/core.js"></script>
+<script src="../js/lib/charts/charts.js"></script>
+<script src="../js/lib/charts/themes/animated.js"></script>
+<script src="../js/lib/charts/themes/dataviz.js"></script>
+<script src="../js/lib/charts/themes/spiritedaway.js"></script>
+
+
+<div id="chartdiv"></div>
+
+
+<div class="container">
+  
+  <div class="range-slider">
+    <span  class="rs-label">0</span>
+    <input id="slider" class="rs-range" type="range" value="0" min="0" max="179">
+  </div>
+
+  <div class="box-minmax">
+    <span>0</span>  <span>?</span>
+  </div>
+
+</div>
+
+<!-- var data -->
+<script src="../js/FREQ_INOUTSIDER_CHART.js"></script>
+
+<script type="text/javascript">
+  am4core.useTheme(am4themes_spiritedaway);
+</script>
+<script src="../js/HISTO_GROUPED_CHART.js"></script>

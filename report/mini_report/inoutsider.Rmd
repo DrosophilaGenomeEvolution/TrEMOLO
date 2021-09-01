@@ -1,0 +1,173 @@
+
+## ALL
+
+
+### NUMBER OF TE
+
+
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+(test -s ../../TE_INFO.csv && \
+    awk 'NR>1{split($4, sp, "|"); print sp[1]}' ../../TE_INFO.csv | sort | uniq -c | awk '{print $1"\t"$2}' | sort -k 1 -n | awk 'BEGIN{print "x\ty\tz"} OFS="\t"{print "", $2, $1}' > .tmp_ALL_TE_COUNT.csv)
+
+```
+
+Total number of **TE : `r data=read.csv("../../TE_INFO.csv", sep="\t"); nrow(data)-1;`**
+
+Number of family found : **`r data=read.csv(".tmp_ALL_TE_COUNT.csv", sep="\t"); nrow(data);`**
+
+```{r NB_INOUTSIDER, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
+
+data = read.csv(".tmp_ALL_TE_COUNT.csv", sep="\t")
+#kbl(data)
+data = tail(data, 50)
+
+uniqy = unique(data$y)
+uniqx = unique(data$x)
+
+for (y in uniqy)
+{
+  datay = data[data$y %in% y, ]
+  for(x in uniqx){
+    datax = datay[datay$x %in% x, ]
+    if(nrow(datax) != 1){
+      new_line_data <- data.frame(x, y, 0)
+      names(new_line_data) <- c("x", "y", "z")
+
+      data <- rbind(data, new_line_data)
+    }
+  }
+}
+
+
+max=0
+namx=""
+for(x in uniqx){
+  datax = data[data$x %in% x, ]
+  if(max(datax$z)>max){
+    max  = max(datax$z)
+    namx = x
+  }
+}
+
+datax = data[data$x %in% namx, ]
+datax = datax[order(datax$z), ]
+
+data$y <- factor(data$y, levels = datax$y)
+
+nb_diff_TE = length( unique(data$y) )
+
+    #print("ok--s")
+xlabel = ''
+graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+    geom_tile() + 
+    ggtitle("") +
+    
+    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=9, angle=0)) +
+    coord_fixed() +
+    scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
+    #scale_fill_viridis(option="heat") +
+theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
+  #,panel.border = element_rect(linetype = "dashed", fill = NA)
+  #, panel.grid.major = element_line(colour = "black")
+) +
+geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
+
+    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 3) 
+
+order_TE = data$y
+
+graph
+
+```
+
+<iframe src="lib/template_COUNT_TE_INOUTSIDER.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
+
+
+### FREQUENCE
+
+```{bash FREQB_inout, eval=TRUE, include=TRUE, results=TRUE}
+
+test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv | tail -n 50 > .tmp_orderx.txt || echo
+
+
+(test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
+  cat ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv > .tmp_DEPTH_TE.csv) || \
+  (test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
+    cat ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > .tmp_DEPTH_TE.csv)
+
+
+rm -f FREQ_TE.csv
+(test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && awk 'NR>1' ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv >> .tmp_DEPTH_TE.csv && python3 ../lib/freq_graph.py .tmp_DEPTH_TE.csv FREQ_TE.csv) || echo ;
+
+(test -s FREQ_TE.csv && echo -e "x\ty\tcondition" > .tmp_depth.csv && grep -w -f .tmp_orderx.txt FREQ_TE.csv >> .tmp_depth.csv && mv .tmp_depth.csv FREQ_TE.csv) || echo
+
+
+##NEW CHART
+test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv > .tmp_orderx.txt || echo
+
+test -s FREQ_TE.csv && \
+    python3 ../lib/conv_js_histo_grouped_ggplot.py FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_INOUTSIDER_CHART.js
+
+sed 's/%%VAR_JS%%/FREQ_INOUTSIDER_CHART.js/g' lib/template_FREQ_TE_CHART.html \
+    > lib/template_FREQ_TE_INOUTSIDER_CHART.html
+
+```
+
+
+
+```{r FREQ_INOUT, eval=FALSE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+
+
+if( file.exists("FREQ_TE.csv") ){
+  data = read.csv("FREQ_TE.csv", sep="\t")
+
+  #data$x <- factor(data$x, levels = order_TE)
+
+  order <- read.table("orderc.txt", header = FALSE)
+  data$condition <- factor(data$condition, levels = order$V1)
+
+  orderx <- read.table(".tmp_orderx.txt", header = FALSE)
+  data$x <- factor(data$x, levels = orderx$V1)
+
+
+  p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
+          geom_bar(position="stack", stat="identity") +
+          xlab("TE") +
+          ylab("NUMBER") +
+          labs(fill = "FREQUENCE") +
+          #scale_fill_viridis(discrete = T) +
+          scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
+          theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+              panel.background = element_rect(fill="white", colour="white", 
+                                            linetype="solid", color="white"))
+
+  p
+  #ggsave(p, file=output)
+}
+
+```
+
+<iframe src="lib/template_FREQ_TE_INOUTSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
+
+### TE POSITION
+
+
+<iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_INOUTSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+
+Select TE family
+
+
+<!-- remove inutiles files -->
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+
+rm -f FREQ_TE.csv
+rm -f .tmp_*;
+
+
+```
+
+
+

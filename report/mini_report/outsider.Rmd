@@ -1,0 +1,264 @@
+
+
+
+
+## OUTSIDER
+
+**OUTSIDER** are TE no assembled on genome
+
+### SV ANALYSIS
+
+Informations of **SV.vcf** file.
+
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+array_type=( "INS" "DEL" "DUP" ); 
+echo -e "x\ty" > .tmp_graph_sv.csv; 
+for i in ${array_type[@]}; do 
+    NB=`grep -w $i ../../OUTSIDER/VARIANT_CALLING/SV.vcf | cut -f 2 | sort | uniq | wc -l`;
+    echo -e "$i\t$NB";
+    sed -i "s/%%VALUE_${i}%%/${NB}/g" lib/template_HISTO_TYPE_SV.html
+done >> .tmp_graph_sv.csv;
+
+
+```
+
+<iframe src="lib/template_HISTO_TYPE_SV.html" style="width: 100%; height: 400px; border: none; overflow: hidden;"></iframe>
+
+
+
+```{r, eval=FALSE, include=FALSE, results=TRUE}
+
+df = read.csv(".tmp_graph_sv.csv", sep="\t")
+#kbl(df)
+
+p = ggplot(df, aes(y=y, x=x), width=0.5) + 
+    geom_bar(stat="identity", fill="#F85533", width=0.5) +
+    coord_flip()+
+    #geom_text(aes(label=y), vjust=1.6, color="white",
+    #        position = position_dodge(0.9), size=5) +
+    xlab("TYPE") +
+    ylab("NUMBER") +
+    #labs(fill = legendLabel) +
+    theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.4),
+      panel.background = element_rect(fill="white", colour="white", 
+                                           color="white"))
+
+
+colnames(df) <- c("type", "number")
+kbl(df)
+
+
+p
+#ggsave(p, file=output)
+
+```
+
+### NUMBER OF TE
+
+Total number of **TE : `r data=read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv", sep="\t"); nrow(data);`**
+
+Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t"); nrow(data);`**
+
+```{r NB_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
+
+data = read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t")
+#kbl(data)
+data = tail(data, 50)
+
+uniqy = unique(data$y)
+uniqx = unique(data$x)
+
+for (y in uniqy)
+{
+  datay = data[data$y %in% y, ]
+  for(x in uniqx){
+    datax = datay[datay$x %in% x, ]
+    if(nrow(datax) != 1){
+      new_line_data <- data.frame(x, y, 0)
+      names(new_line_data) <- c("x", "y", "z")
+
+      data <- rbind(data, new_line_data)
+    }
+  }
+}
+
+
+max=0
+namx=""
+for(x in uniqx){
+  datax = data[data$x %in% x, ]
+  if(max(datax$z)>max){
+    max  = max(datax$z)
+    namx = x
+  }
+}
+
+datax = data[data$x %in% namx, ]
+datax = datax[order(datax$z), ]
+
+data$y <- factor(data$y, levels = datax$y)
+
+nb_diff_TE = length( unique(data$y) )
+
+    #print("ok--s")
+xlabel = ''
+graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+    geom_tile() + 
+    ggtitle("") +
+    
+    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=9, angle=0)) +
+    coord_fixed() +
+    scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
+    #scale_fill_viridis(option="heat") +
+theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
+  #,panel.border = element_rect(linetype = "dashed", fill = NA)
+  #, panel.grid.major = element_line(colour = "black")
+) +
+geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
+
+    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 3) 
+
+order_TE = data$y
+
+graph
+
+```
+
+<iframe src="lib/template_COUNT_TE_OUTSIDER.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
+
+
+### FREQUENCE
+
+```{bash FREQB_out, eval=TRUE, include=TRUE, results=TRUE}
+
+test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv | tail -n 50 > .tmp_orderx.txt
+
+rm -f .tmp_FREQ_TE.csv
+(test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
+  python3 ../lib/freq_graph.py ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv .tmp_FREQ_TE.csv) || \
+  (test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
+  python3 ../lib/freq_graph.py ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv .tmp_FREQ_TE.csv)
+
+test -s .tmp_FREQ_TE.csv && echo -e "x\ty\tcondition" > FREQ_TE.csv && grep -w -f .tmp_orderx.txt .tmp_FREQ_TE.csv >> FREQ_TE.csv
+
+
+test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv > .tmp_orderx.txt
+
+test -s .tmp_FREQ_TE.csv && \
+    python3 ../lib/conv_js_histo_grouped_ggplot.py .tmp_FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_OUTSIDER_CHART.js
+
+sed 's/%%VAR_JS%%/FREQ_OUTSIDER_CHART.js/g' lib/template_FREQ_TE_CHART.html \
+    > lib/template_FREQ_TE_OUTSIDER_CHART.html
+
+```
+
+
+
+```{r FREQOUT, eval=FALSE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+
+data = read.csv("FREQ_TE.csv", sep="\t")
+
+#data$x <- factor(data$x, levels = order_TE)
+
+order <- read.table("orderc.txt", header = FALSE)
+data$condition <- factor(data$condition, levels = order$V1)
+
+orderx <- read.table(".tmp_orderx.txt", header = FALSE)
+data$x <- factor(data$x, levels = orderx$V1)
+
+
+p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
+        geom_bar(position="stack", stat="identity") +
+        xlab("TE") +
+        ylab("NUMBER") +
+        labs(fill = "FREQUENCE") +
+        #scale_fill_viridis(discrete = T) +
+        scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
+        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+            panel.background = element_rect(fill="white", colour="white", 
+                                          linetype="solid", color="white"))
+
+p
+
+```
+
+<iframe src="lib/template_FREQ_TE_OUSTIDER.html" style="width: 100%; height: 1800px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_FREQ_TE_OUTSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
+
+Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
+
+
+
+### TSD
+
+<!-- calcul number of TE TSD -->
+
+
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+grep "OK" ../../VALUES_TSD_GROUP_OUTSIDER.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD NOT FOUND"
+
+grep "KO" ../../VALUES_TSD_GROUP_OUTSIDER.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_KO.txt || echo
+
+awk 'BEGIN{somme=0} NR>1 {somme+=$2}END{print somme}' ../../VALUES_TSD_GROUP_OUTSIDER.csv > .tmp_TE_TSD_TOTAL.txt || echo
+
+```
+
+TSD [OK] : these are the TE with TSD **`r readLines(".tmp_TE_TSD_OK.txt");`/`r readLines(".tmp_TE_TSD_TOTAL.txt");`**
+
+TSD [KO] : these are the TE without TSD **`r readLines(".tmp_TE_TSD_KO.txt");`/`r readLines(".tmp_TE_TSD_TOTAL.txt");`**
+
+
+```{r TSD, eval=FALSE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+
+data = read.csv("../../VALUES_TSD_GROUP_OUTSIDER.csv", sep="\t")
+data = tail(data, 50)
+
+data$x <- factor(data$x, levels = order_TE)
+
+p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
+        geom_bar(position="stack", stat="identity") +
+        xlab("TE") +
+        ylab("NUMBER") +
+        labs(fill = "TYPE TSD") +
+        #scale_fill_viridis(discrete = T) +
+        scale_fill_manual(values=c("#6EB9FF", "#0064D4")) +
+        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+            panel.background = element_rect(fill="white", colour="white", 
+                                          linetype="solid", color="white"))
+
+p
+#ggsave(p, file=output)
+
+```
+
+<!-- <iframe src="lib/template_TSD_OUTSIDER_histo.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe> -->
+<iframe src="lib/template_TSD_OUTSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
+
+Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
+
+<!-- <iframe src="lib/template_TSD_ALL_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe> -->
+
+
+### TE POSITION
+
+
+<iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_OUTSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
+
+Select TE family
+
+
+<!-- remove inutiles files -->
+```{bash, eval=TRUE, include=TRUE, results=TRUE}
+
+
+rm -f FREQ_TE.csv
+rm -f .tmp_*v;
+
+
+```
+
+
+
