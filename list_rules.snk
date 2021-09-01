@@ -483,9 +483,12 @@ rule REPORT :
             sed -i '/INSIDER/d' index.Rmd
             sed -i '/TE_INSIDER.[a-z]/d' index.Rmd
         else
+            #COUNT
             awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv  > tmp.csv
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER.js
 
+            test -s js/COUNT_TE_INSIDER.js && \
+                sed 's/%%VAR_JS%%/COUNT_TE_INSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INSIDER.html;
 
             #FREQUENCE INSIDER
             test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
@@ -495,6 +498,10 @@ rule REPORT :
                 python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp_freq.csv data_freq > js/FREQ_TE_INSIDER.js
             test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && \
                 awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv >> js/FREQ_TE_INSIDER.js
+
+            #HERE
+            test -s js/FREQ_TE_INSIDER.js && \
+                sed 's/%%VAR_JS%%/FREQ_TE_INSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_INSIDER.html;
 
             rm -f tmp.csv tmp_freq.csv
         fi;
@@ -526,8 +533,12 @@ rule REPORT :
 
             sed -i '/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE/d' index.Rmd
         else
+            #COUNT
             awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv  > tmp.csv
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_OUTSIDER.js
+
+            test -s js/COUNT_TE_OUTSIDER.js && \
+                sed 's/%%VAR_JS%%/COUNT_TE_OUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_OUTSIDER.html
 
             #FREQUENCE OUTSIDER
             test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
@@ -540,6 +551,9 @@ rule REPORT :
                 python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp_freq.csv data_freq > js/FREQ_TE_OUTSIDER.js && \
             test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && \
                 awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv >> js/FREQ_TE_OUTSIDER.js
+
+            test -s js/FREQ_TE_OUTSIDER.js && \
+                sed 's/%%VAR_JS%%/FREQ_TE_OUTSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_OUTSIDER.html
 
             rm -f tmp.csv tmp_freq.csv
         fi;
@@ -555,6 +569,10 @@ rule REPORT :
             
             awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' tmp_ALL_TE_COUNT.csv  > tmp.csv
             python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INOUTSIDER.js
+
+            test -s js/COUNT_TE_INOUTSIDER.js && \
+                sed 's/%%VAR_JS%%/COUNT_TE_INOUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INOUTSIDER.html
+
             rm -f tmp.csv
             rm -f tmp_ALL_TE_COUNT.csv
         fi;
