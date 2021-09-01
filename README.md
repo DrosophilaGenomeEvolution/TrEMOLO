@@ -89,7 +89,7 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
 Once the requirements fullfilled, just git clone
 
 ```bash
-git clone --branch v2 https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
+git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 ```
 
 ## Using Singularity<a name="singularity"></a>
@@ -104,6 +104,8 @@ The *def* file provided can be compiled as such:
 ```bash
 sudo singularity build TrEMOLO.simg TrEMOLO/Singularity
 ```
+**YOU MUST BE ROOT for compiling**
+
 
 Test TrEMOLO with singularity
 
@@ -111,7 +113,6 @@ Test TrEMOLO with singularity
 singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
 ```
 
-**YOU MUST BE ROOT for compiling**
 
 ### Pulling from SingularityHub
 
