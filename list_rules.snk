@@ -1039,7 +1039,7 @@ rule FIND_TE_ON_REF :
         path_to_pipline=`dirname {params.path_snk}`
 
         rm -f `find {params.work_directory} -name "*.fai"`
-        rm -f `find -name "*.fa*.fai"`
+        rm -f `find {params.work_directory} -name "*.fa*.fai"`
 
         samtools faidx {input.genome_real}
         samtools faidx {input.ref}
@@ -2662,7 +2662,7 @@ rule mapping :
         {params.env};
         path_to_pipline=`dirname {params.path_snk}`
 
-        rm -f `find -name "*.fa*.fai"`
+        rm -f `find {params.work_directory} -name "*.fa*.fai"`
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
 
@@ -3013,7 +3013,7 @@ rule SV_INSIDER:
 
         path_to_pipline=`dirname {params.path_snk}`
 
-        rm -f `find -name "*.fa*.fai"`
+        rm -f `find {params.work_directory} -name "*.fa*.fai"`
 
         #COMPARE GENOME
         minimap2 -ax asm5 --cs -t3 {input.ref} {input.genome} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
