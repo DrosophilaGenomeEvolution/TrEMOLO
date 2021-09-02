@@ -106,6 +106,7 @@ _EOF_
     R --slave -e 'install.packages("bookdown")'
     R --slave -e 'install.packages("knitr")'
     R --slave -e 'install.packages("stringi")'
+    R --slave -e 'install.packages("stringr")'
 
     #samtools
     cd /usr/bin
