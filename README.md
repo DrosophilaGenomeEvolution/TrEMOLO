@@ -55,7 +55,8 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
 - For Populational variation tool
   - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
   - [Minimap2](https://github.com/lh3/minimap2) 2.16+
-  - [Samtools](http://www.htslib.org/) 1.9+
+  - [Samtools](http://www.htslib.org/) 1.9
+  - [svim 1.4.2](https://github.com/eldariont/svim/releases/tag/v1.4.2)
   - [Sniffles 1.0.12](https://github.com/fritzsedlazeck/Sniffles)
   - [Flye 2.8+ - optional](https://github.com/fenderglass/Flye)
   - [WTDGB2 - optional](https://github.com/ruanjue/wtdbg2)
