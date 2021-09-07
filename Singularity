@@ -105,8 +105,8 @@ _EOF_
     R --slave -e 'install.packages("viridis")'
     R --slave -e 'install.packages("bookdown")'
     R --slave -e 'install.packages("knitr")'
-    R --slave -e 'install.packages("stringi")'
-    R --slave -e 'install.packages("stringr")'
+    R --save -e 'install.packages("stringi")'
+    R --save -e 'install.packages("stringr")'
 
     #samtools
     cd /usr/bin
@@ -129,7 +129,7 @@ _EOF_
     cd
     
     #Python libs
-    python3 -m pip install biopython pandas numpy matplotlib svim==1.4.2 intervaltree scipy
+    python3 -m pip install biopython pandas numpy matplotlib svim==1.4.2 intervaltree scipy pysam
 
     # build variables
     export TOOLDIR=/opt/tools

@@ -5,12 +5,10 @@
 ####
 ####
 
-
-rule REPORT :
+rule RENAME_PSEUDO_TE:
     input:
-        genome = config["DATA"]["GENOME"],
-        input_link=[],
-
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/LIST_HEADER_DB_TE.csv",
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/REPORT/report.html",
     output:
         
     params:
@@ -33,7 +31,172 @@ rule REPORT :
         cbold          = bcolors.BOLD,
 
     log:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/report",
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/RENAME",
+
+
+    shell:
+        """
+        {params.env}
+
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] RENAME PSEUDO TE [^-^] {params.cend}"
+
+        rm -f {log}.*
+        
+        path_to_pipline=`dirname {params.path_snk}`
+
+        ## TODO DELETE THIS
+        sed -i 's/original=>//g' {params.work_directory}/LIST_HEADER_DB_TE.csv
+        sed -i 's/pseudo=>//g' {params.work_directory}/LIST_HEADER_DB_TE.csv
+
+        ## CHANGE DIRECTORY
+        old_path=`pwd`
+        cd {params.work_directory}/REPORT/mini_report/web/js/
+
+        awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' ../../../../TE_INFO.csv | sort -u > tmp_LIST_TE_TO_CHANGE.txt
+
+        ## RENAME REPORT JS
+        echo "RENAME REPORT JS...";
+        
+
+        for file in `ls | grep ".js$" | grep -e  "SIDER" | grep -v "TRUE_NAME_" | grep -v "TE_INSIDER_DEL"`; do
+            echo "FILE : $file";
+            #rm -f TRUE_NAME_$file && cat $file > TRUE_NAME_$file;
+            for ID in `cat tmp_LIST_TE_TO_CHANGE.txt`; do 
+                new=`grep -w $ID ../../../../LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
+
+                #sed -i "s/$ID\\"/$new\\"/g" TRUE_NAME_$file;
+                if [ -n "$new" ] && [ "$ID" != "$new" ]; then
+                    sed -i "s/$ID\\"/$new\\"/g" $file;
+                fi;
+            done;
+            #template_file=`grep -rnw "$file" ../lib/ | cut -d ":" -f 1`
+            #echo "change data on template_file : $template_file --"
+            # if [ -n "$template_file" ]; then
+            #     echo "REPLACE";
+            #     sed -i "s/${{file}}/TRUE_NAME_${{file}}/g" ${{template_file}};
+            # fi;
+        done;
+        rm -f tmp_LIST_TE_TO_CHANGE.txt
+
+        #rm -f TRUE_NAME_COUNT_TE_INSIDER_DEL.js && cat COUNT_TE_INSIDER_DEL.js > TRUE_NAME_COUNT_TE_INSIDER_DEL.js;
+        for ID in `grep -w "TE[0-9]*" COUNT_TE_INSIDER_DEL.js -o | sort -u`; do 
+            new=`grep -w $ID ../../../../LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
+            
+            if [ -n "$new" ] && [ "$ID" != "$new" ]; then
+                #sed -i "s/$ID\\"/$new\\"/g" TRUE_NAME_COUNT_TE_INSIDER_DEL.js;
+                sed -i "s/$ID\\"/$new\\"/g" COUNT_TE_INSIDER_DEL.js;
+            fi;
+        done;
+        sed -i "s/COUNT_TE_INSIDER_DEL.js/TRUE_NAME_COUNT_TE_INSIDER_DEL.js/g" ../lib/template_COUNT_TE_INSIDER_DEL.html;
+
+        cd ${{old_path}};
+
+        #RENAME BED
+        echo "RENAME TE BED..."
+
+        NB_TE=`ls {params.work_directory} | grep ".bed$" -c`;
+
+        i=0;
+        show_step="$i/$NB_TE FILE"
+        number_of_char=`echo "$show_step" | wc -c`
+        number_of_char=$(($number_of_char-1));
+        printf "\b%.0s" `seq 1 $number_of_char`
+        printf "$show_step";
+
+        for file in `ls {params.work_directory} | grep ".bed$"`; do 
+            for ID in `awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' {params.work_directory}/$file | sort -u`; do 
+                new=`grep -w "$ID\t" {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
+
+                if [ -n "$new" ] && [ "$ID" != "$new" ]; then
+                    sed -i "s/${{ID}}/${{new}}/g" {params.work_directory}/$file;
+                fi;
+            done;
+
+            i=$(($i+1));
+            show_step="$i/$NB_TE FILE"
+            number_of_char=`echo "$show_step" | wc -c`
+            number_of_char=$(($number_of_char-1));
+            printf "\b%.0s" `seq 1 $number_of_char`
+            printf "$show_step";
+        done;
+
+        awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' {params.work_directory}/TE_INFO.csv | sort -u > {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt
+
+        ## RENAME CSV
+        echo "RENAME TE CSV..."
+        for file in `ls {params.work_directory} | grep ".csv$" | grep -v "LIST_HEADER_DB_TE.csv"`; do
+            for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
+                new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
+
+                sed -i "s/$ID/$new/g" {params.work_directory}/$file
+            done;
+        done;
+
+        #OUTSIDER
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv && \
+            for file in `ls {params.work_directory}/OUTSIDER/TE_DETECTION | grep ".csv$" `; do
+                for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
+                    new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
+
+                    sed -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TE_DETECTION/$file
+                done;
+            done;
+
+
+        #INSIDER
+        test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv && \
+            for file in ` ls {params.work_directory}/INSIDER/TE_DETECTION | grep ".csv$" `; do
+                for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
+                    new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
+
+                    sed -i "s/$ID/$new/g" {params.work_directory}/INSIDER/TE_DETECTION/$file
+                done;
+            done;
+
+        ## REMAKE FOR TRUE NAME REPORT
+        cd {params.work_directory}/REPORT/mini_report/
+
+        make
+
+        cd ${{old_path}};
+
+        rm -f {params.work_directory}/tmp*;
+
+        """
+
+#END RENAME_PSEUDO_TE
+
+
+rule REPORT :
+    input:
+        genome = config["DATA"]["GENOME"],
+        input_link=[],
+
+    output:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/REPORT/report.html",
+        #output_link=[],
+        
+    params:
+        path_snk       = path_snk,
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        env            = env, #source environnement
+
+        choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
+        choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
+
+        INTERMEDIATE_FILE   = config["CHOICE"]["INTERMEDIATE_FILE"],
+
+        CHROM_KEEP       = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
+        
+        #Color message
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+        cbold          = bcolors.BOLD,
+
+    log:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/REPORT",
 
 
     shell:
@@ -736,7 +899,7 @@ rule TSD :
 
                 nameTE=`echo $TE_found_fa | sed -E 's/TE_REPORT_FOUND_|\.fasta//g'` ;
                 
-                ! test -s {params.FILE_SIZE_TE_TSD} && message_fail "  Warning FILE {params.FILE_SIZE_TE_TSD} NOT FOUND\n"
+                ! test -s {params.FILE_SIZE_TE_TSD} && fail_msg "  Warning FILE {params.FILE_SIZE_TE_TSD} NOT FOUND\n"
                 
                 SIZE_TSD=`test -n "{params.FILE_SIZE_TE_TSD}" && test -s {params.FILE_SIZE_TE_TSD} && grep -w "${{nameTE}}" {params.FILE_SIZE_TE_TSD} || echo "NONE"`; # EX: ZAM 4 :or: -1
                 
@@ -764,7 +927,7 @@ rule TSD :
                         {params.SIZE_FLANK} \
                         $SIZE_TSD {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv \
                         {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt \
-                        {input.genome} >> {log}.out 2>> {log}.err || (message_fail "ERROR FOUND TSD PLEASE CHECK {log}.out, {log}.err")
+                        {input.genome} >> {log}.out 2>> {log}.err || (fail_msg "ERROR FOUND TSD PLEASE CHECK {log}.out, {log}.err")
 
                     
                     sh ${{path_to_pipline}}/lib/TSD/revise_TSD.sh {input.genome} \
@@ -832,7 +995,7 @@ rule TSD :
                 ###KO=$(($NB_TSD_KO-$NB_TSD_OK_corrected))
                 KO=$(($TOTAL-$OK_K_gap_O));
 
-                echo "TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ✔;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ✘;   TSD CORRECTED [KO]:$NB_TSD_OK_corrected ;  "
+                echo "TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ✔;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ✘;   TSD CORRECTED [KO->OK]:$NB_TSD_OK_corrected ;  "
 
                 ###echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD.csv
 
@@ -1720,7 +1883,7 @@ rule extract_read :
                 (test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq && \
                     python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
                          {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq \
-                         {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq >> {log}.out 2>> {log}.err) || ( message_fail "READ EXTRACT id=$id FAIL NOT FOUND \\n" && exit 1);
+                         {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq >> {log}.out 2>> {log}.err) || ( fail_msg "READ EXTRACT id=$id FAIL NOT FOUND \\n" && exit 1);
 
                 test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq || echo "[ERROR EXTRACT READ] $id" >> {log}.err
                 
@@ -2149,7 +2312,7 @@ rule FREQ_GLOBAL:
                             printf "$chrom\t$start\t$depth_total_mean\t$NB_DEL\t$NB_TE\t%.4f\t$TE\t$info\\n" "$(((10**6 * $NB_TE/$depth_total_mean) * 100))e-6" | tr "," "." >> {output.DEPTH}
                         else
                             printf "$chrom\t$start\t-1\t$NB_DEL\t-1\t%.4f\t$TE\tinfo|ERROR\\n" "0" | tr "," "." >> {output.DEPTH}
-                            message_fail "ERROR FOR ${{info}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
+                            fail_msg "ERROR FOR ${{info}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
                         fi;
                     else
                         printf "$chrom\t$start\t0\t0\t0\t%.4f\t$TE\t$info\\n" "0" | tr "," "." >> {output.DEPTH}
@@ -2225,10 +2388,11 @@ rule SOFT_TE :
 
         ## CREATE VCF SOFT
         echo "CREATE VCF SOFT..."
-        python3 ${{path_to_pipline}}/lib/python/find_soft.py {input.bam} > {output.vcf};
+        python3 ${{path_to_pipline}}/lib/python/find_soft.py --chrom {params.CHROM_KEEP} {input.bam} > {output.vcf};
 
         ## GET SEQUENCE SOFT
         echo "GET SEQUENCE SOFT..."
+        
         awk '{{
             split($4, spL, ";"); 
             split($5, spR, ";"); 
@@ -2241,34 +2405,39 @@ rule SOFT_TE :
             if(spRSEQ[2] != "NONE"){{
                 print ">"$1":<SOFT>:"$2":"$2+1":"$3".R:1:PRECISE:0\\n"spRSEQ[2] 
             }}  
-        }}' {output.vcf} | grep -E ">[23][LR]_|>[4X]_" -A 1 | grep -v "^--" > {output.seqs};
+        }}' {output.vcf} | grep -v "^--" > {output.seqs};
 
         ## BLAST TE
         echo "BLAST TE..."
         makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.soft}.err;
-        blastn -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log.soft}.err;
+        test -s {output.seqs} && \
+            blastn -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log.soft}.err;
 
         ## GET CANDIDATE TE
         echo "GET CANDIDATE TE..."
-        python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} {input.fasta_TE} {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30
+        test -s {output.bln} && \
+            python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} {input.fasta_TE} {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30
 
-
-        awk 'NR>1 {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv | awk -F ":" 'OFS="\t"{{print $1, $3, $4, $10"|"$5}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_SOFT.bed
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv && \
+            awk 'NR>1 {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv | awk -F ":" 'OFS="\t"{{print $1, $3, $4, $10"|"$5}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_SOFT.bed
 
         ## EXCLUDE SOFT DETECTED BEFORE
         echo "EXCLUDE SOFT DETECTED BEFORE..."
-        awk 'NR>1 && OFS="\t" {{ split($2, sp, ":"); print sp[1], sp[3], sp[4]+1, $1"|"sp[5] }}' {input.all_te} > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_INFO.bed;
+        test -s {input.all_te} && \
+            awk 'NR>1 && OFS="\t" {{ split($2, sp, ":"); print sp[1], sp[3], sp[4]+1, $1"|"sp[5] }}' {input.all_te} > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_INFO.bed;
 
-        bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_SOFT.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_INFO.bed -w 30 | awk '{{ split($4, sp1, "|"); split($8, sp2, "|"); if(sp1[1] == sp2[1]){{print sp1[2]}} }}' > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_NOT_KEEP.txt
-        grep -w -v -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_NOT_KEEP.txt {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_SOFT.bed && test -s {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_INFO.bed && \
+            bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_SOFT.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_INFO.bed -w 30 | awk '{{ split($4, sp1, "|"); split($8, sp2, "|"); if(sp1[1] == sp2[1]){{print sp1[2]}} }}' \
+                > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_NOT_KEEP.txt && \
+            grep -w -v -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_NOT_KEEP.txt {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv
 
         # awk 'NR>1 {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv | cut -d ":" -f 5 | sort -u | sed 's/.[RL]//g' | sort | uniq -c | sort -k 1 -n | awk '$1>1 {{print $2}}' \
         #  > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_ALL_DOUBLON.txt
 
-        awk 'NR>1 {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv | tr ":" "\t" | cut -f 1,3-10 | awk '{{ID=substr($4, 1, length($4)-2); print ID":"$9}}' | sort | uniq -c | awk  '$1>1 {{split($2, sp, ":"); print sp[1]".R"}}' \
-         > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_ALL_DOUBLON.txt
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv  && \
+            awk 'NR>1 {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv | tr ":" "\t" | cut -f 1,3-10 | awk '{{ID=substr($4, 1, length($4)-2); print ID":"$9}}' | sort | uniq -c | awk  '$1>1 {{split($2, sp, ":"); print sp[1]".R"}}' \
+             > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_ALL_DOUBLON.txt
  
-
         ## INFERIEUR au pourcentage attendu est uniq
         PSIZE=`awk 'BEGIN{{min=100}} NR>1 {{ if(min>int($4)){{ min=int($4) }} }} END{{print int(min)}}' {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv`;
 
@@ -2285,12 +2454,20 @@ rule SOFT_TE :
         awk 'NR>1 && OFS="\t"{{split($2, sp, ":"); print sp[1], sp[3], sp[4], $1"|"sp[5]}}' {output.all_te} > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.bed
         ln -s -f -r {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.bed {params.work_directory}/SOFT_TE.bed;
 
+        ## NO TE SOFT FOUND
+        if ! test -s {output.vcf} || ! test -s {output.all_te} || ! test -s {output.bln} || ! test -s {output.seqs}; then
+            warn_msg "[SNK--WARNING] NO TE SOFT FOUND";
+            touch {output.vcf}
+            touch {output.all_te}
+            touch {output.bln}
+            touch {output.seqs}
+        fi;
+
         #** REMOVE **#
         rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID*;
         rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP*;
         rm -f `find {params.work_directory} -name "*.fai"`
         """
-
 
 
 #END SOFT_TE
@@ -2344,7 +2521,7 @@ rule DETECTION_TE :
         echo "   GET SEQUENCE REPORT..."
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCE VARIANT [^-^] {params.cend}"
         python3 ${{path_to_pipline}}/lib/python/get_seq_vcf.py {params.GET_SEQ_REPORT_OPTION}  {input.vcf} {output.snif_seqs} -c {params.CHROM_KEEP} ;
-        test -s {output.snif_seqs} || (message_fail "ERROR NO SEQUENCE SV FOUND" && exit 1)
+        test -s {output.snif_seqs} || (fail_msg "ERROR NO SEQUENCE SV FOUND" && exit 1)
 
         version_vcf=`grep fileformat {input.vcf} | cut -d "=" -f 2`
 
@@ -2427,7 +2604,7 @@ rule DETECTION_TE :
                     printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t$info_TE\\n" "$(((10**6 * $RS/$NB_depth) * 100))e-6" | tr "," "." >> {output.depth_te}
                 else
                     printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t${{info_TE}}|ERROR\n" "0" | tr "," "." >> {output.depth_te}
-                    message_fail "ERROR FOR ${{info_TE}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
+                    fail_msg "ERROR FOR ${{info_TE}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
                 fi;
             else
                 printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n"  > {output.depth_te}
@@ -2460,7 +2637,7 @@ rule DETECTION_TE :
         fi;
 
         if [ `cat {output.all_te} | wc -l` -eq 1 ]; then
-            message_fail "ERROR EXIT PIPELINE BECAUSE NO TE FOUND\\n";
+            fail_msg "ERROR EXIT PIPELINE BECAUSE NO TE FOUND\\n";
             exit 2;
         fi;
         #** REMOVE **#
@@ -2577,7 +2754,7 @@ rule sniffles :
             end_load
 
         else
-            message_fail "[SNK] -- [`date`] -- [ERROR] version $version YOU HAVE NOT THE GOOD VERSION OF SNIFFLES, PLEASE GET VERSION 1.0.10 or 1.0.12"
+            fail_msg "[SNK] -- [`date`] -- [ERROR] version $version YOU HAVE NOT THE GOOD VERSION OF SNIFFLES, PLEASE GET VERSION 1.0.10 or 1.0.12"
             exit 2
         fi;
 
@@ -2983,7 +3160,7 @@ rule TE_INSIDER:
             ln -s -f -r {params.work_directory}/INSIDER/TE_DETECTION/DELETION_TE.bed {params.work_directory}/
 
 
-        test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv || message_fail "  WARNING NO TE INSERTION FOUND\n";
+        test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv || fail_msg "  WARNING NO TE INSERTION FOUND\n";
 
         cd {params.work_directory}/INSIDER/TE_DETECTION/
         
@@ -3063,7 +3240,7 @@ rule SV_INSIDER:
         {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.variants_within_alignments.bed \
         > {output.bed}
         
-        test -s {output.bed} || (message_fail "[SNK ERROR `date`] NO SV FOUND" && exit 1)
+        test -s {output.bed} || (fail_msg "[SNK ERROR `date`] NO SV FOUND" && exit 1)
 
         path_ref=`readlink -f {input.ref}`
         path_genome=`readlink -f {input.genome}`

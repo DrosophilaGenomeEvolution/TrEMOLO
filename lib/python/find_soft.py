@@ -1,6 +1,7 @@
 import pysam
 import os
 import sys
+import re
 import argparse
 
 #TODO CHECK ALL METHODS
@@ -16,16 +17,27 @@ parser.add_argument("-m", "--window", dest='window', type=int, default=50,
                     help="Maximum distance to group SV together.")
 parser.add_argument("-s", "--min-size", dest="min_size", type=int, default=30,
                     help="minimum size of sequence.")
+parser.add_argument("-c", "--chrom", type=str, default='^2L_,^2R_,^3L_,^3R_,^4_,^X_',
+                    help='chromosome (or part/contig) to keep (give a list of arguments separate the values with commas "X,Y") put \".\" for keep all chromosome (default: [2L,2R,3L,3R,^4_,X_])')
 args = parser.parse_args()
 
 name_bamfile = args.bam_file
 
-min_size = args.min_size
-window   = args.window
+min_size    = args.min_size
+window      = args.window
+chrom_list  = args.chrom.split(",")#KEEP ONLY
 
 bamfile  = pysam.AlignmentFile(name_bamfile, "rb")
 
 ID       = 0
+
+#check if an element of the array is at least part of the value
+def regex_in_list(value, liste):
+    for index, pattern in enumerate(liste):
+        if re.search(pattern, value):
+            return True
+
+    return False
 
 ref_name_pred = ""
 dico_clust    = []
@@ -34,8 +46,11 @@ for e, read in enumerate(bamfile.fetch()):
     reference_start = read.reference_start
     seq             = read.seq
     read_name       = read.query_name
-    REF             = read.reference_name
-    
+    REF             = read.reference_name #chrom
+
+    if not regex_in_list(REF, chrom_list):
+        read_name = None
+
     count_ref  = 0 #number of nucleotides on the ref before reaching the insertion site
     count_read = 0
 

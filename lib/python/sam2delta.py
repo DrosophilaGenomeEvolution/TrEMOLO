@@ -2,6 +2,8 @@
 import argparse
 from collections import defaultdict
 
+#ragoo tools provided https://github.com/malonge/RaGOO
+
 """
 This utility converts a SAM file to a nucmer delta file.
 

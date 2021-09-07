@@ -79,11 +79,11 @@ parser.add_argument("fasta_out", type=str,
 parser.add_argument("-m", "--min_len_seq", type=int, default=1000,
                     help="minimum size of the sequence to keep (default: [1000])")
 parser.add_argument("-t", "--type", type=str, default='<DEL>',
-                    help="not keep this type on vcf (give a list of arguments separate the values ​​with commas \"<DEL>,<INS>\") (default: [\"<DEL>\"])")
+                    help="not keep this type on vcf (give a list of arguments separate the values with commas \"<DEL>,<INS>\") (default: [\"<DEL>\"])")
 
 #Warning : format of the list of chromosome must be separate by "," it could be regex
 parser.add_argument("-c", "--chrom", type=str, default='^2L_,^2R_,^3L_,^3R_,^4_,^X_',
-                    help='chromosome (or part/contig) to keep (give a list of arguments separate the values ​​with commas "X,Y") put \".\" for keep all chromosome (default: [2L,2R,3L,3R,^4_,X_])')
+                    help='chromosome (or part/contig) to keep (give a list of arguments separate the values with commas "X,Y") put \".\" for keep all chromosome (default: [2L,2R,3L,3R,^4_,X_])')
 
 parser.add_argument("-k", "--keep", default=False, action='store_true',
                     help='keep the sequence contain only character N (default: False)')

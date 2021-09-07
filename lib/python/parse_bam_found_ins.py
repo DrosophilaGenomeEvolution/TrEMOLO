@@ -4,8 +4,6 @@ import sys
 import argparse
 
 
-
-
 parser = argparse.ArgumentParser(description="parse bam file to get sequence of insertion, at specific position in bed file", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 #MAIN ARGS
@@ -35,7 +33,7 @@ befile  = open(name_bedfile, "r")
 
 for line in befile:
 
-    #format bed necessaire chom, start, end, name, size, seq
+    #format bed requier chom, start, end, name, size, seq
     chrom   = line.split("\t")[0]
     start   = int(line.split("\t")[1])
     end     = int(line.split("\t")[2])
@@ -49,8 +47,6 @@ for line in befile:
         start_query     = read.query_alignment_start
         reference_start = read.reference_start
         seq             = read.seq
-
-        #print("start", start, "reference_start", reference_start)
         
         count_ref  = 0 #nombre de nucleotide sur la ref avant d'atteindre le site d'insertion
         count_read = 0
@@ -65,17 +61,12 @@ for line in befile:
             #if we have found INS to a good position
             if tupl[0] == 1 and tupl[1] > (size*min_size_percent) and abs((reference_start + count_ref)-start) < max_distance:
                 
-                #print(tupl)
-                #print("start", start, "name", name, "count_ref_ins", count_ref, "count_read", count_read, "pos", (reference_start+count_ref), "diff", ((reference_start+count_ref)-start))
-                
                 if seq :
                     seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ INS in reads
 
                     print(">" + name + ":" + str(number_read_support))
                     print(seq_vr)
                     number_read_support += 1
-        #print("count_ref", count_ref)
-        #print(read.cigartuples)
 
     #Put the sequence report by sniffles
     if number_read_support == 1:
@@ -84,10 +75,6 @@ for line in befile:
     else :
         print(">" + name + ":" + str(0))
         print(bed_seq)
-
-
-
-#cat ../VARIANT_CALLING/SEQUENCE_INDEL.fasta | awk 'OFS="\t"{if(substr($0, 1, 1) == ">"){split($0, sp, ":"); header=""substr(sp[1], 2, 500)"\t"sp[3]"\t"sp[4]"\t"substr($0, 2, 500);}else{header=header"\t"length($0)"\t"$0; print header}}' | grep INS > TE_VR.bed
 
 
 

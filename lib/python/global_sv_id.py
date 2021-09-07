@@ -106,10 +106,7 @@ for index, row in enumerate(df.values):
     else:
         chaine = df["qseqid"].values[index] + df["sseqid"].values[index]
 
-    if "Assemblytics_w_541" in chaine:
-        print(chaine)
-        print(df["sseqid"].values[index], maxe_bitscore, df["bitscore"].values[index])
-        
+
     if chaine not in best_score_match and ("INSERTION" in chaine or "Deletion" in chaine):
         sstart       = df["sstart"].values[index]
         send         = df["send"].values[index]

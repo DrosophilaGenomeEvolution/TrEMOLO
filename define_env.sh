@@ -35,7 +35,7 @@ run_cmd () {
 };
 
 
-message () {
+info_msg () {
     message=$1
 
     #echo -e "${CYAN} ${message} ${END}"
@@ -43,11 +43,19 @@ message () {
 }
 
 
-message_fail () {
+fail_msg () {
     message=$1
 
     #echo -e "${RED} ${message} ${END}"
     printf "%b" "${RED} ${message}${END}"
+}
+
+
+warn_msg () {
+    message=$1
+
+    #echo -e "${RED} ${message} ${END}"
+    printf "%b" "${WARNING} ${message}${END}"
 }
 
 
