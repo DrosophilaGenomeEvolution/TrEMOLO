@@ -78,7 +78,7 @@ init(data);
 
 function update(data) {
     chart.data = data;
-    chart.reinit();
+    chart.invalidateRawData();
 }
 
 //Range Gestion

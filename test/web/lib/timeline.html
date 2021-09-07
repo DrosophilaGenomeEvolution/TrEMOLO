@@ -1,0 +1,159 @@
+
+<style type="text/css">
+#chartdiv {
+  width: 100%;
+  height: 1000px;
+}
+
+.demo-theme-dark .demo-background {
+  background: #000;
+}
+</style>
+<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/plugins/timeline.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/plugins/bullets.js"></script>
+<!-- <script src="https://cdn.amcharts.com/lib/4/themes/dark.js"></script> -->
+<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+<div id="chartdiv"></div>
+
+<script type="text/javascript">
+    var colorSet = new am4core.ColorSet();
+</script>
+<script type="text/javascript" src="../js/data_timeline.js"></script>
+
+<script type="text/javascript">
+	/**
+ * ---------------------------------------
+ * This demo was created using amCharts 4.
+ * 
+ * For more information visit:
+ * https://www.amcharts.com/
+ * 
+ * Documentation is available at:
+ * https://www.amcharts.com/docs/v4/
+ * ---------------------------------------
+ */
+
+// Themes begin
+//am4core.useTheme(am4themes_dark);
+am4core.useTheme(am4themes_animated);
+// Themes end
+
+var chart = am4core.create("chartdiv", am4plugins_timeline.SerpentineChart);
+chart.curveContainer.padding(5, 2, 5, 2);
+chart.levelCount = 3;
+chart.yAxisRadius = am4core.percent(25);
+chart.yAxisInnerRadius = am4core.percent(-25);
+chart.maskBullets = false;
+
+//var colorSet = new am4core.ColorSet();
+colorSet.saturation = 0.5;
+chart.dateFormatter.inputDateFormat = "yyyy-MM-dd HH:mm:ss";
+chart.dateFormatter.dateFormat = "HH";
+
+chart.data = data;
+
+chart.fontSize = 11;
+
+var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
+categoryAxis.dataFields.category = "category";
+categoryAxis.renderer.grid.template.disabled = false;
+categoryAxis.renderer.labels.template.paddingRight = 25;
+categoryAxis.renderer.minGridDistance = 10;
+categoryAxis.renderer.innerRadius = -60;
+categoryAxis.renderer.radius = 60;
+
+var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
+dateAxis.renderer.minGridDistance = 70;
+dateAxis.baseInterval = { count: 1, timeUnit: "minutes" };
+dateAxis.renderer.tooltipLocation = 0;
+dateAxis.startLocation = -0.5;
+dateAxis.renderer.line.strokeDasharray = "1,4";
+dateAxis.renderer.line.strokeOpacity = 0.6;
+dateAxis.tooltip.background.fillOpacity = 0.2;
+dateAxis.tooltip.background.cornerRadius = 5;
+dateAxis.tooltip.label.fill = new am4core.InterfaceColorSet().getFor("alternativeBackground");
+dateAxis.tooltip.label.paddingTop = 7;
+
+var labelTemplate = dateAxis.renderer.labels.template;
+labelTemplate.verticalCenter = "middle";
+labelTemplate.fillOpacity = 0.7;
+labelTemplate.background.fill = new am4core.InterfaceColorSet().getFor("background");
+labelTemplate.background.fillOpacity = 1;
+labelTemplate.padding(7, 7, 7, 7);
+
+var series = chart.series.push(new am4plugins_timeline.CurveColumnSeries());
+series.columns.template.height = am4core.percent(50);
+//series.columns.template.tooltipText = "{text}: [bold]{openDateX}[/] - [bold]{dateX}[/]";
+series.columns.template.tooltipText = "{text}: [bold]{start}[/] - [bold]{end}[/]";
+
+series.dataFields.openDateX = "start";
+series.dataFields.dateX = "end";
+series.dataFields.categoryY = "category";
+series.columns.template.propertyFields.fill = "color"; // get color from data
+series.columns.template.propertyFields.stroke = "color";
+series.columns.template.strokeOpacity = 0;
+
+var bullet = series.bullets.push(new am4charts.CircleBullet());
+bullet.circle.radius = 3;
+bullet.circle.strokeOpacity = 0.3;
+bullet.propertyFields.fill = "color";
+bullet.locationX = 0;
+
+
+var bullet2 = series.bullets.push(new am4charts.CircleBullet());
+bullet2.circle.radius = 3;
+bullet2.circle.strokeOpacity = 0;
+bullet2.propertyFields.fill = "color";
+bullet2.locationX = 1;
+
+
+var imageBullet1 = series.bullets.push(new am4plugins_bullets.PinBullet());
+imageBullet1.disabled = true;
+imageBullet1.propertyFields.disabled = "disabled1";
+imageBullet1.locationX = 1;
+imageBullet1.circle.radius = 20;
+imageBullet1.propertyFields.stroke = "color";
+imageBullet1.background.propertyFields.fill = "color";
+imageBullet1.image = new am4core.Image();
+imageBullet1.image.propertyFields.href = "image1";
+
+var imageBullet2 = series.bullets.push(new am4plugins_bullets.PinBullet());
+imageBullet2.disabled = true;
+imageBullet2.propertyFields.disabled = "disabled2";
+imageBullet2.locationX = 0;
+imageBullet2.circle.radius = 20;
+imageBullet2.propertyFields.stroke = "color";
+imageBullet2.background.propertyFields.fill = "color";
+imageBullet2.image = new am4core.Image();
+imageBullet2.image.propertyFields.href = "image2";
+
+
+var eventSeries = chart.series.push(new am4plugins_timeline.CurveLineSeries());
+eventSeries.dataFields.dateX = "eventDate";
+eventSeries.dataFields.categoryY = "category";
+
+eventSeries.strokeOpacity = 0;
+
+var flagBullet = eventSeries.bullets.push(new am4plugins_bullets.FlagBullet())
+flagBullet.label.propertyFields.text = "letter";
+flagBullet.locationX = 0;
+flagBullet.tooltipText = "{text}";
+
+chart.scrollbarX = new am4core.Scrollbar();
+chart.scrollbarX.align = "center"
+chart.scrollbarX.width = am4core.percent(85);
+
+var cursor = new am4plugins_timeline.CurveCursor();
+chart.cursor = cursor;
+cursor.xAxis = dateAxis;
+cursor.yAxis = categoryAxis;
+cursor.lineY.disabled = false;
+cursor.lineX.strokeDasharray = "1,9";
+cursor.lineX.strokeOpacity = 1;
+
+dateAxis.renderer.tooltipLocation2 = 0;
+categoryAxis.cursorTooltipEnabled = true;
+
+</script>
