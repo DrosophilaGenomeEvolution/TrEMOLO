@@ -66,6 +66,7 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
     - [Numpy](https://numpy.org/)
     - [pylab](https://matplotlib.org/)
     - [intervaltree](https://pypi.org/project/intervaltree/)
+    - [pysam](https://pypi.org/project/pysam/)
   - Perl v5.26.2+
 - For report
   - R 3.3+ libs
@@ -114,7 +115,7 @@ sudo singularity build TrEMOLO.simg TrEMOLO/Singularity
 Test TrEMOLO with singularity
 
 ```bash
-singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
+singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/run.snk --configfile TrEMOLO/test/tmp_config.yml
 ```
 
 
@@ -182,7 +183,7 @@ PARAMS:
 The main parameters are:
 
 - `GENOME` : Assembly of the sample of interest (or mix of samples), fasta file.
-- `TE_DB`  : A **Multifasta** file containing the canonical sequence of transposable elements. You can add also copy sequences but results will be more complex to interpretate. Make sure the headers of this multifasta do not contains characters such as ":", "|" or "/", ".", and " \ ".
+- `TE_DB`  : A **Multifasta** file containing the canonical sequence of transposable elements. You can add also copy sequences but results will be more complex to interpretate.
 - `REFERENCE` : Fasta file containing the reference genome of the species of interest.
 - `WORK_DIRECTORY` : Directory that will contain the output files. If the directory does not exist it will be created;  default value is *output*.
 - `SAMPLE` : File containing the reads used for the sample assembly.
@@ -196,13 +197,13 @@ To analyse **OUTSIDER**, only the `SAMPLE` , the `GENOME`, the `TE_DB` and the `
 # Usage<a name="usage"></a>
 
 ```bash
-snakemake --snakefile /path/to/TrEMOLO/creation_snakefile.snk --configfile /path/to/your_config.yaml
+snakemake --snakefile /path/to/TrEMOLO/run.snk --configfile /path/to/your_config.yaml
 ```
 
 For running tests
 
 ```bash
-snakemake --snakefile TrEMOLO/creation_snakefile.snk --configfile TrEMOLO/test/tmp_config.yml
+snakemake --snakefile TrEMOLO/run.snk --configfile TrEMOLO/test/tmp_config.yml
 ```
 
 
@@ -273,7 +274,7 @@ WORK_DIRECTORY
 
 The most useful output files are :
 
-* The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://raw.githack.com/DrosophilaGenomeEvolution/TrEMOLO/v2/test/web/index.html)
+* The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/4d96ecd7f5699a5d5df6f0bc70eb39bf9c25b80a/test/web/index.html)
 
 The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
 
