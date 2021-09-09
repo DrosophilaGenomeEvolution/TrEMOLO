@@ -63,10 +63,11 @@ rule RENAME_PSEUDO_TE:
             #rm -f TRUE_NAME_$file && cat $file > TRUE_NAME_$file;
             for ID in `cat tmp_LIST_TE_TO_CHANGE.txt`; do 
                 new=`grep -w $ID ../../../../LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
-
+                echo "ID: $ID; new : $new;"
                 #sed -i "s/$ID\\"/$new\\"/g" TRUE_NAME_$file;
                 if [ -n "$new" ] && [ "$ID" != "$new" ]; then
-                    sed -i "s/$ID\\"/$new\\"/g" $file;
+                    #sed -i "s/$ID\\"/$new\\"/g" $file;
+                    python3 ${{path_to_pipline}}/lib/python/replace.py "$ID\\"" "$new\\"" $file
                 fi;
             done;
             #template_file=`grep -rnw "$file" ../lib/ | cut -d ":" -f 1`
@@ -84,7 +85,8 @@ rule RENAME_PSEUDO_TE:
             
             if [ -n "$new" ] && [ "$ID" != "$new" ]; then
                 #sed -i "s/$ID\\"/$new\\"/g" TRUE_NAME_COUNT_TE_INSIDER_DEL.js;
-                sed -i "s/$ID\\"/$new\\"/g" COUNT_TE_INSIDER_DEL.js;
+                #sed --posix -i "s/$ID\\"/$new\\"/g" COUNT_TE_INSIDER_DEL.js;
+                python3 ${{path_to_pipline}}/lib/python/replace.py "$ID\\"" "$new\\"" $file
             fi;
         done;
         sed -i "s/COUNT_TE_INSIDER_DEL.js/TRUE_NAME_COUNT_TE_INSIDER_DEL.js/g" ../lib/template_COUNT_TE_INSIDER_DEL.html;
@@ -108,7 +110,8 @@ rule RENAME_PSEUDO_TE:
                 new=`grep -w "$ID\t" {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
 
                 if [ -n "$new" ] && [ "$ID" != "$new" ]; then
-                    sed -i "s/${{ID}}/${{new}}/g" {params.work_directory}/$file;
+                    #sed --posix -i "s/${{ID}}/${{new}}/g" {params.work_directory}/$file;
+                    python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" {params.work_directory}/$file;
                 fi;
             done;
 
@@ -128,7 +131,8 @@ rule RENAME_PSEUDO_TE:
             for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
                 new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
 
-                sed -i "s/$ID/$new/g" {params.work_directory}/$file
+                #sed -i "s/$ID/$new/g" {params.work_directory}/$file
+                python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" {params.work_directory}/$file;
             done;
         done;
 
@@ -138,7 +142,8 @@ rule RENAME_PSEUDO_TE:
                 for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
                     new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
 
-                    sed -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TE_DETECTION/$file
+                    #sed --posix -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TE_DETECTION/$file;
+                    python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" {params.work_directory}/OUTSIDER/TE_DETECTION/$file;
                 done;
             done;
 
@@ -149,7 +154,8 @@ rule RENAME_PSEUDO_TE:
                 for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
                     new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
 
-                    sed -i "s/$ID/$new/g" {params.work_directory}/INSIDER/TE_DETECTION/$file
+                    #sed -i "s/$ID/$new/g" {params.work_directory}/INSIDER/TE_DETECTION/$file;
+                    python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" {params.work_directory}/INSIDER/TE_DETECTION/$file;
                 done;
             done;
 
@@ -2006,7 +2012,7 @@ rule FREQUENCE :
 
         ## Warning TODO BEFORE
         awk 'OFS="\t"{{split($2, a, ":"); print a[1], a[3], $5, $1"|"a[5]}}' {input.all_te} \
-        | sort -k 1 > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
+            | sort -k 1 > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
 
 
         ${{path_to_pipline}}/lib/bash/awk_not_cliping.sh {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt \
@@ -2388,7 +2394,8 @@ rule SOFT_TE :
 
         ## CREATE VCF SOFT
         echo "CREATE VCF SOFT..."
-        python3 ${{path_to_pipline}}/lib/python/find_soft.py --chrom {params.CHROM_KEEP} {input.bam} > {output.vcf};
+        ###python3 ${{path_to_pipline}}/lib/python/find_soft.py --chrom {params.CHROM_KEEP} {input.bam} > {output.vcf};
+        python3 ${{path_to_pipline}}/lib/python/find_soft.py {input.bam} > {output.vcf};
 
         ## GET SEQUENCE SOFT
         echo "GET SEQUENCE SOFT..."
@@ -2415,8 +2422,23 @@ rule SOFT_TE :
 
         ## GET CANDIDATE TE
         echo "GET CANDIDATE TE..."
-        test -s {output.bln} && \
-            python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} {input.fasta_TE} {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30
+        number_lines_bln=`cat {output.bln} | wc -l`
+        if [ "$number_lines_bln" -gt 500000  ]; then
+            awk 'BEGIN{{qseqid=""; sseqid=""}}{{if(qseqid!=$1){{qseqid=$1; sseqid=$2; print $0;}}else if(sseqid==$2){{print $0}}}}' {output.bln} \
+                > {params.work_directory}/INSIDER/TE_DETECTION/tmp_pre_filtre.bln
+
+            test -s {params.work_directory}/INSIDER/TE_DETECTION/tmp_pre_filtre.bln && \
+                python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py \
+                    {params.work_directory}/INSIDER/TE_DETECTION/tmp_pre_filtre.bln \
+                    {input.fasta_TE} \
+                    {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30
+
+        else
+            test -s {output.bln} && \
+                python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} \
+                    {input.fasta_TE} \
+                    {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30
+        fi;
 
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv && \
             awk 'NR>1 {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv | awk -F ":" 'OFS="\t"{{print $1, $3, $4, $10"|"$5}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/TE_SOFT.bed
@@ -2439,7 +2461,7 @@ rule SOFT_TE :
              > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_ALL_DOUBLON.txt
  
         ## INFERIEUR au pourcentage attendu est uniq
-        PSIZE=`awk 'BEGIN{{min=100}} NR>1 {{ if(min>int($4)){{ min=int($4) }} }} END{{print int(min)}}' {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv`;
+        PSIZE=`awk 'BEGIN{{min=100}} NR>1 {{ if(min>int($4)){{ min=int($4) }} }} END{{print int(min)}}' {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv || echo 50`;
 
         awk -v psize="$PSIZE" 'NR>1 && $4<psize {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT_TE_KEEP.csv | cut -d ":" -f 5 | sort -u | sed 's/.[RL]//g' | sort | uniq -c | sort -k 1 -n | awk '$1==1 {{print $2}}' \
          > {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ID_SOFT_EXLUDE.txt

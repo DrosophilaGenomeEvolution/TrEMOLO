@@ -43,7 +43,7 @@ if order_c != "NONE":
     df['rank'] = df['x'].map(sorterIndex)
 
     df.sort_values(['rank'], ascending = [True], inplace = True)
-    df.drop('rank', 1, inplace = True)
+    df.drop('rank', axis=1, inplace = True)
 
     file.close()
 
@@ -84,7 +84,7 @@ else :
     df['rank'] = df['x'].map(sorterIndex)
 
     df.sort_values(['rank'], ascending = [True], inplace = True)
-    df.drop('rank', 1, inplace = True)
+    df.drop('rank', axis=1, inplace = True)
 
     file.close()
 
