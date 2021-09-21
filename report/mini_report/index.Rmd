@@ -1,5 +1,5 @@
 --- 
-title: "MINI REPORT"
+title: "REPORT TrEMOLO ANALYZES"
 author: ""
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
@@ -9,12 +9,9 @@ bibliography: [book.bib, packages.bib]
 biblio-style: apalike
 link-citations: yes
 github-repo: rstudio/bookdown-demo
-description: "mini report of analysis of TrEMOLO"
+description: "mini report of TrEMOLO analyzes"
 ---
 
-
-
-# REPORT TrEMOLO ANALYSIS
 
 ```{r, echo=FALSE}
 #install.packages("bookdown")
@@ -45,7 +42,7 @@ library(viridis)
 
 ```
 
-## Resume parameters
+# Resume parameters
 
 
 ```{r, eval=TRUE, include=TRUE, results=TRUE}
@@ -62,11 +59,11 @@ print(paste("VARIANT CALLING : ", params$CHOICE$OUTSIDER_VARIANT$CALL_SV))
 ```
 
 
-<!-- ## TE ANALYSIS
+<!-- ## TE ANALYZES
  -->
-**INFO : All static graphs are limited to a maximum of 50 values ​​for visibility, dynamic graphs are not limited in number of values.**
+**INFO : All static graphs are limited to a maximum of 50 values for visibility, dynamic graphs are not limited in number of values.**
 
-## Timeline
+# Timeline
 
 <iframe src="lib/timeline.html" style="width: 100%; height: 1100px; border: none; overflow: hidden;"></iframe>
 

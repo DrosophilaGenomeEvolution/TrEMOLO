@@ -1,11 +1,12 @@
 
-## INSIDER
+
+# INSIDER
 
 **INSIDER** are TE assembled on genome
 
-### NUMBER OF TE
+## NUMBER OF TE
 
-#### INSERTION
+### INSERTION
 
 Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/INSERTION.csv", sep="\t"); nrow(data);`**
 
@@ -85,7 +86,7 @@ graph
 hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
 
 
-#### DELETION
+### DELETION
 
 Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/DELETION.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_DEL -->
 
@@ -168,7 +169,7 @@ hover your mouse over the bars or navigate with the slider if the number of diff
 
 
 
-### FREQUENCE
+## FREQUENCE
 
 
 ```{bash FREQB2, eval=TRUE, include=TRUE, results=TRUE}
@@ -230,7 +231,7 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 
 
 
-### TSD
+## TSD
 
 ```{bash, eval=TRUE, include=TRUE, results=TRUE}
 
@@ -251,7 +252,7 @@ TSD [KO] : these are the TE without TSD **`r readLines(".tmp_TE_TSD_KO.txt");`/`
 
 Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
 
-### TE POSITION
+## TE POSITION
 
 <iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_INSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
 

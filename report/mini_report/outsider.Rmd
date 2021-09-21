@@ -1,12 +1,10 @@
 
 
-
-
-## OUTSIDER
+# OUTSIDER
 
 **OUTSIDER** are TE no assembled on genome
 
-### SV ANALYSIS
+## SV ANALYSIS
 
 Informations of **SV.vcf** file.
 
@@ -54,7 +52,7 @@ p
 
 ```
 
-### NUMBER OF TE
+## NUMBER OF TE
 
 Total number of **TE : `r data=read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv", sep="\t"); nrow(data);`**
 
@@ -129,7 +127,7 @@ graph
 <iframe src="lib/template_COUNT_TE_OUTSIDER.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
 
 
-### FREQUENCE
+## FREQUENCE
 
 ```{bash FREQB_out, eval=TRUE, include=TRUE, results=TRUE}
 
@@ -191,7 +189,7 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 
 
 
-### TSD
+## TSD
 
 <!-- calcul number of TE TSD -->
 
@@ -242,7 +240,7 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 <!-- <iframe src="lib/template_TSD_ALL_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe> -->
 
 
-### TE POSITION
+## TE POSITION
 
 
 <iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_OUTSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
