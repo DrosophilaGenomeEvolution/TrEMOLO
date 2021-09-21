@@ -105,8 +105,6 @@ _EOF_
     R --slave -e 'install.packages("viridis")'
     R --slave -e 'install.packages("bookdown")'
     R --slave -e 'install.packages("knitr")'
-    R --save -e 'install.packages("stringi")'
-    R --save -e 'install.packages("stringr")'
 
     #samtools
     cd /usr/bin
@@ -185,6 +183,10 @@ _EOF_
     #install TrEMOLO
     cd $TOOLDIR
     git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
+
+    #Must be compiling at the end
+    R --save -e 'install.packages("stringi")'
+    R --save -e 'install.packages("stringr")'
 
 %environment
     export PATH=$TOOLDIR/wtdbg2/:$TOOLDIR/RaGOO/:$TOOLDIR/Flye/:$TOOLDIR/TrEMOLO/:$PATH
