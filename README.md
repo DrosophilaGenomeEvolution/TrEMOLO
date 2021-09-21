@@ -39,6 +39,10 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 
 # Release notes<a name="release"></a>
 
+# Current limitations
+
+* 
+*
 
 
 # Requirements<a name="requirements"></a>
@@ -84,6 +88,8 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
     - [viridis](https://www.rdocumentation.org/packages/viridis/versions/0.3.4)
     - [bookdown](https://bookdown.org/yihui/bookdown/get-started.html)
     - [knitr](https://www.r-project.org/nosvn/pandoc/knitr.html)
+    - [stringr](https://cran.r-project.org/web/packages/stringr/index.html)
+    - [stringi](https://cran.r-project.org/web/packages/stringi/index.html)
  - [pandoc-citeproc 0.17](https://github.com/jgm/citeproc)
 
 
@@ -116,6 +122,8 @@ Test TrEMOLO with singularity
 
 ```bash
 singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/run.snk --configfile TrEMOLO/test/tmp_config.yml
+#OR
+singularity run TrEMOLO.simg snakemake --snakefile TrEMOLO/run.snk --configfile TrEMOLO/test/tmp_config.yml
 ```
 
 
@@ -152,7 +160,7 @@ CHOICE:
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the insiders integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATED WITH CLIPPING READS
     INSIDER_VARIANT:
-        DETECT_ALL_TE: False    # Warning! it may be take several hours on big genomes
+        DETECT_ALL_TE: False    # detect ALL TE on genome (parameter GENOME) assembly not only new insertion. Warning! it may be take several hours on big genomes
     INTERMEDIATE_FILE: True     # Conserve the intermediate analyses files to process them latter.
 
 
@@ -213,32 +221,32 @@ Here is the structure of the output files obtained after running the pipeline.
 
 ```
 WORK_DIRECTORY
-├── params.yaml
-├── POSITION_ALL_TE.bed -> INSIDER/TE_DETECTION/POSITION_ALL_TE.bed #ALL TE ON GENOME NOT ONLY INSERTION (ONLY IF PARAMETER "DETECT_ALL_TE" is True),
-├── POS_ALT_TE_OUTSIDER_ON_REF.bed -> INSIDER/TE_INSIDER_VR/POS_ALT_TE_OUTSIDER_ON_REF.bed
+├── params.yaml  ##**Your config file
+├── LIST_HEADER_DB_TE.csv ##** list of names assigned to TE in the TE database (Only if you have charactere "& ; / \ | ' : ! ? " in your TE database)
+├── POSITION_ALL_TE.bed -> INSIDER/TE_DETECTION/POSITION_ALL_TE.bed ##**ALL TE ON GENOME NOT ONLY INSERTION (ONLY IF PARAMETER "DETECT_ALL_TE" is True),
 ├── POSITION_TE_INOUTSIDER.bed
 ├── POSITION_TE_INSIDER.bed
 ├── POSITION_TE_OUTSIDER.bed
-├── POS_TE_INSIDER_ON_REF.bed -> INSIDER/TE_DETECTION/INSERTION_TE_ON_REF.bed #POSITION TE INSIDER ON REFRENCE GENOME
-├── POS_TE_OUTSIDER_ON_REF.bed #POSITION TE OUTSIDER ON REFRENCE GENOME
-├── POSITION_TE_OUTSIDER_IN_NEO_GENOME.bed  #POSITION TE SEQUENCE ON BEST READS SUPPORT INTEGRATED IN GENOME
-├── POSITION_TE_ON_REF.bed  #POSITION TE INSIDER AND OUTSIDER ON REFRENCE GENOME
-├── POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed
+├── POS_ALT_TE_OUTSIDER_ON_REF.bed -> INSIDER/TE_INSIDER_VR/POS_ALT_TE_OUTSIDER_ON_REF.bed
+├── POS_TE_INSIDER_ON_REF.bed -> INSIDER/TE_DETECTION/INSERTION_TE_ON_REF.bed ##**POSITION TE INSIDER ON REFRENCE GENOME
+├── POS_TE_OUTSIDER_ON_REF.bed ##**POSITION TE OUTSIDER ON REFRENCE GENOME
+├── POSITION_TE_OUTSIDER_IN_NEO_GENOME.bed  ##**POSITION TE SEQUENCE ON BEST READS SUPPORT INTEGRATED IN GENOME
+├── POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed  ##**POSITION TE SEQUENCE ON TE DATABASE (with ID) INTEGRATED IN GENOME
 ├── VALUES_TSD_ALL_GROUP.csv
 ├── VALUES_TSD_GROUP_OUTSIDER.csv
 ├── VALUES_TSD_INSIDER_GROUP.csv
-├── TE_INFO.csv #FILE CONTENING ALL INFO OF TE INSERTION
-├── DELETION_TE.bed -> INSIDER/TE_DETECTION/DELETION_TE.bed #TE DELETION POSTION ON GENOME
-├── DELETION_TE_ON_REF.bed -> INSIDER/TE_DETECTION/DELETION_TE_ON_REF.bed #TE DELETION POSITION ON REFERENCE
-├── SOFT_TE.bed -> OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.bed #TE INSERTION FOUND IN SOFT READS
+├── TE_INFO.csv ##**FILE CONTENING ALL INFO OF TE INSERTION
+├── DELETION_TE.bed -> INSIDER/TE_DETECTION/DELETION_TE.bed ##**TE DELETION POSTION ON GENOME
+├── DELETION_TE_ON_REF.bed -> INSIDER/TE_DETECTION/DELETION_TE_ON_REF.bed ##**TE DELETION POSITION ON REFERENCE
+├── SOFT_TE.bed -> OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.bed ##**TE INSERTION FOUND IN SOFT READS
 ├── FREQ_OPTIMIZED
-├── INSIDER #FOLDER CONTAINS FILES TRAITEMENT INSIDER
+├── INSIDER ##**FOLDER CONTAINS FILES TRAITEMENT INSIDER
 │   ├── FREQ_GLOBAL
 │   ├── TE_DETECTION
 │   │   └── TSD
 │   ├── TE_INSIDER_VR
 │   └── VARIANT_CALLING
-├── log  #log file to check if you have any error
+├── log  ##**log file to check if you have any error
 ├── OUTSIDER
 │   ├── ET_FIND_FA
 │   │   ├── TE_REPORT_FOUND_TE_NAME.fasta
@@ -249,19 +257,19 @@ WORK_DIRECTORY
 │   ├── FREQ_AFTER
 │   │   └── DEPTH_TE.csv
 │   ├── INSIDER_VR
-│   ├── MAPPING #FOLDER CONTAINS FILES MAPPING ON GENOME
-│   ├── MAPPING_TO_REF #FOLDER CONTAINS FILES MAPPING ON REFERENCE GENOME
-│   ├── READ_FASTQ_TE #FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
+│   ├── MAPPING ##**FOLDER CONTAINS FILES MAPPING ON GENOME
+│   ├── MAPPING_TO_REF ##**FOLDER CONTAINS FILES MAPPING ON REFERENCE GENOME
+│   ├── READ_FASTQ_TE ##**FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
 │   ├── TE_DETECTION
 │   │   └── TSD
-│   ├── TE_TOWARD_GENOME #FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
-│   │   ├── NEO_GENOME.fasta   #GENOME CONTAINS TE OUTSIDER (the best sequence of svim/sniffles)
-│   │   ├── PSEUDO_GENOME_TE_DB_ID.fasta   #GENOME CONTAINS TE OUTSIDER (the sequence of database TE and the ID of svim/sniffles)
-│   │   ├── TRUE_POSITION_TE.bed   #POSITION IN PSEUDO GENOME
-│   │   ├── TRUE_POSITION_TE.fasta  #SEQUENCE INTEGRATE IN PSEUDO GENOME
-│   │   ├── TRUE_POSITION_TE_READS.bed  #POSITION IN NEO GENOME
-│   │   └── TRUE_POSITION_TE_READS.fasta  #SEQUENCE INTEGRATE IN NEO GENOME
-│   └── VARIANT_CALLING  #FOLDER CONTAINS FILES OF sniflles/svim
+│   ├── TE_TOWARD_GENOME ##**FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
+│   │   ├── NEO_GENOME.fasta   ##**GENOME CONTAINS TE OUTSIDER (the best sequence of svim/sniffles)
+│   │   ├── PSEUDO_GENOME_TE_DB_ID.fasta   ##**GENOME CONTAINS TE OUTSIDER (the sequence of database TE and the ID of svim/sniffles)
+│   │   ├── TRUE_POSITION_TE.bed   ##**POSITION IN PSEUDO GENOME
+│   │   ├── TRUE_POSITION_TE.fasta  ##**SEQUENCE INTEGRATE IN PSEUDO GENOME
+│   │   ├── TRUE_POSITION_TE_READS.bed  ##**POSITION IN NEO GENOME
+│   │   └── TRUE_POSITION_TE_READS.fasta  ##**SEQUENCE INTEGRATE IN NEO GENOME
+│   └── VARIANT_CALLING  ##**FOLDER CONTAINS FILES OF sniflles/svim
 ├── REPORT
 │   ├── mini_report
 │   └── report.html
