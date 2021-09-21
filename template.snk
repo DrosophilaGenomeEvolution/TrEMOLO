@@ -102,7 +102,7 @@ while i < len(sys.argv) and path_snk == "" :
 #os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 #CMD DEFINE ENV
-env="source `dirname " + path_snk + "`/define_env.sh" 
+env="source `dirname " + path_snk + "`/env.sh" 
 
 onsuccess:
     print("\nDONE NO ERROR DETECTED ✔ \n")
