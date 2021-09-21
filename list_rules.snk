@@ -54,8 +54,8 @@ rule RENAME_PSEUDO_TE:
 
         awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' ../../../../TE_INFO.csv | sort -u > tmp_LIST_TE_TO_CHANGE.txt
 
-        ## RENAME REPORT JS
-        echo "RENAME REPORT JS...";
+        ## RENAME TE IN REPORT JS
+        echo "RENAME TE IN REPORT JS...";
         
 
         for file in `ls | grep ".js$" | grep -e  "SIDER" | grep -v "TRUE_NAME_" | grep -v "TE_INSIDER_DEL"`; do
@@ -63,11 +63,11 @@ rule RENAME_PSEUDO_TE:
             #rm -f TRUE_NAME_$file && cat $file > TRUE_NAME_$file;
             for ID in `cat tmp_LIST_TE_TO_CHANGE.txt`; do 
                 new=`grep -w $ID ../../../../LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
-                echo "ID: $ID; new : $new;"
+                #echo "ID: $ID; new : $new;"
                 #sed -i "s/$ID\\"/$new\\"/g" TRUE_NAME_$file;
                 if [ -n "$new" ] && [ "$ID" != "$new" ]; then
                     #sed -i "s/$ID\\"/$new\\"/g" $file;
-                    python3 ${{path_to_pipline}}/lib/python/replace.py "$ID\\"" "$new\\"" $file
+                    python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" $file
                 fi;
             done;
             #template_file=`grep -rnw "$file" ../lib/ | cut -d ":" -f 1`
@@ -80,13 +80,12 @@ rule RENAME_PSEUDO_TE:
         rm -f tmp_LIST_TE_TO_CHANGE.txt
 
         #rm -f TRUE_NAME_COUNT_TE_INSIDER_DEL.js && cat COUNT_TE_INSIDER_DEL.js > TRUE_NAME_COUNT_TE_INSIDER_DEL.js;
-        for ID in `grep -w "TE[0-9]*" COUNT_TE_INSIDER_DEL.js -o | sort -u`; do 
+        for ID in `grep -w "TrEMOLOTE[0-9]*" COUNT_TE_INSIDER_DEL.js -o | sort -u`; do 
             new=`grep -w $ID ../../../../LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
             
             if [ -n "$new" ] && [ "$ID" != "$new" ]; then
-                #sed -i "s/$ID\\"/$new\\"/g" TRUE_NAME_COUNT_TE_INSIDER_DEL.js;
-                #sed --posix -i "s/$ID\\"/$new\\"/g" COUNT_TE_INSIDER_DEL.js;
-                python3 ${{path_to_pipline}}/lib/python/replace.py "$ID\\"" "$new\\"" $file
+                #sed -i "s/$ID\\"/$new\\"/g" COUNT_TE_INSIDER_DEL.js;
+                python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" COUNT_TE_INSIDER_DEL.js
             fi;
         done;
         sed -i "s/COUNT_TE_INSIDER_DEL.js/TRUE_NAME_COUNT_TE_INSIDER_DEL.js/g" ../lib/template_COUNT_TE_INSIDER_DEL.html;
@@ -105,12 +104,12 @@ rule RENAME_PSEUDO_TE:
         printf "\b%.0s" `seq 1 $number_of_char`
         printf "$show_step";
 
-        for file in `ls {params.work_directory} | grep ".bed$"`; do 
-            for ID in `awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' {params.work_directory}/$file | sort -u`; do 
-                new=`grep -w "$ID\t" {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
+        for file in `ls {params.work_directory} | grep ".bed$"`; do
+            for ID in `awk  '{{ split($4, sp, "|"); print sp[1] }}' {params.work_directory}/$file | sort -u`; do 
+                new=`grep -w "$ID" {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
 
                 if [ -n "$new" ] && [ "$ID" != "$new" ]; then
-                    #sed --posix -i "s/${{ID}}/${{new}}/g" {params.work_directory}/$file;
+                    #sed -i "s/${{ID}}/${{new}}/g" {params.work_directory}/$file;
                     python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" {params.work_directory}/$file;
                 fi;
             done;
@@ -126,7 +125,7 @@ rule RENAME_PSEUDO_TE:
         awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' {params.work_directory}/TE_INFO.csv | sort -u > {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt
 
         ## RENAME CSV
-        echo "RENAME TE CSV..."
+        echo -e "\\nRENAME TE CSV..."
         for file in `ls {params.work_directory} | grep ".csv$" | grep -v "LIST_HEADER_DB_TE.csv"`; do
             for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
                 new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
@@ -136,14 +135,26 @@ rule RENAME_PSEUDO_TE:
             done;
         done;
 
+
         #OUTSIDER
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv && \
             for file in `ls {params.work_directory}/OUTSIDER/TE_DETECTION | grep ".csv$" `; do
                 for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
                     new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
 
-                    #sed --posix -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TE_DETECTION/$file;
+                    #sed -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TE_DETECTION/$file;
                     python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" {params.work_directory}/OUTSIDER/TE_DETECTION/$file;
+                done;
+            done;
+
+        #OUTSIDER SOFT
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.csv && \
+            for file in `ls {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/ | grep -E ".csv$|.bln$" `; do
+                for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
+                    new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
+
+                    #sed -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/$file;
+                    python3 ${{path_to_pipline}}/lib/python/replace.py "$ID" "$new" {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/$file;
                 done;
             done;
 
@@ -191,6 +202,7 @@ rule REPORT :
         choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
         choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
 
+        REPORT              = config["CHOICE"]["PIPELINE"]["REPORT"],
         INTERMEDIATE_FILE   = config["CHOICE"]["INTERMEDIATE_FILE"],
 
         CHROM_KEEP       = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
@@ -394,427 +406,435 @@ rule REPORT :
         echo ...
 
         ######
+        #BUILD FILE to report.html
+        if [ {params.REPORT} ]; then
 
-        cp -r ${{path_to_pipline}}/report/* {params.work_directory}/REPORT/
+            cp -r ${{path_to_pipline}}/report/* {params.work_directory}/REPORT/
 
-        ## TSD
+            ## TSD
 
-        echo "TSD OK" >  {params.work_directory}/.tmp_orderc.txt
-        echo "TSD KO" >> {params.work_directory}/.tmp_orderc.txt
+            echo "TSD OK" >  {params.work_directory}/.tmp_orderc.txt
+            echo "TSD KO" >> {params.work_directory}/.tmp_orderc.txt
 
-        test -s {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv && \
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
-            {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_OUTSIDER.js && \
-            sed 's/%%VAR_JS%%/TSD_OUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
-             > {params.work_directory}/REPORT/mini_report/lib/template_TSD_OUTSIDER_CHART.html
+            test -s {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv && \
+                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
+                {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_OUTSIDER.js && \
+                sed 's/%%VAR_JS%%/TSD_OUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
+                 > {params.work_directory}/REPORT/mini_report/lib/template_TSD_OUTSIDER_CHART.html
 
-        test -s {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv && \
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
-            {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_INSIDER.js && \
-            sed 's/%%VAR_JS%%/TSD_INSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
-             > {params.work_directory}/REPORT/mini_report/lib/template_TSD_INSIDER_CHART.html \
-            || sed -i '/TSD_INSIDER_histo/d' {params.work_directory}/REPORT/mini_report/insider.Rmd
+            test -s {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv && \
+                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
+                {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_INSIDER.js && \
+                sed 's/%%VAR_JS%%/TSD_INSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
+                 > {params.work_directory}/REPORT/mini_report/lib/template_TSD_INSIDER_CHART.html \
+                || sed -i '/TSD_INSIDER_histo/d' {params.work_directory}/REPORT/mini_report/insider.Rmd
 
-        test -s {params.work_directory}/VALUES_TSD_ALL_GROUP.csv && \
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
-            {params.work_directory}/VALUES_TSD_ALL_GROUP.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_INOUSIDER.js && \
-            sed 's/%%VAR_JS%%/TSD_INOUSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
-             > {params.work_directory}/REPORT/mini_report/lib/template_TSD_INOUTSIDER_CHART.html\
-            || sed -i '/TSD_ALL_histo/d' {params.work_directory}/REPORT/mini_report/inoutsider.Rmd
+            test -s {params.work_directory}/VALUES_TSD_ALL_GROUP.csv && \
+                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped_ggplot.py \
+                {params.work_directory}/VALUES_TSD_ALL_GROUP.csv data -c {params.work_directory}/.tmp_orderc.txt > {params.work_directory}/REPORT/mini_report/js/TSD_INOUTSIDER.js && \
+                sed 's/%%VAR_JS%%/TSD_INOUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_TSD_CHART.html \
+                 > {params.work_directory}/REPORT/mini_report/lib/template_TSD_INOUTSIDER_CHART.html\
+                || sed -i '/TSD_ALL_histo/d' {params.work_directory}/REPORT/mini_report/inoutsider.Rmd
 
-        rm -f {params.work_directory}/.tmp_orderc.txt
-
-
-        samtools faidx {input.genome}
-        echo {params.CHROM_KEEP} | tr "," "\n" > {params.work_directory}/chrom.txt 
-        
-        mkdir -p {params.work_directory}/js
-
-        #create_biocircosgenome.py {params.work_directory}/chrom.txt
-        grep -f {params.work_directory}/chrom.txt {input.genome}.fai > {params.work_directory}/.tmp_index.fai
-        
-        python3 ${{path_to_pipline}}/lib/python/create_biocircosgenome.py {params.work_directory}/.tmp_index.fai > {params.work_directory}/js/bioCircosGenome.js
+            rm -f {params.work_directory}/.tmp_orderc.txt
 
 
-        size_cut=1000000
-        for i in `grep -f {params.work_directory}/chrom.txt {params.work_directory}/.tmp_index.fai | cut -f 1-2 | tr "\t" ":"`; 
-        do 
-            chrom=`echo $i | cut -d ":" -f 1`
-            size_chrom=`echo $i | cut -d ":" -f 2`;
-            index=1;
-            while [ $index -lt $size_chrom ]; 
+            samtools faidx {input.genome}
+            echo {params.CHROM_KEEP} | tr "," "\n" > {params.work_directory}/chrom.txt 
+            
+            mkdir -p {params.work_directory}/js
+
+            #create_biocircosgenome.py {params.work_directory}/chrom.txt
+            grep -f {params.work_directory}/chrom.txt {input.genome}.fai > {params.work_directory}/.tmp_index.fai
+            
+            python3 ${{path_to_pipline}}/lib/python/create_biocircosgenome.py {params.work_directory}/.tmp_index.fai > {params.work_directory}/js/bioCircosGenome.js
+
+
+            size_cut=1000000
+            for i in `grep -f {params.work_directory}/chrom.txt {params.work_directory}/.tmp_index.fai | cut -f 1-2 | tr "\t" ":"`; 
             do 
-                echo -e $chrom"\t"$index"\t"$(($index+$size_cut))
-                index=$(($index+$size_cut));
-            done;
-        done \
-         > {params.work_directory}/cut_chrom.bed;
+                chrom=`echo $i | cut -d ":" -f 1`
+                size_chrom=`echo $i | cut -d ":" -f 2`;
+                index=1;
+                while [ $index -lt $size_chrom ]; 
+                do 
+                    echo -e $chrom"\t"$index"\t"$(($index+$size_cut))
+                    index=$(($index+$size_cut));
+                done;
+            done \
+             > {params.work_directory}/cut_chrom.bed;
 
-        first_chrom=`awk 'NR==1{{print $1}}' {params.work_directory}/.tmp_index.fai`
+            first_chrom=`awk 'NR==1{{print $1}}' {params.work_directory}/.tmp_index.fai`
 
-        rm -f {params.work_directory}/.tmp_index.fai
-        
-
-        #COUNT TE OUTSIDER
-        if test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed; then
-            test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed && \
-            awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1], $5}}' {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed | bedtools sort > {params.work_directory}/POSITION_TE_OUTSIDER.bed
+            rm -f {params.work_directory}/.tmp_index.fai
             
-            bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POSITION_TE_OUTSIDER.bed -wa | tr "\t" ":" \
-                | sort | uniq -c | sort -k 1 -n \
-                | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
-                | bedtools sort > {params.work_directory}/HISTOGRAM.txt
 
-            max_value_histo_circos=`cat {params.work_directory}/HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
-
-
-            python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM {params.work_directory}/HISTOGRAM.txt > {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
-            echo "dico_histo = {{}}" >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
-
-            awk '{{print $4}}' {params.work_directory}/POSITION_TE_OUTSIDER.bed | cut -d "|" -f 1 | sort | uniq > {params.work_directory}/TE_NAME.txt
-            for TE in `cat {params.work_directory}/TE_NAME.txt`; do
-                grep "\\s${{TE}}|" {params.work_directory}/POSITION_TE_OUTSIDER.bed > {params.work_directory}/POS_TE_$TE.bed
-
-                TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
-
-                bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POS_TE_$TE.bed -wa | bedtools sort | tr "\t" ":" \
+            #COUNT TE OUTSIDER
+            if test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed; then
+                test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed && \
+                awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1], $5}}' {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed | bedtools sort > {params.work_directory}/POSITION_TE_OUTSIDER.bed
+                
+                bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POSITION_TE_OUTSIDER.bed -wa | tr "\t" ":" \
                     | sort | uniq -c | sort -k 1 -n \
-                    | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 0, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
-                     > HISTOGRAM_${{TE_NAME}}.txt
+                    | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
+                    | bedtools sort > {params.work_directory}/HISTOGRAM.txt
 
-                ###echo "TE_NAME = $TE_NAME"
-                
-                python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-                
-                echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
-                cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
-
-                rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
-                rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-            done;
-
-            ## BUILD HTML
-            sed 's/%%VAR_JS%%/HISTOGRAM_OUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
-             > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_OUTSIDER.html
-        fi;
-
-        test -s {params.work_directory}/js/HISTOGRAM_OUTSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
-
-        
-
-        #COUNT TE INSIDER
-        if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed; then
-
-            cat {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed | bedtools sort > {params.work_directory}/POSITION_TE_INSIDER.bed
+                max_value_histo_circos=`cat {params.work_directory}/HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
 
 
-            bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POSITION_TE_INSIDER.bed -wa | tr "\t" ":" \
-                | sort | uniq -c | sort -k 1 -n \
-                | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
-                | bedtools sort > {params.work_directory}/HISTOGRAM.txt
+                python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM {params.work_directory}/HISTOGRAM.txt > {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
+                echo "dico_histo = {{}}" >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
 
-            max_value_histo_circos=`cat {params.work_directory}/HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
+                awk '{{print $4}}' {params.work_directory}/POSITION_TE_OUTSIDER.bed | cut -d "|" -f 1 | sort | uniq > {params.work_directory}/TE_NAME.txt
+                for TE in `cat {params.work_directory}/TE_NAME.txt`; do
+                    grep "\\s${{TE}}|" {params.work_directory}/POSITION_TE_OUTSIDER.bed > {params.work_directory}/POS_TE_$TE.bed
+
+                    TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
+
+                    bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POS_TE_$TE.bed -wa | bedtools sort | tr "\t" ":" \
+                        | sort | uniq -c | sort -k 1 -n \
+                        | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 0, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
+                         > HISTOGRAM_${{TE_NAME}}.txt
+
+                    ###echo "TE_NAME = $TE_NAME"
+                    
+                    python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                    
+                    echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                    echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
+                    cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
+
+                    rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
+                    rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                done;
+
+                ## BUILD HTML
+                sed 's/%%VAR_JS%%/HISTOGRAM_OUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
+                 > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_OUTSIDER.html
+            fi;
+
+            test -s {params.work_directory}/js/HISTOGRAM_OUTSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_OUTSIDER.js
+
+            
+
+            #COUNT TE INSIDER
+            if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed; then
+
+                cat {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed | bedtools sort > {params.work_directory}/POSITION_TE_INSIDER.bed
 
 
-            python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM {params.work_directory}/HISTOGRAM.txt > {params.work_directory}/js/HISTOGRAM_INSIDER.js
-            echo "dico_histo = {{}}" >> {params.work_directory}/js/HISTOGRAM_INSIDER.js
-
-            awk '{{print $4}}' {params.work_directory}/POSITION_TE_INSIDER.bed | cut -d "|" -f 1 | sort | uniq > {params.work_directory}/TE_NAME.txt
-            for TE in `cat {params.work_directory}/TE_NAME.txt`; do
-                grep "\\s${{TE}}|" {params.work_directory}/POSITION_TE_INSIDER.bed > {params.work_directory}/POS_TE_$TE.bed
-
-                TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
-
-                bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POS_TE_$TE.bed -wa | bedtools sort |  tr "\t" ":" \
+                bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POSITION_TE_INSIDER.bed -wa | tr "\t" ":" \
                     | sort | uniq -c | sort -k 1 -n \
-                    | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 0, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
-                     > HISTOGRAM_${{TE_NAME}}.txt
+                    | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
+                    | bedtools sort > {params.work_directory}/HISTOGRAM.txt
 
-                ###echo "TE_NAME = $TE_NAME"
-
-                python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-                
-                echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_INSIDER.js
-                cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_INSIDER.js
-
-                rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
-                rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-            done;
-
-            sed 's/%%VAR_JS%%/HISTOGRAM_INSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
-             > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_INSIDER.html
-        fi;
-
-        test -s {params.work_directory}/js/HISTOGRAM_INSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INSIDER.js
-
-        
-
-        #COUNT TE INOUTSIDER
-        if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && test -s {params.work_directory}/POSITION_TE_OUTSIDER.bed; then
-
-            cat {params.work_directory}/POSITION_TE_INSIDER.bed {params.work_directory}/POSITION_TE_OUTSIDER.bed > {params.work_directory}/POSITION_TE_INOUTSIDER.bed
-
-            bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POSITION_TE_INOUTSIDER.bed -wa | tr "\t" ":" \
-                | sort | uniq -c | sort -k 1 -n \
-                | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
-                | bedtools sort > {params.work_directory}/HISTOGRAM.txt
-
-            max_value_histo_circos=`cat {params.work_directory}/HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
+                max_value_histo_circos=`cat {params.work_directory}/HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
 
 
-            python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM {params.work_directory}/HISTOGRAM.txt > {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
-            echo "dico_histo = {{}}" >> {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
+                python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM {params.work_directory}/HISTOGRAM.txt > {params.work_directory}/js/HISTOGRAM_INSIDER.js
+                echo "dico_histo = {{}}" >> {params.work_directory}/js/HISTOGRAM_INSIDER.js
 
-            awk '{{print $4}}' {params.work_directory}/POSITION_TE_INOUTSIDER.bed | cut -d "|" -f 1 | sort | uniq > {params.work_directory}/TE_NAME.txt
-            for TE in `cat {params.work_directory}/TE_NAME.txt`; do
-                grep "\\s${{TE}}|" {params.work_directory}/POSITION_TE_INOUTSIDER.bed > {params.work_directory}/POS_TE_$TE.bed
+                awk '{{print $4}}' {params.work_directory}/POSITION_TE_INSIDER.bed | cut -d "|" -f 1 | sort | uniq > {params.work_directory}/TE_NAME.txt
+                for TE in `cat {params.work_directory}/TE_NAME.txt`; do
+                    grep "\\s${{TE}}|" {params.work_directory}/POSITION_TE_INSIDER.bed > {params.work_directory}/POS_TE_$TE.bed
 
-                TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
+                    TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
 
-                bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POS_TE_$TE.bed -wa | bedtools sort | tr "\t" ":" \
+                    bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POS_TE_$TE.bed -wa | bedtools sort |  tr "\t" ":" \
+                        | sort | uniq -c | sort -k 1 -n \
+                        | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 0, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
+                         > HISTOGRAM_${{TE_NAME}}.txt
+
+                    ###echo "TE_NAME = $TE_NAME"
+
+                    python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                    
+                    echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                    echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_INSIDER.js
+                    cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_INSIDER.js
+
+                    rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
+                    rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                done;
+
+                sed 's/%%VAR_JS%%/HISTOGRAM_INSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
+                 > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_INSIDER.html
+            fi;
+
+            test -s {params.work_directory}/js/HISTOGRAM_INSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INSIDER.js
+
+            
+
+            #COUNT TE INOUTSIDER
+            if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && test -s {params.work_directory}/POSITION_TE_OUTSIDER.bed; then
+
+                cat {params.work_directory}/POSITION_TE_INSIDER.bed {params.work_directory}/POSITION_TE_OUTSIDER.bed > {params.work_directory}/POSITION_TE_INOUTSIDER.bed
+
+                bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POSITION_TE_INOUTSIDER.bed -wa | tr "\t" ":" \
                     | sort | uniq -c | sort -k 1 -n \
-                    | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 0, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
-                     > HISTOGRAM_${{TE_NAME}}.txt
+                    | awk 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print a[1], 0, 1, "HISTOGRAM NB TE", 0;}}; split( $2, a, ":"); print a[1], a[2], a[3], "HISTOGRAM NB TE", $1+1}}'\
+                    | bedtools sort > {params.work_directory}/HISTOGRAM.txt
 
-                ###echo "TE_NAME = $TE_NAME"
+                max_value_histo_circos=`cat {params.work_directory}/HISTOGRAM.txt | cut -f 5 | sort -n | tail -n 1`
+
+
+                python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM {params.work_directory}/HISTOGRAM.txt > {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
+                echo "dico_histo = {{}}" >> {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
+
+                awk '{{print $4}}' {params.work_directory}/POSITION_TE_INOUTSIDER.bed | cut -d "|" -f 1 | sort | uniq > {params.work_directory}/TE_NAME.txt
+                for TE in `cat {params.work_directory}/TE_NAME.txt`; do
+                    grep "\\s${{TE}}|" {params.work_directory}/POSITION_TE_INOUTSIDER.bed > {params.work_directory}/POS_TE_$TE.bed
+
+                    TE_NAME=`echo ${{TE}} | tr "-" "_" | tr "." "_"`
+
+                    bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POS_TE_$TE.bed -wa | bedtools sort | tr "\t" ":" \
+                        | sort | uniq -c | sort -k 1 -n \
+                        | awk -v chrom_rand="$first_chrom" -v max="$max_value_histo_circos" 'OFS="\t"{{if(NR==1){{split( $2, a, ":"); print chrom_rand, 0, 1, "NB TE", 0; print chrom_rand, 0, 0, "NB TE", max;}}; split( $2, a, ":"); print a[1], a[2], a[3], "NB TE", $1}}'\
+                         > HISTOGRAM_${{TE_NAME}}.txt
+
+                    ###echo "TE_NAME = $TE_NAME"
+                    
+                    python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                    
+                    echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                    echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
+                    cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
+
+                    rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
+                    rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                done;
+
+                sed 's/%%VAR_JS%%/HISTOGRAM_INOUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
+                 > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_INOUTSIDER.html
+            fi;
+
+            test -s {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
+
+
+            cp {params.work_directory}/js/* {params.work_directory}/REPORT/mini_report/js/
+            
+            rm -fr {params.work_directory}/js
+            rm -f {params.work_directory}/cut_chrom.bed
+
+
+            ## CHANGE PATH
+            old_path=`pwd`
+            cd {params.work_directory}/REPORT/mini_report/
+
+            #INSIDER
+            ## TODO GESTION DE SUPPRESSION
+            if [ {params.choice_insider_sv} != "True" ]; then
+                rm -f insider.Rmd
+            else
+                ! test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
+                   sed -i 's/r FREQIN, eval=TRUE,/r FREQIN, eval=FALSE,/g' insider.Rmd  && \
+                   sed -i '/FREQUENCE/d' insider.Rmd
+                cat insider.Rmd >> index.Rmd
+                mv insider.Rmd insider.Rmd.tmp
+            fi;
+
+            
+            #OUTSIDER
+            ## TODO GESTION DE SUPPRESSION
+            if [ {params.choice_outsider_sv} != "True" ]; then
+                rm -f outsider.Rmd
+            else
+                cat outsider.Rmd >> index.Rmd
+                mv outsider.Rmd outsider.Rmd.tmp
+            fi;
+
+
+
+            #INOUTSIDER
+            ## TODO GESTION DE SUPPRESSION
+            if [ {params.choice_outsider_sv} != "True" ] || [ {params.choice_insider_sv} != "True" ]; then
+                rm -f inoutsider.Rmd
+            else
+                ! test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
+                   sed -i 's/r FREQ_INOUT, eval=TRUE,/r FREQ_INOUT, eval=FALSE,/g' inoutsider.Rmd  && \
+                   sed -i '/FREQUENCE/d' inoutsider.Rmd
+                cat inoutsider.Rmd >> index.Rmd
+                mv inoutsider.Rmd inoutsider.Rmd.tmp
+            fi;
+
+            
+
+            #REMOVE OR COUNT INSIDER
+            ## TODO GESTION DE SUPPRESSION
+            if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv ; then
+                sed -i 's/r insider1, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
                 
-                python3 ${{path_to_pipline}}/lib/python/Biocircos_PrepareData.py HISTOGRAM HISTOGRAM_${{TE_NAME}}.txt > {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
+                #DELET LINE INUTILE
+                sed -i '/INSIDER/d' index.Rmd
+                sed -i '/TE_INSIDER.[a-z]/d' index.Rmd
+            else
+                #COUNT
+                awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv  > tmp.csv
+                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER.js
+
+                test -s js/COUNT_TE_INSIDER.js && \
+                    sed 's/%%VAR_JS%%/COUNT_TE_INSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INSIDER.html;
+
+                #FREQUENCE INSIDER
+                test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
+                    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv > tmp_freq.csv
                 
-                echo "dico_histo[\\"${{TE_NAME}}\\"] = HISTOGRAM_${{TE_NAME}}" >> {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-                echo -e "\n" >> {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
-                cat {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js >> {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
+                test -s tmp_freq.csv && \
+                    python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp_freq.csv data_freq > js/FREQ_TE_INSIDER.js
+                test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && \
+                    awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv >> js/FREQ_TE_INSIDER.js
 
-                rm -f HISTOGRAM_${{TE_NAME}}.txt {params.work_directory}/POS_TE_$TE.bed {params.work_directory}/HISTOGRAM.txt {params.work_directory}/TE_NAME.txt
-                rm -f {params.work_directory}/js/HISTOGRAM_${{TE_NAME}}.js
-            done;
+                #HERE
+                test -s js/FREQ_TE_INSIDER.js && \
+                    sed 's/%%VAR_JS%%/FREQ_TE_INSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_INSIDER.html;
 
-            sed 's/%%VAR_JS%%/HISTOGRAM_INOUTSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS.html \
-             > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_GENOME_CIRCOS_INOUTSIDER.html
-        fi;
-
-        test -s {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
-
-
-        cp {params.work_directory}/js/* {params.work_directory}/REPORT/mini_report/js/
-        
-        rm -fr {params.work_directory}/js
-        rm -f {params.work_directory}/cut_chrom.bed
-
-        old_path=`pwd`
-        cd {params.work_directory}/REPORT/mini_report/
-
-        #INSIDER
-        ## TODO GESTION DE SUPPRESSION
-        if [ {params.choice_insider_sv} != "True" ]; then
-            rm -f insider.Rmd
-        else
-            ! test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
-               sed -i 's/r FREQIN, eval=TRUE,/r FREQIN, eval=FALSE,/g' insider.Rmd  && \
-               sed -i '/FREQUENCE/d' insider.Rmd
-            cat insider.Rmd >> index.Rmd
-            mv insider.Rmd insider.Rmd.tmp
-        fi;
-
-        
-        #OUTSIDER
-        ## TODO GESTION DE SUPPRESSION
-        if [ {params.choice_outsider_sv} != "True" ]; then
-            rm -f outsider.Rmd
-        else
-            cat outsider.Rmd >> index.Rmd
-            mv outsider.Rmd outsider.Rmd.tmp
-        fi;
+                rm -f tmp.csv tmp_freq.csv
+            fi;
 
 
 
-        #INOUTSIDER
-        ## TODO GESTION DE SUPPRESSION
-        if [ {params.choice_outsider_sv} != "True" ] || [ {params.choice_insider_sv} != "True" ]; then
-            rm -f inoutsider.Rmd
-        else
-            ! test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
-               sed -i 's/r FREQ_INOUT, eval=TRUE,/r FREQ_INOUT, eval=FALSE,/g' inoutsider.Rmd  && \
-               sed -i '/FREQUENCE/d' inoutsider.Rmd
-            cat inoutsider.Rmd >> index.Rmd
-            mv inoutsider.Rmd inoutsider.Rmd.tmp
-        fi;
-
-        
-
-        #REMOVE OR COUNT INSIDER
-        ## TODO GESTION DE SUPPRESSION
-        if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv ; then
-            sed -i 's/r insider1, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-            
-            #DELET LINE INUTILE
-            sed -i '/INSIDER/d' index.Rmd
-            sed -i '/TE_INSIDER.[a-z]/d' index.Rmd
-        else
-            #COUNT
-            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv  > tmp.csv
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER.js
-
-            test -s js/COUNT_TE_INSIDER.js && \
-                sed 's/%%VAR_JS%%/COUNT_TE_INSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INSIDER.html;
-
-            #FREQUENCE INSIDER
-            test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && \
-                awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv > tmp_freq.csv
-            
-            test -s tmp_freq.csv && \
-                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp_freq.csv data_freq > js/FREQ_TE_INSIDER.js
-            test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && \
-                awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv >> js/FREQ_TE_INSIDER.js
-
-            #HERE
-            test -s js/FREQ_TE_INSIDER.js && \
-                sed 's/%%VAR_JS%%/FREQ_TE_INSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_INSIDER.html;
-
-            rm -f tmp.csv tmp_freq.csv
-        fi;
-
-
-
-        #REMOVE OR COUNT INSIDER DELETION
-        ## TODO GESTION DE SUPPRESSION
-        if ! test -s ../../INSIDER/TE_DETECTION/DELETION.csv ; then
-            sed -i 's/r insider11, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-            
-            #DELET LINE INUTILE
-            #sed -i '/INSIDER/d' index.Rmd
-            sed -i '/TE_INSIDER_DEL/d' index.Rmd
-        else
-            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv  > tmp.csv
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER_DEL.js
-            rm -f tmp.csv
-        fi;
-
-        
-
-        #REMOVE OR COUNT OUTSIDER
-        ## TODO GESTION DE SUPPRESSION
-        if ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv ; then
-            sed -i 's/r NB_OUTSIDER, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-            sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-            sed -i 's/r FREQ, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-
-            sed -i '/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE/d' index.Rmd
-        else
-            #COUNT
-            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv  > tmp.csv
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_OUTSIDER.js
-
-            test -s js/COUNT_TE_OUTSIDER.js && \
-                sed 's/%%VAR_JS%%/COUNT_TE_OUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_OUTSIDER.html
-
-            #FREQUENCE OUTSIDER
-            test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
-                awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv > tmp_freq.csv
+            #REMOVE OR COUNT INSIDER DELETION
+            ## TODO GESTION DE SUPPRESSION
+            if ! test -s ../../INSIDER/TE_DETECTION/DELETION.csv ; then
+                sed -i 's/r insider11, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
                 
-            ! test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
-                awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > tmp_freq.csv
+                #DELET LINE INUTILE
+                #sed -i '/INSIDER/d' index.Rmd
+                sed -i '/TE_INSIDER_DEL/d' index.Rmd
+            else
+                awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv  > tmp.csv
+                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INSIDER_DEL.js
+                rm -f tmp.csv
+            fi;
+
             
-            test -s tmp_freq.csv && \
-                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp_freq.csv data_freq > js/FREQ_TE_OUTSIDER.js && \
-            test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && \
-                awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv >> js/FREQ_TE_OUTSIDER.js
 
-            test -s js/FREQ_TE_OUTSIDER.js && \
-                sed 's/%%VAR_JS%%/FREQ_TE_OUTSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_OUTSIDER.html
+            #REMOVE OR COUNT OUTSIDER
+            ## TODO GESTION DE SUPPRESSION
+            if ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv ; then
+                sed -i 's/r NB_OUTSIDER, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+                sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+                sed -i 's/r FREQ, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
 
-            rm -f tmp.csv tmp_freq.csv
-        fi;
+                sed -i '/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE/d' index.Rmd
+            else
+                #COUNT
+                awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv  > tmp.csv
+                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_OUTSIDER.js
 
+                test -s js/COUNT_TE_OUTSIDER.js && \
+                    sed 's/%%VAR_JS%%/COUNT_TE_OUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_OUTSIDER.html
 
-        #REMOVE OR COUNT INOUTSIDER
-        ## TODO GESTION DE SUPPRESSION
-        if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv || ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv; then
-            echo "ERROR NO TE INSERTION FOUND";
-        else
-            test -s ../../TE_INFO.csv && \
-                awk 'NR>1 {{split($4, sp, "|"); print sp[1]}}' ../../TE_INFO.csv | sort | uniq -c | awk '{{print $1"\t"$2}}' | sort -k 1 -n | awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > tmp_ALL_TE_COUNT.csv
-            
-            awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' tmp_ALL_TE_COUNT.csv  > tmp.csv
-            python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INOUTSIDER.js
+                #FREQUENCE OUTSIDER
+                test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
+                    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv > tmp_freq.csv
+                    
+                ! test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
+                    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > tmp_freq.csv
+                
+                test -s tmp_freq.csv && \
+                    python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp_freq.csv data_freq > js/FREQ_TE_OUTSIDER.js && \
+                test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && \
+                    awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv >> js/FREQ_TE_OUTSIDER.js
 
-            test -s js/COUNT_TE_INOUTSIDER.js && \
-                sed 's/%%VAR_JS%%/COUNT_TE_INOUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INOUTSIDER.html
+                test -s js/FREQ_TE_OUTSIDER.js && \
+                    sed 's/%%VAR_JS%%/FREQ_TE_OUTSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_OUTSIDER.html
 
-            rm -f tmp.csv
-            rm -f tmp_ALL_TE_COUNT.csv
-        fi;
-
-        if ! test -e ../../VALUES_TSD_GROUP_OUTSIDER.csv; then
-            sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
-        fi;
-
-        ## TIMELINE RULE
-        cat ../../log/Snakefile_*.err | grep "^rule" -B 2  | awk '
-        BEGIN{{
-                chain=""
-        }} 
-
-        {{
-            if(substr($0, 1, 1) == "[" ){{ 
-                date=$0; 
-            rule="" 
-        }}else if(substr($0, 1, 4) == "rule"){{
-                split($0, sp, " "); 
-                rule=sp[2]; 
-                print date";"rule 
-            }} 
-        }} ' > timeline.csv
+                rm -f tmp.csv tmp_freq.csv
+            fi;
 
 
-        while read line; 
-        do 
+            #REMOVE OR COUNT INOUTSIDER
+            ## TODO GESTION DE SUPPRESSION
+            if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv || ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv; then
+                echo "ERROR NO TE INSERTION FOUND";
+            else
+                test -s ../../TE_INFO.csv && \
+                    awk 'NR>1 {{split($4, sp, "|"); print sp[1]}}' ../../TE_INFO.csv | sort | uniq -c | awk '{{print $1"\t"$2}}' | sort -k 1 -n | awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > tmp_ALL_TE_COUNT.csv
+                
+                awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' tmp_ALL_TE_COUNT.csv  > tmp.csv
+                python3 ${{path_to_pipline}}/lib/python/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INOUTSIDER.js
 
-            date=`echo $line | cut -d ";" -f 1 | tr -d "[]"`; 
-            rule=`echo $line | cut -d ";" -f 2 | tr -d ":"`;   
-            datetime=`date -d "$date" +"%F %k:%M:%S"`; 
-            echo "$datetime;$rule";  
+                test -s js/COUNT_TE_INOUTSIDER.js && \
+                    sed 's/%%VAR_JS%%/COUNT_TE_INOUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INOUTSIDER.html
 
-        done < timeline.csv | awk -F ";" '
+                rm -f tmp.csv
+                rm -f tmp_ALL_TE_COUNT.csv
+            fi;
+
+            if ! test -e ../../VALUES_TSD_GROUP_OUTSIDER.csv; then
+                sed -i 's/r TSD, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+            fi;
+
+            ## TIMELINE RULE
+            cat ../../log/Snakefile_*.err | grep "^rule" -B 2  | awk '
             BEGIN{{
-                start=""; end=""; 
-                print "data = [";
-            }}
+                    chain=""
+            }} 
+
             {{
-                if( NR==1 ){{ 
-                    start = $1; 
-                    text=$2; 
-                }}
-                else{{
-                    print "{{\\"category\\": \\""text"\\", \\"start\\": \\""start"\\", \\"end\\": \\""$1"\\", \\"text\\": \\""text"\\", color: colorSet.getIndex("(((NR * 4) % 16) + 1)")}},";
-                    text=$2; 
-                    start=$1;
+                if(substr($0, 1, 1) == "[" ){{ 
+                    date=$0; 
+                rule="" 
+            }}else if(substr($0, 1, 4) == "rule"){{
+                    split($0, sp, " "); 
+                    rule=sp[2]; 
+                    print date";"rule 
                 }} 
-            }}
-            END{{
-                print "{{\\"category\\": \\""text"\\", \\"start\\": \\""start"\\", \\"end\\": \\""$1"\\", \\"text\\": \\""text"\\", color: colorSet.getIndex("((((NR+1) * 4) % 16) + 1)")}}\\n];";
-            }} ' > js/data_timeline.js;
+            }} ' > timeline.csv
 
-        echo "MAKE REPORT"
 
-        make
+            while read line; 
+            do 
 
-        cp -r ./lib ./js ./css ./web/
+                date=`echo $line | cut -d ";" -f 1 | tr -d "[]"`; 
+                rule=`echo $line | cut -d ";" -f 2 | tr -d ":"`;   
+                datetime=`date -d "$date" +"%F %k:%M:%S"`; 
+                echo "$datetime;$rule";  
 
-        path_to_report=`readlink -f ../report.html`
+            done < timeline.csv | awk -F ";" '
+                BEGIN{{
+                    start=""; end=""; 
+                    print "data = [";
+                }}
+                {{
+                    if( NR==1 ){{ 
+                        start = $1; 
+                        text=$2; 
+                    }}
+                    else{{
+                        print "{{\\"category\\": \\""text"\\", \\"start\\": \\""start"\\", \\"end\\": \\""$1"\\", \\"text\\": \\""text"\\", color: colorSet.getIndex("(((NR * 4) % 16) + 1)")}},";
+                        text=$2; 
+                        start=$1;
+                    }} 
+                }}
+                END{{
+                    print "{{\\"category\\": \\""text"\\", \\"start\\": \\""start"\\", \\"end\\": \\""$1"\\", \\"text\\": \\""text"\\", color: colorSet.getIndex("((((NR+1) * 4) % 16) + 1)")}}\\n];";
+                }} ' > js/data_timeline.js;
 
-        printf "%s\\n" "{params.cmess} [SNK]--[`date`]--[INFO] CHECK $path_to_report [^-^] {params.cend}"
 
-        cd $old_path
-        pwd
+            #CHECKING R PACKAGES...
+            echo "CHECKING R PACKAGES..."
+            R --save -e 'if(!require(stringi)) install.packages("stringi")'
+            R --save -e 'if(!require(stringr)) install.packages("stringr")'
+
+            echo "MAKE REPORT"
+            make
+
+            cp -r ./lib ./js ./css ./web/
+
+            path_to_report=`readlink -f ../report.html`
+
+            printf "%s\\n" "{params.cmess} [SNK]--[`date`]--[INFO] CHECK $path_to_report [^-^] {params.cend}"
+
+            cd $old_path
+        fi;
+
         if [ {params.INTERMEDIATE_FILE} = "False" ]; then
             rm -fr {params.work_directory}/OUTSIDER
             rm -fr {params.work_directory}/INSIDER
             rm -f  {params.work_directory}/VALUES_TSD*
         fi;
-
-        
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT DONE, CHECK {params.work_directory}/REPORT/report.html [^-^] {params.cend}"
 
@@ -1077,13 +1097,12 @@ rule TSD :
 
                     a=$(($a+1));
 
-                    show_step="$a/$NB_TE_FM : TSD TE ASSEMBLED "
+                    show_step="$a/$NB_TE_FM : CHECKING TSD TE ASSEMBLED "
                     number_of_char=`echo "$show_step" | wc -c`
                     number_of_char=$(($number_of_char-1));
                     printf "\b%.0s" `seq 1 $number_of_char`
                     printf "$show_step";
                 done;
-
 
                 #bash ${{path_to_pipline}}/lib/TSD/TSD_VG.sh {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv {input.genome}
                 
@@ -1097,7 +1116,8 @@ rule TSD :
                 rm -f {params.work_directory}/TE.fasta {params.work_directory}/FLANK.fasta ;
 
                 e=$(($e+1));
-                echo "$e/$NB_TE : TSD TE ASSEMBLED --"
+                echo "$e/$NB_TE : TE ASSEMBLED ";
+
                 # show_step="$e/$NB_TE : TSD TE ASSEMBLED "
                 # number_of_char=`echo "$show_step" | wc -c`
                 # number_of_char=$(($number_of_char-1));
@@ -1202,8 +1222,9 @@ rule FIND_TE_ON_REF :
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
-        env            = env, #source environnement
+        call_sv         = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
 
+        env            = env, #source environnement
 
         pars_bln_option_insider = config["PARAMS"]["INSIDER_VARIANT"]["PARS_BLN_OPTION"],
 
@@ -1232,7 +1253,6 @@ rule FIND_TE_ON_REF :
         samtools faidx {input.ref}
         samtools faidx {input.fasta_TE}
 
-        mkdir -p {params.work_directory}/OUTSIDER/FIND_TE_ON_REF/
         rm -f {log}.*
         
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] ANNOT TE ON REF {params.cend}"
@@ -1257,6 +1277,15 @@ rule FIND_TE_ON_REF :
             ( test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta && \
                 sh ${{path_to_pipline}}/lib/bash/get_seq_with_id.sh {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta ) || echo "SEQUENCE $type NOT FOUND"
             
+            #RENAME ID (ID_SV_ at on get_seq_with_id.sh)
+            if [ {params.call_sv} = "svim" ]; then
+                test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta && \
+                    sed -i 's/ID_SV_/svim.INS./g' {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta
+            else
+                test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta && \
+                    sed -i 's/ID_SV_//g' {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta
+            fi;
+
             ( test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta && echo "NUMBER OF SEQUENCE" `grep ">" {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta -c ` ) || echo "[SNK  INFO]: ${{type}}_SEQ.fasta IS EMPTY"
         done;
         
@@ -1422,7 +1451,8 @@ rule FIND_TE_ON_REF :
         test -s POS_TE_*_ON_REF.bed && cat {params.work_directory}/POS_TE_*_ON_REF.bed > {params.work_directory}/POSITION_TE_ON_REF.bed
 
         rm -f {params.work_directory}/ID.txt
-
+        
+        
         """
 
 
@@ -1926,7 +1956,7 @@ rule extract_read :
             awk -v num="$num" 'NR-1 == num' {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file > {params.work_directory}/OUTSIDER/ID_BEST_READ_TE.txt;
         done;
 
-
+        ## REMOVE
         rm -f {params.work_directory}/ID_RD_SEQ.txt {params.work_directory}/ID_TE_SV_REPORT.txt
         rm -f `find {params.work_directory} -name "*.fai"`
         rm -fr {params.work_directory}/OUTSIDER/ID_READS_TE
@@ -2043,12 +2073,14 @@ rule FREQUENCE :
                 begin_load
                 run_cmd "sniffles --report_seq -s 1 -m {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.10" "False";
                 end_load
+                sleep 1
 
             elif [ "$version" = "1.0.12" ]; then
 
                 begin_load
                 run_cmd "sniffles --report-seq -s 1 -m {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -v {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/variants.vcf -n -1" "{log}" "SNIFFLES 1.0.12" "False";
                 end_load
+                sleep 1
             fi;
         fi;
 
@@ -2120,7 +2152,7 @@ rule FREQUENCE :
                     grep ":$ID:[0-9]*:[IP]" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv >> {output.depth_te}
                 fi;
             else
-                printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\n"  > {output.depth_te}
+                printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\n" > {output.depth_te}
             fi;
 
             i=$(($i+1));
@@ -2242,7 +2274,7 @@ rule FREQ_GLOBAL:
     shell:
         """
 
-        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] FREQ_GLOBAL {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] INSIDER FREQUENCY {params.cend}"
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -2250,25 +2282,26 @@ rule FREQ_GLOBAL:
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING_TO_REF/
 
         cat {input.TE_INS} | cut -f 2 | \
-        awk -v margin_flank=100 -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]-margin_flank, a[1]-margin_flank+1; print $5, a[2]+margin_flank, a[2]+margin_flank+1}}' > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed
+            awk -v margin_flank="100" -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]-margin_flank, a[1]-margin_flank+1; print $5, a[2]+margin_flank, a[2]+margin_flank+1}}' > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed
 
+        #DROP CLIPPED
         cat {input.TE_INS} | cut -f 2 | \
-        #awk -v margin_flank=5 -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]+margin_flank, a[1]+margin_flank+1; print $5, a[2]-margin_flank, a[2]-margin_flank+1}}' > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE_PASS2.bed
-        awk -v margin_flank=5 -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]+margin_flank, a[1]+margin_flank+1; print $5, a[2]-margin_flank, a[2]-margin_flank+1}}' >> {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed
+            awk -v margin_flank="5" -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]+margin_flank, a[1]+margin_flank+1; print $5, a[2]-margin_flank, a[2]-margin_flank+1}}' > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE_IN.bed
 
         samtools view -h -b {input.bam} -F 2048 -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
         samtools index {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
 
-        samtools view -h {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.sam
+        #DROP CLIPPED
+        samtools view -h -b {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam \
+            -F 2048 -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE_IN.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp2_flank_TE_OUT.bam
 
-        #INTERN TO TE
-        # samtools view -h -b {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam -F 2048 -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE_PASS2.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_IN.bam
-        # samtools index {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_IN.bam
+        mv {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp2_flank_TE_OUT.bam {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
+        samtools index {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
 
         awk 'NR>1 && OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' \
-        {input.TE_INS} > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed
+            {input.TE_INS} > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed
 
-        printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n"  > {output.DEPTH}
+        printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n" > {output.DEPTH}
         
         number_lines=`cat {params.work_directory}/OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed | wc -l`
         i=0;
@@ -2285,36 +2318,24 @@ rule FREQ_GLOBAL:
             end=`echo $line | awk '{{print $3}}'`
             info=`echo $line | awk '{{print $4}}'`
 
-            ###echo "info : $info"
             TE=`echo "$line" | awk '{{print $4}}' | cut -d "|" -f 1`
 
             size_TE=$(($end-$start))
 
-            ###echo "size_TE : $size_TE"
-
-            echo $line | tr " " "\\t" | cut -f 1-3 > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp.bed
-
-            samtools view {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam -F 2048 -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_tmp_flank_TE_OUT.sam
-
-            if test -s {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_tmp_flank_TE_OUT.sam; then
-                NB_DEL=`cat {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_tmp_flank_TE_OUT.sam | cut -f 6 | grep "[0-9]*D" -o | tr -d "D" | awk -v size="$size_TE" -v marge="80" '($0 <= size+marge && $0 >= size) || ($0 >= size+marge && $0 <= size-1 )' | wc -l`
-
-                rm -f {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_tmp_flank_TE_OUT.sam {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp.bed
+            if test -s {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam; then
+                NB_DEL=`python3 ${{path_to_pipline}}/lib/python/find_del.py {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam "$chrom:$start-$end" -m 30`
                 
-                depth_fk_left=`samtools depth {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam -r $chrom:$(($start-20))-$(($start-20)) | cut -f 3`;
-                depth_fk_right=`samtools depth {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam -r $chrom:$(($end+20))-$(($end+20)) | cut -f 3`;
+                depth_fk_left=`samtools depth {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam -r $chrom:$(($start-30))-$(($start-30)) | cut -f 3`;
+                depth_fk_right=`samtools depth {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam -r $chrom:$(($end+30))-$(($end+30)) | cut -f 3`;
 
                 if [ -n "$depth_fk_left" ] && [ -n "$depth_fk_right" ] ; then
 
                     depth_total_mean=$((($depth_fk_left+$depth_fk_right)/2));
-                    ###echo "depth_total_mean : $depth_total_mean"
+
                     if [ $depth_total_mean -ne 0 ]; then
                         NB_TE=$(($depth_total_mean-$NB_DEL))
 
-                        #echo "NB_TE : $NB_TE"
-
                         if [ -n "$depth_total_mean" ]; then
-                            ###echo "$i : $info : $depth : RS=$RS : NB_depth=$NB_depth"
                             printf "$chrom\t$start\t$depth_total_mean\t$NB_DEL\t$NB_TE\t%.4f\t$TE\t$info\\n" "$(((10**6 * $NB_TE/$depth_total_mean) * 100))e-6" | tr "," "." >> {output.DEPTH}
                         else
                             printf "$chrom\t$start\t-1\t$NB_DEL\t-1\t%.4f\t$TE\tinfo|ERROR\\n" "0" | tr "," "." >> {output.DEPTH}
@@ -2629,7 +2650,7 @@ rule DETECTION_TE :
                     fail_msg "ERROR FOR ${{info_TE}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
                 fi;
             else
-                printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n"  > {output.depth_te}
+                printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n" > {output.depth_te}
             fi;
             
             i=$(($i+1));
@@ -2641,7 +2662,7 @@ rule DETECTION_TE :
             printf "$show_step";
 
         done < {output.all_te};
-
+        echo "     "
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET BAM TE [^-^] {params.cend}"
         
@@ -2653,7 +2674,7 @@ rule DETECTION_TE :
         rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/tmp_POSITION_START_TE.bed
         
         if [ {params.call_sv} = "sniffles" ]; then
-            awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -F ":" 'OFS="\t"{{print $1, $3, $3+1, $5":"$9, $8}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed
+            awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -F ":" 'OFS="\t"{{print $1, $3, $3+1, $5":"$10, $9}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed
         elif [ {params.call_sv} = "svim" ]; then
             awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -F ":" 'OFS="\t"{{print $1, $3, $3+1, $5":"$10, $9}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed
         fi;
@@ -2716,6 +2737,7 @@ rule svim :
         begin_load
         run_cmd "svim alignment --read_names --insertion_sequences --minimum_depth 1 {params.work_directory}/OUTSIDER/VARIANT_CALLING/SVIM_RESULT {input.bam} {input.genome}" "{log}" "SVIM" "False";
         end_load
+        sleep 1
 
         cp {output.svim} {output.sv}
 
@@ -2768,12 +2790,14 @@ rule sniffles :
             begin_load
             run_cmd "sniffles --report_seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.10" "False";
             end_load
+            sleep 1
 
         elif [ "$version" = "1.0.12" ]; then
 
             begin_load
             run_cmd "sniffles --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.12" "False";
             end_load
+            sleep 1
 
         else
             fail_msg "[SNK] -- [`date`] -- [ERROR] version $version YOU HAVE NOT THE GOOD VERSION OF SNIFFLES, PLEASE GET VERSION 1.0.10 or 1.0.12"
@@ -2838,6 +2862,7 @@ rule samtools :
         rm -f {input.sam} \
         {input.sam}.bam \
         {input.sam}.sorted.bam*;
+        rm -f {log}.out;
 
         """
 
@@ -2895,6 +2920,7 @@ rule mapping :
         begin_load
         run_cmd "minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} | tee {output}" "{log}" "MINIMAP2" "False"; 
         end_load
+        sleep 1
 
         rm -f {log}.out
 
@@ -3141,7 +3167,7 @@ rule TE_INSIDER:
 
 
         ##INSERTION ON REF
-        echo "INSERTION ON REF"
+        echo "CALCUL POSITION TE ON REF"
         awk 'NR>1{{ split($2, sp, ":"); print sp[1] }}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {params.work_directory}/tmp_ID.txt
         rm -f {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE_ON_REF.bed
 

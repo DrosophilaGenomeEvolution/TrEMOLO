@@ -86,8 +86,8 @@ if creat_pseudo_db :
     list_header_TE.write("original\tpseudo")
     for index, line in enumerate(lines) :
         if line[0] == ">" :
-            list_header_TE.write("\noriginal=" + line.strip() + "\tpseudo=>TE" + str(index))
-            pseudo_DB.write(">TE" + str(index) + "\n")
+            list_header_TE.write("\noriginal=" + line.strip() + "\tpseudo=>TrEMOLOTE" + str(index))
+            pseudo_DB.write(">TrEMOLOTE" + str(index) + "\n")
         else :
             pseudo_DB.write(line)
 
@@ -128,19 +128,19 @@ while i < len(sys.argv) and name_configfil == "" :
 #
 os.system("cp " + name_configfil + " " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.yaml")
 
-#CMD DEFINE ENV
-env="source `dirname " + path_snk + "`/define_env.sh" 
+#ENVIRONEMENT
+env="source `dirname " + path_snk + "`/env.sh" 
 
 #SHOW TITLE
 os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 onerror:
     print("AN ERROR OCCURRED ")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log && rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && ls | grep -v \"\.\" | rm -f ")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && ls | grep -v \"\.\" | rm -f ")
 
 
-#Map reads on assembly genome
-rule create_snake_file :
+#Build Snakemake File
+rule TrEMOLO_BUILD :
     input:  
 
     output:
@@ -217,7 +217,7 @@ rule create_snake_file :
                 printf "%s" "> TSD " >> instruction.txtt
             fi;
 
-            if [ {params.REPORT} ] && [ {params.choice_outsider_sv} != "True" ]; then
+            if [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
                 printf "%s" "> REPORT " >> instruction.txt
 
@@ -317,14 +317,14 @@ rule create_snake_file :
                 fi;
             fi;
 
-            if [ {params.REPORT} ]; then
+            #if [ {params.REPORT} ]; then
                 printf "%s" "> REPORT " >> instruction.txt
 
                 #RENAME IF PSEUDO DB
                 if test -s {params.work_directory}/LIST_HEADER_DB_TE.csv; then
                     printf "%s" "> RENAME_PSEUDO_TE " >> instruction.txt
                 fi;
-            fi
+            #fi
             
             echo "" >> instruction.txt
 
