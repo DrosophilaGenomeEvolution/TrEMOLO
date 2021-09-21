@@ -67,7 +67,6 @@ mkdir -p ${OUT_DIR}
 OUT_DIR=`echo ${OUT_DIR} | sed 's/[/]$//g'`
 
 
-echo " " > total_results_tsd.txt
 nombre_element=`grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | grep -o ":[A-Za-z\.0-9]*:" | grep -o "[A-Za-z\.0-9]*" | wc -l`
 i=0
 echo "begin $nombre_element"

@@ -17,10 +17,10 @@ get_seq_with_id () {
             position_next = RSTART + RLENGTH
             
 
-            match(seq[0], /[svim\.INS]*[0-9]+/)
+            match(seq[0], /[0-9]+/)
             ID = substr(seq[0], RSTART, RLENGTH)
 
-            head=head_sp[1]":"head_sp[2]":"head_sp[3]":"head_sp[4]":"head_sp[5]":"start"-"end":"ID
+            head=head_sp[1]":"head_sp[2]":"head_sp[3]":"head_sp[4]":"head_sp[5]":"start"-"end":ID_SV_"ID
             print head"\n"seq[0]
 
             
@@ -36,10 +36,10 @@ get_seq_with_id () {
                 match($0, seq[i]); 
                 position_next = RSTART + RLENGTH
 
-                match(seq[i], /[svim\.INS]*[0-9]+/)
+                match(seq[i], /[0-9]+/)
                 ID   = substr(seq[i], RSTART, RLENGTH)
 
-                head = head_sp[1]":"head_sp[2]":"head_sp[3]":"head_sp[4]":"head_sp[5]":"start"-"end":"ID
+                head = head_sp[1]":"head_sp[2]":"head_sp[3]":"head_sp[4]":"head_sp[5]":"start"-"end":ID_SV_"ID
                 print head"\n"seq[i]
                 
                 n = match(substr($0, position_next, length($0)), /[0-9]+[A-Z]+/); 

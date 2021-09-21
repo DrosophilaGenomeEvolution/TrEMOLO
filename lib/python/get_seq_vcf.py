@@ -154,7 +154,7 @@ if len(contig_vcf) == 0:
     print("[" + str(sys.argv[0]) + "] : ERROR your regex must match on " + str(contigs_vcf_org))
     exit(2)
 
-
+##Sniffles
 count = 0
 if version_vcf == "VCFv4.3":
     
@@ -183,7 +183,8 @@ if version_vcf == "VCFv4.3":
                 condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list
                 if regex_in_list(chrom, chrom_list) and condition :
                     #EXEMPLE  FORMAT
-                    #2R:<INS>:1;190;2:1:PRECISE
+                    #2R:<INS>:1:190:sniffles.INS.2:1:PRECISE
+                    ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID
                     file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID, read_support, precise]) + "\n" + seq + "\n")
                     count += 1
 
@@ -223,13 +224,13 @@ if version_vcf == "VCFv4.2":
                         condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list
                         if regex_in_list(chrom, chrom_list) and condition :
                             #EXEMPLE  FORMAT
-                            #2R:<INS>:1;190;2:1:PRECISE
+                            #2R:<INS>:1:190:svim.INS.2:1:PRECISE
                             file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID_VR, read_support, precise, str(i)]) + "\n" + seq + "\n")
                             count += 1
 
         line = file.readline()
 
-
+##Sniffles
 if version_vcf == "VCFv4.1":
     while line :
         
@@ -262,7 +263,8 @@ if version_vcf == "VCFv4.1":
                 condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list
                 if regex_in_list(chrom, chrom_list) and condition :
                     #EXEMPLE  FORMAT
-                    #2R:<INS>:1;190;2:1:PRECISE
+                    #2R:<INS>:1:190:sniffles.INS.2:1:PRECISE
+                    ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID
                     file_fasta.write(">" + ":".join([chrom, "<" + type_v + ">", start, end, ID, read_support, precise]) + "\n" + seq + "\n")
                     count += 1
 

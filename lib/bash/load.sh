@@ -1,4 +1,5 @@
-trap 'printf "\b%.0s" `seq 1 46` >&1; echo -e "\nEND LOAD\n" >&1; exit 1' SIGTERM SIGINT;
+#trap 'printf "\b%.0s" `seq 1 46` >&1; echo -e "\nEND LOAD\n" >&1; exit 1' SIGTERM SIGINT;
+trap 'printf "\b%.0s" `seq 1 46` >&1; exit 1' SIGTERM SIGINT;
 sleep 1;
 chain="•••";
 #echo ".·’·.•’•.٭* ⠁"

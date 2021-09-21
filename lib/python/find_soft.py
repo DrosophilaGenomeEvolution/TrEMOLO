@@ -17,7 +17,7 @@ parser.add_argument("-m", "--window", dest='window', type=int, default=50,
                     help="Maximum distance to group SV together.")
 parser.add_argument("-s", "--min-size", dest="min_size", type=int, default=30,
                     help="minimum size of sequence.")
-parser.add_argument("-c", "--chrom", type=str, default='^2L_,^2R_,^3L_,^3R_,^4_,^X_',
+parser.add_argument("-c", "--chrom", type=str, default='.',
                     help='chromosome (or part/contig) to keep (give a list of arguments separate the values with commas "X,Y") put \".\" for keep all chromosome (default: [2L,2R,3L,3R,^4_,X_])')
 args = parser.parse_args()
 
@@ -48,8 +48,9 @@ for e, read in enumerate(bamfile.fetch()):
     read_name       = read.query_name
     REF             = read.reference_name #chrom
 
-    if not regex_in_list(REF, chrom_list):
-        read_name = None
+    #TODO ??
+    # if not regex_in_list(REF, chrom_list):
+    #     read_name = None
 
     count_ref  = 0 #number of nucleotides on the ref before reaching the insertion site
     count_read = 0

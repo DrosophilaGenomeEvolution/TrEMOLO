@@ -4,4 +4,3 @@ if [ -n "${pid}" ]; then
     kill -s 2 ${pid} 
     kill -s 15 ${pid}
 fi;
-echo 

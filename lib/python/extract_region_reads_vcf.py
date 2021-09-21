@@ -148,18 +148,20 @@ while line:
         exp_end = re.search(r'END=([^;]*);', line.strip())
 
         
-        #rname  = spl[7].split(";")[9].split("=")[1]
         if version_vcf == "VCFv4.3" :
+            ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID#For False ID sniffles
             exp_rname = re.search(r'RNAMES=([^;]*);', line.strip())
-        if version_vcf == "VCFv4.2" :
+        
+        elif version_vcf == "VCFv4.2" :
             exp_rname = re.search(r'READS=([^;\t]*)', line.strip())
-        if version_vcf == "VCFv4.1" :
+        
+        elif version_vcf == "VCFv4.1" :
             exp_rname = re.search(r'RNAMES=([^;\t]*)', line.strip())
             seq = spl[4]
             type_v  = "<" + re.search("SVTYPE=([A-Z]+)", spl[7]).group(1) + ">"
+            ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID#For False ID sniffles
 
 
-        #print(ID, list_id[0])
         if list_id == None or (list_id and ID in list_id) :
 
             if type_v[0] == "<" and type_v not in type_list and regex_in_list(chrom, chrom_list) and exp_end and exp_rname :
