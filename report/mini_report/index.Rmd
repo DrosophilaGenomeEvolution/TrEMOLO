@@ -1,6 +1,6 @@
 --- 
 title: "REPORT TrEMOLO ANALYZES"
-author: ""
+author: "unknown"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 output: bookdown::gitbook
@@ -57,6 +57,8 @@ print(paste("WORKING DIRECTORY : ", params$DATA$WORK_DIRECTORY))
 print(paste("VARIANT CALLING : ", params$CHOICE$OUTSIDER_VARIANT$CALL_SV))
 
 ```
+
+See all the parameters in the file **params.yaml**
 
 
 <!-- ## TE ANALYZES

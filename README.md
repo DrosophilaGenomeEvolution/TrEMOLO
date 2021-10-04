@@ -41,10 +41,6 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 
 # Current limitations
 
-* 
-*
-
-
 # Requirements<a name="requirements"></a>
 
 Numerous tools are used by TrEMOLO. We recommand to use the [Singularity installation](#singularity) to be sure to have all of them in the good configurations and versions.

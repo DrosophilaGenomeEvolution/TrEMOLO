@@ -36,7 +36,7 @@ PARAMS:
             PRESET_OPTION: ''
         TSD:
             FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # path file or empty value [optional] (format="TE SIZE" by line)
-            SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4 
+            SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value >= 4 
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "[23][RL],4,X" ; Put "." for keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf

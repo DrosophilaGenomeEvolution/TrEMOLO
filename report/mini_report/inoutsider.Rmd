@@ -86,7 +86,7 @@ graph
 <iframe src="lib/template_COUNT_TE_INOUTSIDER.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
 
 
-## FREQUENCE
+## FREQUENCY
 
 ```{bash FREQB_inout, eval=TRUE, include=TRUE, results=TRUE}
 
@@ -137,7 +137,7 @@ if( file.exists("FREQ_TE.csv") ){
           geom_bar(position="stack", stat="identity") +
           xlab("TE") +
           ylab("NUMBER") +
-          labs(fill = "FREQUENCE") +
+          labs(fill = "FREQUENCY") +
           #scale_fill_viridis(discrete = T) +
           scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
           theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),

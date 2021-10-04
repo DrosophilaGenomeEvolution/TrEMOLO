@@ -324,7 +324,7 @@ rule REPORT :
             file_tmp=`ls {params.work_directory}/OUTSIDER/READ_FASTQ_TE/ | awk -v ID="$ID" -F ":" '$2==ID'`
             RS=`grep "^[@]" {params.work_directory}/OUTSIDER/READ_FASTQ_TE/$file_tmp | ${{path_to_pipline}}/lib/C++/bin/chain_to_id`
 
-            ID_TrEMOLO="TE_ID_OUTSIDER.$ID_POS.$TYPE.$RS.$i";
+            ID_TrEMOLO="TE_ID_OUTSIDER.$ID_POS.$TYPE.$RS";
 
             echo -e "$line\t$TSD_OK\t$SIZE_TE\t$NEW_POS\t$FREQ_BEFOR\t$FREQ_AFTER\t$ID_TrEMOLO" >> {params.work_directory}/TE_INFO.csv
 
@@ -389,7 +389,8 @@ rule REPORT :
             ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id`
             TYPE=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | cut -f 2 | cut -d ":" -f 3`
 
-            ID_TrEMOLO="TE_ID_INSIDER.$ID_POS.$TYPE.$num_TE_INSIDER";
+            ##ID_TrEMOLO="TE_ID_INSIDER.$ID_POS.$TYPE.$num_TE_INSIDER";
+            ID_TrEMOLO="TE_ID_INSIDER.$ID_POS.$TYPE";
 
             echo -e "$line\t$TSD_OK\t$SIZE_TE\t$NEW_POS\t$FREQ_BEFOR\t$FREQ_AFTER\t$ID_TrEMOLO" >> {params.work_directory}/TE_INFO.csv
 
@@ -743,6 +744,12 @@ rule REPORT :
                 rm -f tmp.csv tmp_freq.csv
             fi;
 
+            ## GET AUTHOR RANDOM
+            #author=`(curl "localhost:4242/author" > tmp_author.txt && cat tmp_author.txt) || echo "<strong>Author<\/strong> : Maybe You ?"`
+            author=`(curl https://author.infinity-atom.fr/author > tmp.txt && cat tmp.txt) || echo "<strong>Author<\/strong> : Maybe You ?"`
+            sed -i "s/unknown/$author/g" index.Rmd
+
+            #rm -f tmp_author.txt
 
             #REMOVE OR COUNT INOUTSIDER
             ## TODO GESTION DE SUPPRESSION
@@ -815,8 +822,8 @@ rule REPORT :
 
             #CHECKING R PACKAGES...
             echo "CHECKING R PACKAGES..."
-            R --save -e 'if(!require(stringi)) install.packages("stringi")'
-            R --save -e 'if(!require(stringr)) install.packages("stringr")'
+            R --save -e 'if(!require(stringi)) install.packages("stringi")' >&2
+            R --save -e 'if(!require(stringr)) install.packages("stringr")' >&2
 
             echo "MAKE REPORT"
             make
@@ -2847,7 +2854,7 @@ rule samtools :
 
         echo "---view---" | tee {log}.out
         #samtools view -h {params.preset_view} -b {input.sam} > {input.sam}.bam 2>> {log}.err;
-        run_cmd "samtools view -h {params.preset_view} -b {input.sam} | tee {input.sam}.bam" "{log}" "SAMTOOLS_VIEW" "False";
+        run_cmd "samtools view -h {params.preset_view} -b {input.sam} -o {input.sam}.bam" "{log}" "SAMTOOLS_VIEW" "False";
 
         rm -f {log}.out
 
@@ -2860,8 +2867,8 @@ rule samtools :
         run_cmd "samtools calmd {params.preset_callmd} -b {input.sam}.sorted.bam {input.genome} | tee {output}" "{log}" "SAMTOOLS_CALLMD" "False";#CALL MD for sniffles
 
         rm -f {input.sam} \
-        {input.sam}.bam \
-        {input.sam}.sorted.bam*;
+          {input.sam}.bam \
+          {input.sam}.sorted.bam*;
         rm -f {log}.out;
 
         """
