@@ -60,7 +60,7 @@ for i, instruct in enumerate(instructions[::-1]):
     #os.system("rm -f tmpo"+str(i)+".snk")
     name_rule = instruct.split(":")[0]
 
-    os.system("grep \"rule " + str(name_rule) + "\" " + name_file_rules + " -A " + str(int(nb_line_file_rules)) + " | grep \"^#END " + name_rule + "$\" -B " + str(int(nb_line_file_rules)) + " | grep -v \"^#END\" > tmpo"+str(i)+".snk")
+    os.system("grep -w \"rule " + str(name_rule) + "\" " + name_file_rules + " -A " + str(int(nb_line_file_rules)) + " | grep \"^#END " + name_rule + "$\" -B " + str(int(nb_line_file_rules)) + " | grep -v \"^#END\" > tmpo"+str(i)+".snk")
     
     if len(instruct.split(":")) == 1  :
         if i == len(instructions) - 1 :

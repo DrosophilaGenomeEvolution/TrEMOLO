@@ -288,10 +288,10 @@ rule TrEMOLO_BUILD :
             
             ## Exemple les instruction par default obligatoir
             if [ {params.OPTIMIZE_FREQUENCE} = True ]; then
-                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > SOFT_TE " > instruction.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE " > instruction.txt
                 
                 if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
-                    printf "> FREQ_GLOBAL > FREQUENCE " >> instruction.txt
+                    printf "> FREQ_INSIDER > FREQUENCE " >> instruction.txt
                 else
                     printf "> FREQUENCE:NI " >> instruction.txt
                 fi;
