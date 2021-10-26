@@ -87,7 +87,8 @@ _EOF_
         r-base \
         perl \
         pandoc-citeproc \
-        libfontconfig1-dev
+        libfontconfig1-dev \
+        curl
 
 
     # R dependencies
@@ -132,39 +133,38 @@ _EOF_
     # build variables
     export TOOLDIR=/opt/tools
 
-	#Preparing Directories
-	mkdir -p $TOOLDIR
+    #Preparing Directories
+    mkdir -p $TOOLDIR
 
-		#installing SamTools 1.9
-		cd $TOOLDIR
-		mkdir samtools1.9
-		cd samtools1.9
-		wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
-		tar -xf samtools-1.9.tar.bz2
-		cd samtools-1.9
-		./configure
-		make all all-htslib
-		make install install-htslib
+    #installing SamTools 1.9
+    cd $TOOLDIR
+    mkdir samtools1.9
+    cd samtools1.9
+    wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
+    tar -xf samtools-1.9.tar.bz2
+    cd samtools-1.9
+    ./configure
+    make all all-htslib
+    make install install-htslib
 
-		#installing Sniffles 1.0.12+
-		cd $TOOLDIR
-		wget https://github.com/fritzsedlazeck/Sniffles/archive/master.tar.gz -O Sniffles.tar.gz
-		tar xzvf Sniffles.tar.gz
-		cd Sniffles-master/
-		mkdir -p build/
-		cd build/
-		cmake ..
-		make
-		cd ../bin/sniffles*
-		ln -s $PWD/sniffles /usr/bin/sniffles
+    #installing Sniffles 1.0.12+
+    cd $TOOLDIR
+    wget https://github.com/fritzsedlazeck/Sniffles/archive/master.tar.gz -O Sniffles.tar.gz
+    tar xzvf Sniffles.tar.gz
+    cd Sniffles-master/
+    mkdir -p build/
+    cd build/
+    cmake ..
+    make
+    cd ../bin/sniffles*
+    ln -s $PWD/sniffles /usr/bin/sniffles
 
 
     #installing Flye 2.8+
-		cd $TOOLDIR
+    cd $TOOLDIR
     git clone https://github.com/fenderglass/Flye
     cd Flye
     python3 setup.py install
-
 
     #install RaGOO
     cd $TOOLDIR
@@ -178,8 +178,6 @@ _EOF_
     cd wtdbg2
     make
 
-
-
     #install TrEMOLO
     cd $TOOLDIR
     git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
@@ -189,6 +187,7 @@ _EOF_
     R --save -e 'install.packages("stringr")'
 
 %environment
+    export LC_ALL=C
     export PATH=$TOOLDIR/wtdbg2/:$TOOLDIR/RaGOO/:$TOOLDIR/Flye/:$TOOLDIR/TrEMOLO/:$PATH
     export PATH="$PATH:/usr/bin/bcftools-1.9"
     export PATH="$PATH:/usr/bin/samtools-1.9"
