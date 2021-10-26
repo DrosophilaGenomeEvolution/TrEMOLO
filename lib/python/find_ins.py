@@ -13,31 +13,39 @@ parser.add_argument("bam_file", metavar='<bam-file>', option_strings=['bam-file'
 parser.add_argument("position", type=str, help="position of TE")
 
 #OPTION
-parser.add_argument("-m", "--max-size-diff", dest='window', type=int, default=20,
+parser.add_argument("-p", "--per-max-size-diff", dest='percent_size', type=float, default=0.8,
                     help="Maximum size difference.")
 parser.add_argument("-d", "--min-dist", dest='min_dist', type=int, default=30,
-                    help="minimum distance of DELETION to TE.")
+                    help="Maximum distance of INSERTION to TE.")
 
 args = parser.parse_args()
 
 name_bamfile = args.bam_file
-window       = args.window
+percent_size = args.percent_size
 min_dist     = args.min_dist
 
-
-#format chrom:start-end
+#format chrom:start-end:size
 if args.position != None:
-    position = {"chrom": args.position.split(":")[0], "start": args.position.split(":")[1].split("-")[0], "end": args.position.split(":")[1].split("-")[1]}
-    size_TE  = int(position["end"]) - int(position["start"])
+    position = {"chrom": args.position.split(":")[0], "start": int(args.position.split(":")[1].split("-")[0]), "end": int(args.position.split(":")[1].split("-")[1]), "size": int(args.position.split(":")[2])}
+    size_TE  = int(position["size"])
+    if int(position["start"]) == int(position["end"]):
+        print("Warning: start position equal end position, +1 to end")
+        position["end"] += 1
+    elif int(position["start"]) > int(position["end"]) :
+        print("ERROR: start grather than end")
+        exit(-1)
 else:
     position = None
 
 bamfile  = pysam.AlignmentFile(name_bamfile, "rb")
 
-NB_DEL        = 0
-read_names    = []
+ens_rd  = set()
+ens_ins = set()
+
+doublons_rd = set()
 
 if position != None :
+    
     for e, read in enumerate(bamfile.fetch(str(position["chrom"]), int(position["start"]), int(position["end"])) ):
         start_query     = read.query_alignment_start
         reference_start = read.reference_start
@@ -48,6 +56,11 @@ if position != None :
         count_ref  = 0 #number of nucleotides on the ref before reaching the insertion site
         count_read = 0
 
+        if read_name in ens_rd :
+            doublons_rd.add(read_name)
+
+        ens_rd.add(read_name)
+        
         if read_name :
 
             for tupl in read.cigartuples :
@@ -58,12 +71,15 @@ if position != None :
                 if tupl[0] in [0, 1, 7, 4] : #Check M,I,=,S CIGAR for postion on reads
                     count_read += tupl[1]
 
-                #if we have found DEL to a good position
-                if tupl[0] == 2 and size_TE-window <= tupl[1] and tupl[1] <= size_TE+window and read_name not in read_names and ( abs((count_ref + reference_start)-int(position["start"])) < min_dist or abs((count_ref + reference_start)-int(position["end"])) < min_dist )  :
-                    read_names.append(read_name)
-                    NB_DEL += 1
+                position_read_start = count_read - tupl[1]
+                position_read_end   = count_read
+                position_ref        = reference_start + count_ref
 
-print(NB_DEL)
+                #if we have found INS to a good position
+                if tupl[0] == 1 and position_ref - min_dist <= int(position["start"]) and int(position["start"]) <= position_ref + min_dist and tupl[1] >= percent_size * int(position["size"]) :
+                    ens_ins.add(read_name)
 
-
+print("DEPTH:" + str(len(ens_rd)))
+print("INS:" + str(len(ens_ins)))
+#print("DOUBLONS:", doublons_rd)
 

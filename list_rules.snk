@@ -1684,8 +1684,8 @@ rule TE_TOWARD_GENOME :
             fi;
 
         done < {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.bed | tr " " "\t" > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_TE.bed
-        echo "INTEGRATE TE DB_ID TO GENOME"
-        echo "_.•’•._"
+        echo "INTEGRATE TE DB_ID TO GENOME..."
+        ##echo "_.•’•._"
 
         ## INTEGRATE TE TO GENOME
         python3 ${{path_to_pipline}}/lib/python/vr_to_genome.py \
@@ -1720,8 +1720,8 @@ rule TE_TOWARD_GENOME :
             fi;
 
         done < {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE_READS.bed | tr " " "\t" > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_TE_READS.bed
-        echo  "INTEGRATE TE IN READS TO GENOME"
-        echo "_.·’·._"
+        echo  "INTEGRATE TE IN READS TO GENOME..."
+        ##echo "_.·’·._"
 
 
         ## INTEGRATE TE TO GENOME
@@ -1989,7 +1989,7 @@ rule FREQUENCE_V2 :
     output:
         output_link=[],
         depth_te  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv",
-        
+        bam_TE    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam",
         
     params:
         path_snk        = path_snk,
@@ -2015,11 +2015,28 @@ rule FREQUENCE_V2 :
         """
         {params.env}
 
-        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] FREQUENCE [^-^] {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] OPTIMIZE FREQUENCE [^-^] {params.cend}"
 
         path_to_pipline=`dirname {params.path_snk}`
 
         mkdir -p {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
+
+        samtools index {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam 
+        samtools view -h -F 2830 {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam > {params.work_directory}/MAPPING_POSTION_TE.sam
+
+        awk 'OFS="\t"{{split($2, a, ":"); print a[1], a[3], $5, $1"|"a[5]}}' {input.all_te} \
+            | sort -k 1 > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
+
+        ##CONVERSION OF CLIPPED READS
+        ${{path_to_pipline}}/lib/bash/awk_not_cliping.sh {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt \
+            {params.work_directory}/MAPPING_POSTION_TE.sam \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sam
+
+        samtools sort {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sam > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam
+        samtools index {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam
+        samtools calmd {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam {input.genome} > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE_MD.sorted.bam 2> {log}.err
+        samtools view -b -h {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE_MD.sorted.bam > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam
+        samtools index {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam
 
         bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed -b {input.bed} -w 30 | awk 'OFS="\t"{{split($9, sp, ":"); print $4, sp[2]}}' > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_NUMBER_SOFT.txt
         awk 'NR>1 && OFS="\t"{{split($2, sp, ":"); print sp[1], sp[3], sp[3]+1, $1"|"sp[5]"|"sp[6]}}' {input.all_te} > {params.work_directory}/TE_POS_OLD.bed
@@ -2028,8 +2045,6 @@ rule FREQUENCE_V2 :
         
         number_lines=`cat {input.all_te} | wc -l`
 
-        echo "1"
-
         i=0;
         while read line; do
             if [ $i -ne 0 ]; then
@@ -2037,31 +2052,24 @@ rule FREQUENCE_V2 :
                 ID=`echo $line | awk '{{ split($2, sp, ":"); print sp[5] }}'`
                 exist=`grep -w "$ID" {params.work_directory}/TE_POS_OLD.bed | awk -v ID="$ID" '{{split($4, sp, "|"); if(sp[2] == ID){{print $0}} }}' || echo ""`
                 
-                ID_NEW="";
-                RS_SOFT=0;
-                RS="";
-                if [ -n "$exist" ]; then
-                    ID_INS=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/OVERLAP_INS.bed | cut -f 4 | cut -d "|" -f 2 || echo ""`
-                    if [ -n "$ID_INS" ]; then
-                        RS_INS=`grep -w "$ID_INS" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS_TREMOLO.csv | cut -f 2 | cut -d ":" -f 6 || echo ""`
-                    fi;
-                    RS_SOFT=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_NUMBER_SOFT.txt | cut -f 2 | head -n 1 || echo 0`
+                chrom=`echo $line | awk '{{ split($2, sp, ":"); print sp[1] }}'`
+                start=`echo $line | awk '{{ split($2, sp, ":"); print sp[3] }}'`
+                end=`echo $line | awk '{{ split($2, sp, ":"); print sp[3]+1 }}'`
+                size_TE=`echo $line | awk '{{ print $5 }}'`
+
+                python3 ${{path_to_pipline}}/lib/python/find_ins.py -d 200 {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam "$chrom:$start-$end:$size_TE" > tmp_info.txt
+
+                NB_depth=`grep -w DEPTH tmp_info.txt | cut -d ":" -f 2`
+                RS=`grep -w INS tmp_info.txt | cut -d ":" -f 2`
+
+                if [ $RS -eq 0 ]; then
+                    RS=`echo "$line" | awk '{{print $2}}' | awk -F ":" '{{print $6}}'`
                 fi;
 
-                region=`echo $line | awk '{{print $2}}' | awk -F ":" '{{print $1":"$3"-"$3}}'`
-                depth=`samtools depth {input.bam} -r $region`;
-                NB_depth=`echo $depth | awk '{{print $3}}'`
+                depth=`echo -e "$chrom\\t$start\\t$NB_depth"`
 
                 TE=`echo $line | awk '{{print $1}}'`
                 info_TE=`echo $line | awk 'OFS="\t"{{print $1, $2}}'`
-
-                RS=`echo $line | awk '{{print $2}}' | awk -F ":" '{{print $6}}'`
-                if [ -n "$RS_INS" ] && [ $RS_INS -gt $RS  ]; then
-                    #echo "RS : $RS : $RS_INS";
-                    RS=$RS_INS;
-                fi;
-                
-                RS=$((RS + RS_SOFT));
 
                 if [ -n "$depth" ]; then
                     ###echo "$i : $info_TE : $depth : RS=$RS : NB_depth=$NB_depth"
