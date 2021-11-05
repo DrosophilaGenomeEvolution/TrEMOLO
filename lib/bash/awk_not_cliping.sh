@@ -2,7 +2,7 @@ TE_POS_SIZE=$1
 SAM_IN=$2
 SAM_OUT=$3
 
-awk -v size_windows_pos="30" -v max_size_TE_fk="30000"  -v size="100" 'BEGIN{
+awk -v size_windows_pos="50" -v max_size_TE_fk="30000"  -v size="100" 'BEGIN{
     qual=""
     nuc=""; 
     for(i=0; i<max_size_TE_fk; i++){

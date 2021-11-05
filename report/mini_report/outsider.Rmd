@@ -4,6 +4,16 @@
 
 **OUTSIDER** are TE no assembled on genome
 
+## MAPPING
+
+Information `samtools stats`
+
+File : **OUTSIDER/MAPPING/stats.txt**
+
+```{r, eval=TRUE, include=TRUE, results=TRUE}
+    print(gsub("\t" , "    ", readLines("../../OUTSIDER/MAPPING/stats.txt")))
+```
+
 ## SV ANALYSIS
 
 Informations of **SV.vcf** file.

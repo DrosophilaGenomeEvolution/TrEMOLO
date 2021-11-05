@@ -43,7 +43,7 @@ ens_rd  = set()
 ens_ins = set()
 
 doublons_rd = set()
-
+total = []
 if position != None :
     
     for e, read in enumerate(bamfile.fetch(str(position["chrom"]), int(position["start"]), int(position["end"])) ):
@@ -52,17 +52,20 @@ if position != None :
         seq             = read.seq
         read_name       = read.query_name
         REF             = read.reference_name #chrom
+        mapping_quality = read.mapping_quality
 
         count_ref  = 0 #number of nucleotides on the ref before reaching the insertion site
         count_read = 0
 
-        if read_name in ens_rd :
-            doublons_rd.add(read_name)
-
-        ens_rd.add(read_name)
         
-        if read_name :
+        
+        if read_name and mapping_quality >= 30 :#TODO quality reajust
+            if read_name in ens_rd :
+                doublons_rd.add(read_name)
 
+            ens_rd.add(read_name)
+
+            total.append(read_name)
             for tupl in read.cigartuples :
                 
                 if tupl[0] in [0, 2, 7] : #Check M,D,= CIGAR for position on ref
@@ -76,10 +79,12 @@ if position != None :
                 position_ref        = reference_start + count_ref
 
                 #if we have found INS to a good position
-                if tupl[0] == 1 and position_ref - min_dist <= int(position["start"]) and int(position["start"]) <= position_ref + min_dist and tupl[1] >= percent_size * int(position["size"]) :
+                if tupl[0] == 1 and int(position["start"]) - min_dist <= position_ref and position_ref <= int(position["start"]) + min_dist and tupl[1] >= percent_size * int(position["size"]) :
                     ens_ins.add(read_name)
 
 print("DEPTH:" + str(len(ens_rd)))
 print("INS:" + str(len(ens_ins)))
-#print("DOUBLONS:", doublons_rd)
+print("DOUBLONS:", doublons_rd)
+print("total:", total, "len:", len(total))
+print("percent:", (len(ens_ins)/len(ens_rd)))
 

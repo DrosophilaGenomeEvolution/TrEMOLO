@@ -404,6 +404,8 @@ rule REPORT :
 
             num_TE_INSIDER=$(($num_TE_INSIDER+1));
         done < {params.work_directory}/POSITION_TE_INSIDER.bed;
+        
+        echo
         echo ...
 
         ######
@@ -747,7 +749,13 @@ rule REPORT :
             ## GET AUTHOR RANDOM
             #author=`(curl "localhost:4242/author" > tmp_author.txt && cat tmp_author.txt) || echo "<strong>Author<\/strong> : Maybe You ?"`
             author=`(curl https://author.infinity-atom.fr/author > tmp.txt && cat tmp.txt) || echo "<strong>Author<\/strong> : Maybe You ?"`
-            sed -i "s/unknown/$author/g" index.Rmd
+            
+            if [ `echo $author | grep "404 Not Found" -c` -eq 1 ]; 
+            then 
+                sed -i "s/unknown/<strong>Author<\/strong> : Maybe You ?/g" index.Rmd
+            else
+                sed -i "s/unknown/$author/g" index.Rmd
+            fi;
 
             #rm -f tmp_author.txt
 
@@ -2023,6 +2031,7 @@ rule FREQUENCE_V2 :
 
         samtools index {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam 
         samtools view -h -F 2830 {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam > {params.work_directory}/MAPPING_POSTION_TE.sam
+        #samtools view -h -F 2574 {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam > {params.work_directory}/MAPPING_POSTION_TE.sam
 
         awk 'OFS="\t"{{split($2, a, ":"); print a[1], a[3], $5, $1"|"a[5]}}' {input.all_te} \
             | sort -k 1 > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
@@ -2063,7 +2072,9 @@ rule FREQUENCE_V2 :
                 RS=`grep -w INS tmp_info.txt | cut -d ":" -f 2`
 
                 if [ $RS -eq 0 ]; then
-                    RS=`echo "$line" | awk '{{print $2}}' | awk -F ":" '{{print $6}}'`
+                    #RS=`echo "$line" | awk '{{print $2}}' | awk -F ":" '{{print $6}}'`
+                    RS=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv | cut -f 5`
+                    NB_depth=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv | cut -f 3`
                 fi;
 
                 depth=`echo -e "$chrom\\t$start\\t$NB_depth"`
@@ -3126,6 +3137,10 @@ rule samtools :
         #samtools calmd {params.preset_callmd} -b {input.sam}.sorted.bam {input.genome} > {output} 2>> {log}.err; #CALL MD for sniffles
         run_cmd "samtools calmd {params.preset_callmd} -b {input.sam}.sorted.bam {input.genome} | tee {output}" "{log}" "SAMTOOLS_CALLMD" "False";#CALL MD for sniffles
 
+        echo "---stats---" | tee -a {log}.out
+        #samtools stats {input.sam}.sorted.bam | grep "^SN" > {params.work_directory}/OUTSIDER/MAPPING/stats.txt 2>> {log}.err; #CALL MD for sniffles
+        run_cmd "samtools stats {input.sam}.sorted.bam | grep "^SN" | cut -f 2-6 | tee {params.work_directory}/OUTSIDER/MAPPING/stats.txt" "{log}" "SAMTOOLS_STATS" "False";#STATS MAPPING
+
         rm -f {input.sam} \
           {input.sam}.bam \
           {input.sam}.sorted.bam*;
@@ -3449,7 +3464,6 @@ rule TE_INSIDER:
 
         test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE_ON_REF.bed && \
             ln -s -r -f {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE_ON_REF.bed {params.work_directory}/POS_TE_INSIDER_ON_REF.bed
-
 
 
         #DELETION ON REF

@@ -298,7 +298,7 @@ rule TrEMOLO_BUILD :
                 
                 printf "> extract_read " >> instruction.txt
             else
-                printf "%s" "mapping > samtools > {params.call_sv} > DETECTION_TE > extract_read:NI " > instruction.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > extract_read:NI " > instruction.txt
             fi
             
             ## Exemple les instruction par default obligatoir
