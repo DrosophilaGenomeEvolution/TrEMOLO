@@ -153,7 +153,7 @@ CHOICE:
         REPORT: True            # for getting a report.html file with graphics
     OUTSIDER_VARIANT:
         CALL_SV: "svim"         # possibilities for SV tools: sniffles, svim
-        INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the insiders integrated in
+        INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the INSIDER integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATED WITH CLIPPING READS
     INSIDER_VARIANT:
         DETECT_ALL_TE: False    # detect ALL TE on genome (parameter GENOME) assembly not only new insertion. Warning! it may be take several hours on big genomes
@@ -177,9 +177,9 @@ PARAMS:
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 1000" #sequence recovery file in the vcf
-        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
+        PARS_BLN_OPTION: "--min-size-percent 70 --min-pident 80" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
     INSIDER_VARIANT:
-        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
+        PARS_BLN_OPTION: "--min-size-percent 70 --min-pident 80" # parameters for validation of insiders
 
 
 ```
@@ -282,10 +282,10 @@ The most useful output files are :
 
 The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
 
-|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  |
-| --------------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- |
-|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175 |     +     |   GTACA   | 9006    | DEFAULT:16943971 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  |
-|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG   | 8435    | 21629413         | 11.1111 |    10.0000     | TE_ID_INSIDER.77237.Repeat_expansion.8 |
+|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | pident | psize_TE | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  |
+| --------------- | -------- | -------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- |
+|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175 |     +     |   GTACA   | 97.026 | 99.2  | 9006    | DEFAULT:16943971 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  |
+|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG  | 98.6 | 90.5  | 8435    | 21629413         | 11.1111 |    10.0000     | TE_ID_INSIDER.77237.Repeat_expansion.8 |
 
 
  1.    `chrom` : chromosome
@@ -294,11 +294,13 @@ The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary i
  4.    `TE|ID` :   TE name and ID in **SV.vcf** (for OUTSIDER) or **assemblytics_out.Assemblytics_structural_variants.bed** (for INSIDER)
  5.    `strand` :  strand of the TE
  6.    `TSD` : TSD SEQUENCE
- 7.    `SIZE_TE` :  TE size
- 8.    `NEW_POS` :  position corrected with calculated TSD (only for OUTSIDER)
- 9.    `FREQ`  : frequence, normalized
- 10.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped
- 11.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
+ 7.    `pident` : percentage of identical matches with TE
+ 8.    `psize_TE` : percentage of size with TE in database
+ 9.    `SIZE_TE` :  TE size
+ 10.   `NEW_POS` :  position corrected with calculated TSD (only for OUTSIDER)
+ 11.   `FREQ`  : frequence, normalized
+ 12.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped (OUTSIDER only)
+ 13.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
 
 
 # Licence and Citation<a name="citation"></a>

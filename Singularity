@@ -120,9 +120,16 @@ _EOF_
     cd samtools-1.9
     make
 
+    cd ..
     wget https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2
     tar -vxjf bcftools-1.9.tar.bz2
     cd bcftools-1.9
+    make
+
+    #Get vcfutils.pl
+    cd ../
+    git clone https://github.com/lh3/samtools.git
+    cd samtools/bcftools/
     make
 
     cd
@@ -192,6 +199,7 @@ _EOF_
     export PATH="$PATH:/usr/bin/bcftools-1.9"
     export PATH="$PATH:/usr/bin/samtools-1.9"
     export PATH="$PATH:/usr/bin/htslib-1.9"
+    export PATH="$PATH:/usr/bin/samtools/bcftools/"
 
 %runscript
     exec "$@"

@@ -13,7 +13,7 @@ CHOICE:
         INSIDER_VARIANT: True   # TE assembled (in genome)
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
-        CALL_SV: "svim" # possibility (sniffles, svim) 
+        CALL_SV: "sniffles" # possibility (sniffles, svim) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATE WITH CLIPPING READS
     INSIDER_VARIANT:
@@ -38,8 +38,8 @@ PARAMS:
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "[23][RL],4,X" ; Put "." for keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
-        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py  Warning d'ont put -c option
+        PARS_BLN_OPTION: "--min-size-percent 70 --min-pident 80" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py  Warning d'ont put -c option
     INSIDER_VARIANT:
-        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" 
+        PARS_BLN_OPTION: "--min-size-percent 70 --min-pident 80" 
         
         
