@@ -85,10 +85,11 @@ graph
 
 <iframe src="lib/template_COUNT_TE_INOUTSIDER.html" style="width: 100%; height: 1200px; border: none; overflow: hidden;"></iframe>
 
+<iframe src="lib/template_COUNT_TE_SENS_ANTISENS_INOUTSIDER.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
 
 ## FREQUENCY
 
-```{bash FREQB_inout, eval=TRUE, include=TRUE, results=TRUE}
+```{bash FREQB_inout, eval=TRUE, include=FALSE, results=TRUE}
 
 test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv | tail -n 50 > .tmp_orderx.txt || echo
 
@@ -100,7 +101,7 @@ test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT
 
 
 rm -f FREQ_TE.csv
-(test -s ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv && awk 'NR>1' ../../INSIDER/FREQ_GLOBAL/DEPTH_TE_INSIDER.csv >> .tmp_DEPTH_TE.csv && python3 ../lib/freq_graph.py .tmp_DEPTH_TE.csv FREQ_TE.csv) || echo ;
+(test -s ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv && awk 'NR>1' ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv >> .tmp_DEPTH_TE.csv && python3 ../lib/freq_graph.py .tmp_DEPTH_TE.csv FREQ_TE.csv) || echo ;
 
 (test -s FREQ_TE.csv && echo -e "x\ty\tcondition" > .tmp_depth.csv && grep -w -f .tmp_orderx.txt FREQ_TE.csv >> .tmp_depth.csv && mv .tmp_depth.csv FREQ_TE.csv) || echo
 
@@ -118,7 +119,7 @@ sed 's/%%VAR_JS%%/FREQ_INOUTSIDER_CHART.js/g' lib/template_FREQ_TE_CHART.html \
 
 
 
-```{r FREQ_INOUT, eval=FALSE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
+```{r FREQ_INOUT, eval=FALSE, include=FALSE, results=FALSE, out.width="90%", echo=FALSE}
 
 
 if( file.exists("FREQ_TE.csv") ){
