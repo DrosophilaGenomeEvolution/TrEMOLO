@@ -278,7 +278,7 @@ WORK_DIRECTORY
 
 The most useful output files are :
 
-* The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/4d96ecd7f5699a5d5df6f0bc70eb39bf9c25b80a/test/web/index.html)
+* The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/f11c369ea037db66a7a86ee9d6c266f9069a8ecf/test/web/index.html)
 
 The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
 
