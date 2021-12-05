@@ -1,0 +1,385 @@
+
+<!-- <link rel="stylesheet" href="../css/style.css"> -->
+<link rel="stylesheet" type="text/css" href="../css/slider.css">
+
+
+<style type="text/css">
+    html{
+      display: inherit;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+
+    #chartdiv {
+      width: 100%;
+      height: 500px;
+    }
+</style>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Dark.js"></script>
+<div id="chartdiv"></div>
+
+
+<!-- <form class="searchbox">
+<input id="search" name="searchbox" type="text" placeholder="TE name" />
+<input class="button-submit" type="submit" value="" disabled="" />
+</form>
+
+
+<form class="searchbox"  autocomplete="off">
+    <input id="nBin" name="q" type="text" size="15" placeholder="number of barres" value="20" />
+    <input class="button-submit" type="submit" value="" disabled="" />
+</form>
+ -->
+
+
+<div class="counter col_fourth end">
+<i class="fa fa-bug fa-2x"></i>
+<h2 id="nb" class="timer count-title count-number" data-to="179" data-speed="1500"></h2>
+<p class="count-text "></p>
+</div>
+
+
+<div class="container">
+  
+  <div class="range-slider">
+    <span  class="rs-label">0</span>
+    <input id="slider" class="rs-range" type="range" value="0" min="0" max="179">
+  </div>
+
+  <div class="box-minmax">
+    <span>0</span>  <span>?</span>
+  </div>
+
+</div>
+
+<!-- data -->
+<script type="text/javascript" src="../js/TE_COUNT_SENS_ANTISENS_OUTSIDER.js"></script> <!-- a generer-->
+
+<script type="text/javascript">
+    /**
+     * ---------------------------------------
+     * This demo was created using amCharts 5.
+     * 
+     * For more information visit:
+     * https://www.amcharts.com/
+     * 
+     * Documentation is available at:
+     * https://www.amcharts.com/docs/v5/
+     * ---------------------------------------
+     */
+
+    // Create root element
+    // https://www.amcharts.com/docs/v5/getting-started/#Root_element
+    var root = am5.Root.new("chartdiv");
+
+    // Set themes
+    // https://www.amcharts.com/docs/v5/concepts/themes/
+    root.setThemes([
+      am5themes_Animated.new(root)//,
+      //am5themes_Dark.new(root)
+    ]);
+
+    // Create chart
+    // https://www.amcharts.com/docs/v5/charts/xy-chart/
+    var chart = root.container.children.push(
+      am5xy.XYChart.new(root, {
+        panX: false,
+        panY: false,
+        wheelX: "panX",
+        wheelY: "zoomX",
+        layout: root.verticalLayout,
+        arrangeTooltips: false
+      })
+    );
+
+    // Use only absolute numbers
+    chart.getNumberFormatter().set("numberFormat", "#.#s");
+
+    // Add legend
+    // https://www.amcharts.com/docs/v5/charts/xy-chart/legend-xy-series/
+    var legend = chart.children.push(
+      am5.Legend.new(root, {
+        centerX: am5.p50,
+        x: am5.p50
+      })
+    );
+
+    //Example Data
+    /*var data = [
+        {TEname: "hobo", reverse: -3, forward: 2},
+        {TEname: "S-element", reverse: -1, forward: 1},
+        {TEname: "Quasimodo", reverse: -3, forward: 1},
+        {TEname: "mdg1", reverse: -1, forward: 0},
+        {TEname: "mdg3", reverse: -6, forward: 6},
+        {TEname: "flea", reverse: -4, forward: 2},
+        {TEname: "3S18", reverse: -1, forward: 2},
+        {TEname: "I-element", reverse: -1, forward: 3},
+        {TEname: "F-element", reverse: -28, forward: 29},
+        {TEname: "copia", reverse: -25, forward: 22},
+        {TEname: "Tabor", reverse: -0, forward: 1},
+        {TEname: "Doc", reverse: -154, forward: 110},
+        {TEname: "jockey", reverse: -0, forward: 1},
+        {TEname: "NOF", reverse: -2, forward: 1},
+        {TEname: "gypsy6", reverse: -0, forward: 1},
+        {TEname: "opus", reverse: -2, forward: 5},
+        {TEname: "FB", reverse: -2, forward: 0},
+        {TEname: "BS", reverse: -1, forward: 0},
+        {TEname: "Burdock", reverse: -2, forward: 0},
+        {TEname: "rover", reverse: -7, forward: 5},
+        {TEname: "297", reverse: -0, forward: 2},
+        {TEname: "blood", reverse: -7, forward: 7},
+        {TEname: "diver", reverse: -1, forward: 1},
+        {TEname: "roo", reverse: -38, forward: 33},
+        {TEname: "Max-element", reverse: -0, forward: 2},
+        {TEname: "Juan", reverse: -1, forward: 1},
+        {TEname: "17.6", reverse: -4, forward: 3},
+        {TEname: "412", reverse: -3, forward: 5},
+        {TEname: "ZAM", reverse: -43, forward: 33},
+        {TEname: "micropia", reverse: -1, forward: 0},
+        {TEname: "gtwin", reverse: -53, forward: 71},
+        {TEname: "Transpac", reverse: -1, forward: 3},
+        {TEname: "HMS-Beagle", reverse: -0, forward: 2},
+        {TEname: "Idefix", reverse: -1, forward: 0},
+        {TEname: "G6", reverse: -1, forward: 0},
+        {TEname: "Rt1a", reverse: -1, forward: 0},
+        {TEname: "Rt1b", reverse: -1, forward: 2},
+        {TEname: "X-element", reverse: -1, forward: 0},
+        {TEname: "R1A1-element", reverse: -1, forward: 0},
+        {TEname: "Bari1", reverse: -2, forward: 0},
+        {TEname: "springer", reverse: -1, forward: 1},
+        {TEname: "gypsy", reverse: -0, forward: 1}
+    ];*/
+
+    var decal = 0;
+    var nb_elements = 10;
+
+    // Create axes
+    // https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
+    var yAxis = chart.yAxes.push(
+      am5xy.CategoryAxis.new(root, {
+        categoryField: "TEname",
+        renderer: am5xy.AxisRendererY.new(root, {
+          inversed: true,
+          cellStartLocation: 0.1,
+          cellEndLocation: 0.9
+        })
+      })
+    );
+
+    console.log(data.slice(decal, nb_elements + decal))
+    yAxis.data.setAll(data.slice(decal, nb_elements + decal));
+
+    var xAxis = chart.xAxes.push(
+      am5xy.ValueAxis.new(root, {
+        renderer: am5xy.AxisRendererX.new(root, {})
+      })
+    );
+
+    var series_sens;
+    var series_antisens;
+    var label;
+    var rangeDataItem;
+
+    // Add series
+    // https://www.amcharts.com/docs/v5/charts/xy-chart/series/
+    function createSeries(field, labelCenterX, pointerOrientation, rangeValue, series) {
+
+      series = chart.series.push(
+        am5xy.ColumnSeries.new(root, {
+          xAxis: xAxis,
+          yAxis: yAxis,
+          valueXField: field,
+          categoryYField: "TEname",
+          sequencedInterpolation: true,
+          clustered: false,
+          tooltip: am5.Tooltip.new(root, {
+            pointerOrientation: pointerOrientation,
+            labelText: "{categoryY}: {valueX}"
+          })
+        })
+      );
+
+      series.columns.template.setAll({
+        height: am5.p100
+      });
+
+      series.bullets.push(function() {
+        return am5.Bullet.new(root, {
+          locationX: 1,
+          locationY: 0.5,
+          sprite: am5.Label.new(root, {
+            centerY: am5.p50,
+            text: "{valueX}",
+            populateText: true,
+            centerX: labelCenterX
+          })
+        });
+      });
+
+      series.data.setAll(data.slice(decal, nb_elements + decal));
+      series.appear();
+
+      rangeDataItem = xAxis.makeDataItem({
+        value: rangeValue
+      });
+      xAxis.createAxisRange(rangeDataItem);
+      rangeDataItem.get("grid").setAll({
+        strokeOpacity: 1,
+        stroke: series.get("stroke")
+      });
+
+      label = rangeDataItem.get("label");
+      label.setAll({
+        text: field.toUpperCase(),
+        fontSize: "1.1em",
+        fill: series.get("stroke"),
+        paddingTop: 10,
+        isMeasured: false,
+        centerX: labelCenterX
+      });
+
+      label.adapters.add("dy", function() {
+        return -chart.plotContainer.height();
+      });
+
+      series.show()
+      return series;
+    }
+
+
+    function updateSeries(field, labelCenterX, pointerOrientation, rangeValue, series) {
+      series = chart.series.push(
+        am5xy.ColumnSeries.new(root, {
+          xAxis: xAxis,
+          yAxis: yAxis,
+          valueXField: field,
+          categoryYField: "TEname",
+          sequencedInterpolation: true,
+          clustered: false,
+          tooltip: am5.Tooltip.new(root, {
+            pointerOrientation: pointerOrientation,
+            labelText: "{categoryY}: {valueX}"
+          })
+        })
+      );
+
+      series.columns.template.setAll({
+        height: am5.p100
+      });
+
+      series.bullets.push(function() {
+        return am5.Bullet.new(root, {
+          locationX: 1,
+          locationY: 0.5,
+          sprite: am5.Label.new(root, {
+            centerY: am5.p50,
+            text: "{valueX}",
+            populateText: true,
+            centerX: labelCenterX
+          })
+        });
+      });
+
+      series.data.setAll(data.slice(decal, nb_elements + decal));
+      //series.appear();
+
+      rangeDataItem = xAxis.makeDataItem({
+        value: rangeValue
+      });
+      xAxis.createAxisRange(rangeDataItem);
+      rangeDataItem.get("grid").setAll({
+        strokeOpacity: 1,
+        stroke: series.get("stroke")
+      });
+
+      label.setAll({
+        text: field.toUpperCase(),
+        fontSize: "1.1em",
+        fill: series.get("stroke"),
+        paddingTop: 10,
+        isMeasured: false,
+        centerX: labelCenterX
+      });
+
+      label.adapters.add("dy", function() {
+        return -chart.plotContainer.height();
+      });
+
+      return series;
+    }
+
+    series_antisens = createSeries("reverse", am5.p100, "right", -10, series_antisens);
+    series_sens     = createSeries("forward", 0, "left", 10, series_sens);
+
+    // Add cursor
+    // https://www.amcharts.com/docs/v5/charts/xy-chart/cursor/
+    var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
+      behavior: "zoomY"
+    }));
+    cursor.lineY.set("forceHidden", true);
+    cursor.lineX.set("forceHidden", true);
+
+    // Make stuff animate on load
+    // https://www.amcharts.com/docs/v5/concepts/animations/
+    chart.appear(1000, 100);
+
+    function update(decal){
+        chart.series.clear()
+
+        series_antisens = null;
+        series_sens = null;
+        
+        yAxis.data.setAll(data.slice(decal, nb_elements + decal));
+        
+        series_antisens = updateSeries("reverse", am5.p100, "right", -10, series_antisens);
+        series_sens     = updateSeries("forward", 0, "left", 10, series_sens);
+    }
+</script>
+
+
+<!-- gestion slider -->
+<script type="text/javascript">
+    var size = data.length - nb_elements;
+    document.getElementById("slider").max   = size.toString();
+    document.getElementById("slider").value = "0"
+    if (size < 0) {
+        size = 0;
+    }
+    $("#slider").closest(".container").closest(".container").find(".box-minmax span:nth-child(2)").text(size.toString());
+
+
+    var rangeSliders = document.getElementsByClassName ("rs-range");
+    var rangeBullets = document.getElementsByClassName("rs-label");
+
+    Array.prototype.filter.call(rangeSliders, function(rangeSlider){
+      rangeSlider.addEventListener("input", showSliderValue, false);
+    });
+
+    Array.prototype.filter.call(rangeSliders, function(rangeSlider){
+        rangeBullet = rangeSlider.closest(".range-slider").children[0];
+
+        rangeBullet.innerHTML  = rangeSlider.value;
+        var bulletPosition     = (rangeSlider.value /rangeSlider.max);
+        rangeBullet.style.left = (bulletPosition * 578) + "px";
+    });
+
+    function showSliderValue(event) {
+        rangeSlider = event.target;
+        rangeBullet = rangeSlider.closest(".range-slider").children[0];
+
+        rangeBullet.innerHTML  = rangeSlider.value;
+        var bulletPosition     = (rangeSlider.value /rangeSlider.max);
+        rangeBullet.style.left = (bulletPosition * 578) + "px";
+        decal = parseInt(rangeSlider.value);
+        update(decal)
+    }
+</script>
