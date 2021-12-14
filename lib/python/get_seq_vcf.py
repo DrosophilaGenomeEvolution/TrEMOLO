@@ -78,6 +78,10 @@ parser.add_argument("fasta_out", type=str,
 #OPTION
 parser.add_argument("-m", "--min_len_seq", type=int, default=1000,
                     help="minimum size of the sequence to keep (default: [1000])")
+
+parser.add_argument("--max-len-seq", dest='max_len_seq', type=int, default=-1,
+                    help="maximum size of the sequence to keep (default: [-1])")
+
 parser.add_argument("-t", "--type", type=str, default='<DEL>',
                     help="not keep this type on vcf (give a list of arguments separate the values with commas \"<DEL>,<INS>\") (default: [\"<DEL>\"])")
 
@@ -106,6 +110,7 @@ file_fasta  = open(args.fasta_out, "w")
 type_list   = args.type.split(",")#NOT KEEP THIS
 chrom_list  = args.chrom.split(",")#KEEP ONLY
 min_len_seq = args.min_len_seq
+max_len_seq = args.max_len_seq
 keep_seq_N  = args.keep
 ID_RS       = args.idrs
 
@@ -180,7 +185,7 @@ if version_vcf == "VCFv4.3":
                     seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
                     seq    = seq.replace("N", "A")#replace
 
-                condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list
+                condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
                 if regex_in_list(chrom, chrom_list) and condition :
                     #EXEMPLE  FORMAT
                     #2R:<INS>:1:190:sniffles.INS.2:1:PRECISE
@@ -221,7 +226,7 @@ if version_vcf == "VCFv4.2":
                         seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
                         seq    = seq.replace("N", "A")#replace
                     
-                        condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list
+                        condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
                         if regex_in_list(chrom, chrom_list) and condition :
                             #EXEMPLE  FORMAT
                             #2R:<INS>:1:190:svim.INS.2:1:PRECISE
@@ -260,7 +265,7 @@ if version_vcf == "VCFv4.1":
                 seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
                 seq    = seq.replace("N", "A")#replace
 
-                condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list
+                condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
                 if regex_in_list(chrom, chrom_list) and condition :
                     #EXEMPLE  FORMAT
                     #2R:<INS>:1:190:sniffles.INS.2:1:PRECISE
