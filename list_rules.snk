@@ -497,7 +497,7 @@ rule REPORT :
             #COUNT TE OUTSIDER
             if test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed; then
                 test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed && \
-                awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1], $5}}' {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed | bedtools sort > {params.work_directory}/POSITION_TE_OUTSIDER.bed
+                    awk 'OFS="\\t"{{split($4, a, ":"); print $1, $2, $3, a[2]"|"a[1], $5}}' {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed | bedtools sort > {params.work_directory}/POSITION_TE_OUTSIDER.bed
                 
                 bedtools intersect -a {params.work_directory}/cut_chrom.bed -b {params.work_directory}/POSITION_TE_OUTSIDER.bed -wa | tr "\t" ":" \
                     | sort | uniq -c | sort -k 1 -n \
@@ -622,7 +622,7 @@ rule REPORT :
             test -s {params.work_directory}/js/HISTOGRAM_INSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INSIDER.js
 
             ## forward reverse INSIDER
-            test -s {params.work_directory}/TE_INFO.csv && \
+            test -s {params.work_directory}/TE_INFO.csv && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && \
                 grep INSIDER {params.work_directory}/TE_INFO.csv | awk '{{
                     split($4, sp, "|"); 
                     
@@ -648,6 +648,7 @@ rule REPORT :
                     print substr(chain, 1, length(chain)-1)"\\n]";
                 }}' > {params.work_directory}/REPORT/mini_report/js/TE_COUNT_SENS_ANTISENS_INSIDER.js
                 
+
             sed 's/%%VAR_JS%%/TE_COUNT_SENS_ANTISENS_INSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_SENS_ANTISENS.html \
                  > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_SENS_ANTISENS_INSIDER.html
 
@@ -1752,7 +1753,6 @@ rule TE_TOWARD_GENOME :
 
 
     shell:
-        #TODO broullion
         """
 
         {params.env}
