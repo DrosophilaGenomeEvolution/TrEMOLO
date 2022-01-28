@@ -494,6 +494,7 @@ rule REPORT :
             rm -f {params.work_directory}/.tmp_index.fai
             
 
+            #echo "COUNT TE OUTSIDER"
             #COUNT TE OUTSIDER
             if test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed; then
                 test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed && \
@@ -544,8 +545,9 @@ rule REPORT :
 
                 # }}
 
+            #echo "forward reverse OUTSIDER"
             ## forward reverse OUTSIDER
-            test -s {params.work_directory}/TE_INFO.csv && \
+            test -s {params.work_directory}/TE_INFO.csv && test -s {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed && \
                 grep OUTSIDER {params.work_directory}/TE_INFO.csv | awk '{{
                     split($4, sp, "|"); 
                     
@@ -575,6 +577,7 @@ rule REPORT :
                  > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_SENS_ANTISENS_OUTSIDER.html
 
 
+            #echo "COUNT TE INSIDER"
             #COUNT TE INSIDER
             if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed; then
 
@@ -621,6 +624,7 @@ rule REPORT :
 
             test -s {params.work_directory}/js/HISTOGRAM_INSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INSIDER.js
 
+            #echo "forward reverse INSIDER"
             ## forward reverse INSIDER
             test -s {params.work_directory}/TE_INFO.csv && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && \
                 grep INSIDER {params.work_directory}/TE_INFO.csv | awk '{{
@@ -652,6 +656,7 @@ rule REPORT :
             sed 's/%%VAR_JS%%/TE_COUNT_SENS_ANTISENS_INSIDER.js/g' {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_SENS_ANTISENS.html \
                  > {params.work_directory}/REPORT/mini_report/lib/template_COUNT_TE_SENS_ANTISENS_INSIDER.html
 
+            #echo "COUNT TE INOUTSIDER"
             #COUNT TE INOUTSIDER
             if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed && test -s {params.work_directory}/POSITION_TE_OUTSIDER.bed; then
 
@@ -697,6 +702,7 @@ rule REPORT :
 
             test -s {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js && sed -i 's/{params.work_directory}\///g' {params.work_directory}/js/HISTOGRAM_INOUTSIDER.js
 
+            #echo "forward reverse INOUTSIDER"
             ## forward reverse INOUTSIDER
             test -s {params.work_directory}/TE_INFO.csv && \
                 cat {params.work_directory}/TE_INFO.csv | awk '{{
