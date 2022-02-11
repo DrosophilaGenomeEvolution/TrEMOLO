@@ -30,8 +30,8 @@ work             = ""
 if args.name_ID == None:
     ID = randrange(200)
 else:
-    ID = args.name_ID
-    work = ID.rstrip("/") + "\/"
+    ID = os.path.basename(args.name_ID.rstrip("/"))
+    work = args.name_ID.rstrip("/").replace("/", "\/") + "\/"
 
 instruction_file = open(args.name_instruction, "r")
 instructions     = instruction_file.readline().replace(" ", "").strip().split(">")

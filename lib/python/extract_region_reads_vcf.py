@@ -175,7 +175,7 @@ while line:
                 else:
                     dico_chrom[chrom] += 1
 
-                file_out  = open("./" + rep_region + "/reads_"+str(chrom)+":"+str(ID)+":"+str(start)+"-"+str(end)+".txt", "w")
+                file_out  = open( rep_region + "/reads_"+str(chrom)+":"+str(ID)+":"+str(start)+"-"+str(end)+".txt", "w")
                 for index, value in enumerate(lrname) :
                     file_out.write(str(value) + "\n")
 

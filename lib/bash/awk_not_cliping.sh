@@ -9,7 +9,7 @@ awk -v size_windows_pos="50" -v max_size_TE_fk="30000"  -v size="100" 'BEGIN{
         nuc  = nuc"N"
         qual = qual"8"
     };
-    print "" > "number_clipped.txt"
+    ##print "" > "number_clipped.txt"
 }
 
 function parse_cig_length(cigar){
@@ -79,10 +79,10 @@ OFS="\t"{
         i += 1
     }
 
-    print $1":DEBU_CIG:"$6 >> "number_clipped.txt";
+    ##print $1":DEBU_CIG:"$6 >> "number_clipped.txt";
 
     if( position_debut_read || position_end_read){
-        print $1":"$3":"position":"size":"TE_ID":SOFT:"size_in_deb >> "number_clipped.txt"
+        ##print $1":"$3":"position":"size":"TE_ID":SOFT:"size_in_deb >> "number_clipped.txt"
 
         if( match($6, /[0-9]+S/) ){
             rest = 0;
@@ -93,7 +93,7 @@ OFS="\t"{
                 SOFT_DEB = substr($6, RSTART, RLENGTH-1)
                 rest     = size_in_deb - SOFT_DEB
 
-                print "--position_debut_read:"position_debut_read"; rest:"rest" ; SOFT_DEB:"SOFT_DEB >> "number_clipped.txt"
+                ##print "--position_debut_read:"position_debut_read"; rest:"rest" ; SOFT_DEB:"SOFT_DEB >> "number_clipped.txt"
 
                 deb=size"M"( SOFT_DEB + rest )"I";
                  
@@ -113,13 +113,13 @@ OFS="\t"{
             rest2 = 0;
 
             #END
-            print "position_end_read:"position_end_read"; rest2:"rest2" ; SOFT_END:"SOFT_END"; size_in_end:"size_in_end >> "number_clipped.txt"
+            ##print "position_end_read:"position_end_read"; rest2:"rest2" ; SOFT_END:"SOFT_END"; size_in_end:"size_in_end >> "number_clipped.txt"
 
             if( match($6, /[0-9]+S$/) && position_end_read ){
                 SOFT_END = substr($6, RSTART, RLENGTH-1)
                 rest2    = size_in_end - SOFT_END
 
-                print "::!!position_end_read:"position_end_read"; rest2:"rest2" ; SOFT_END:"SOFT_END"; size_in_end:"size_in_end >> "number_clipped.txt"
+                ##print "::!!position_end_read:"position_end_read"; rest2:"rest2" ; SOFT_END:"SOFT_END"; size_in_end:"size_in_end >> "number_clipped.txt"
 
                 match($6, /[0-9A-RT-Z]+[A-RT-Z]/);
 
@@ -144,9 +144,9 @@ OFS="\t"{
 
 
             if($10 != "*"){
-                print "10:OK; size:"size"; " >> "number_clipped.txt"
+                ##print "10:OK; size:"size"; " >> "number_clipped.txt"
                 if( size + rest > 0 && position_debut_read ){
-                    print "DEB_ADD" >> "number_clipped.txt"
+                    ##print "DEB_ADD" >> "number_clipped.txt"
                     seq=substr(nuc, 1, size + rest)
                     ql=substr(qual, 1, size + rest)
                     $10=seq""$10;
@@ -155,7 +155,7 @@ OFS="\t"{
 
                 if( position_end_read ){
                     if( size + rest2 > 0 ){
-                        print "END_ADD" >> "number_clipped.txt"
+                        ##print "END_ADD" >> "number_clipped.txt"
                         seq=substr(nuc, 1, size + rest2)
                         ql=substr(qual, 1, size + rest2);
                         $10=$10""seq;
@@ -165,17 +165,17 @@ OFS="\t"{
             }
         }
 
-        print "CIG_SOFT:"$6 >> "number_clipped.txt";
+        ##print "CIG_SOFT:"$6 >> "number_clipped.txt";
         
         ##
         if( match($6, /[0-9]+H/) ) {
-            print $1":"$3":"position":"size":"TE_ID":HARD" >> "number_clipped.txt"
+            ##print $1":"$3":"position":"size":"TE_ID":HARD" >> "number_clipped.txt"
             #HARD
             
             if( match($6, /^[0-9]+H/) ){
                 HARD_DEB = substr($6, RSTART, RLENGTH-1)
 
-                print "--position_debut_read:"position_debut_read"; HARD_DEB:"HARD_DEB >> "number_clipped.txt"
+                ##print "--position_debut_read:"position_debut_read"; HARD_DEB:"HARD_DEB >> "number_clipped.txt"
 
                 if( position_debut_read ){
                     deb=size"M"size_in_deb"I";
@@ -193,7 +193,7 @@ OFS="\t"{
             if( match($6, /[0-9]+H$/) ){
                 HARD_END = substr($6, RSTART, RLENGTH-1)
 
-                print "!!position_end_read:"position_end_read"; HARD_END:"HARD_END >> "number_clipped.txt"
+                ##print "!!position_end_read:"position_end_read"; HARD_END:"HARD_END >> "number_clipped.txt"
 
                 match($6, /[0-9A-GI-Z]+[A-GI-Z]/);
                 if( position_end_read ){
@@ -214,7 +214,7 @@ OFS="\t"{
                 }
             }
 
-            print "CIG_HARD:"$6 >> "number_clipped.txt";
+            ##print "CIG_HARD:"$6 >> "number_clipped.txt";
 
             if($10 != "*"){
                 
@@ -239,7 +239,7 @@ OFS="\t"{
 } 
 
 END{
-    print "FINISH" >> "number_clipped.txt"
+    ##print "FINISH" >> "number_clipped.txt"
 }' ${TE_POS_SIZE} ${SAM_IN} \
 > ${SAM_OUT}
 

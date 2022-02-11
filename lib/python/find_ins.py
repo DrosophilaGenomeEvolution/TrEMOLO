@@ -86,5 +86,8 @@ print("DEPTH:" + str(len(ens_rd)))
 print("INS:" + str(len(ens_ins)))
 print("DOUBLONS:", doublons_rd)
 print("total:", total, "len:", len(total))
-print("percent:", (len(ens_ins)/len(ens_rd)))
 
+if len(ens_rd) != 0 :
+    print("percent:", (len(ens_ins)/len(ens_rd)))
+else :
+    print("percent:", "0", "NO_DEPTH")

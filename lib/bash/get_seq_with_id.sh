@@ -1,6 +1,6 @@
 #TODO CHANGE FOR NEW ID Snifffles
 get_seq_with_id () {
-    grep "^[^>][A-Za-z\.]*[0-9]*[0-9]" $1 -B 1 | grep -v "\-\-" | grep -E "svim.INS.[0-9]+|[0-9]+" | awk 'BEGIN{head=""}
+    grep "^[^>][A-Za-z\.]*[0-9]*[0-9]" $1 -B 1 | grep -v "\-\-" | grep -E ".INS.[0-9]+|[0-9]+" | awk 'BEGIN{head=""}
     {
         if( substr($0, 1, 1) != ">" ){
 
@@ -8,7 +8,7 @@ get_seq_with_id () {
             size_sp = split(head, head_sp, ":")
             split(head_sp[6], coord, "-")
 
-            match($0, /[svim\.INS]*[0-9]+[A-Z]+/);
+            match($0, /[\.INS]*[0-9]+[A-Z]+/);
             seq[0]  = substr($0, RSTART, RLENGTH)
 
             start = coord[1] + RSTART - 2 #-2 pour bedtools
@@ -52,7 +52,7 @@ get_seq_with_id () {
                 start = coord[1] + position_next - 2
                 end   = coord[1] + position_next + RLENGTH
 
-                match(substr($0, position_next, length($0)), /[svim\.INS]*[0-9]+/)
+                match(substr($0, position_next, length($0)), /[\.INS]*[0-9]+/)
                 ID = substr(substr($0, position_next, length($0)), RSTART, RLENGTH)
 
                 head=head_sp[1]":"head_sp[2]":"head_sp[3]":"head_sp[4]":"head_sp[5]":"start"-"end":"ID
@@ -63,7 +63,7 @@ get_seq_with_id () {
             head=$0
         }
 
-    }' | grep "[svim\.INS]*[0-9]" > $2
+    }' | grep "[\.INS]*[0-9]" > $2
 }
 
 get_seq_with_id $1 $2

@@ -3,6 +3,7 @@ trap 'printf "\b%.0s" `seq 1 46` >&1; exit 1' SIGTERM SIGINT;
 sleep 1;
 chain="•••";
 #echo ".·’·.•’•.٭* ⠁"
+
 while [ 0 ]; do
     array_load=( 'LOADING.    ' 'LOADING •   ' 'LOADING  *  ' 'LOADING   • ' 'LOADING    .' 'LOADING   • ' 'LOADING  *  ' 'LOADING •   ' 'LOADING.    ')
     for ((i = 0; i < ${#array_load[@]}; i++));
