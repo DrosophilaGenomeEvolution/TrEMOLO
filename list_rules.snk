@@ -1422,10 +1422,12 @@ rule FIND_TE_ON_REF :
         for type in "${{array_type[@]}}"
         do
             echo "type=${{type}}";
-            grep -i ${{type}} {input.bed} | awk '{{print $10":"$4}}' | awk -v type="${{type}}" -F ":" 'OFS="\t"{{split($2, a, "-"); print $1 , a[1], a[2], $4":"$3":"type}}' > {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed
+            grep -i ${{type}} {input.bed} | awk '{{print $10":"$4}}' | awk -v type="${{type}}" -F ":" 'OFS="\t"{{split($2, a, "-"); print $1 , a[1], a[2], $4":"$3":"type}}' > {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed || echo "[SNK  INFO]: ${{type}} NOT FOUND in bed file."
             test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed || echo "[SNK  INFO]: ${{type}}.bed IS EMPTY"
             
-            bedtools getfasta -fi {input.genome_real} -bed {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed -name+ > {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta
+            test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed && \
+                bedtools getfasta -fi {input.genome_real} -bed {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed -name+ > {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta
+            
             test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/tmp_${{type}}_SEQ.fasta || echo "[SNK  INFO]: tmp_${{type}}_SEQ.fasta IS EMPTY"
             
             #TODO warning get_seq_with_id.sh only svim
@@ -1442,23 +1444,30 @@ rule FIND_TE_ON_REF :
             fi;
 
             ( test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta && echo "NUMBER OF SEQUENCE" `grep ">" {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta -c ` ) || echo "[SNK  INFO]: ${{type}}_SEQ.fasta IS EMPTY"
+            test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta && cat {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta >> {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta
         done;
         
-        cat {params.work_directory}/INSIDER/TE_INSIDER_VR/Tandem_expansion_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/Repeat_expansion_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta
-        cat {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ.fasta
+        #cat {params.work_directory}/INSIDER/TE_INSIDER_VR/Tandem_expansion_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/Repeat_expansion_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta
+        test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta && \
+            cat {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ_ALL.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/INSERTION_SEQ.fasta
         
 
         #GETTING SEQUENCE FASTA DELETION
         array_type_deletion=( "DELETION" "Repeat_contraction" "Tandem_contraction" );
         for type in "${{array_type_deletion[@]}}"
         do
-            grep -i ${{type}}  {input.bed} | awk  -v type="$type" 'OFS="\t"{{print $1, $2, $3, $4":"$6":"type}}' > {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed
+            grep -i ${{type}}  {input.bed} | awk  -v type="$type" 'OFS="\t"{{print $1, $2, $3, $4":"$6":"type}}' > {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed || echo "[SNK  INFO]: ${{type}} NOT FOUND in bed file."
 
-            bedtools getfasta -fi {input.ref}  -bed {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed -name+ > {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta
+            test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed && \
+                bedtools getfasta -fi {input.ref}  -bed {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed -name+ > {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta
+
+            test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta && cat {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta >> {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ_ALL.fasta
         done;
         
-        cat {params.work_directory}/INSIDER/TE_INSIDER_VR/Tandem_contraction_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/Repeat_contraction_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ_ALL.fasta
-        cat {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ_ALL.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ.fasta
+        #cat {params.work_directory}/INSIDER/TE_INSIDER_VR/Tandem_contraction_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/Repeat_contraction_SEQ.fasta {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ_ALL.fasta
+        
+        test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ_ALL.fasta && \
+            cat {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ_ALL.fasta > {params.work_directory}/INSIDER/TE_INSIDER_VR/DELETION_SEQ.fasta
 
         #GETTING CSV TE
         array_type=( "INSERTION" "Repeat_expansion" "Tandem_expansion" "DELETION" "Repeat_contraction" "Tandem_contraction" )
@@ -1525,7 +1534,6 @@ rule FIND_TE_ON_REF :
         cd {params.work_directory}/INSIDER/TE_INSIDER_VR/
 
 
-        
 
         if test -s INSERTION.csv; then
 
@@ -3340,7 +3348,7 @@ rule TE_INSIDER:
             
             test -s {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bed && \
                 ( bedtools getfasta -fi {input.query} -bed {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bed -name+ > {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta && \
-                cat {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta >> {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_SEQ_ALL.fasta ) || ( echo "$type is EMPTY" && touch {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta )
+                cat {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta >> {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_SEQ_ALL.fasta ) || ( echo "$type is EMPTY" && touch {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta && touch {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ_ALL.fasta )
         done;
 
         #cat {params.work_directory}/INSIDER/TE_DETECTION/Tandem_expansion_SEQ.fasta {params.work_directory}/INSIDER/TE_DETECTION/Repeat_expansion_SEQ.fasta {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_SEQ.fasta > {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_SEQ_ALL.fasta
@@ -3358,7 +3366,7 @@ rule TE_INSIDER:
             #TODO waring touch SEQ
             test -s {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bed && \
                 ( bedtools getfasta -fi {input.ref}  -bed {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bed -name+ > {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta && \
-                cat {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta >> {params.work_directory}/INSIDER/TE_DETECTION/DELETION_SEQ_ALL.fasta ) || ( echo "$type is EMPTY" && touch {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta )
+                cat {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta >> {params.work_directory}/INSIDER/TE_DETECTION/DELETION_SEQ_ALL.fasta ) || ( echo "$type is EMPTY" && touch {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta && touch {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ_ALL.fasta )
 
         done;
 
@@ -3422,7 +3430,7 @@ rule TE_INSIDER:
 
         #INSERTION ON QUERY
         test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv && \
-           awk 'NR>1 && OFS="\t"{{ split($2,   a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1], a[7]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {output.bed} #{params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed 
+           awk 'NR>1 && OFS="\t"{{ split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1], a[7]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {output.bed} #{params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed 
 
 
         ##INSERTION ON REF
@@ -3474,11 +3482,10 @@ rule TE_INSIDER:
         test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed || fail_msg "  WARNING NO TE INSERTION FOUND\n";
         test -s {params.work_directory}/INSIDER/TE_DETECTION/DELETION_TE.bed || fail_msg "  WARNING NO TE DELETION FOUND\n";
 
-        cd {params.work_directory}/INSIDER/TE_DETECTION/
-        
-        rm -f Repeat*
-        rm -f Tandem*
-        rm -f *SEQ_ALL.fasta
+        #
+        rm -f {params.work_directory}/INSIDER/TE_DETECTION/Repeat*
+        rm -f {params.work_directory}/INSIDER/TE_DETECTION/Tandem*
+        rm -f {params.work_directory}/INSIDER/TE_DETECTION/*SEQ_ALL.fasta
 
         """
 
