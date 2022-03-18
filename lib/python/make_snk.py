@@ -57,33 +57,35 @@ nb_line_file_rules = cmd("wc -l " + name_file_rules + " | cut -d \" \" -f 1")[0]
 
 
 for i, instruct in enumerate(instructions[::-1]):
-    #os.system("rm -f tmpo"+str(i)+".snk")
+    #os.system("rm -f tmpo_TrEMOLO"+str(i)+".snk")
     name_rule = instruct.split(":")[0]
 
-    os.system("grep -w \"rule " + str(name_rule) + "\" " + name_file_rules + " -A " + str(int(nb_line_file_rules)) + " | grep \"^#END " + name_rule + "$\" -B " + str(int(nb_line_file_rules)) + " | grep -v \"^#END\" > tmpo"+str(i)+".snk")
+    os.system("grep -w \"rule " + str(name_rule) + "\" " + name_file_rules + " -A " + str(int(nb_line_file_rules)) + " | grep \"^#END " + name_rule + "$\" -B " + str(int(nb_line_file_rules)) + " | grep -v \"^#END\" > tmpo_TrEMOLO"+str(i)+".snk")
     
     if len(instruct.split(":")) == 1  :
         if i == len(instructions) - 1 :
-            os.system("sed -i '/input_link=\[\],/d' tmpo" + str(i) + ".snk")
-            os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo" + str(i) + ".snk")
+            os.system("sed -i '/input_link=\[\],/d' tmpo_TrEMOLO" + str(i) + ".snk")
+            os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo_TrEMOLO" + str(i) + ".snk")
         else  :
-            os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo" + str(i) + ".snk")
-            os.system("sed -i 's/input_link=\[\],/cout=[\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + list_name_rule[::-1][i+1] + "_" + str(ID) + "\"],/g' tmpo"+ str(i) + ".snk")
+            os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo_TrEMOLO" + str(i) + ".snk")
+            os.system("sed -i 's/input_link=\[\],/cout=[\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + list_name_rule[::-1][i+1] + "_" + str(ID) + "\"],/g' tmpo_TrEMOLO"+ str(i) + ".snk")
     #suppression des input et output improviser
     elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "N":
-        os.system("sed -i '/input_link=\[.*\],/d' tmpo"+str(i)+".snk")
-        os.system("sed -i '/output_link=\[.*\],/d' tmpo" + str(i) + ".snk")
+        os.system("sed -i '/input_link=\[.*\],/d' tmpo_TrEMOLO"+str(i)+".snk")
+        os.system("sed -i '/output_link=\[.*\],/d' tmpo_TrEMOLO" + str(i) + ".snk")
     elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "NI":
-        os.system("sed -i '/input_link=\[.*\],/d' tmpo"+str(i)+".snk")
-        os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo" + str(i) + ".snk")
+        os.system("sed -i '/input_link=\[.*\],/d' tmpo_TrEMOLO"+str(i)+".snk")
+        os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo_TrEMOLO" + str(i) + ".snk")
     elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "NO":
-        os.system("sed -i '/output_link=\[.*\],/d' tmpo" + str(i) + ".snk")
-        os.system("sed -i 's/input_link=\[\],/cout=[\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + list_name_rule[::-1][i+1] + "_" + str(ID) + "\"],/g' tmpo"+ str(i) + ".snk")
+        os.system("sed -i '/output_link=\[.*\],/d' tmpo_TrEMOLO" + str(i) + ".snk")
+        os.system("sed -i 's/input_link=\[\],/cout=[\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + list_name_rule[::-1][i+1] + "_" + str(ID) + "\"],/g' tmpo_TrEMOLO"+ str(i) + ".snk")
+
+    os.system("sed -i 's/step=0,/step=" + str(len(instructions)-i) + ",/g' tmpo_TrEMOLO"+ str(i) + ".snk")
 
     #print("grep \"rule " + str(name_rule) +"\" " + name_file_rules + " -A " + str(nb_line_file_rules) + " | grep \"^#END " + name_rule + "$\" -B 100000000 | grep -v \"^#END\" >> " + name_out)
     #os.system("grep \"rule "+ str(name_rule) +"\" list_rules.txt -A " + str(nb_line_file_rules) + " | grep \"^#END " + name_rule + "$\" -B 10000000 | grep -v \"^#END\" >> tmp.snk")
-    os.system("cat tmpo"+str(i)+".snk >> " + name_out)
-    os.system("rm -f tmpo*.snk")
+    os.system("cat tmpo_TrEMOLO"+str(i)+".snk >> " + name_out)
+    os.system("rm -f tmpo_TrEMOLO*.snk")
 
 
 
