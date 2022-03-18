@@ -23,6 +23,7 @@ CHOICE:
 
 
 PARAMS:
+    THREADS: 8
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # -x minimap2 preset option is map-pb by default (map-pb, map-ont etc)

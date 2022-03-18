@@ -24,6 +24,7 @@ CHOICE:
 
 
 PARAMS:
+    THREADS: 8 #number of threads for some task
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 preset option is map-ont by default (map-pb, map-ont etc)

@@ -2,9 +2,11 @@
 ####
 ####
 ############# OUTSIDER VARIANT
-####s
+####
 ####
 
+
+#TODO TSD file to work_directory
 rule RENAME_PSEUDO_TE:
     input:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/LIST_HEADER_DB_TE.csv",
@@ -30,6 +32,7 @@ rule RENAME_PSEUDO_TE:
         cend           = bcolors.END,
         cbold          = bcolors.BOLD,
 
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/RENAME",
 
@@ -39,6 +42,8 @@ rule RENAME_PSEUDO_TE:
         {params.env}
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] RENAME PSEUDO TE [^-^] {params.cend}"
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         rm -f {log}.*
         
@@ -213,6 +218,7 @@ rule REPORT :
         cend           = bcolors.END,
         cbold          = bcolors.BOLD,
 
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/REPORT",
 
@@ -224,6 +230,8 @@ rule REPORT :
         {params.env}
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] BUILD REPORT [^-^] {params.cend}"
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         rm -fr {params.work_directory}/REPORT/
         mkdir -p {params.work_directory}/REPORT/
@@ -1042,6 +1050,7 @@ rule TSD :
         cend           = bcolors.END,
         cbold          = bcolors.BOLD,
 
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/TSD",
 
@@ -1055,6 +1064,7 @@ rule TSD :
         
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] <<< TSD >>> {params.cend}"
 
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         rm -f {log}.*
 
@@ -1381,6 +1391,7 @@ rule FIND_TE_ON_REF :
         env            = env, #source environnement
 
         pars_bln_option_insider = config["PARAMS"]["INSIDER_VARIANT"]["PARS_BLN_OPTION"],
+        threads                 = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
 
 
         #Color message
@@ -1389,6 +1400,7 @@ rule FIND_TE_ON_REF :
         cend           = bcolors.END,
         cbold          = bcolors.BOLD,
 
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FIND_TE_ON_REF",
 
@@ -1410,6 +1422,8 @@ rule FIND_TE_ON_REF :
         rm -f {log}.*
         
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] ANNOT TE ON REF {params.cend}"
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -1483,7 +1497,7 @@ rule FIND_TE_ON_REF :
 
                 makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
 
-                blastn -db {input.fasta_TE} \
+                blastn -num_threads {params.threads} -db {input.fasta_TE} \
                 -query {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}_SEQ.fasta \
                 -outfmt 6 \
                 -out {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bln 2> {log}.err 1> {log}.out;
@@ -1549,7 +1563,7 @@ rule FIND_TE_ON_REF :
             bedtools getfasta -fi $QUERY -bed tmp_Repeat_expension.bed -name+ > tmp_Repeat_expension.fasta
 
             makeblastdb -in $REF -dbtype nucl
-            blastn -db $REF \
+            blastn -num_threads {params.threads} -db $REF \
             -query tmp_Repeat_expension.fasta \
             -outfmt 6 \
             -out position_Repeat_expension.bln
@@ -1647,12 +1661,16 @@ rule FIND_SV_ON_REF :
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
         env            = env, #source environnement
+        threads        = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
 
         #Color message
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
         cbold          = bcolors.BOLD,
+
+        step=0,
 
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FIND_TE_ON_REF",
@@ -1669,6 +1687,8 @@ rule FIND_SV_ON_REF :
         
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
 
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
+
         mkdir -p {params.work_directory}/OUTSIDER/INSIDER_VR/
         mkdir -p {params.work_directory}/log/
         #cd {params.work_directory}/OUTSIDER/INSIDER_VR/
@@ -1676,7 +1696,7 @@ rule FIND_SV_ON_REF :
 
         path_to_pipline=`dirname {params.path_snk}`
 
-        minimap2 -ax asm5 --cs -t3 {input.ref} {input.genome_real} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
+        minimap2 -ax asm5 --cs -t {params.threads} {input.ref} {input.genome_real} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
 
         python3 ${{path_to_pipline}}/lib/python/sam2delta.py {output.sam};
         
@@ -1760,6 +1780,7 @@ rule TE_TOWARD_GENOME :
         cend           = bcolors.END,
         cbold          = bcolors.BOLD,
 
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/TE_TOWARD_GENOME",
 
@@ -1771,6 +1792,8 @@ rule TE_TOWARD_GENOME :
         path_to_pipline=`dirname {params.path_snk}`
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] PUT TE OUTSIDER ON GENOME... {params.cend}"
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/
         rm -f {log}.*
@@ -1953,6 +1976,8 @@ rule GET_SEQ_TE :
         cend           = bcolors.END,
         cbold          = bcolors.BOLD,
 
+        step=0,
+
     shell:
         """
         
@@ -1960,6 +1985,8 @@ rule GET_SEQ_TE :
 
         {params.env}
         mkdir -p {params.work_directory}/OUTSIDER/ET_FIND_FA ;
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
         
         rep="{params.work_directory}/OUTSIDER/ET_FIND_FA" 
         prefix="TE_REPORT"
@@ -2028,6 +2055,8 @@ rule GET_READS_TE :
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
         cbold          = bcolors.BOLD,
+
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/GET_READS_TE"
 
@@ -2043,6 +2072,8 @@ rule GET_READS_TE :
         mkdir -p {params.work_directory}/OUTSIDER/READ_FASTQ_TE ;
 
         path_to_pipline=`dirname {params.path_snk}`
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         #GET ID only TE found
         awk 'NR>1 {{print $2}}' {input.all_te} | cut -d":" -f 5 > {params.work_directory}/ID_TE_SV_REPORT.txt ; 
@@ -2167,6 +2198,8 @@ rule FREQUENCE :
         cfail          = bcolors.FAIL,
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
+
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FREQUENCE"
 
@@ -2179,6 +2212,8 @@ rule FREQUENCE :
         path_to_pipline=`dirname {params.path_snk}`
 
         mkdir -p {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         samtools index {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam 
         samtools view -h -F 2830 {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam > {params.work_directory}/MAPPING_POSTION_TE.sam
@@ -2370,6 +2405,8 @@ rule FREQ_INSIDER:
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
+
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FREQ_INSIDER",
 
@@ -2382,6 +2419,8 @@ rule FREQ_INSIDER:
         path_to_pipline=`dirname {params.path_snk}`
         
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING_TO_REF/
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         cat {input.TE_INS} | cut -f 2 | \
             awk -v margin_flank="100" -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]-margin_flank, a[1]-margin_flank+1; print $5, a[2]+margin_flank, a[2]+margin_flank+1}}' > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed
@@ -2497,11 +2536,15 @@ rule SOFT_TE :
         call_sv                = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         CHROM_KEEP             = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
         GET_SEQ_REPORT_OPTION  = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["GET_SEQ_REPORT_OPTION"],
+        threads                = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
 
         #COLORS
         cfail          = bcolors.FAIL,
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
+
+        step=0,
 
     log:
         soft = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/SOFT"
@@ -2515,6 +2558,8 @@ rule SOFT_TE :
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE IN SOFT READS [^-^] {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         ## CREATE VCF SOFT
         echo "CREATE VCF SOFT..."
@@ -2552,7 +2597,7 @@ rule SOFT_TE :
         echo "BLAST TE..."
         makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.soft}.err;
         test -s {output.seqs} && \
-            blastn -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log.soft}.err;
+            blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log.soft}.err;
 
         ## GET CANDIDATE TE
         echo "GET CANDIDATE TE..."
@@ -2665,11 +2710,15 @@ rule DETECTION_TE :
         CHROM_KEEP             = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
         pars_bln_option        = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
         GET_SEQ_REPORT_OPTION  = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["GET_SEQ_REPORT_OPTION"],
+        threads                = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
 
         #COLORS
         cfail          = bcolors.FAIL,
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
+
+        step=0,
 
     log:
         DETECTION = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/DETECTION_TE"
@@ -2683,6 +2732,8 @@ rule DETECTION_TE :
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE [^-^] {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
 
         #** GET SEQUENCE REPORT **#
@@ -2711,7 +2762,7 @@ rule DETECTION_TE :
         #** BLAST SEQUENCE VCF on DATABASE TE **#
         echo "   BLAST SEQUENCE SV on DATABASE TE..."
         makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.DETECTION}.err;
-        blastn -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} 2>> {log.DETECTION}.err;
+        blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.snif_seqs} -outfmt 6 -out {output.bln} 2>> {log.DETECTION}.err;
         
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] BLAST DONE CHECK logfile => {log.DETECTION} {params.cend}"
 
@@ -2851,12 +2902,16 @@ rule TrEMOLO_SV_TE :
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
         pars_bln_option = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
+        threads         = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
 
         env            = env, #source environnement
 
         cfail          = bcolors.FAIL,
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
+
+        step=0,
 
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/sniffles",
@@ -2869,6 +2924,8 @@ rule TrEMOLO_SV_TE :
         mkdir -p {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET INSERTION TrEMOLO [^-^] {params.cend}"
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         samtools index {input.bam} 2> {log}.err
 
@@ -2933,7 +2990,7 @@ rule TrEMOLO_SV_TE :
 
         echo "BLAST TE INSERTION..."
         makeblastdb -in {input.fasta_TE} -dbtype nucl
-        blastn -db {input.fasta_TE} -query {output.SV_CLUST_seq} -outfmt 6 -out {output.bln}
+        blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.SV_CLUST_seq} -outfmt 6 -out {output.bln}
         
         echo "GET TE INSERTION..."
         python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} \
@@ -2969,6 +3026,8 @@ rule svim :
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
 
+        step=0,
+
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/svim"
 
@@ -2979,6 +3038,8 @@ rule svim :
         path_to_pipline=`dirname {params.path_snk}`
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] SVIM DETECTION VARIANT [^-^] {params.cend}"
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         samtools index {input.bam} 2> {log}.err
 
@@ -3019,6 +3080,8 @@ rule sniffles :
         cmess          = bcolors.CYAN,
         cend           = bcolors.END,
 
+        step=0,
+
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/sniffles",
 
@@ -3029,6 +3092,8 @@ rule sniffles :
         path_to_pipline=`dirname {params.path_snk}`
 
         mkdir -p {params.work_directory}/OUTSIDER/VARIANT_CALLING/
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] SNIFFLES [^-^] {params.cend}"
 
@@ -3046,7 +3111,7 @@ rule sniffles :
             end_load
             sleep 1
 
-        elif [ "$version" = "1.0.12" ]; then
+        elif [ "$version" = "1.0.12" ] || [ "$version" = "1.0.11" ]; then
 
             begin_load
             run_cmd "sniffles --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.12" "False";
@@ -3088,6 +3153,7 @@ rule samtools :
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
 
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/samtools",
 
@@ -3098,6 +3164,8 @@ rule samtools :
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         echo "---view---" | tee {log}.out
         #samtools view -h {params.preset_view} -b {input.sam} > {input.sam}.bam 2>> {log}.err;
@@ -3154,6 +3222,8 @@ rule mapping :
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
+
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/minimap2"
 
@@ -3165,6 +3235,8 @@ rule mapping :
         rm -f `find {params.work_directory} -name "*.fa*.fai"`
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
         
@@ -3218,12 +3290,16 @@ rule TE_ALL_IN_ASSEMBLY:
         pars_bln_option_insider = config["PARAMS"]["INSIDER_VARIANT"]["PARS_BLN_OPTION"],
 
         CHROM_KEEP     = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
+        threads        = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
 
         
         #COLOR 
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
+
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/TE_ALL_IN_ASSEMBLY",
 
@@ -3236,10 +3312,12 @@ rule TE_ALL_IN_ASSEMBLY:
         
         mkdir -p {params.work_directory}/INSIDER/TE_DETECTION/
 
+        echo "[`date`] STEP {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
+
         ## SEARCH ALL REGION TE WITH BLAST
         echo "  SEARCH ALL REGION TE ON GENOME..."
         makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
-        blastn -db {input.fasta_TE} \
+        blastn -num_threads {params.threads} -db {input.fasta_TE} \
         -query {input.query} \
         -outfmt 6 \
         -out {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_1.bln 2>> {log}.err 1>> {log}.out;
@@ -3254,7 +3332,7 @@ rule TE_ALL_IN_ASSEMBLY:
         
         ## BLAST ALL REGION CANDIDATE OF TE
         echo "  BLAST ALL REGION CANDIDATE OF TE..."
-        blastn -db {input.fasta_TE} \
+        blastn -num_threads {params.threads} -db {input.fasta_TE} \
         -query {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_1_merge_cluster.fasta \
         -outfmt 6 \
         -out {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_2.bln 2>> {log}.err 1>> {log}.out;
@@ -3319,11 +3397,15 @@ rule TE_INSIDER:
         env            = env,
 
         pars_bln_option_insider = config["PARAMS"]["INSIDER_VARIANT"]["PARS_BLN_OPTION"],
+        threads                 = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
         
         #COLOR 
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
+
+
+        step=0,
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/TE_INSIDER",
 
@@ -3331,6 +3413,8 @@ rule TE_INSIDER:
         """
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET TE INSIDER {params.cend}"
+
+        echo "[`date`] STEP INSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
@@ -3385,7 +3469,7 @@ rule TE_INSIDER:
 
                 echo "   Checking TE candidate..."
                 makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
-                blastn -db {input.fasta_TE} \
+                blastn -num_threads {params.threads} -db {input.fasta_TE} \
                 -query {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta \
                 -outfmt 6 \
                 -out {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bln 2> {log}.err 1> {log}.out;
@@ -3511,11 +3595,15 @@ rule SV_INSIDER:
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
         env            = env,
+        threads                 = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
 
         #COLOR 
         cmess          = bcolors.CYAN,
         cfail          = bcolors.FAIL,
         cend           = bcolors.END,
+
+        step=0,
 
     log:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/SV_INSIDER"
@@ -3524,6 +3612,8 @@ rule SV_INSIDER:
         """
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
+
+        echo "[`date`] STEP INSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         mkdir -p {params.work_directory}/INSIDER/VARIANT_CALLING/
         mkdir -p {params.work_directory}/log/
@@ -3535,7 +3625,7 @@ rule SV_INSIDER:
 
         echo "COMPARE GENOME BY MAPPING..."
         #COMPARE GENOME
-        minimap2 -ax asm5 --cs -t3 {input.ref} {input.genome} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
+        minimap2 -ax asm5 --cs -t {params.threads} {input.ref} {input.genome} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
         python3 ${{path_to_pipline}}/lib/python/sam2delta.py {output.sam} 2>> {log}.err;
         
         echo "GET SV WITH Assemblytics with alignment..."
@@ -3547,8 +3637,8 @@ rule SV_INSIDER:
         --out {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out \
         --keep-small-uniques 2>> {log}.err;
 
-        echo "GET SV WITH Assemblytics betwenn alignment..."
-        ## GET SV 2 Assemblytics betwenn alignment
+        echo "GET SV WITH Assemblytics between alignment..."
+        ## GET SV 2 Assemblytics between alignment
         perl ${{path_to_pipline}}/lib/perl/Assemblytics_between_alignments.pl \
         {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.coords.tab \
         50 \
