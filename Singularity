@@ -135,7 +135,7 @@ _EOF_
     cd
     
     #Python libs
-    python3 -m pip install biopython pandas numpy matplotlib svim==1.4.2 intervaltree scipy pysam
+    python3 -m pip install biopython pandas numpy==1.21.2 matplotlib svim==1.4.2 intervaltree scipy pysam
 
     # build variables
     export TOOLDIR=/opt/tools
@@ -156,9 +156,9 @@ _EOF_
 
     #installing Sniffles 1.0.12+
     cd $TOOLDIR
-    wget https://github.com/fritzsedlazeck/Sniffles/archive/master.tar.gz -O Sniffles.tar.gz
+    wget https://github.com/fritzsedlazeck/Sniffles/archive/refs/tags/v1.0.12b.tar.gz -O Sniffles.tar.gz
     tar xzvf Sniffles.tar.gz
-    cd Sniffles-master/
+    cd Sniffles-1.0.12b/
     mkdir -p build/
     cd build/
     cmake ..
