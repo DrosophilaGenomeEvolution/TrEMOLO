@@ -95,7 +95,7 @@ _EOF_
     R --slave -e 'install.packages("RColorBrewer")'
     R --slave -e 'install.packages("ggplot2")'
     R --slave -e 'install.packages("extrafont")'
-    R --slave -e 'install.packages("rmarkdown")'
+    #R --slave -e 'install.packages("rmarkdown")'
     R --slave -e 'install.packages("kableExtra")'
     R --slave -e 'install.packages("dplyr")'
     R --slave -e 'install.packages("reshape2")'
@@ -105,7 +105,10 @@ _EOF_
     R --slave -e 'install.packages("viridisLite")'
     R --slave -e 'install.packages("viridis")'
     R --slave -e 'install.packages("bookdown")'
-    R --slave -e 'install.packages("knitr")'
+    #R --slave -e 'install.packages("knitr")'
+    R --slave -e 'devtools::install_github("yihui/knitr@v1.36")'
+    R --slave -e 'devtools::install_github("rstudio/rmarkdown@v2.11")'
+    R --slave -e 'require(devtools); install_version("rjson", version = "0.2.20")'
 
     #samtools
     cd /usr/bin

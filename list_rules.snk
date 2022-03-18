@@ -984,6 +984,10 @@ rule REPORT :
             R --save -e 'if(!require(stringi)) install.packages("stringi")' >&2
             R --save -e 'if(!require(stringr)) install.packages("stringr")' >&2
 
+            # R --save -e 'devtools::install_github("yihui/knitr@v1.33")' >&2
+            # R --save -e 'devtools::install_github("rstudio/rmarkdown@v2.10")' >&2
+            # R --save -e 'require(devtools); install_version("rjson", version = "0.2.20")' >&2
+
             echo "MAKE REPORT"
             make
 
