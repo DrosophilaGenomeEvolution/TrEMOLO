@@ -2189,6 +2189,10 @@ rule FREQUENCE :
         path_snk        = path_snk,
         work_directory  = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
+        preset_view    = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_VIEW"]["PRESET_OPTION"],
+        preset_sort    = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_SORT"]["PRESET_OPTION"],
+        preset_callmd  = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_CALLMD"]["PRESET_OPTION"],
+
         pars_bln_option = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
 
         env             = env, #source environnement
@@ -2220,8 +2224,8 @@ rule FREQUENCE :
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         samtools index {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam 
-        samtools view -h -F 2830 {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam > {params.work_directory}/MAPPING_POSTION_TE.sam
-        #samtools view -h -F 2574 {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam > {params.work_directory}/MAPPING_POSTION_TE.sam
+        samtools view {params.preset_view} -h -F 2830 {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam > {params.work_directory}/MAPPING_POSTION_TE.sam
+        #samtools view {params.preset_view} -h -F 2574 {params.work_directory}/OUTSIDER/MAPPING/MAPPING_POSTION_TE.bam > {params.work_directory}/MAPPING_POSTION_TE.sam
 
         awk 'OFS="\t"{{split($2, a, ":"); print a[1], a[3], $5, $1"|"a[5]}}' {input.all_te} \
             | sort -k 1 > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
@@ -2231,10 +2235,10 @@ rule FREQUENCE :
             {params.work_directory}/MAPPING_POSTION_TE.sam \
             {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sam
 
-        samtools sort {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sam > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam
+        samtools sort {params.preset_sort} {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sam > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam
         samtools index {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam
-        samtools calmd {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam {input.genome} > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE_MD.sorted.bam 2> {log}.err
-        samtools view -b -h {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE_MD.sorted.bam > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam
+        samtools calmd {params.preset_callmd} {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE.sorted.bam {input.genome} > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE_MD.sorted.bam 2> {log}.err
+        samtools view {params.preset_view} -b -h {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_MAPPING_POSTION_TE_MD.sorted.bam > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam
         samtools index {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam
 
         bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/POSITION_START_TE.bed -b {input.bed} -w 30 | awk 'OFS="\t"{{split($9, sp, ":"); print $4, sp[2]}}' > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_NUMBER_SOFT.txt
@@ -2404,6 +2408,11 @@ rule FREQ_INSIDER:
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
         env            = env,
+
+        preset_view    = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_VIEW"]["PRESET_OPTION"],
+        preset_sort    = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_SORT"]["PRESET_OPTION"],
+        preset_callmd  = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_CALLMD"]["PRESET_OPTION"],
+
         
         #COLOR 
         cmess          = bcolors.CYAN,
@@ -2433,11 +2442,11 @@ rule FREQ_INSIDER:
         cat {input.TE_INS} | cut -f 2 | \
             awk -v margin_flank="5" -F ":" 'OFS="\t"{{split($6, a, "-"); print $5, a[1]+margin_flank, a[1]+margin_flank+1; print $5, a[2]-margin_flank, a[2]-margin_flank+1}}' > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE_IN.bed
 
-        samtools view -h -b {input.bam} -F 2048 -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
+        samtools view {params.preset_view} -h -b {input.bam} -F 2048 -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
         samtools index {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
 
         #DROP CLIPPED
-        samtools view -h -b {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam \
+        samtools view {params.preset_view} -h -b {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam \
             -F 2048 -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE_IN.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp2_flank_TE_OUT.bam
 
         mv {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp2_flank_TE_OUT.bam {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
@@ -2710,6 +2719,10 @@ rule DETECTION_TE :
 
         env            = env, #source environnement
 
+        preset_view    = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_VIEW"]["PRESET_OPTION"],
+        preset_sort    = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_SORT"]["PRESET_OPTION"],
+        preset_callmd  = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_CALLMD"]["PRESET_OPTION"],
+
         call_sv                = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         CHROM_KEEP             = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
         pars_bln_option        = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
@@ -2794,7 +2807,7 @@ rule DETECTION_TE :
                 --combine_name {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv {params.pars_bln_option};
         fi;
         
-        samtools index {input.bam} #2> {log.DETECTION}.err
+        samtools index {input.bam} #2> {log.DETECTION}.ervir
 
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] CALCUL FREQUENCE TE [^-^] {params.cend}"
         
@@ -2864,7 +2877,7 @@ rule DETECTION_TE :
         #** GET BAM TE **#
         echo "   GET BAM TE..."
         awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -v size="15" -F ":" 'OFS="\t"{{print $1, $3-size, $3+size, $5":"$9}}' > {params.work_directory}/OUTSIDER/TE_DETECTION/tmp_POSITION_START_TE.bed
-        samtools view -h -b {input.bam} -L {params.work_directory}/OUTSIDER/TE_DETECTION/tmp_POSITION_START_TE.bed > {output.bam}
+        samtools view {params.preset_view} -h -b {input.bam} -L {params.work_directory}/OUTSIDER/TE_DETECTION/tmp_POSITION_START_TE.bed > {output.bam}
 
         rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/tmp_POSITION_START_TE.bed
         
