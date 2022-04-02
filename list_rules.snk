@@ -3066,7 +3066,8 @@ rule svim :
 
         ##printf "%s\\n" "{params.cmess} [SNK]--[`date`] SVIM DONE CHECK log file : {log}.err, {log}.out {params.cend}"
 
-        begin_load
+        begin_load `cat {params.work_directory}/.pid`
+        #kill -10 `cat {params.work_directory}/.pid` || echo
         run_cmd "svim alignment --read_names --insertion_sequences --minimum_depth 1 {params.work_directory}/OUTSIDER/VARIANT_CALLING/SVIM_RESULT {input.bam} {input.genome}" "{log}" "SVIM" "False";
         end_load
         sleep 1
@@ -3123,14 +3124,16 @@ rule sniffles :
         ## version work
         if [ "$version" = "1.0.10" ]; then
 
-            begin_load
+            begin_load `cat {params.work_directory}/.pid`
+            #kill -10 `cat {params.work_directory}/.pid` || echo
             run_cmd "sniffles --report_seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.10" "False";
             end_load
             sleep 1
 
         elif [ "$version" = "1.0.12" ] || [ "$version" = "1.0.11" ]; then
 
-            begin_load
+            begin_load `cat {params.work_directory}/.pid`
+            #kill -10 `cat {params.work_directory}/.pid` || echo
             run_cmd "sniffles --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.12" "False";
             end_load
             sleep 1
@@ -3158,7 +3161,9 @@ rule samtools :
     params:
         #DATA
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+        
         env            = env, #source environnement
+        path_snk       = path_snk,
         
         #PARAMS
         preset_view    = config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_VIEW"]["PRESET_OPTION"],
@@ -3177,6 +3182,8 @@ rule samtools :
     shell:
         """
         {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+        
         
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
@@ -3264,7 +3271,8 @@ rule mapping :
         #MAPPING
         #minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} > {output} 2>> {log}.err;
         
-        begin_load
+        begin_load `cat {params.work_directory}/.pid`
+        #kill -10 `cat {params.work_directory}/.pid` || echo
         run_cmd "minimap2 -ax {params.preset} {params.option} {input.genome} {input.read} | tee {output}" "{log}" "MINIMAP2" "False"; 
         end_load
         sleep 1
@@ -3636,6 +3644,7 @@ rule SV_INSIDER:
         mkdir -p {params.work_directory}/log/
 
         path_to_pipline=`dirname {params.path_snk}`
+        
 
         rm -f `find {params.work_directory} -name "*.fa*.fai"`
         rm -f {log}.err {log}.log

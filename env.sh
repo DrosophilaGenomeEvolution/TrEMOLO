@@ -18,23 +18,6 @@ UNDERLINE='\033[4m'
 #FUNCTION#
 #################
 
-run_cmd () { 
-    cmd=$1;
-    log=$2;
-    title=$3;
-    show_out=$4;
-
-    #printf "\n%s\n\n" "${CYAN} [SNK]--[`date`] $title ${END}"
-    printf "%s\n" "$cmd";
-    (eval "$cmd" 2>> ${log}.err 1>> ${log}.out && echo -e "${GREEN} TASK $title is DONE ${END} check ${log}.out AND ${log}.err") \
-        || echo -e "${RED} TASK ERROR ${END} :  $cmd  \n PLEASE CHECK : ${log}.err";
-    
-    if [ $show_out = "True" ]; then
-        cat ${log}.out;
-    fi;
-};
-
-
 info_msg () {
     message=$1
 
@@ -59,14 +42,43 @@ warn_msg () {
 }
 
 
-begin_load (){
-    (bash ${path_to_pipline}/lib/bash/load.sh &) || echo
+init_load (){
+    #(bash ${path_to_pipline}/lib/bash/load.sh &) || echo
+    #(node ${path_to_pipline}/lib/nodejs/load.js &) || echo
+    node ${path_to_pipline}/lib/nodejs/load.js &
+    echo $! > ${path_to_work}/.pid
+
 }
 
+begin_load (){
+    #(bash ${path_to_pipline}/lib/bash/load.sh &) || echo
+    sh ${path_to_pipline}/lib/bash/begin_load.sh;
+}
 
 end_load (){
     sh ${path_to_pipline}/lib/bash/end_load.sh;
 }
+
+
+run_cmd () { 
+    cmd=$1;
+    log=$2;
+    title=$3;
+    show_out=$4;
+
+    #printf "\n%s\n\n" "${CYAN} [SNK]--[`date`] $title ${END}"
+    printf "%s\n" "$cmd";
+    ( eval "$cmd" 2>> ${log}.err 1>> ${log}.out && \
+        end_load && \
+        echo -e "${GREEN} TASK $title is DONE ${END} check ${log}.out AND ${log}.err" ) \
+            || echo -e "${RED} TASK ERROR ${END} :  $cmd  \n PLEASE CHECK : ${log}.err";
+    
+    if [ $show_out = "True" ]; then
+        cat ${log}.out;
+    fi;
+};
+
+
 
 
 

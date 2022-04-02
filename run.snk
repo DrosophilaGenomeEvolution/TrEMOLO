@@ -138,7 +138,7 @@ os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 onerror:
     print("AN ERROR OCCURRED ")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/bash/load.sh\" | awk '$8==\"bash\" {{print $2}}'` 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
 
 onsuccess:
     shell("rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\"` ")
@@ -182,6 +182,7 @@ rule TrEMOLO_BUILD :
         
         {params.env};
         path_to_pipline=`dirname {params.path_snk}`
+        path_to_work=`dirname {params.work_directory}`
 
         mkdir -p {params.work_directory}/SNAKE_USED/
         mkdir -p {params.work_directory}/log/
@@ -193,6 +194,11 @@ rule TrEMOLO_BUILD :
         
         mkdir -p ${{path_to_pipline}}/lib/C++/bin
         g++ ${{path_to_pipline}}/lib/C++/chain_to_id.cpp -o ${{path_to_pipline}}/lib/C++/bin/chain_to_id;
+
+
+        node ${{path_to_pipline}}/lib/nodejs/load.js &
+        echo $! > {params.work_directory}/.pid
+
 
         ###
         #INSIDER
@@ -260,12 +266,13 @@ rule TrEMOLO_BUILD :
             if test -e dryrun_validate ; then
                 rm -f dryrun_validate;
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
+                
                 snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} 2>> {params.work_directory}/log/Snakefile_insider.err | tee -p {params.work_directory}/log/Snakefile_insider.log \
                     || (fail_msg "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_insider.snk\\n\\n" && \
                     echo "snake log file : {params.work_directory}/log/Snakefile_insider.log" && \
                     echo " Error file : {params.work_directory}/log/Snakefile_insider.err" | tee -a {params.work_directory}/log/Snakefile_insider.log && \
                         rm -f ${{path_to_pipline}}/Snakefile);
-
+                
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_insider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_insider.log
             fi;
@@ -373,6 +380,7 @@ rule TrEMOLO_BUILD :
             test -s instruction.txt && test -s {params.work_directory}/OUTSIDER && mv instruction.txt {params.work_directory}/OUTSIDER/instructions.txt
         fi;
 
+        kill -s 15 `cat {params.work_directory}/.pid`
 
         ## pour les plus malin ^^
         if [ {params.choice_insider_sv} != "True" ] && [ {params.choice_outsider_sv} != "True" ]; then
