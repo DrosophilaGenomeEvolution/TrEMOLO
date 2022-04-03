@@ -380,7 +380,7 @@ rule TrEMOLO_BUILD :
             test -s instruction.txt && test -s {params.work_directory}/OUTSIDER && mv instruction.txt {params.work_directory}/OUTSIDER/instructions.txt
         fi;
 
-        kill -s 15 `cat {params.work_directory}/.pid`
+        kill -s 15 `cat {params.work_directory}/.pid` || echo
 
         ## pour les plus malin ^^
         if [ {params.choice_insider_sv} != "True" ] && [ {params.choice_outsider_sv} != "True" ]; then
