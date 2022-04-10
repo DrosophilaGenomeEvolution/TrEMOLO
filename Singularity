@@ -10,6 +10,7 @@ From: ubuntu:20.04
         Assemblytics
         Snakemake 5.5.2+
         Minimap2 2.16+
+        Samtools 1.15.1
         Samtools 1.9
         Sniffles 1.0.10+
         SVIM 1.4.2+
@@ -114,7 +115,6 @@ _EOF_
     #reshape2_1.4.4     dplyr_1.0.8        kableExtra_1.3.4   extrafont_0.17    
     #ggplot2_3.3.5      RColorBrewer_1.1-2
 
-    #R --slave -e 'devtools::install_github("yihui/knitr@v1.36")'
     R --slave -e 'require(devtools); install_version("knitr", version = "1.38")'
     R --slave -e 'require(devtools); install_version("rmarkdown", version = "2.13")'
     R --slave -e 'require(devtools); install_version("bookdown", version = "0.25")'
@@ -131,7 +131,26 @@ _EOF_
     R --slave -e 'require(devtools); install_version("RColorBrewer", version = "1.1-2")'    
     
 
-    #samtools
+    ##samtools1.15.1
+    cd /usr/bin
+    wget https://github.com/samtools/htslib/releases/download/1.15.1/htslib-1.15.1.tar.bz2
+    tar -vxjf htslib-1.15.1.tar.bz2
+    cd htslib-1.15.1
+    make
+
+    cd ..
+    wget https://github.com/samtools/samtools/releases/download/1.15.1/samtools-1.15.1.tar.bz2
+    tar -vxjf samtools-1.15.1.tar.bz2
+    cd samtools-1.15.1
+    make
+
+    cd ..
+    wget https://github.com/samtools/bcftools/releases/download/1.15.1/bcftools-1.15.1.tar.bz2
+    tar -vxjf bcftools-1.15.1.tar.bz2
+    cd bcftools-1.15.1
+    make
+
+    ##samtools 1.9
     cd /usr/bin
     wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
     tar -vxjf htslib-1.9.tar.bz2
@@ -167,16 +186,6 @@ _EOF_
     #Preparing Directories
     mkdir -p $TOOLDIR
 
-    #installing SamTools 1.9
-    cd $TOOLDIR
-    mkdir samtools1.9
-    cd samtools1.9
-    wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
-    tar -xf samtools-1.9.tar.bz2
-    cd samtools-1.9
-    ./configure
-    make all all-htslib
-    make install install-htslib
 
     #installing Sniffles 1.0.12+
     cd $TOOLDIR
@@ -191,23 +200,12 @@ _EOF_
     ln -s $PWD/sniffles /usr/bin/sniffles
 
 
-    #installing Flye 2.8+
-    # cd $TOOLDIR
-    # git clone https://github.com/fenderglass/Flye
-    # cd Flye
-    # python3 setup.py install
-
     #install RaGOO
     cd $TOOLDIR
     git clone https://github.com/malonge/RaGOO.git
     cd RaGOO
     python3 setup.py install
 
-    #install WTDBG2
-    # cd $TOOLDIR
-    # git clone https://github.com/ruanjue/wtdbg2
-    # cd wtdbg2
-    # make
 
     #install TrEMOLO
     cd $TOOLDIR
@@ -219,11 +217,17 @@ _EOF_
 
 %environment
     export LC_ALL=C
-    #export PATH=$TOOLDIR/wtdbg2/:$TOOLDIR/RaGOO/:$TOOLDIR/Flye/:$TOOLDIR/TrEMOLO/:$PATH
+    export TOOLDIR=/opt/tools
     export PATH=$TOOLDIR/RaGOO/:$TOOLDIR/TrEMOLO/:$PATH
     export PATH="$PATH:/usr/bin/bcftools-1.9"
     export PATH="$PATH:/usr/bin/samtools-1.9"
     export PATH="$PATH:/usr/bin/htslib-1.9"
+
+    export SAMTOOLS_1_9="/usr/bin/samtools-1.9"
+    export SAMTOOLS_1_15_1="/usr/bin/samtools-1.15.1"
+    # export PATH="$PATH:/usr/bin/bcftools-1.15.1"
+    # export PATH="$PATH:/usr/bin/samtools-1.15.1"
+    # export PATH="$PATH:/usr/bin/htslib-1.15.1"
     export PATH="$PATH:/usr/bin/samtools/bcftools/"
 
 %runscript
