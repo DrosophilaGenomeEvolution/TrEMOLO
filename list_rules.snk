@@ -282,7 +282,8 @@ rule REPORT :
             size_per=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv | cut -f 4 || echo "NONE"`
             #echo "size_per: $size_per; pident: $pident";
 
-            intersect_to_del=`grep -w "$ID" {params.work_directory}/ID_OUTSIDER_INTERSECT_TO_DEL.txt || echo ""`;
+            test -s {params.work_directory}/ID_OUTSIDER_INTERSECT_TO_DEL.txt && \
+                intersect_to_del=`grep -w "$ID" {params.work_directory}/ID_OUTSIDER_INTERSECT_TO_DEL.txt || echo ""` || intersect_to_del="";
 
             TYPE_TrEMOLO="INS";
             if [ -n "$intersect_to_del" ]; then
@@ -341,13 +342,14 @@ rule REPORT :
             else
                 FREQ_AFTER="NONE";
             fi;
+            #echo "FREQ_AFTER : $FREQ_AFTER"
 
             #GET ID_TrEMOLO
             ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id`
             TYPE=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv | cut -f 2  | cut -d ":" -f 2 | sed 's/[<>]//g'`
             file_tmp=`ls {params.work_directory}/OUTSIDER/READ_FASTQ_TE/ | awk -v ID="$ID" -F ":" '$2==ID'`
-            RS=`grep "^[@]" {params.work_directory}/OUTSIDER/READ_FASTQ_TE/$file_tmp | ${{path_to_pipline}}/lib/C++/bin/chain_to_id`
-
+            test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/$file_tmp || warn_msg "ID=$ID : fastq file not found";
+            RS=`grep "^[@]" {params.work_directory}/OUTSIDER/READ_FASTQ_TE/$file_tmp | ${{path_to_pipline}}/lib/C++/bin/chain_to_id || echo "ERROR_$ID"`
             ID_TrEMOLO="TE_ID_OUTSIDER.$ID_POS.$TYPE.$RS";
 
             echo -e "$line\t$TSD_OK\t$pident\t$size_per\t$SIZE_TE\t$NEW_POS\t$FREQ_BEFOR\t$FREQ_AFTER\t$ID_TrEMOLO\t$TYPE_TrEMOLO" >> {params.work_directory}/TE_INFO.csv
@@ -1369,7 +1371,424 @@ rule TSD :
 #END TSD
 
 
+rule TSD_MULTI_THREADS :
+    input:
+        input_link=[],
+        #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "ET_FIND_FA"),
+        fasta_TE  = config["DATA"]["TE_DB"],
+        genome    = config["DATA"]["GENOME"],
+        
 
+    output:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/VALUES_TSD_GROUP_OUTSIDER.csv" if config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"] == True else config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/VALUES_TSD_INSIDER_GROUP.csv",
+        #directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/" + "TSD"),
+        output_link=[],
+
+    params:
+        path_snk       = path_snk,
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        env            = env, #source environnement
+
+        threads        = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
+        choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
+
+        #TSD
+        FILE_SIZE_TE_TSD = config["PARAMS"]["OUTSIDER_VARIANT"]["TSD"]["FILE_SIZE_TE_TSD"],
+        SIZE_FLANK       = config["PARAMS"]["OUTSIDER_VARIANT"]["TSD"]["SIZE_FLANK"],
+
+        #Color message
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+        cbold          = bcolors.BOLD,
+
+        step=0,
+    log:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/TSD",
+
+    shell:
+        #TODO broullion
+        """
+
+        {params.env}
+        path_to_pipline=`dirname {params.path_snk}`
+
+        
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] <<< TSD >>> {params.cend}"
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
+
+        rm -f {log}.*
+
+
+        ###echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
+        echo -e "x\ty\tcondition" > {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
+
+
+        mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/TSD ;
+        mkdir -p {params.work_directory}/TSD_TMP
+
+        
+        read_directory="{params.work_directory}/OUTSIDER/READ_FASTQ_TE"
+        fasta_dir_find="{params.work_directory}/OUTSIDER/FASTA_FIND"
+
+        echo "   SIZE FLANKING SEQUENCE : {params.SIZE_FLANK}"
+
+        #fun parallel
+        find_TSD_OUTSIDER () {{
+            TE_found_fa=$1;
+
+            nameTE=`echo $TE_found_fa | sed -E 's/TE_REPORT_FOUND_|\.fasta//g'` ;
+                
+            ! test -s {params.FILE_SIZE_TE_TSD} && fail_msg "  Warning FILE {params.FILE_SIZE_TE_TSD} NOT FOUND\n"
+            
+            SIZE_TSD=`test -n "{params.FILE_SIZE_TE_TSD}" && test -s {params.FILE_SIZE_TE_TSD} && grep -w "${{nameTE}}" {params.FILE_SIZE_TE_TSD} || echo "NONE"`; # EX: ZAM 4 :or: -1
+            
+            #echo "TE : $nameTE"
+            
+            if [[ $SIZE_TSD != "NONE" ]]; then
+                SIZE_TSD=`echo $SIZE_TSD | awk '{{print $2}}'`;
+                echo "SIZE-TSD : $SIZE_TSD"
+
+                #echo "TE=$nameTE ; SIZE TSD=$SIZE_TSD" 
+                
+                sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
+                   ${{read_directory}} \
+                   ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
+
+                echo "sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore" | tr -d " " | tr "," "\t" > {params.work_directory}/test.csv
+                awk 'NR>1 && OFS="\t"{{print $1, $2, $3, $4, $5, "mismatch", "gapopen", $6, $7, $8, $9, "evalue", "bitscore"}}' {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv  >> {params.work_directory}/test.csv
+
+                sh ${{path_to_pipline}}/lib/TSD/tsd_te.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
+                    ${{read_directory}} \
+                    ${{fasta_dir_find}} \
+                    {input.fasta_TE} \
+                    {params.SIZE_FLANK} \
+                    $SIZE_TSD {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv \
+                    {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt \
+                    {input.genome} >> {log}.out 2>> {log}.err || (fail_msg "ERROR FOUND TSD PLEASE CHECK {log}.out, {log}.err")
+
+                
+                sh ${{path_to_pipline}}/lib/TSD/revise_TSD.sh {input.genome} \
+                    {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt \
+                    {params.SIZE_FLANK} \
+                    $SIZE_TSD \
+                    {params.work_directory}/TSD_TMP >> {log}.out 2>> {log}.err;
+                    
+            else
+                SIZE_TSD=-1;
+                #echo "SIZE-TSD = $SIZE_TSD"
+
+                #echo "TE=$nameTE ; SIZE TSD=?" 
+                
+                sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
+                   ${{read_directory}} \
+                   ${{fasta_dir_find}} >> {log}.out 2>> {log}.err;
+
+                echo "sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore" | tr -d " " | tr "," "\t" > {params.work_directory}/test.csv
+                awk 'NR>1 && OFS="\t"{{print $1, $2, $3, $4, $5, "mismatch", "gapopen", $6, $7, $8, $9, "evalue", "bitscore"}}' {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv  >> {params.work_directory}/test.csv
+
+                sh ${{path_to_pipline}}/lib/TSD/tsd_te.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
+                    ${{read_directory}} \
+                    ${{fasta_dir_find}} \
+                    {input.fasta_TE} \
+                    {params.SIZE_FLANK} \
+                    $SIZE_TSD {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv \
+                    {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt \
+                    {input.genome} >> {log}.out 2>> {log}.err;
+
+                if [ 0 -ne `grep "^(" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | grep "OK" -c` ]; then
+                    SIZE_TSD_MOY=`grep "^(" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | grep "OK" | tr -d ")" | cut -d "," -f 6 | awk 'BEGIN{{somme=0}}{{somme+=$0}}END{{print int(somme/NR)}}'`
+                    echo "SIZE-TSD-MEAN : $SIZE_TSD_MOY ;"
+
+                    sh ${{path_to_pipline}}/lib/TSD/revise_TSD.sh {input.genome} \
+                        {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt \
+                        {params.SIZE_FLANK} \
+                        $SIZE_TSD_MOY \
+                        {params.work_directory}/TSD_TMP >> {log}.out 2>> {log}.err;
+                fi;
+                    
+            fi;
+            
+            TOTAL=`grep "^OK/total" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 2`
+            NB_TSD_OK=`grep "^OK/total" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+            NB_TSD_KO=`grep "^KO/total" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+            NB_TSD_K_gap_O=`grep "^K-O/total" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+
+
+            if test -e {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}_KO_corrected.txt ; then
+                NB_TSD_OK_corrected=`grep "OK/total" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}_KO_corrected.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+                NB_TSD_KO_corrected=`grep "KO/total" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}_KO_corrected.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+            else
+                NB_TSD_OK_corrected=0;
+                NB_TSD_KO_corrected=0;
+            fi;
+
+            OK_K_gap_O=$(($NB_TSD_OK + $NB_TSD_K_gap_O + $NB_TSD_OK_corrected));
+                        
+            PERCENT=$(($OK_K_gap_O*100/$TOTAL))
+
+            ###KO=$(($NB_TSD_KO-$NB_TSD_OK_corrected))
+            KO=$(($TOTAL-$OK_K_gap_O));
+
+            echo "TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ✔;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ✘;   TSD CORRECTED [KO->OK]:$NB_TSD_OK_corrected ;  "
+
+            ###echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD.csv
+
+            echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD OK" >> {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
+            echo -e "${{nameTE}}\t${{KO}}\tTSD KO" >> {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
+        }}
+
+
+
+        if [ {params.choice_outsider_sv} = "True" ]; then
+            
+
+            NB_FILE=`ls {params.work_directory}/OUTSIDER/ET_FIND_FA | wc -l` ;
+            i=0 ;
+
+            #PARLELIZE
+            count_task_running=0;
+            pids=();
+            for TE_found_fa in `ls {params.work_directory}/OUTSIDER/ET_FIND_FA/`; do
+                
+                ###echo "[TSD:snk] $i/$NB_FILE" ;
+
+                find_TSD $TE_found_fa &
+                pids[${{count_task_running}}]=$!;
+                count_task_running=$(($count_task_running+1));
+
+                if [ $count_task_running -ge {params.threads} ]; then
+                    c=1;
+                    for pid in ${{pids[*]}}; do
+                        wait $pid || echo > /dev/null;
+                        #echo "PID : $pid; TASK : $i; N : $c; done !"
+                        c=$(($c+1));
+                    done;
+                    pids=();
+                    count_task_running=0;
+                fi;
+
+                i=$(($i + 1)) ;
+                printf "%s\\n" "{params.cmess} [SNK]--[`date`] [TSD:snk] : $i/$NB_FILE {params.cend}"
+            done;
+        fi;
+
+        #WAIT LAST TASKS
+        if [ $count_task_running -lt {params.threads} ]; then
+            pids[${{count_task_running}}]=$!
+            task=1;
+            for pid in ${{pids[*]}}; do
+                wait $pid || echo > /dev/null;
+                #echo "PID : $pid; TASK : $i; N : $c; done !"
+                task=$(($task+1));
+            done;
+        fi;
+
+
+        #fun parallel
+        find_TSD_INSIDER () {{
+            i=$1;
+            
+            echo $i | tr ":" "\t" > {params.work_directory}/TE.bed;
+            bedtools getfasta -fi {input.genome} -bed {params.work_directory}/TE.bed > {params.work_directory}/TE.fasta
+
+            ID=`cat {params.work_directory}/TE.bed | cut -f 4 | cut -d "|" -f 2`
+            #echo "ID = $ID"
+            
+            strand=`grep -w $ID {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | awk 'OFS="\t"{{split($2, a, ":"); print a[7]}}'`
+            #echo "ID = $ID; strand = $strand;"
+            
+            cat {params.work_directory}/TE.bed | awk -v size_flank="{params.SIZE_FLANK}" 'OFS="\t"{{print $1, $2-size_flank, $2; print $1, $3, $3+size_flank;}}' > {params.work_directory}/FLANK.bed;
+            bedtools getfasta -fi {input.genome} -bed {params.work_directory}/FLANK.bed > {params.work_directory}/FLANK.fasta
+
+            #echo "ARG : {params.work_directory}/FLANK.fasta {params.work_directory}/TE.fasta {params.SIZE_FLANK} $ID $strand -1"
+            if [ "$strand" = "-" ] || [ "$strand" = "+" ]; then
+                
+                python3 ${{path_to_pipline}}/lib/TSD/find_tsd.py {params.work_directory}/FLANK.fasta {params.work_directory}/TE.fasta {params.SIZE_FLANK} "$ID" "$strand" "-1" >> {params.work_directory}/total_results_tsd.txt 
+            
+            fi;
+        }}
+
+
+        ## TE INSIDER 
+        if test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv && [ `cat {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | wc -l` -ge 2 ]; then
+                
+            rm -f {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+            rm -f {params.work_directory}/VALUES_TSD_INSIDER.csv
+
+            printf "\\n%s\\n\\n" "{params.cmess} [SNK] TSD TE ASSEMBLED {params.cend}"
+            mkdir -p {params.work_directory}/INSIDER/TE_DETECTION/TSD/
+            
+            awk 'NR>1 {{ print $1 }}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | sort -u > {params.work_directory}/TE_NAME.txt
+
+            NB_TE=`cat {params.work_directory}/TE_NAME.txt | wc -l`
+
+            e=0;
+
+            # show_step="$e/$NB_TE : TSD TE ASSEMBLED "
+            # number_of_char=`echo "$show_step" | wc -c`
+            # number_of_char=$(($number_of_char-1));
+            # printf "\b%.0s" `seq 1 $number_of_char`
+            # printf "$show_step";
+
+            for TE in `cat {params.work_directory}/TE_NAME.txt`; do
+                
+                #echo "TE == $TE"
+                grep "^$TE\s" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | \
+                    awk 'OFS="\t"{{split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1]}}' > {params.work_directory}/INS_$TE.bed;
+                
+                rm -f {params.work_directory}/total_results_tsd.txt;
+
+                NB_TE_FM=`cat {params.work_directory}/INS_$TE.bed | wc -l`
+
+                a=0;
+
+                show_step="$a/$NB_TE_FM : TSD TE ASSEMBLED "
+                number_of_char=`echo "$show_step" | wc -c`
+                number_of_char=$(($number_of_char-1));
+                printf "\b%.0s" `seq 1 $number_of_char`
+                printf "$show_step";
+
+                count_task_running=0;
+                pids=();
+
+                for i in `cat {params.work_directory}/INS_$TE.bed | tr "\t" ":"`; 
+                do 
+                    #echo "i == $i";
+                    
+                    find_TSD_INSIDER $i &
+                    pids[${{count_task_running}}]=$!;
+                    count_task_running=$(($count_task_running+1));
+
+                    if [ $count_task_running -ge {params.threads} ]; then
+                        c=1;
+                        for pid in ${{pids[*]}}; do
+                            wait $pid || echo > /dev/null;
+                            #echo "PID : $pid; TASK : $i; N : $c; done !"
+                            c=$(($c+1));
+                        done;
+                        pids=();
+                        count_task_running=0;
+                    fi;
+
+                    a=$(($a+1));
+
+                    show_step="$a/$NB_TE_FM : CHECKING TSD TE ASSEMBLED "
+                    number_of_char=`echo "$show_step" | wc -c`
+                    number_of_char=$(($number_of_char-1));
+                    printf "\b%.0s" `seq 1 $number_of_char`
+                    printf "$show_step";
+                done;
+
+                #WAIT LAST TASKS
+                if [ $count_task_running -lt {params.threads} ]; then
+                    pids[${{count_task_running}}]=$!
+                    task=1;
+                    for pid in ${{pids[*]}}; do
+                        wait $pid || echo > /dev/null;
+                        #echo "PID : $pid; TASK : $i; N : $c; done !"
+                        task=$(($task+1));
+                    done;
+                fi;
+
+                #bash ${{path_to_pipline}}/lib/TSD/TSD_VG.sh {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv {input.genome}
+                
+                bash ${{path_to_pipline}}/lib/TSD/TSD_VG.sh {params.work_directory}/total_results_tsd.txt
+                
+                nameTE=$TE
+
+                mv {params.work_directory}/total_results_tsd.txt {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt
+
+                rm -f {params.work_directory}/TE.bed {params.work_directory}/INS_$TE.bed ;
+                rm -f {params.work_directory}/TE.fasta {params.work_directory}/FLANK.fasta ;
+
+                e=$(($e+1));
+                echo "$e/$NB_TE : TE ASSEMBLED ";
+
+                # show_step="$e/$NB_TE : TSD TE ASSEMBLED "
+                # number_of_char=`echo "$show_step" | wc -c`
+                # number_of_char=$(($number_of_char-1));
+                # printf "\b%.0s" `seq 1 $number_of_char`
+                # printf "$show_step";
+
+                
+                TOTAL=`grep "^OK/total" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 2`
+                NB_TSD_OK=`grep "^OK/total" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+                NB_TSD_KO=`grep "^KO/total" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+                NB_TSD_K_gap_O=`grep "^K-O/total" {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt | tr -d " " | cut -d ":" -f 2 | cut -d "/" -f 1`
+
+                OK_K_gap_O=$(($NB_TSD_OK + $NB_TSD_K_gap_O));
+                            
+                PERCENT=$(($OK_K_gap_O*100/$TOTAL))
+
+                KO=$(($TOTAL-$OK_K_gap_O));
+
+                ## echo "TE:$TE ;  TOTAL-TE:$TOTAL ;   TSD [OK]:$NB_TSD_OK ;   TSD [K-O]:$NB_TSD_K_gap_O ;   TSD [KO]:$KO ;"
+
+                ## echo -e "${{nameTE}}\t${{PERCENT}}\tTE" >> {params.work_directory}/VALUES_TSD_INSIDER.csv
+
+                echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD OK" >> {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+                echo -e "${{nameTE}}\t${{KO}}\tTSD KO" >> {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+                
+                printf "%s\\n" "{params.cmess} [SNK]--[`date`] [TSD:snk] : $e/$NB_TE {params.cend}"
+
+            done;
+            rm -f {params.work_directory}/FLANK.bed {params.work_directory}/TE.bed {params.work_directory}/TE_NAME.txt
+            echo
+
+
+            #** TDS ALL **#
+            echo -e "x\ty\tcondition" > {params.work_directory}/VALUES_TSD_ALL_GROUP.csv
+            for TE in `cat {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv | awk 'NR>1' | cut -f 1 | sort -u`; do
+                ###echo "TE : $TE"
+                NBOK1=`grep -w "^$TE" {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv | grep OK | cut -f 2 || echo "0"`;
+                NBOK2=`grep -w "^$TE" {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv  | grep OK | cut -f 2 || echo "0"`;
+
+                if [ ! -n "$NBOK1" ]; then
+                    NBOK1=0;
+                fi;
+
+                if [ ! -n "$NBOK2" ]; then
+                    NBOK2=0;
+                fi;
+
+                NBKO1=`grep -w "^$TE" {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv | grep KO | cut -f 2 || echo "0"`;
+                NBKO2=`grep -w "^$TE" {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv | grep KO | cut -f 2 || echo "0"`;
+
+                if [ ! -n "$NBKO1" ]; then
+                    NBKO1=0;
+                fi;
+
+                if [ ! -n "$NBKO2" ]; then
+                    NBKO2=0;
+                fi;
+
+                echo -e "$TE\t$(($NBOK1+$NBOK2))\tTSD OK" >> {params.work_directory}/VALUES_TSD_ALL_GROUP.csv;
+                echo -e "$TE\t$(($NBKO1+$NBKO2))\tTSD KO" >> {params.work_directory}/VALUES_TSD_ALL_GROUP.csv;
+            done;
+
+            awk 'BEGIN{{print "x\ty\tcondition"}}{{print $0}}' {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv > {params.work_directory}/tmp.csv
+            mv {params.work_directory}/tmp.csv {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+        fi;
+
+
+        #rm -fr DIR_SEQ_TE_READ_POS
+        #rm -fr {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/DIR_SEQ_TE_READ_POS
+        #rm -f {params.work_directory}/OUTSIDER/FASTA_FIND/*.fasta.*
+        rm -fr {params.work_directory}/OUTSIDER/FASTA_FIND
+        #test -d DIR_SEQ_TE_READ_POS && \
+        #test -d {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/ && \
+        rm -f `find {params.work_directory} -name "*.fai"`
+        rm -fr {params.work_directory}/TSD_TMP
+
+        """
+
+
+
+#END TSD_MULTI_THREADS
 
 
 rule FIND_TE_ON_REF :
@@ -1689,7 +2108,7 @@ rule FIND_SV_ON_REF :
 
         rm -f {log}.*
         
-        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET SV INSIDER {params.cend}"
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] FIND SV ON REF {params.cend}"
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
@@ -1846,15 +2265,15 @@ rule TE_TOWARD_GENOME :
 
         #NO CHOICE
         grep -w -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/ID.txt {params.work_directory}/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.fasta -A 1 | grep -v "^\-\-" \
-        > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE_READS.fasta
+            > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE_READS.fasta
 
         awk 'BEGIN{{start=0; header=0;}} OFS="\t"{{if(substr($0, 1, 1) == ">"){{split($0, sp, ":"); header=$0; start=sp[3];}}else{{print header, start, start+length($0)}} }}' \
-         {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE_READS.fasta | sed 's/^>//g' > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_READS.bed
+            {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE_READS.fasta | sed 's/^>//g' > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_READS.bed
 
         
         #FOR DB SEQUENCE TO ANALYSIS REF
         grep -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/ID.txt {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL.bed \
-        > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.bed
+            > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.bed
 
         #FASTA TO FORMAT bed for script vr_to_genome
         while read l; do 
@@ -2097,6 +2516,10 @@ rule GET_READS_TE :
         printf "\b%.0s" `seq 1 $number_of_char`
         printf "$show_step";
 
+        PATH=`echo $PATH | sed "s|${{SAMTOOLS_1_9}}|${{SAMTOOLS_1_15_1}}|g"`
+
+        samtools fqidx {input.read}
+
         #EXTRACT ALL READS SUPPORT
         for read_file in `ls {params.work_directory}/OUTSIDER/ID_READS_TE`; do
 
@@ -2111,10 +2534,12 @@ rule GET_READS_TE :
                 printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [GET_READS_TE:snk] $read_file {params.cend}" >> {log}.out
                 printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [GET_READS_TE:snk] [GET_READS_TE:snk] $i/$NB_FILE : nb_read=$nb_read : id=$id {params.cend}" >> {log}.out
 
+                test -s {input.read}.fai || samtools fqidx {input.read}
+
                 ## EXTRACT READS
-                (grep -w $id {params.work_directory}/ID_TE_SV_REPORT.txt >> {log}.err && \
-                 samtools fqidx {input.read} -r {params.work_directory}/OUTSIDER/ID_READS_TE/$read_file > \
-                 {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq) || echo "$id NOT FOUND" >> {log}.err ;
+                (grep -w $id {params.work_directory}/ID_TE_SV_REPORT.txt >> {log}.err || echo "$id NOT FOUND" >> {log}.err && \
+                    samtools fqidx {input.read} --fai-idx {input.read}.fai -r {params.work_directory}/OUTSIDER/ID_READS_TE/$read_file > \
+                        {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq) || echo "$id NOT FOUND" >> {log}.err ;
 
                 ## CHANGE TO GOOD EXACTLY FORMAT FASTQ
                 (test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq && \
@@ -2157,6 +2582,8 @@ rule GET_READS_TE :
             awk -v num="$num" 'NR-1 == num' {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file > {params.work_directory}/OUTSIDER/ID_BEST_READ_TE.txt;
         done;
 
+        PATH=`echo $PATH | sed "s|${{SAMTOOLS_1_15_1}}|${{SAMTOOLS_1_9}}|g"`
+
         ## REMOVE
         rm -f {params.work_directory}/ID_RD_SEQ.txt {params.work_directory}/ID_TE_SV_REPORT.txt
         rm -f `find {params.work_directory} -name "*.fai"`
@@ -2165,6 +2592,190 @@ rule GET_READS_TE :
 
 
 #END GET_READS_TE
+
+
+#GET READS PARALLELIZE
+rule GET_READS_TE_MULTI_THREADS :
+    input:
+        all_te   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
+        bln      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
+        vcf      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/VARIANT_CALLING/SV.vcf",
+        read     = config["DATA"]["SAMPLE"],
+        fasta_TE = config["DATA"]["TE_DB"],
+        input_link=[],
+
+    output:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/ID_BEST_READ_TE.txt",
+        output_link=[],
+
+    params:
+        path_snk       = path_snk,
+        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        env            = env, #source environnement
+
+        threads                = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
+        CHROM_KEEP             = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
+        GET_SEQ_REPORT_OPTION  = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["GET_SEQ_REPORT_OPTION"],
+        #Color message
+        cmess          = bcolors.CYAN,
+        cfail          = bcolors.FAIL,
+        cend           = bcolors.END,
+        cbold          = bcolors.BOLD,
+
+        step=0,
+    log:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/GET_READS_TE"
+
+    shell:
+        """
+        {params.env}
+        rm -f {log}*
+
+        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET READS [^-^] {params.cend}"
+
+
+        rm -fr {params.work_directory}/OUTSIDER/READ_FASTQ_TE
+        mkdir -p {params.work_directory}/OUTSIDER/READ_FASTQ_TE ;
+
+        path_to_pipline=`dirname {params.path_snk}`
+
+        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
+
+        #GET ID only TE found
+        awk 'NR>1 {{print $2}}' {input.all_te} | cut -d":" -f 5 > {params.work_directory}/ID_TE_SV_REPORT.txt ; 
+
+        #EXTRACT ID ALL READS SUPPORT
+        python3 ${{path_to_pipline}}/lib/python/extract_region_reads_vcf.py -c {params.CHROM_KEEP} \
+          {input.vcf} \
+         -d {params.work_directory}/OUTSIDER/ID_READS_TE \
+         -i {params.work_directory}/ID_TE_SV_REPORT.txt ;
+
+        NB_FILE=`ls {params.work_directory}/OUTSIDER/ID_READS_TE | wc -l` ;
+        i=0 ;
+
+        show_step="$i/$NB_FILE TE "
+        number_of_char=`echo "$show_step" | wc -c`
+        number_of_char=$(($number_of_char-1));
+        printf "\b%.0s" `seq 1 $number_of_char`
+        printf "$show_step";
+
+        get_read() {{
+            read_file=$1;
+            i=$2;
+
+            region=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
+
+            test -s "{params.work_directory}/OUTSIDER/ID_READS_TE/$read_file" || warn_msg "ID FILE NOT FOUND {params.work_directory}/OUTSIDER/ID_READS_TE/$read_file"
+
+            if ! test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq; then
+
+                id=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]" | cut -d":" -f 2`
+                nb_read=`cat {params.work_directory}/OUTSIDER/ID_READS_TE/$read_file | sort | uniq | wc -l`
+                TE=`grep ":$id:[0-9]*:[IP]" {input.all_te} | cut -f 1 || echo "NONE"`
+
+                # printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [GET_READS_TE:snk] $read_file {params.cend}" >> {log}.out
+                # printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [GET_READS_TE:snk] [GET_READS_TE:snk] $i/$NB_FILE : nb_read=$nb_read : id=$id {params.cend}" >> {log}.out
+
+                test -s {input.read}.fai || samtools fqidx {input.read}
+
+                ## EXTRACT READS
+                (grep -w $id {params.work_directory}/ID_TE_SV_REPORT.txt >> {log}.err || echo "$id NOT FOUND" >> {log}.err && \
+                    samtools fqidx {input.read} --fai-idx {input.read}.fai -r {params.work_directory}/OUTSIDER/ID_READS_TE/$read_file > \
+                        {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq) || echo "$id NOT FOUND" >> {log}.err ;
+
+                test -s "{params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq" || warn_msg "{params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq FILE NOT FOUND"
+
+                ## CHANGE TO GOOD EXACTLY FORMAT FASTQ
+                (test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq && \
+                    python3 ${{path_to_pipline}}/lib/python/fastq_to_fastq.py \
+                         {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq \
+                         {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq >> {log}.out 2>> {log}.err) || ( fail_msg "READ EXTRACT id=$id FAIL NOT FOUND \\n" && exit 1);
+
+                test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq || echo "[ERROR EXTRACT READ] $id" >> {log}.err
+                
+                rm -f {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq
+            fi;
+        }}
+
+        
+        PATH=`echo $PATH | sed "s|${{SAMTOOLS_1_9}}|${{SAMTOOLS_1_15_1}}|g"`
+        #index
+        samtools fqidx {input.read}
+
+        #PARLELIZE
+        count_task_running=0;
+        pids=();
+        #EXTRACT ALL READS SUPPORT
+        for read_file in `ls {params.work_directory}/OUTSIDER/ID_READS_TE`; do
+
+            get_read "$read_file" "$i" &
+            pids[${{count_task_running}}]=$!;
+            count_task_running=$(($count_task_running+1));
+
+            if [ $count_task_running -ge {params.threads} ]; then
+                c=1;
+                for pid in ${{pids[*]}}; do
+                    wait $pid || echo > /dev/null;
+                    #echo "PID : $pid; TASK : $i; N : $c; done !"
+                    c=$(($c+1));
+                done;
+                pids=();
+                count_task_running=0;
+            fi;
+
+            i=$(($i + 1));
+
+            show_step="$i/$NB_FILE TE "
+            number_of_char=`echo "$show_step" | wc -c`
+            number_of_char=$(($number_of_char-1));
+            printf "\b%.0s" `seq 1 $number_of_char`
+            printf "$show_step";
+        done;
+
+        #WAIT LAST TASKS
+        if [ $count_task_running -lt {params.threads} ]; then
+            pids[${{count_task_running}}]=$!
+            task=1;
+            for pid in ${{pids[*]}}; do
+                wait $pid || echo > /dev/null;
+                #echo "PID : $pid; TASK : $i; N : $c; done !"
+                task=$(($task+1));
+            done;
+        fi;
+
+        printf "\\n%s\\n" "{params.cmess} [SNK]--[`date`] EXTRACT DONE ! {params.cend}"
+
+        #CHECK IF ALL READS ARE EXTRACTED
+        NB_REGION=`ls {params.work_directory}/OUTSIDER/ID_READS_TE | wc -l`;
+        NB_READS=`ls {params.work_directory}/OUTSIDER/READ_FASTQ_TE | wc -l`;
+
+        ##TODO VERIF UTILITY
+        #GET BEST ID TE
+        awk 'NR>1 {{print $2}}' {input.all_te} | cut -d ":" -f 5,8 > {params.work_directory}/tmp_ID_RD_SEQ.txt
+
+        grep -w -f {params.work_directory}/ID_TE_SV_REPORT.txt {params.work_directory}/tmp_ID_RD_SEQ.txt > {params.work_directory}/ID_RD_SEQ.txt
+
+        for i in `cat {params.work_directory}/ID_RD_SEQ.txt`; 
+        do  
+            ID=`echo $i | cut -d ":" -f 1`; 
+            num=`echo $i | cut -d ":" -f 2`; 
+            name_file=`ls {params.work_directory}/OUTSIDER/ID_READS_TE/ | grep -w "$ID"`; 
+
+            awk -v num="$num" 'NR-1 == num' {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file > {params.work_directory}/OUTSIDER/ID_BEST_READ_TE.txt;
+        done;
+
+        PATH=`echo $PATH | sed "s|${{SAMTOOLS_1_15_1}}|${{SAMTOOLS_1_9}}|g"`
+
+        ## REMOVE
+        rm -f {params.work_directory}/ID_RD_SEQ.txt {params.work_directory}/ID_TE_SV_REPORT.txt
+        rm -f `find {params.work_directory} -name "*.fai"`
+        rm -fr {params.work_directory}/OUTSIDER/ID_READS_TE
+        """
+
+
+#END GET_READS_TE_MULTI_THREADS
 
 
 
@@ -3183,8 +3794,7 @@ rule samtools :
         """
         {params.env}
         path_to_pipline=`dirname {params.path_snk}`
-        
-        
+                
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] SAMTOOLS [^-^] {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/

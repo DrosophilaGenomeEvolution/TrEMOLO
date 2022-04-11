@@ -3,16 +3,16 @@
 DATA: 
     GENOME:          "/path/to/genome_file.fasta"      #genome (fasta file) [required]
     SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq file) only if OUTSIDER_VARIANT = True [optional]
-    WORK_DIRECTORY:  "TrEMOLO_OUTPUT"                   #name of output directory [required or empty]
+    WORK_DIRECTORY:  "TrEMOLO_OUTPUT"                  #name of output directory [required or empty]
     TE_DB:           "/path/to/database_TE.fasta"      #Database of TE (a fasta file) [required]
-
 
 
 CHOICE:
     PIPELINE:
         OUTSIDER_VARIANT: True  # TE no assembled (out of genome)
-        INSIDER_VARIANT: False   # D'ont change it
+        INSIDER_VARIANT: False  # D'ont change it
         REPORT: True            # for getting report.html with graph
+        MODE_PARALLELING: False
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" # possibility (sniffles, svim) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
@@ -23,16 +23,17 @@ CHOICE:
 
 
 PARAMS:
+    THREADS: 8 #number of threads for some task
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 preset option is map-ont by default (map-pb, map-ont etc)
             OPTION: '-t 8' # more option of minimap2
         SAMTOOLS_VIEW:
-            PRESET_OPTION: ''
+            PRESET_OPTION: '--threads 8'
         SAMTOOLS_SORT:
-            PRESET_OPTION: ''
+            PRESET_OPTION: '--threads 8'
         SAMTOOLS_CALLMD:
-            PRESET_OPTION: ''
+            PRESET_OPTION: '--threads 8'
         TSD:
             FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # path file or empty value [optional]
             SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4 

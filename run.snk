@@ -29,6 +29,7 @@
 
 #IMPORT
 import json
+import yaml
 import os
 import sys
 
@@ -66,6 +67,8 @@ if "REFERENCE" in config["DATA"] :
 os.system("test -s `realpath " + config["DATA"]["GENOME"] + "` && ln -s  `realpath " + config["DATA"]["GENOME"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"]))
 if "SAMPLE" in config["DATA"] :
     os.system("test -s `realpath " + config["DATA"]["SAMPLE"] + "` && ln -s  `realpath " + config["DATA"]["SAMPLE"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"]))
+
+
 
 print("CHECKING OF DB TE...\n\n")
 
@@ -119,6 +122,30 @@ while i < len(sys.argv) and path_snk == "" :
     i += 1
 #
 
+
+## CHECK PARAMETER IN CONFIG FILE
+file_config_TrEMOLO_default = open(os.path.dirname(path_snk) + "/config.yaml", "r")
+config_TrEMOLO_default = yaml.safe_load(file_config_TrEMOLO_default)
+
+def check_dict (default_dico, user_dico) :
+    if type(default_dico) == dict :
+        for key in default_dico :
+            if key != "DATA":
+                if key not in user_dico :
+                    print("\033[91m" + key + ": ✘ \033[0m")
+                    print("\033[96m[BEFORE SNK]\033[0m \033[93mWARNING : pameter \"" + key + "\" is missing on your config file, please check this\033[0m")
+                    
+                    #put default parameter
+                    user_dico[key] = default_dico[key]
+                else :
+                    print("\033[92m" + key + ": ✔ \033[0m")
+                    check_dict(default_dico[key], user_dico[key])
+
+print("\n\033[96m[BEFORE SNK]\033[0m Checking of the existence of all parameters...")
+check_dict(config_TrEMOLO_default, config)
+print("")
+
+
 name_configfil = ""
 
 i = 0
@@ -163,9 +190,10 @@ rule TrEMOLO_BUILD :
         #CHOICE
         call_sv             = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
-        #choice_asm          = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
+        #choice_asm         = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
         choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
         DETECT_ALL_TE       = config["CHOICE"]["INSIDER_VARIANT"]["DETECT_ALL_TE"],
+        MODE_PARALLELING    = config["CHOICE"]["PIPELINE"]["MODE_PARALLELING"],
 
         INTEGRATE_TE_TO_GENOME = config["CHOICE"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"],
         OPTIMIZE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["OPTIMIZE_FREQUENCE"],
@@ -199,6 +227,10 @@ rule TrEMOLO_BUILD :
         node ${{path_to_pipline}}/lib/nodejs/load.js &
         echo $! > {params.work_directory}/.pid
 
+        PARALLELING=""
+        if [ {params.MODE_PARALLELING} = "True" ]; then
+            PARALLELING="_MULTI_THREADS"
+        fi
 
         ###
         #INSIDER
@@ -218,13 +250,13 @@ rule TrEMOLO_BUILD :
             if  [ {params.DETECT_ALL_TE} == "True" ] ; then
                 if [ {params.choice_outsider_sv} != "True" ] ; then
                     sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-                    printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD " >> instruction.txt
+                    printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD_MULTI_THREADS " >> instruction.txt
                 else
                     printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> instruction.txt
                 fi;
             elif [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-                printf "%s" "> TSD " >> instruction.txtt
+                printf "%s" "> TSD${{PARALLELING}} " >> instruction.txtt
             fi;
 
             if [ {params.choice_outsider_sv} != "True" ]; then
@@ -307,9 +339,9 @@ rule TrEMOLO_BUILD :
                     printf "> FREQUENCE:NI " >> instruction.txt
                 fi;
                 
-                printf "> GET_READS_TE " >> instruction.txt
+                printf "> GET_READS_TE${{PARALLELING}} " >> instruction.txt
             else
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > GET_READS_TE:NI " > instruction.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > GET_READS_TE${{PARALLELING}}:NI " > instruction.txt
             fi
             
             ## Exemple les instruction par default obligatoir
@@ -319,14 +351,14 @@ rule TrEMOLO_BUILD :
                 printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
                 printf "%s" "> FIND_SV_ON_REF " >> instruction.txt
                 printf "%s" "> FIND_TE_ON_REF " >> instruction.txt
-                printf "%s" "> TSD" >> instruction.txt
+                printf "%s" "> TSD${{PARALLELING}}" >> instruction.txt
             else
                 if [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                     printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
-                    printf "%s" "> TSD " >> instruction.txt
+                    printf "%s" "> TSD${{PARALLELING}} " >> instruction.txt
                 else
                     #:NI = NO INPUT
-                    printf "%s" "> TSD " >> instruction.txt
+                    printf "%s" "> TSD${{PARALLELING}} " >> instruction.txt
                 fi;
             fi;
 
