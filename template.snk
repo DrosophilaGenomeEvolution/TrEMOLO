@@ -29,6 +29,7 @@
 
 #IMPORT
 import json
+import yaml
 import os
 import sys
 
@@ -98,6 +99,26 @@ while i < len(sys.argv) and path_snk == "" :
 
     i += 1
 #
+
+file_config_TrEMOLO_default = open(os.path.dirname(path_snk) + "/config.yaml", "r")
+config_TrEMOLO_default = yaml.safe_load(file_config_TrEMOLO_default)
+
+def check_dict (default_dico, user_dico) :
+    if type(default_dico) == dict :
+        for key in default_dico :
+            if key != "DATA":
+                if key not in user_dico :
+                    #print("\033[91m" + key + ": ✘ \033[0m")
+                    #print("\033[96m[BEFORE SNK]\033[0m \033[93mWARNING : pameter \"" + key + "\" is missing on your config file, please check this\033[0m")
+                    
+                    #put default parameter
+                    user_dico[key] = default_dico[key]
+                else :
+                    #print("\033[92m" + key + ": ✔ \033[0m")
+                    check_dict(default_dico[key], user_dico[key])
+
+#print("\n\033[96m[BEFORE SNK]\033[0m Checking of the existence of all parameters...")
+check_dict(config_TrEMOLO_default, config)
 
 #os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
