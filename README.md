@@ -55,37 +55,37 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
 - For Populational variation tool
   - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
   - [Minimap2](https://github.com/lh3/minimap2) 2.16+
-  - [Samtools](http://www.htslib.org/) 1.9
+  - [Samtools](http://www.htslib.org/) 1.9 and (1.15.1 optional)
   - [svim 1.4.2](https://github.com/eldariont/svim/releases/tag/v1.4.2)
-  - [Sniffles 1.0.12](https://github.com/fritzsedlazeck/Sniffles)
+  - [Sniffles 1.0.12](https://github.com/fritzsedlazeck/Sniffles/releases/tag/v1.0.12b)
   - [Flye 2.8+ - optional](https://github.com/fenderglass/Flye)
   - [WTDGB2 - optional](https://github.com/ruanjue/wtdbg2)
   - Python libs
     - [Biopython](https://biopython.org/)
     - [Pandas](https://pandas.pydata.org/)
-    - [Numpy](https://numpy.org/)
+    - [Numpy](https://numpy.org/) 1.21.2
     - [pylab](https://matplotlib.org/)
     - [intervaltree](https://pypi.org/project/intervaltree/)
     - [pysam](https://pypi.org/project/pysam/)
   - Perl v5.26.2+
 - For report
   - R 3.3+ libs
-    - [ggplot2](https://ggplot2.tidyverse.org/)
-    - [RColorBrewer](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)
-    - [extrafont](https://cran.r-project.org/web/packages/extrafont/README.html)
-    - [rmarkdown](https://rmarkdown.rstudio.com/)
-    - [kableExtra](https://bookdown.org/yihui/rmarkdown-cookbook/kableextra.html)
-    - [dplyr](https://www.r-project.org/nosvn/pandoc/dplyr.html)
-    - [reshape2](https://www.r-project.org/nosvn/pandoc/dplyr.html)
-    - [forcats](https://rdrr.io/cran/forcats/)
-    - [ggthemes](https://github.com/jrnold/ggthemes)
-    - [rjson](https://rdrr.io/cran/rjson/)
-    - [viridisLite](https://github.com/sjmgarnier/viridisLite)
-    - [viridis](https://www.rdocumentation.org/packages/viridis/versions/0.3.4)
-    - [bookdown](https://bookdown.org/yihui/bookdown/get-started.html)
-    - [knitr](https://www.r-project.org/nosvn/pandoc/knitr.html)
-    - [stringr](https://cran.r-project.org/web/packages/stringr/index.html)
-    - [stringi](https://cran.r-project.org/web/packages/stringi/index.html)
+    - [knitr 1.38](https://www.r-project.org/nosvn/pandoc/knitr.html)
+    - [rmarkdown 2.13](https://rmarkdown.rstudio.com/)
+    - [bookdown 0.25](https://bookdown.org/yihui/bookdown/get-started.html)
+    - [viridis 0.6.2](https://www.rdocumentation.org/packages/viridis/versions/0.3.4)
+    - [viridisLite 0.4.0](https://github.com/sjmgarnier/viridisLite)
+    - [rjson 0.2.20](https://rdrr.io/cran/rjson/)
+    - [ggthemes 4.2.4](https://github.com/jrnold/ggthemes)
+    - [forcats 0.5.1](https://rdrr.io/cran/forcats/)
+    - [reshape2 1.4.4](https://www.r-project.org/nosvn/pandoc/dplyr.html)
+    - [dplyr 1.0.8](https://www.r-project.org/nosvn/pandoc/dplyr.html)
+    - [kableExtra 1.3.4](https://bookdown.org/yihui/rmarkdown-cookbook/kableextra.html)
+    - [extrafont 0.17](https://cran.r-project.org/web/packages/extrafont/README.html)
+    - [ggplot2 3.3.5](https://ggplot2.tidyverse.org/)
+    - [RColorBrewer 1.1-2](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)       
+    - [stringr 1.4.0](https://cran.r-project.org/web/packages/stringr/index.html)
+    - [stringi 1.7.6](https://cran.r-project.org/web/packages/stringi/index.html)
  - [pandoc-citeproc 0.17](https://github.com/jgm/citeproc)
 
 
@@ -151,8 +151,9 @@ CHOICE:
         OUTSIDER_VARIANT: True  # outsiders, TE not in the assembly - population variation
         INSIDER_VARIANT: True   # insiders, TE in the assembly
         REPORT: True            # for getting a report.html file with graphics
+        MODE_PARALLELING: False # test time : with True value 50m53,983s; with False value 138m55,985s; With 8 threads
     OUTSIDER_VARIANT:
-        CALL_SV: "svim"         # possibilities for SV tools: sniffles, svim
+        CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, svim
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the INSIDER integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATED WITH CLIPPING READS
     INSIDER_VARIANT:
@@ -161,18 +162,19 @@ CHOICE:
 
 
 PARAMS:
+    THREADS: 8 #number of threads for some task
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 option is map-ont by default (map-pb, map-ont)
             OPTION: '-t 8' # more option of minimap2 can be specified here
         SAMTOOLS_VIEW:
-            PRESET_OPTION: ''
+            PRESET_OPTION: '--threads 8'
         SAMTOOLS_SORT:
-            PRESET_OPTION: ''
+            PRESET_OPTION: '--threads 8'
         SAMTOOLS_CALLMD:
-            PRESET_OPTION: ''
+            PRESET_OPTION: '--threads 8'
         TSD:
-            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for the reference elements (format="TE SIZE", one TE per line)
+            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for the reference elements (format="TE SIZE", one TE per line) [optional]
             SIZE_FLANK: 30  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
@@ -189,7 +191,7 @@ The main parameters are:
 - `GENOME` : Assembly of the sample of interest (or mix of samples), fasta file.
 - `TE_DB`  : A **Multifasta** file containing the canonical sequence of transposable elements. You can add also copy sequences but results will be more complex to interpretate.
 - `REFERENCE` : Fasta file containing the reference genome of the species of interest.
-- `WORK_DIRECTORY` : Directory that will contain the output files. If the directory does not exist it will be created;  default value is *output*.
+- `WORK_DIRECTORY` : Directory that will contain the output files. If the directory does not exist it will be created;  default value is **TrEMOLO_OUTPUT**.
 - `SAMPLE` : File containing the reads used for the sample assembly.
 
 

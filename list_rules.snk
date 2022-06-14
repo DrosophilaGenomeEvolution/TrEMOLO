@@ -46,6 +46,8 @@ rule RENAME_PSEUDO_TE:
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         rm -f {log}.*
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         
         path_to_pipline=`dirname {params.path_snk}`
 
@@ -236,8 +238,9 @@ rule REPORT :
         rm -fr {params.work_directory}/REPORT/
         mkdir -p {params.work_directory}/REPORT/
         rm -f {log}.*
-        
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
 
+        
         path_to_pipline=`dirname {params.path_snk}`
 
         
@@ -1073,6 +1076,7 @@ rule TSD :
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         rm -f {log}.*
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
 
 
         ###echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
@@ -1109,7 +1113,7 @@ rule TSD :
                     SIZE_TSD=`echo $SIZE_TSD | awk '{{print $2}}'`;
                     echo "SIZE-TSD : $SIZE_TSD"
 
-                    #echo "TE=$nameTE ; SIZE TSD=$SIZE_TSD" 
+                    #echo "TE=$nameTE ; Snau     nIZE TSD=$SIZE_TSD" 
                     
                     sh ${{path_to_pipline}}/lib/TSD/find_fq_to_fasta.sh {params.work_directory}/OUTSIDER/ET_FIND_FA/$TE_found_fa \
                        ${{read_directory}} \
@@ -1421,6 +1425,7 @@ rule TSD_MULTI_THREADS :
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         rm -f {log}.*
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
 
 
         ###echo -e "x\ty\tfill" > {params.work_directory}/VALUES_TSD.csv;
@@ -1556,7 +1561,7 @@ rule TSD_MULTI_THREADS :
                 
                 ###echo "[TSD:snk] $i/$NB_FILE" ;
 
-                find_TSD $TE_found_fa &
+                find_TSD_OUTSIDER $TE_found_fa &
                 pids[${{count_task_running}}]=$!;
                 count_task_running=$(($count_task_running+1));
 
@@ -1843,6 +1848,8 @@ rule FIND_TE_ON_REF :
         samtools faidx {input.fasta_TE}
 
         rm -f {log}.*
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] ANNOT TE ON REF {params.cend}"
 
@@ -2107,6 +2114,8 @@ rule FIND_SV_ON_REF :
         path_to_pipline=`dirname {params.path_snk}`
 
         rm -f {log}.*
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] FIND SV ON REF {params.cend}"
 
@@ -2221,6 +2230,9 @@ rule TE_TOWARD_GENOME :
         mkdir -p {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/
         rm -f {log}.*
         rm -f {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/PSEUDO_GENOME_TE_DB_ID.fasta.fai
+
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         
         awk 'NR>1{{print $2}}' {input.all_te} | sed 's/:[+-]$//g' > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/ID.txt
 
@@ -2490,6 +2502,7 @@ rule GET_READS_TE :
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET READS [^-^] {params.cend}"
 
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
 
         rm -fr {params.work_directory}/OUTSIDER/READ_FASTQ_TE
         mkdir -p {params.work_directory}/OUTSIDER/READ_FASTQ_TE ;
@@ -2634,6 +2647,8 @@ rule GET_READS_TE_MULTI_THREADS :
         rm -f {log}*
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET READS [^-^] {params.cend}"
+
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
 
 
         rm -fr {params.work_directory}/OUTSIDER/READ_FASTQ_TE
@@ -2831,6 +2846,9 @@ rule FREQUENCE :
         path_to_pipline=`dirname {params.path_snk}`
 
         mkdir -p {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
+
+        rm -f {log}.out, {log}.err
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
@@ -3044,6 +3062,9 @@ rule FREQ_INSIDER:
         
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING_TO_REF/
 
+        rm -f {log}.out, {log}.err
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         cat {input.TE_INS} | cut -f 2 | \
@@ -3183,6 +3204,9 @@ rule SOFT_TE :
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT
 
+        rm -f {log}.out, {log}.err
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         ## CREATE VCF SOFT
@@ -3234,13 +3258,13 @@ rule SOFT_TE :
                 python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py \
                     {params.work_directory}/INSIDER/TE_DETECTION/tmp_pre_filtre.bln \
                     {input.fasta_TE} \
-                    {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30
+                    {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30 -p 70
 
         else
             test -s {output.bln} && \
                 python3 ${{path_to_pipline}}/lib/python/parse_blast_main.py {output.bln} \
                     {input.fasta_TE} \
-                    {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30
+                    {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv -c -k "SOFT" -s 30 -p 70
         fi;
 
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/SOFT/SV_SOFT.csv && \
@@ -3360,6 +3384,9 @@ rule DETECTION_TE :
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] DETECTION TE [^-^] {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/
+
+        rm -f {log}.out, {log}.err
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
@@ -3555,6 +3582,9 @@ rule TrEMOLO_SV_TE :
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
+        rm -f {log}.out, {log}.err
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         samtools index {input.bam} 2> {log}.err
 
         echo "GET INSERTION..."
@@ -3669,6 +3699,10 @@ rule svim :
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
+        rm -f {log}.out, {log}.err
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
+
         samtools index {input.bam} 2> {log}.err
 
         # svim alignment --read_names \
@@ -3721,6 +3755,9 @@ rule sniffles :
         path_to_pipline=`dirname {params.path_snk}`
 
         mkdir -p {params.work_directory}/OUTSIDER/VARIANT_CALLING/
+
+        rm -f {log}*
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
@@ -3799,6 +3836,8 @@ rule samtools :
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
 
+        echo "[`date`] LOG TASK {log}.err"
+
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         echo "---view---" | tee {log}.out
@@ -3820,8 +3859,8 @@ rule samtools :
         run_cmd "samtools stats {input.sam}.sorted.bam | grep "^SN" | cut -f 2-6 | tee {params.work_directory}/OUTSIDER/MAPPING/stats.txt" "{log}" "SAMTOOLS_STATS" "False";#STATS MAPPING
 
         rm -f {input.sam} \
-          {input.sam}.bam \
-          {input.sam}.sorted.bam*;
+            {input.sam}.bam \
+            {input.sam}.sorted.bam*;
         rm -f {log}.out;
 
         """
@@ -3870,6 +3909,8 @@ rule mapping :
 
         mkdir -p {params.work_directory}/OUTSIDER/MAPPING/
 
+        rm -f {log}*
+
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] MINIMAP2 MAPPING {params.cend}"
@@ -3887,7 +3928,7 @@ rule mapping :
         end_load
         sleep 1
 
-        rm -f {log}.out
+        rm -f {log}*
 
         """
 
@@ -3947,15 +3988,19 @@ rule TE_ALL_IN_ASSEMBLY:
         
         mkdir -p {params.work_directory}/INSIDER/TE_DETECTION/
 
+        rm -f {log}.out {log}.err
+
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         echo "[`date`] STEP {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
         ## SEARCH ALL REGION TE WITH BLAST
         echo "  SEARCH ALL REGION TE ON GENOME..."
         makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
         blastn -num_threads {params.threads} -db {input.fasta_TE} \
-        -query {input.query} \
-        -outfmt 6 \
-        -out {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_1.bln 2>> {log}.err 1>> {log}.out;
+            -query {input.query} \
+            -outfmt 6 \
+            -out {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_1.bln 2>> {log}.err 1>> {log}.out;
 
         chrom_keep=`echo {params.CHROM_KEEP} | tr "," "|"`
 
@@ -3968,9 +4013,9 @@ rule TE_ALL_IN_ASSEMBLY:
         ## BLAST ALL REGION CANDIDATE OF TE
         echo "  BLAST ALL REGION CANDIDATE OF TE..."
         blastn -num_threads {params.threads} -db {input.fasta_TE} \
-        -query {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_1_merge_cluster.fasta \
-        -outfmt 6 \
-        -out {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_2.bln 2>> {log}.err 1>> {log}.out;
+            -query {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_1_merge_cluster.fasta \
+            -outfmt 6 \
+            -out {params.work_directory}/INSIDER/TE_DETECTION/ALL_TE_2.bln 2>> {log}.err 1>> {log}.out;
 
         ## GETTING TE
         echo "  GETTING TE..."
@@ -4056,6 +4101,10 @@ rule TE_INSIDER:
         
         mkdir -p {params.work_directory}/INSIDER/TE_DETECTION/
 
+        rm -f {log}.log {log}.err
+
+        echo "[`date`] LOG TASK {log}.out, {log}.err"
+
         #echo "GET SEQUENCE SV"
         #GET SEQUENCE SV
         ## GET SEQUENCE SV INSERTION
@@ -4105,9 +4154,9 @@ rule TE_INSIDER:
                 echo "   Checking TE candidate..."
                 makeblastdb -in {input.fasta_TE} -dbtype nucl  2> {log}.err 1> {log}.out;
                 blastn -num_threads {params.threads} -db {input.fasta_TE} \
-                -query {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta \
-                -outfmt 6 \
-                -out {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bln 2> {log}.err 1> {log}.out;
+                    -query {params.work_directory}/INSIDER/TE_DETECTION/${{type}}_SEQ.fasta \
+                    -outfmt 6 \
+                    -out {params.work_directory}/INSIDER/TE_DETECTION/${{type}}.bln 2> {log}.err 1> {log}.out;
                 
 
                 echo "   Getting TE..."
@@ -4149,7 +4198,7 @@ rule TE_INSIDER:
 
         #INSERTION ON QUERY
         test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv && \
-           awk 'NR>1 && OFS="\t"{{ split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1], a[7]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {output.bed} #{params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed 
+            awk 'NR>1 && OFS="\t"{{ split($2, a, ":"); split(a[6], b, "-"); print a[5], b[1], b[2], $1"|"a[1], a[7]}}' {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv > {output.bed} #{params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE.bed 
 
 
         ##INSERTION ON REF
@@ -4254,10 +4303,11 @@ rule SV_INSIDER:
         mkdir -p {params.work_directory}/log/
 
         path_to_pipline=`dirname {params.path_snk}`
-        
 
         rm -f `find {params.work_directory} -name "*.fa*.fai"`
         rm -f {log}.err {log}.log
+
+        echo "[`date`] LOG TASK {log}.log, {log}.err"
 
         echo "COMPARE GENOME BY MAPPING..."
         #COMPARE GENOME
@@ -4268,28 +4318,28 @@ rule SV_INSIDER:
         #GET SV
         ## GET SV 1 Assemblytics with alignment sam to delta
         python3 ${{path_to_pipline}}/lib/python/Assemblytics_uniq_anchor.py \
-        --delta {output.delta} \
-        --unique-length 20000 \
-        --out {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out \
-        --keep-small-uniques 2>> {log}.err;
+            --delta {output.delta} \
+            --unique-length 20000 \
+            --out {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out \
+            --keep-small-uniques 2>> {log}.err;
 
         echo "GET SV WITH Assemblytics between alignment..."
         ## GET SV 2 Assemblytics between alignment
         perl ${{path_to_pipline}}/lib/perl/Assemblytics_between_alignments.pl \
-        {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.coords.tab \
-        50 \
-        20000 \
-        all-chromosomes \
-        exclude-longrange \
-        bed > {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.variants_between_alignments.bed \
-        2>> {log}.err;
+            {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.coords.tab \
+            50 \
+            20000 \
+            all-chromosomes \
+            exclude-longrange \
+            bed > {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.variants_between_alignments.bed \
+            2>> {log}.err;
 
         echo "GET SV WITH Assemblytics within alignment..."
         ## GET SV 3 Assemblytics within alignment
         python3 ${{path_to_pipline}}/lib/python/Assemblytics_within_alignment.py \
-        --delta {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics.unique_length_filtered_l20000.delta \
-        --min 50 > {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.variants_within_alignments.bed \
-        2>> {log}.err;
+            --delta {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics.unique_length_filtered_l20000.delta \
+            --min 50 > {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.variants_within_alignments.bed \
+            2>> {log}.err;
 
         test -s {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.variants_between_alignments.bed && \
         test -s {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.variants_within_alignments.bed && \

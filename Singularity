@@ -1,7 +1,7 @@
 Bootstrap: docker
 From: ubuntu:20.04
 %help
-    Container for TrEmolo v2.0
+    Container for TrEMOLO v2.0
     https://github.com/DrosophilaGenomeEvolution/TrEMOLO
     Includes
         Blast 2.2+
@@ -12,7 +12,7 @@ From: ubuntu:20.04
         Minimap2 2.16+
         Samtools 1.15.1
         Samtools 1.9
-        Sniffles 1.0.10+
+        Sniffles 1.0.12b
         SVIM 1.4.2+
         libfontconfig1-dev
         Python libs
@@ -206,6 +206,8 @@ _EOF_
     cd RaGOO
     python3 setup.py install
 
+    #For ragoo running
+    ln -s /usr/bin/python3 /usr/bin/python
 
     #install TrEMOLO
     cd $TOOLDIR
