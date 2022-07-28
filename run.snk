@@ -242,38 +242,39 @@ rule TrEMOLO_BUILD :
             echo -e "\t#INSIDER"
             echo -e "\t###\\n\\n"
 
+            mkdir -p {params.work_directory}/INSIDER
             rm -f {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
 
             ## Exemple les instructions par default obligatoir
-            printf "%s" "SV_INSIDER > TE_INSIDER:N " > instruction.txt
+            printf "%s" "SV_INSIDER > TE_INSIDER:N " > {params.work_directory}/INSIDER/instructions.txt
 
             if  [ {params.DETECT_ALL_TE} == "True" ] ; then
                 if [ {params.choice_outsider_sv} != "True" ] ; then
-                    sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-                    printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD_MULTI_THREADS " >> instruction.txt
+                    sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
+                    printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD_MULTI_THREADS " >> {params.work_directory}/INSIDER/instructions.txt
                 else
-                    printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> instruction.txt
+                    printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> {params.work_directory}/INSIDER/instructions.txt
                 fi;
             elif [ {params.choice_outsider_sv} != "True" ]; then
-                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-                printf "%s" "> TSD${{PARALLELING}} " >> instruction.txtt
+                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
+                printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/INSIDER/instructions.txt
             fi;
 
             if [ {params.choice_outsider_sv} != "True" ]; then
-                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' instruction.txt
-                printf "%s" "> REPORT " >> instruction.txt
+                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
+                printf "%s" "> REPORT " >> {params.work_directory}/INSIDER/instructions.txt
 
                 #RENAME IF PSEUDO DB
                 if test -s {params.work_directory}/LIST_HEADER_DB_TE.csv; then
-                    printf "%s" "> RENAME_PSEUDO_TE " >> instruction.txt
+                    printf "%s" "> RENAME_PSEUDO_TE " >> {params.work_directory}/INSIDER/instructions.txt
                 fi;
             fi;
             
-            echo "" >> instruction.txt
+            echo "" >> {params.work_directory}/INSIDER/instructions.txt
 
             ## BUILD SNAKEFILE en fonctions des instructions
             python3 ${{path_to_pipline}}/lib/python/make_snk.py \
-                instruction.txt \
+                {params.work_directory}/INSIDER/instructions.txt \
                 ${{path_to_pipline}}/list_rules.snk \
                 ${{path_to_pipline}}/Snakefile \
                 -t ${{path_to_pipline}}/template.snk \
@@ -310,9 +311,6 @@ rule TrEMOLO_BUILD :
             fi;
 
 
-            
-
-            test -s instruction.txt && test -s {params.work_directory}/INSIDER && mv instruction.txt {params.work_directory}/INSIDER/instructions.txt
         fi;
         
 
@@ -326,56 +324,56 @@ rule TrEMOLO_BUILD :
             echo -e "\t#OUTSIDER"
             echo -e "\t###\\n\\n"
 
-
+            mkdir -p {params.work_directory}/OUTSIDER
             rm -f {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
             
             ## Instruction par defaut obligatoire
-            if [ {params.OPTIMIZE_FREQUENCE} = True ]; then
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE " > instruction.txt
+            echo "Trace : {params.OPTIMIZE_FREQUENCE}";
+            if [ {params.OPTIMIZE_FREQUENCE} = "True" ]; then
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > MERGE_TE " > {params.work_directory}/OUTSIDER/instructions.txt
                 
                 if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
-                    printf "> FREQ_INSIDER > FREQUENCE " >> instruction.txt
+                    printf "> FREQ_INSIDER > FREQUENCE " >> {params.work_directory}/OUTSIDER/instructions.txt
                 else
-                    printf "> FREQUENCE:NI " >> instruction.txt
+                    printf "> FREQUENCE:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
                 
-                printf "> GET_READS_TE${{PARALLELING}} " >> instruction.txt
+                printf "> GET_READS_TE${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
             else
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > GET_READS_TE${{PARALLELING}}:NI " > instruction.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " > {params.work_directory}/OUTSIDER/instructions.txt
             fi
             
             ## Exemple les instruction par default obligatoir
-            printf "%s" "> GET_SEQ_TE " >> instruction.txt
+            printf "%s" "> GET_SEQ_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
 
             if [ {params.choice_insider_sv} = "True" ] && [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
-                printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
-                printf "%s" "> FIND_SV_ON_REF " >> instruction.txt
-                printf "%s" "> FIND_TE_ON_REF " >> instruction.txt
-                printf "%s" "> TSD${{PARALLELING}}" >> instruction.txt
+                printf "%s" "> TE_TOWARD_GENOME " >> {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "> FIND_SV_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "> FIND_TE_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
             else
                 if [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
-                    printf "%s" "> TE_TOWARD_GENOME " >> instruction.txt
-                    printf "%s" "> TSD${{PARALLELING}} " >> instruction.txt
+                    printf "%s" "> TE_TOWARD_GENOME " >> {params.work_directory}/OUTSIDER/instructions.txt
+                    printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
                 else
                     #:NI = NO INPUT
-                    printf "%s" "> TSD${{PARALLELING}} " >> instruction.txt
+                    printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
             fi;
 
             #if [ {params.REPORT} ]; then
-                printf "%s" "> REPORT " >> instruction.txt
+                printf "%s" "> REPORT " >> {params.work_directory}/OUTSIDER/instructions.txt
 
                 #RENAME IF PSEUDO DB
                 if test -s {params.work_directory}/LIST_HEADER_DB_TE.csv; then
-                    printf "%s" "> RENAME_PSEUDO_TE " >> instruction.txt
+                    printf "%s" "> RENAME_PSEUDO_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
             #fi
             
-            echo "" >> instruction.txt
 
             ## Creation du snake file en fonction des instructions
             python3 ${{path_to_pipline}}/lib/python/make_snk.py \
-                instruction.txt \
+                {params.work_directory}/OUTSIDER/instructions.txt \
                 ${{path_to_pipline}}/list_rules.snk \
                 ${{path_to_pipline}}/Snakefile \
                 -t ${{path_to_pipline}}/template.snk \
@@ -409,7 +407,6 @@ rule TrEMOLO_BUILD :
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_outsider.log
             fi;
 
-            test -s instruction.txt && test -s {params.work_directory}/OUTSIDER && mv instruction.txt {params.work_directory}/OUTSIDER/instructions.txt
         fi;
 
         kill -s 15 `cat {params.work_directory}/.pid` || echo

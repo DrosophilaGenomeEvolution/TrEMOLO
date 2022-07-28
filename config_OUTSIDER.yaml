@@ -27,13 +27,13 @@ PARAMS:
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 preset option is map-ont by default (map-pb, map-ont etc)
-            OPTION: '-t 8' # more option of minimap2
+            OPTION: '' # more option of minimap2
         SAMTOOLS_VIEW:
-            PRESET_OPTION: '--threads 8'
+            PRESET_OPTION: ''
         SAMTOOLS_SORT:
-            PRESET_OPTION: '--threads 8'
+            PRESET_OPTION: ''
         SAMTOOLS_CALLMD:
-            PRESET_OPTION: '--threads 8'
+            PRESET_OPTION: ''
         TSD:
             FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # path file or empty value [optional]
             SIZE_FLANK: 30  # flanking sequence size to calculate TSD put value > 4 

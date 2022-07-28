@@ -95,14 +95,16 @@ for e, read in enumerate(bamfile.fetch()):
                                     dico_clust[indice]["RS_LEFT"].append(str(read_name))
                                     
                                     if int(dico_clust[indice]["BEST_LEFT"][1]) < tupl[1] :
-                                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ INS in reads
+                                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
                                         dico_clust[indice]["BEST_LEFT"] = [str(read_name) , str(tupl[1]), seq_vr]
                                 else :
                                     dico_clust[indice]["RS_RIGHT"].append(str(read_name))
                                     
                                     if int(dico_clust[indice]["BEST_RIGHT"][1]) < tupl[1] :
-                                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ INS in reads
+                                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
                                         dico_clust[indice]["BEST_RIGHT"] = [str(read_name) , str(tupl[1]), seq_vr]
+                                
+                                dico_clust[indice]["NB_RS"] += 1
 
                                 break
                             elif count_ref + reference_start <= dic["POS"] + window :
@@ -110,25 +112,25 @@ for e, read in enumerate(bamfile.fetch()):
                                 break
 
                         if not find :
-                            seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ INS in reads
+                            seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
                             if side == "L" :
-                                dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":[str(read_name) ,  str(tupl[1]), seq_vr],"BEST_RIGHT":["NONE" ,  str(0), "NONE"], "RS_LEFT":[str(read_name)], "RS_RIGHT":[]})
+                                dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":[str(read_name) ,  str(tupl[1]), seq_vr],"BEST_RIGHT":["NONE" ,  str(0), "NONE"], "RS_LEFT":[str(read_name)], "RS_RIGHT":[], "NB_RS":1})
                             else :
-                                dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":["NONE" ,  str(0), "NONE"],"BEST_RIGHT":[str(read_name) , str(tupl[1]), seq_vr], "RS_LEFT":[], "RS_RIGHT":[str(read_name)]})
+                                dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":["NONE" ,  str(0), "NONE"],"BEST_RIGHT":[str(read_name) , str(tupl[1]), seq_vr], "RS_LEFT":[], "RS_RIGHT":[str(read_name)], "NB_RS":1})
                             
                             ID += 1
                     else :
-                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ INS in reads
+                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
                         if side == "L" :
-                            dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":[str(read_name) ,  str(tupl[1]), seq_vr],"BEST_RIGHT":["NONE" , str(0), "NONE"], "RS_LEFT":[str(read_name)], "RS_RIGHT":[]})
+                            dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":[str(read_name) ,  str(tupl[1]), seq_vr],"BEST_RIGHT":["NONE" , str(0), "NONE"], "RS_LEFT":[str(read_name)], "RS_RIGHT":[], "NB_RS":1})
                         else :
-                            dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":["NONE" ,  str(0), "NONE"],"BEST_RIGHT":[str(read_name) , str(tupl[1]), seq_vr], "RS_LEFT":[], "RS_RIGHT":[str(read_name)]})
+                            dico_clust.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID, "BEST_LEFT":["NONE" ,  str(0), "NONE"],"BEST_RIGHT":[str(read_name) , str(tupl[1]), seq_vr], "RS_LEFT":[], "RS_RIGHT":[str(read_name)], "NB_RS":1})
                         
                         ID += 1
 
 
 for indice, dic in enumerate(dico_clust) :
-    print("\t".join([dic["REF"], str(dic["POS"]), "SOFT." + str(dic["ID"]), ";".join(["BEST_L_RS=" + dic["BEST_LEFT"][0], "BEST_L_SIZE=" + dic["BEST_LEFT"][1], "BEST_L_SEQ=" + dic["BEST_LEFT"][2]]), ";".join(["BEST_R_RS=" + dic["BEST_RIGHT"][0], "BEST_R_SIZE=" + dic["BEST_RIGHT"][1], "BEST_R_SEQ=" + dic["BEST_RIGHT"][2]]), "RS_LEFT=" + ",".join(dic["RS_LEFT"]), "RS_RIGHT=" + ",".join(dic["RS_RIGHT"])]))
+    print("\t".join([dic["REF"], str(dic["POS"]), "SOFT." + str(dic["ID"]), ";".join(["BEST_L_RS=" + dic["BEST_LEFT"][0], "BEST_L_SIZE=" + dic["BEST_LEFT"][1], "BEST_L_SEQ=" + dic["BEST_LEFT"][2]]), ";".join(["BEST_R_RS=" + dic["BEST_RIGHT"][0], "BEST_R_SIZE=" + dic["BEST_RIGHT"][1], "BEST_R_SEQ=" + dic["BEST_RIGHT"][2]]), "RS_LEFT=" + ",".join(dic["RS_LEFT"]), "RS_RIGHT=" + ",".join(dic["RS_RIGHT"]), "NB_RS=" + str(dic["NB_RS"])]))
 
 
 
