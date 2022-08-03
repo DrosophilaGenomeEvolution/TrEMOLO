@@ -87,7 +87,7 @@ while line :
             #ET      = str(out_line[-2]).strip().replace("N", "A")
             ET       = str(out_line[-2]).strip()
             if end != start + len(ET):
-                print("ERROR : Calcul bedfile dist TE", ID, name)
+                print(sys.argv[0], "ERROR : Calcul bedfile dist TE", ID, name)
                 exit(1)
 
             sequence = sequence[:start] + ET + sequence[start:]

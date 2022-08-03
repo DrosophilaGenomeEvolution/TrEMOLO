@@ -152,7 +152,7 @@ while line:
             ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID#For False ID sniffles
             exp_rname = re.search(r'RNAMES=([^;]*);', line.strip())
         
-        elif version_vcf == "VCFv4.2" :
+        elif version_vcf == "VCFv4.2" :#svim
             exp_rname = re.search(r'READS=([^;\t]*)', line.strip())
         
         elif version_vcf == "VCFv4.1" :

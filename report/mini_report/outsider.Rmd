@@ -32,6 +32,12 @@ for i in ${array_type[@]}; do
     sed -i "s/%%VALUE_${i}%%/${NB}/g" lib/template_HISTO_TYPE_SV.html
 done >> .tmp_graph_sv.csv;
 
+NB_INS_TrEMOLO=`cat ../../OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed | wc -l`
+sed -i "s/%%VALUE_INS_TrEMOLO%%/${NB_INS_TrEMOLO}/g" lib/template_HISTO_TYPE_SV.html
+
+
+NB_SOFT=`cat ../../OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf | wc -l`
+sed -i "s/%%VALUE_SOFT%%/${NB_SOFT}/g" lib/template_HISTO_TYPE_SV.html
 
 ```
 

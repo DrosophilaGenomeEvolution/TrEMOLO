@@ -345,19 +345,20 @@ rule TrEMOLO_BUILD :
             
             ## Exemple les instruction par default obligatoir
             printf "%s" "> GET_SEQ_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
+            printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
 
             if [ {params.choice_insider_sv} = "True" ] && [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                 printf "%s" "> TE_TOWARD_GENOME " >> {params.work_directory}/OUTSIDER/instructions.txt
                 printf "%s" "> FIND_SV_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
                 printf "%s" "> FIND_TE_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
-                printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
+                #printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
             else
                 if [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                     printf "%s" "> TE_TOWARD_GENOME " >> {params.work_directory}/OUTSIDER/instructions.txt
-                    printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
-                else
+                    # printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
+                #else
                     #:NI = NO INPUT
-                    printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
+                    # printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
             fi;
 

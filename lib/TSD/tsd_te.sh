@@ -223,8 +223,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         if [ -n "$OK" ]; then
             TSD=`grep "$head" ${OUTPUT} -A 4 | grep "++:[A-Z]*:++" -o | head -n 1 | grep -o "[A-Z]*"`
             echo "$head" | awk -v FLANK_SIZE="$FLANK_SIZE"  -F ":" 'OFS="\t"{print $1, $3-FLANK_SIZE, $3+FLANK_SIZE}' | tr -d ">" >> ${path_out_dir}/tmp.bed
-            BED_FILE=${path_out_dir}/tmp.bed
-            empty_site=`bedtools getfasta -fi ${GENOME} -bed $BED_FILE | grep -v ">"`
+            empty_site=`bedtools getfasta -fi ${GENOME} -bed ${path_out_dir}/tmp.bed | grep -v ">"`
             position_TE_SV=`echo $head | cut -d ":" -f 3`
 
             #echo "$TSD >> $empty_site >> $FLANK_SIZE >> $position_TE_SV"
