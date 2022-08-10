@@ -89,7 +89,8 @@ _EOF_
         libxml2-dev \
         libcurl4-openssl-dev \
         libssl-dev \
-        curl
+        curl \
+        bc
 
 
     # R dependencies
