@@ -74,13 +74,13 @@ p
 
 ## NUMBER OF TE
 
-Total number of **TE : `r data=read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv", sep="\t"); nrow(data);`**
+Total number of **TE : `r data=read.csv("../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed", sep="\t", header=FALSE); nrow(data);`**
 
-Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t"); nrow(data);`**
+Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv", sep="\t"); nrow(data);`**
 
 ```{r NB_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
 
-data = read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t")
+data = read.csv("../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv", sep="\t")
 #kbl(data)
 data = tail(data, 50)
 
@@ -152,7 +152,7 @@ graph
 
 ```{bash FREQB_out, eval=TRUE, include=TRUE, results=TRUE}
 
-test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv | tail -n 50 > .tmp_orderx.txt
+test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv | tail -n 50 > .tmp_orderx.txt
 
 rm -f .tmp_FREQ_TE.csv
 (test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
@@ -163,7 +163,7 @@ rm -f .tmp_FREQ_TE.csv
 test -s .tmp_FREQ_TE.csv && echo -e "x\ty\tcondition" > FREQ_TE.csv && grep -w -f .tmp_orderx.txt .tmp_FREQ_TE.csv >> FREQ_TE.csv
 
 
-test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv > .tmp_orderx.txt
+test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv > .tmp_orderx.txt
 
 test -s .tmp_FREQ_TE.csv && \
     python3 ../lib/conv_js_histo_grouped_ggplot.py .tmp_FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_OUTSIDER_CHART.js

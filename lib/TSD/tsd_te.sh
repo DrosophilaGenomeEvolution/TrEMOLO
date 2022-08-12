@@ -208,7 +208,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
     #    END{split(chrom, a, ":"); print chrom, sstart_global, send_global, TE"|"a[5]; }' test.bln
 
 
-        head -n 1 TE_vs_databaseTE.bln
+        head -n 1 ${path_out_dir}/TE_vs_databaseTE.bln >&2
         
         strand=`awk 'NR==1 {if ($9 < $10){print "+"} else {print "-"}}' ${path_out_dir}/TE_vs_databaseTE.bln`
         echo $reads >> ${OUTPUT}
@@ -216,9 +216,16 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
 
         # FIND TSD
         # Warning : path
-        echo "[$0] flank_TE.fasta    sequence_TE.fasta     $FLANK_SIZE     $id     $strand     $TSD_SIZE"
-        python3 ${path_this_script}/find_tsd.py ${path_out_dir}/flank_TE.fasta ${path_out_dir}/sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> ${OUTPUT}
-        OK=`grep "$head" ${OUTPUT} -A 2 | grep -o "OK" || echo ""`
+        echo "[$0] flank_TE.fasta:"`test -s ${path_out_dir}/flank_TE.fasta && echo "OK" || echo "NONE"`"   sequence_TE.fasta:"`test -s ${path_out_dir}/sequence_TE.fasta && echo "OK" || echo "NONE"`"  $FLANK_SIZE     $id     $strand     $TSD_SIZE"
+        echo -e "\n\n"
+        echo "WHY params ${path_out_dir}/flank_TE.fasta ${path_out_dir}/sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE" >&2
+        
+        if test -s ${path_out_dir}/TE_vs_databaseTE.bln; then
+            python3 ${path_this_script}/find_tsd.py ${path_out_dir}/flank_TE.fasta ${path_out_dir}/sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> ${OUTPUT}
+            OK=`grep "$head" ${OUTPUT} -A 2 | grep -o "OK" || echo ""`
+        else
+            OK="";
+        fi;
         
         if [ -n "$OK" ]; then
             TSD=`grep "$head" ${OUTPUT} -A 4 | grep "++:[A-Z]*:++" -o | head -n 1 | grep -o "[A-Z]*"`
