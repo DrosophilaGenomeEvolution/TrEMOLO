@@ -62,6 +62,7 @@ _EOF_
 
     # apt dependencies
     apt update
+    apt install -y ca-certificates
     apt install -y \
     	apt-utils \
         autoconf \
