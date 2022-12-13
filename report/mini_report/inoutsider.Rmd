@@ -8,12 +8,12 @@
 
 ```{bash, eval=TRUE, include=TRUE, results=TRUE}
 
-(test -s ../../TE_INFO.csv && \
-    awk 'NR>1{split($4, sp, "|"); print sp[1]}' ../../TE_INFO.csv | sort | uniq -c | awk '{print $1"\t"$2}' | sort -k 1 -n | awk 'BEGIN{print "x\ty\tz"} OFS="\t"{print "", $2, $1}' > .tmp_ALL_TE_COUNT.csv)
+(test -s ../../TE_INFOS.bed && \
+    awk 'NR>1{split($4, sp, "|"); print sp[1]}' ../../TE_INFOS.bed | sort | uniq -c | awk '{print $1"\t"$2}' | sort -k 1 -n | awk 'BEGIN{print "x\ty\tz"} OFS="\t"{print "", $2, $1}' > .tmp_ALL_TE_COUNT.csv)
 
 ```
 
-Total number of **TE : `r data=read.csv("../../TE_INFO.csv", sep="\t"); nrow(data)-1;`**
+Total number of **TE : `r data=read.csv("../../TE_INFOS.bed", sep="\t"); nrow(data)-1;`**
 
 Number of family found : **`r data=read.csv(".tmp_ALL_TE_COUNT.csv", sep="\t"); nrow(data);`**
 
@@ -64,7 +64,7 @@ graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) +
     geom_tile() + 
     ggtitle("") +
     
-    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=9, angle=0)) +
+    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=5, angle=0)) +
     coord_fixed() +
     scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
     #scale_fill_viridis(option="heat") +
@@ -75,7 +75,7 @@ theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
 geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
 
     labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
-geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 3) 
+geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
 
 order_TE = data$y
 
