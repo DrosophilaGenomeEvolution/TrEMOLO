@@ -236,21 +236,21 @@ if combine :
         df_tmp = df_tmp[df_tmp["sseqid"] == sseqid]
 
         sstart_best = df_tmp["sstart"].values[0]
-        ssend_best  = df_tmp["send"].values[0]
+        send_best  = df_tmp["send"].values[0]
         qstart_best = df_tmp["qstart"].values[0]
         qend_best   = df_tmp["qend"].values[0]
 
-        if int(sstart_best) < int(ssend_best):#forward
+        if int(sstart_best) < int(send_best):#forward
             df_tmp = df_tmp.sort_values(by=["sstart"])
 
             sstart_global = sstart_best
-            send_global   = ssend_best
+            send_global   = send_best
             qstart_global = qstart_best
             qend_global   = qend_best
 
             for a, x in enumerate(df_tmp.values):
                 sstart = df_tmp["sstart"].values[a]
-                ssend  = df_tmp["send"].values[a]
+                send  = df_tmp["send"].values[a]
                 qstart = df_tmp["qstart"].values[a]
                 qend   = df_tmp["qend"].values[a]
                 if sstart < sstart_global and send < send_global and qstart < qstart_global and qend < qend_global :
@@ -268,13 +268,13 @@ if combine :
         else:#reverse
             
             sstart_global = sstart_best
-            send_global   = ssend_best
+            send_global   = send_best
             qstart_global = qstart_best
             qend_global   = qend_best
 
             for a, x in enumerate(df_tmp.values):
                 sstart = df_tmp["sstart"].values[a]
-                ssend  = df_tmp["send"].values[a]
+                send  = df_tmp["send"].values[a]
                 qstart = df_tmp["qstart"].values[a]
                 qend   = df_tmp["qend"].values[a]
                 if sstart > sstart_global and send > send_global and qstart < qstart_global and qend < qend_global :

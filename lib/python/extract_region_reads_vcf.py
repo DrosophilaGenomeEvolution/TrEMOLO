@@ -89,6 +89,9 @@ parser.add_argument("-t", "--type", type=str, default='<DEL>',
                     help="not keep this type on vcf (give a list of arguments separate the values ​​with commas \"<DEL>,<INS>\") [\"<DEL>\"]")
 parser.add_argument("-c", "--chrom", type=str, default='2L,2R,3L,3R,^4_,X_',
                     help='chromosome (or part) to keep (give a list of arguments separate the values ​​with commas "X,Y") [2L,2R,3L,3R,^4_,X_]')
+#not used now
+parser.add_argument("-m", "--min_len_seq", type=int, default=1000,
+                    help="minimum size of the sequence to keep (default: [1000])")
 
 
 args = parser.parse_args()
