@@ -35,7 +35,7 @@ grep -B 1 OK ${NAME_FILE}_OK.txt | grep ">" | tr -d ">" | awk -F":" -v s_fk="$SI
 
 bedtools getfasta -fi $GENOME -bed ${WORK_TMP_DIR}/empty_site_OK.bed -name+ > ${WORK_TMP_DIR}/empty_site_OK.fasta
 
-cat empty_site_OK.fasta ${WORK_TMP_DIR}/empty_site_KO.fasta > ${WORK_TMP_DIR}/all_empty_site.fasta
+cat ${WORK_TMP_DIR}/empty_site_OK.fasta ${WORK_TMP_DIR}/empty_site_KO.fasta > ${WORK_TMP_DIR}/all_empty_site.fasta
 
 #rm -f all_empty_site* empty_site*
 rm -f *TSM*

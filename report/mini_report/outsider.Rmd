@@ -32,6 +32,12 @@ for i in ${array_type[@]}; do
     sed -i "s/%%VALUE_${i}%%/${NB}/g" lib/template_HISTO_TYPE_SV.html
 done >> .tmp_graph_sv.csv;
 
+NB_INS_TrEMOLO=`cat ../../OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed | wc -l`
+sed -i "s/%%VALUE_INS_TrEMOLO%%/${NB_INS_TrEMOLO}/g" lib/template_HISTO_TYPE_SV.html
+
+
+NB_SOFT=`cat ../../OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf | wc -l`
+sed -i "s/%%VALUE_SOFT%%/${NB_SOFT}/g" lib/template_HISTO_TYPE_SV.html
 
 ```
 
@@ -68,13 +74,13 @@ p
 
 ## NUMBER OF TE
 
-Total number of **TE : `r data=read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv", sep="\t"); nrow(data);`**
+Total number of **TE : `r data=read.csv("../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed", sep="\t", header=FALSE); nrow(data);`**
 
-Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t"); nrow(data);`**
+Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv", sep="\t"); nrow(data);`**
 
 ```{r NB_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
 
-data = read.csv("../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv", sep="\t")
+data = read.csv("../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv", sep="\t")
 #kbl(data)
 data = tail(data, 50)
 
@@ -119,7 +125,7 @@ graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) +
     geom_tile() + 
     ggtitle("") +
     
-    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=9, angle=0)) +
+    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=5, angle=0)) +
     coord_fixed() +
     scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
     #scale_fill_viridis(option="heat") +
@@ -130,7 +136,7 @@ theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
 geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
 
     labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
-geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 3) 
+geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
 
 order_TE = data$y
 
@@ -146,7 +152,7 @@ graph
 
 ```{bash FREQB_out, eval=TRUE, include=TRUE, results=TRUE}
 
-test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv | tail -n 50 > .tmp_orderx.txt
+test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv | tail -n 50 > .tmp_orderx.txt
 
 rm -f .tmp_FREQ_TE.csv
 (test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
@@ -157,7 +163,7 @@ rm -f .tmp_FREQ_TE.csv
 test -s .tmp_FREQ_TE.csv && echo -e "x\ty\tcondition" > FREQ_TE.csv && grep -w -f .tmp_orderx.txt .tmp_FREQ_TE.csv >> FREQ_TE.csv
 
 
-test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE_COUNT.csv > .tmp_orderx.txt
+test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv > .tmp_orderx.txt
 
 test -s .tmp_FREQ_TE.csv && \
     python3 ../lib/conv_js_histo_grouped_ggplot.py .tmp_FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_OUTSIDER_CHART.js

@@ -75,6 +75,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
     echo "[$0] file : $fr"
     name=`echo $fr | grep -o ".*\."`
     echo "[$0] name : $name"
+    test -s ${REPO_READS}/$fr || echo "[$0] ERROR FILE NOT FOUND"
     #Warning : path
     python3 ${path_this_script}/fastq_to_fasta.py ${REPO_READS}/$fr ${OUT_DIR}/${name}fasta
     i=$(($i + 1))

@@ -54,39 +54,39 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
   - [RaGOO](https://github.com/malonge/RaGOO)
 - For Populational variation tool
   - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
-  - [Minimap2](https://github.com/lh3/minimap2) 2.16+
-  - [Samtools](http://www.htslib.org/) 1.9
+  - [Minimap2](https://github.com/lh3/minimap2) 2.24+
+  - [Samtools](http://www.htslib.org/) 1.9 and (1.15.1 optional)
   - [svim 1.4.2](https://github.com/eldariont/svim/releases/tag/v1.4.2)
-  - [Sniffles 1.0.12](https://github.com/fritzsedlazeck/Sniffles)
-  - [Flye 2.8+ - optional](https://github.com/fenderglass/Flye)
-  - [WTDGB2 - optional](https://github.com/ruanjue/wtdbg2)
+  - [Sniffles 1.0.12](https://github.com/fritzsedlazeck/Sniffles/releases/tag/v1.0.12b)
   - Python libs
     - [Biopython](https://biopython.org/)
     - [Pandas](https://pandas.pydata.org/)
-    - [Numpy](https://numpy.org/)
+    - [Numpy](https://numpy.org/) 1.21.2
     - [pylab](https://matplotlib.org/)
     - [intervaltree](https://pypi.org/project/intervaltree/)
     - [pysam](https://pypi.org/project/pysam/)
   - Perl v5.26.2+
 - For report
   - R 3.3+ libs
-    - [ggplot2](https://ggplot2.tidyverse.org/)
-    - [RColorBrewer](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)
-    - [extrafont](https://cran.r-project.org/web/packages/extrafont/README.html)
-    - [rmarkdown](https://rmarkdown.rstudio.com/)
-    - [kableExtra](https://bookdown.org/yihui/rmarkdown-cookbook/kableextra.html)
-    - [dplyr](https://www.r-project.org/nosvn/pandoc/dplyr.html)
-    - [reshape2](https://www.r-project.org/nosvn/pandoc/dplyr.html)
-    - [forcats](https://rdrr.io/cran/forcats/)
-    - [ggthemes](https://github.com/jrnold/ggthemes)
-    - [rjson](https://rdrr.io/cran/rjson/)
-    - [viridisLite](https://github.com/sjmgarnier/viridisLite)
-    - [viridis](https://www.rdocumentation.org/packages/viridis/versions/0.3.4)
-    - [bookdown](https://bookdown.org/yihui/bookdown/get-started.html)
-    - [knitr](https://www.r-project.org/nosvn/pandoc/knitr.html)
-    - [stringr](https://cran.r-project.org/web/packages/stringr/index.html)
-    - [stringi](https://cran.r-project.org/web/packages/stringi/index.html)
- - [pandoc-citeproc 0.17](https://github.com/jgm/citeproc)
+    - [knitr 1.38](https://www.r-project.org/nosvn/pandoc/knitr.html)
+    - [rmarkdown 2.13](https://rmarkdown.rstudio.com/)
+    - [bookdown 0.25](https://bookdown.org/yihui/bookdown/get-started.html)
+    - [viridis 0.6.2](https://www.rdocumentation.org/packages/viridis/versions/0.3.4)
+    - [viridisLite 0.4.0](https://github.com/sjmgarnier/viridisLite)
+    - [rjson 0.2.20](https://rdrr.io/cran/rjson/)
+    - [ggthemes 4.2.4](https://github.com/jrnold/ggthemes)
+    - [forcats 0.5.1](https://rdrr.io/cran/forcats/)
+    - [reshape2 1.4.4](https://www.r-project.org/nosvn/pandoc/dplyr.html)
+    - [dplyr 1.0.8](https://www.r-project.org/nosvn/pandoc/dplyr.html)
+    - [kableExtra 1.3.4](https://bookdown.org/yihui/rmarkdown-cookbook/kableextra.html)
+    - [extrafont 0.17](https://cran.r-project.org/web/packages/extrafont/README.html)
+    - [ggplot2 3.3.5](https://ggplot2.tidyverse.org/)
+    - [RColorBrewer 1.1-2](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)       
+    - [stringr 1.4.0](https://cran.r-project.org/web/packages/stringr/index.html)
+    - [stringi 1.7.6](https://cran.r-project.org/web/packages/stringi/index.html)
+  - [pandoc-citeproc 0.17](https://github.com/jgm/citeproc)
+- Others
+  - nodejs
 
 
 # Installation<a name="Installation"></a>
@@ -151,8 +151,9 @@ CHOICE:
         OUTSIDER_VARIANT: True  # outsiders, TE not in the assembly - population variation
         INSIDER_VARIANT: True   # insiders, TE in the assembly
         REPORT: True            # for getting a report.html file with graphics
+        MODE_PARALLELING: False # test time : with True value 50m53,983s; with False value 138m55,985s; With 8 threads
     OUTSIDER_VARIANT:
-        CALL_SV: "svim"         # possibilities for SV tools: sniffles, svim
+        CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, svim
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the INSIDER integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATED WITH CLIPPING READS
     INSIDER_VARIANT:
@@ -161,6 +162,7 @@ CHOICE:
 
 
 PARAMS:
+    THREADS: 8 #number of threads for some task
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 option is map-ont by default (map-pb, map-ont)
@@ -172,14 +174,14 @@ PARAMS:
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
         TSD:
-            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for the reference elements (format="TE SIZE", one TE per line)
+            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for the reference elements (format="TE SIZE", one TE per line) [optional]
             SIZE_FLANK: 30  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
-            GET_SEQ_REPORT_OPTION: "-m 1000" #sequence recovery file in the vcf
-        PARS_BLN_OPTION: "--min-size-percent 70 --min-pident 80" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
+            GET_SEQ_REPORT_OPTION: "-m 500" #sequence recovery file in the vcf
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
     INSIDER_VARIANT:
-        PARS_BLN_OPTION: "--min-size-percent 70 --min-pident 80" # parameters for validation of insiders
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
 
 
 ```
@@ -189,7 +191,7 @@ The main parameters are:
 - `GENOME` : Assembly of the sample of interest (or mix of samples), fasta file.
 - `TE_DB`  : A **Multifasta** file containing the canonical sequence of transposable elements. You can add also copy sequences but results will be more complex to interpretate.
 - `REFERENCE` : Fasta file containing the reference genome of the species of interest.
-- `WORK_DIRECTORY` : Directory that will contain the output files. If the directory does not exist it will be created;  default value is *output*.
+- `WORK_DIRECTORY` : Directory that will contain the output files. If the directory does not exist it will be created;  default value is **TrEMOLO_OUTPUT**.
 - `SAMPLE` : File containing the reads used for the sample assembly.
 
 
@@ -223,7 +225,6 @@ WORK_DIRECTORY
 ├── POSITION_TE_INOUTSIDER.bed
 ├── POSITION_TE_INSIDER.bed
 ├── POSITION_TE_OUTSIDER.bed
-├── POS_ALT_TE_OUTSIDER_ON_REF.bed -> INSIDER/TE_INSIDER_VR/POS_ALT_TE_OUTSIDER_ON_REF.bed
 ├── POS_TE_INSIDER_ON_REF.bed -> INSIDER/TE_DETECTION/INSERTION_TE_ON_REF.bed ##**POSITION TE INSIDER ON REFRENCE GENOME
 ├── POS_TE_OUTSIDER_ON_REF.bed ##**POSITION TE OUTSIDER ON REFRENCE GENOME
 ├── POSITION_TE_OUTSIDER_IN_NEO_GENOME.bed  ##**POSITION TE SEQUENCE ON BEST READS SUPPORT INTEGRATED IN GENOME
@@ -231,13 +232,12 @@ WORK_DIRECTORY
 ├── VALUES_TSD_ALL_GROUP.csv
 ├── VALUES_TSD_GROUP_OUTSIDER.csv
 ├── VALUES_TSD_INSIDER_GROUP.csv
-├── TE_INFO.csv ##**FILE CONTENING ALL INFO OF TE INSERTION
+├── TE_INFOS.bed ##**FILE CONTENING ALL INFO OF TE INSERTION
 ├── DELETION_TE.bed -> INSIDER/TE_DETECTION/DELETION_TE.bed ##**TE DELETION POSTION ON GENOME
 ├── DELETION_TE_ON_REF.bed -> INSIDER/TE_DETECTION/DELETION_TE_ON_REF.bed ##**TE DELETION POSITION ON REFERENCE
 ├── SOFT_TE.bed -> OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.bed ##**TE INSERTION FOUND IN SOFT READS
-├── FREQ_OPTIMIZED
 ├── INSIDER ##**FOLDER CONTAINS FILES TRAITEMENT INSIDER
-│   ├── FREQ_GLOBAL
+│   ├── FREQ_INSIDER
 │   ├── TE_DETECTION
 │   │   └── TSD
 │   ├── TE_INSIDER_VR
@@ -249,21 +249,24 @@ WORK_DIRECTORY
 │   │   ├── TE_REPORT_FOUND_blood.fasta
 │   │   └── TE_REPORT_FOUND_ZAM.fasta
 ...
-│   ├── FIND_TE_ON_REF
-│   ├── FREQ_AFTER
+│   ├── FREQ_OPTIMIZED
 │   │   └── DEPTH_TE.csv
 │   ├── INSIDER_VR
 │   ├── MAPPING ##**FOLDER CONTAINS FILES MAPPING ON GENOME
 │   ├── MAPPING_TO_REF ##**FOLDER CONTAINS FILES MAPPING ON REFERENCE GENOME
 │   ├── READ_FASTQ_TE ##**FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
 │   ├── TE_DETECTION
+│   │   ├── MERGE_TE
 │   │   └── TSD
+│   ├── TrEMOLO_SV_TE
+│   │   ├── INS
+│   │   └── SOFT
 │   ├── TE_TOWARD_GENOME ##**FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
 │   │   ├── NEO_GENOME.fasta   ##**GENOME CONTAINS TE OUTSIDER (the best sequence of svim/sniffles)
 │   │   ├── PSEUDO_GENOME_TE_DB_ID.fasta   ##**GENOME CONTAINS TE OUTSIDER (the sequence of database TE and the ID of svim/sniffles)
-│   │   ├── TRUE_POSITION_TE.bed   ##**POSITION IN PSEUDO GENOME
+│   │   ├── TRUE_POSITION_TE_PSEUDO.bed   ##**POSITION IN PSEUDO GENOME
 │   │   ├── TRUE_POSITION_TE.fasta  ##**SEQUENCE INTEGRATE IN PSEUDO GENOME
-│   │   ├── TRUE_POSITION_TE_READS.bed  ##**POSITION IN NEO GENOME
+│   │   ├── TRUE_POSITION_TE_NEO.bed  ##**POSITION IN NEO GENOME
 │   │   └── TRUE_POSITION_TE_READS.fasta  ##**SEQUENCE INTEGRATE IN NEO GENOME
 │   └── VARIANT_CALLING  ##**FOLDER CONTAINS FILES OF sniflles/svim
 ├── REPORT
@@ -280,18 +283,18 @@ The most useful output files are :
 
 * The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/f11c369ea037db66a7a86ee9d6c266f9069a8ecf/test/web/index.html)
 
-The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary information.
+The output file **your_work_direcetory/TE_INFOS.bed** gathers all the necessary information.
 
-|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | pident | psize_TE | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  |
-| --------------- | -------- | -------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- |
-|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175 |     +     |   GTACA   | 97.026 | 99.2  | 9006    | DEFAULT:16943971 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  |
-|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG  | 98.6 | 90.5  | 8435    | 21629413         | 11.1111 |    10.0000     | TE_ID_INSIDER.77237.Repeat_expansion.8 |
+|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | pident | psize_TE | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  | TYPE |
+| --------------- | -------- | -------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- | -------------- |
+|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175 |     +     |   GTACA   | 97.026 | 99.2  | 9006    | 16943978 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  | INS |
+|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG  | 98.6 | 90.5  | 8435    | 21629413         | 11.1111 |    10.0000     | TE_ID_INSIDER.77237.Repeat_expansion.8 | Repeat_expansion |
 
 
  1.    `chrom` : chromosome
  2.    `start` : start position for the TE
  3.    `end` : end position for the TE
- 4.    `TE|ID` :   TE name and ID in **SV.vcf** (for OUTSIDER) or **assemblytics_out.Assemblytics_structural_variants.bed** (for INSIDER)
+ 4.    `TE|ID` :   TE name and ID in **SV.vcf**,**SV_SOFT.vcf** and **SV_INS_CLUST.bed** (for OUTSIDER) or **assemblytics_out.Assemblytics_structural_variants.bed** (for INSIDER)
  5.    `strand` :  strand of the TE
  6.    `TSD` : TSD SEQUENCE
  7.    `pident` : percentage of identical matches with TE
@@ -301,6 +304,7 @@ The output file **your_work_direcetory/TE_INFO.csv** gathers all the necessary i
  11.   `FREQ`  : frequence, normalized
  12.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped (OUTSIDER only)
  13.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
+ 14.   `TYPE`  : type of insertion can be SOFT,INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
 
 
 # Licence and Citation<a name="citation"></a>

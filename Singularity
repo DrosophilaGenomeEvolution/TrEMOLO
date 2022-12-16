@@ -1,7 +1,7 @@
 Bootstrap: docker
 From: ubuntu:20.04
 %help
-    Container for TrEmolo v2.0
+    Container for TrEMOLO v2.0
     https://github.com/DrosophilaGenomeEvolution/TrEMOLO
     Includes
         Blast 2.2+
@@ -9,10 +9,10 @@ From: ubuntu:20.04
         RaGOO v1.1
         Assemblytics
         Snakemake 5.5.2+
-        Minimap2 2.16+
+        Minimap2 2.24+
         Samtools 1.15.1
         Samtools 1.9
-        Sniffles 1.0.10+
+        Sniffles 1.0.12b
         SVIM 1.4.2+
         libfontconfig1-dev
         Python libs
@@ -81,7 +81,6 @@ _EOF_
         python3-pip \
         ncbi-blast+ \
         bedtools \
-        minimap2 \
         snakemake \
         assemblytics \
         r-base \
@@ -91,7 +90,8 @@ _EOF_
         libxml2-dev \
         libcurl4-openssl-dev \
         libssl-dev \
-        curl
+        curl \
+        bc
 
 
     # R dependencies
@@ -131,6 +131,13 @@ _EOF_
     R --slave -e 'require(devtools); install_version("ggplot2", version = "3.3.5")'
     R --slave -e 'require(devtools); install_version("RColorBrewer", version = "1.1-2")'    
     
+    ##minimap2-2.24
+    cd /usr/bin
+    #git clone https://github.com/lh3/minimap2
+    wget https://github.com/lh3/minimap2/releases/download/v2.24/minimap2-2.24.tar.bz2
+    tar -vxjf minimap2-2.24.tar.bz2
+    cd minimap2-2.24 && make
+
 
     ##samtools1.15.1
     cd /usr/bin
@@ -207,6 +214,8 @@ _EOF_
     cd RaGOO
     python3 setup.py install
 
+    #For ragoo running
+    ln -s /usr/bin/python3 /usr/bin/python
 
     #install TrEMOLO
     cd $TOOLDIR
@@ -223,6 +232,7 @@ _EOF_
     export PATH="$PATH:/usr/bin/bcftools-1.9"
     export PATH="$PATH:/usr/bin/samtools-1.9"
     export PATH="$PATH:/usr/bin/htslib-1.9"
+    export PATH="$PATH:/usr/bin/minimap2-2.24"
 
     export SAMTOOLS_1_9="/usr/bin/samtools-1.9"
     export SAMTOOLS_1_15_1="/usr/bin/samtools-1.15.1"

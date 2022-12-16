@@ -40,13 +40,13 @@ from utils import *
 parser = argparse.ArgumentParser()
 
 parser.add_argument("TSD", type=str,
-                    help="fasta file of flank")
+                    help="sequence TSD")
 parser.add_argument("empty_site", type=str,
-                    help="file of sequence TE")
+                    help="empty site sequence")
 parser.add_argument("pos_svi_init", type=int,
                     help="size of flankan")
 parser.add_argument("position_on_genome", type=int,
-                    help="id of variant rare")
+                    help="position start TE on genome")
 
 args  = parser.parse_args()
 
