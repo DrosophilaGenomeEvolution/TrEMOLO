@@ -9,7 +9,7 @@ From: ubuntu:20.04
         RaGOO v1.1
         Assemblytics
         Snakemake 5.5.2+
-        Minimap2 2.16+
+        Minimap2 2.24+
         Samtools 1.15.1
         Samtools 1.9
         Sniffles 1.0.12b
