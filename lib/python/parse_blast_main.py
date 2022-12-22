@@ -45,12 +45,9 @@
     
     Help Programm
     -------------
-    usage: parse_blast_main.py [-h] [-p MIN_PIDENT] [-s MIN_SIZE_PERCENT]
-                           [-r MIN_READ_SUPPORT] [-k TYPE_SV_KEEP]
-                           <blast-file> <db-file-TE> <output>
+    usage: parse_blast_main.py [-h] [-p MIN_PIDENT] [-s MIN_SIZE_PERCENT] [-r MIN_READ_SUPPORT] [-k TYPE_SV_KEEP] [-c] [--combine_name COMBINE_NAME] <blast-file> <db-file-TE> <output>
 
-    filters a blast file in output format 6 to keep the candidate candidate TE
-    active
+    filters a blast file in output format 6 to keep the candidate candidate TE active
 
     positional arguments:
       <blast-file>          Input blast file format 6 (-outfmt 6)
@@ -67,6 +64,9 @@
                             minimum read support number (default: 1)
       -k TYPE_SV_KEEP, --type-sv-keep TYPE_SV_KEEP
                             Type of SV (default: INS)
+      -c, --combine         Combine parts blast TE (default: False)
+      --combine_name COMBINE_NAME
+                            Combine name output file (default: COMBINE_TE.csv)
 """
 
 
@@ -76,6 +76,8 @@ import re
 import os
 import sys
 import argparse
+import datetime
+
 
 
 parser = argparse.ArgumentParser(description="filters a blast file in output format 6 to keep the candidate candidate TE active", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -154,12 +156,10 @@ df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qs
 
 #KEEP ONLY TE on the LIST (GET_SIZE CANNONICAL TE)
 df = df[df["sseqid"].isin(size_et.keys())]
-#print(df[df["sseqid"].isin(size_et.keys())].to_dict())
 df.index = [int(i) for i in range(0, len(df.values))]
-#print(df.head())
 print("[" + str(sys.argv[0]) + "] : KEEP ONLY TE on DB, NUMBER :", len(df.values))
 
-#IDENTITI
+#IDENTITY
 #df = df[df["pident"] >= min_pident]
 
 #df = df[df["evalue"] == 0]
@@ -168,115 +168,237 @@ print("[" + str(sys.argv[0]) + "] : FILTER BEST bitscore...")
 #keep the TE with the highest score
 best_score_match = []
 best_score_match_index = []
+best_score_match_index_comb = []
+
 chaine = ""
-for index, row in enumerate(df.values):
+
+size_df    = len(df.values)
+##TODO add sort by length maybe
+dfs = df.sort_values(by=["bitscore"], ascending=False)
+df["index"] = [0] * len(df.values)
+for index, row in enumerate(dfs.values):
     
-    qseqid = df["qseqid"].values[index]
+    qseqid = dfs["qseqid"].values[index]
     ID     = qseqid.split(":")[4]
-    #chaine = str(df["qseqid"].values[index])
-    #TODO INDICE 7 a regler
+
+    #ex 2R:<INS>:12536774:12536775:TrEMOLO.INS.2785:57:IMPRECISE:25:+ to 2R:<INS>:12536774:12536775:TrEMOLO.INS.2785:57:IMPRECISE:25
     chaine          = str(":".join(qseqid.split(":")[:7]))
     
-
     if chaine not in best_score_match :
-        df_tmp          = df[df["qseqid"].str.contains(">:[0-9]*:[0-9]*:" + str(ID).replace(".", "\.") + ":")]
 
-        maxe_bitscore   = max(df_tmp["bitscore"].values) 
-        df_best_score   = df_tmp[df_tmp["bitscore"] == maxe_bitscore]
-
-        #sstart       = df["sstart"].values[index]
-        #send         = df["send"].values[index]
-        
-        sstart       = df_best_score["sstart"].values[0]
-        send         = df_best_score["send"].values[0]
-        
-        info_qseqid  = qseqid.split(":")
-        read_support = int(info_qseqid[5])
-
-        index_tmp = df_best_score.index
-        condition = df_best_score["bitscore"] == maxe_bitscore
-        max_index = index_tmp[condition]
-
-        indice    = max_index.tolist()[0]
-
-        #df_tmp        = df[df["qseqid"] == qseqid]
-        #maxe_bitscore = max(df_tmp["bitscore"].values)
-        #df_best_score = df_tmp[df_tmp["bitscore"] == maxe_bitscore]
-        
-        #chaine = df_best_score["qseqid"].values[0] + df_best_score["sseqid"].values[0]
+        index_sort = dfs.index.values[index]
         best_score_match.append(chaine)
 
+        sseqid       = df.iloc[index_sort]["sseqid"]
+        qseqid       = df.iloc[index_sort]["qseqid"]
+
+        sstart       = int(df.iloc[index_sort]["sstart"])
+        send         = int(df.iloc[index_sort]["send"])
+
         if send < sstart :
-            df["qseqid"].values[indice] = df["qseqid"].values[indice] + ":" + "-"
+            df.iloc[index_sort, df.columns.get_loc("qseqid")] = df.iloc[index_sort]["qseqid"] + ":" + "-"
         else :
-            df["qseqid"].values[indice] = df["qseqid"].values[indice] + ":" + "+"
+            df.iloc[index_sort, df.columns.get_loc("qseqid")] = df.iloc[index_sort]["qseqid"] + ":" + "+"
+
+        #GET RS
+        info_qseqid  = qseqid.split(":")
+        read_support = int(info_qseqid[5])
 
         #only type SV choice 
         find_type_SV = re.search(type_sv_keep, qseqid)
         if find_type_SV and read_support >= min_read_support:
-            best_score_match_index.append(indice)
+            best_score_match_index.append(index_sort)
+            df.loc[index_sort, "index"] = index_sort
+            
+            best_score_match_index_comb.append(index_sort)
+            i = index_sort + 1
+            while i < size_df and qseqid == df.iloc[i]["qseqid"] and sseqid == df.iloc[i]["sseqid"]:
 
-#df = df.iloc[best_score_match_index]
+                if send < sstart :
+                    df.iloc[i, df.columns.get_loc("qseqid")] = df.iloc[i]["qseqid"] + ":" + "-"
+                else :
+                    df.iloc[i, df.columns.get_loc("qseqid")] = df.iloc[i]["qseqid"] + ":" + "+"
+
+                df.loc[i, "index"] = i
+                best_score_match_index_comb.append(i)
+                i += 1
+
 
 df_best = df.iloc[best_score_match_index]
+
+df_b_to_combine = df.iloc[best_score_match_index_comb]
 print("[" + str(sys.argv[0]) + "] : NUMBER BEST TE SCORE MATCH :", len(df_best.values))
 #df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
+
+# if combine :
+    
+#     print("[" + str(sys.argv[0]) + "] : COMBINE BLAST TE...")
+#     #COMBINE
+#     dic_comb = {"qseqid": [], "sseqid": [], "grain_pident":[], "qstart": [], "qend": [], "sstart": [], "send": []}
+#     for i, v in enumerate(df_best.values) :
+
+#         qseqid = df_best["qseqid"].values[i]
+#         sseqid = df_best["sseqid"].values[i]
+#         pident = df_best["pident"].values[i]
+#         df_tmp = df[df["qseqid"].str.contains(qseqid[:-2].replace(":", "\:") + "[:]*[+-]*$")]
+#         #df_tmp = df[df["qseqid"].str.contains(qseqid.replace(":", "\:") + "$")]
+#         df_tmp = df_tmp[df_tmp["sseqid"] == sseqid]
+
+
+#         sstart_best = df_tmp["sstart"].values[0]
+#         send_best   = df_tmp["send"].values[0]
+#         qstart_best = df_tmp["qstart"].values[0]
+#         qend_best   = df_tmp["qend"].values[0]
+
+#         if int(sstart_best) < int(send_best):#forward
+
+#             sstart_global = sstart_best
+#             send_global   = send_best
+#             qstart_global = qstart_best
+#             qend_global   = qend_best
+
+#             for a, x in enumerate(df_tmp.values):
+#                 sstart = df_tmp["sstart"].values[a]
+#                 send   = df_tmp["send"].values[a]
+#                 qstart = df_tmp["qstart"].values[a]
+#                 qend   = df_tmp["qend"].values[a]
+#                 if sstart < sstart_global and send < send_global and qstart < qstart_global and qend < qend_global :
+#                     sstart_global = sstart
+#                     qstart_global = qstart
+#                 elif sstart > sstart_global and send > send_global and qstart > qstart_global and qend > qend_global:
+#                     send_global   = send
+#                     qend_global   = qend
+
+#             sstart     = sstart_global
+#             send       = send_global
+#             qstart_min = qstart_global
+#             qend_max   = qend_global
+            
+#         else:#reverse
+            
+#             sstart_global = sstart_best
+#             send_global   = send_best
+#             qstart_global = qstart_best
+#             qend_global   = qend_best
+
+#             for a, x in enumerate(df_tmp.values):
+#                 sstart = df_tmp["sstart"].values[a]
+#                 send  = df_tmp["send"].values[a]
+#                 qstart = df_tmp["qstart"].values[a]
+#                 qend   = df_tmp["qend"].values[a]
+#                 if sstart > sstart_global and send > send_global and qstart < qstart_global and qend < qend_global :
+#                     sstart_global = sstart
+#                     qstart_global = qstart
+#                 elif sstart < sstart_global and send < send_global and qstart > qstart_global and qend > qend_global:
+#                     send_global   = send
+#                     qend_global   = qend
+
+#             sstart     = sstart_global
+#             send       = send_global
+#             qstart_min = qstart_global
+#             qend_max   = qend_global
+
+#         dic_comb["qseqid"].append(qseqid)
+#         dic_comb["sseqid"].append(sseqid)
+#         dic_comb["grain_pident"].append(pident)
+#         dic_comb["qstart"].append(qstart_min)
+#         dic_comb["qend"].append(qend_max)
+#         dic_comb["sstart"].append(sstart)
+#         dic_comb["send"].append(send)
+        
+#     df_comb = pd.DataFrame(dic_comb)
+
+
+#     #CALCUL SIZE AND PERCENT SIZE
+#     tab_percent = []
+#     tab_size    = []
+#     for index, row in enumerate(df_comb[["sseqid", "qend", "qstart"]].values):
+#         size_element = abs(int(row[1])-int(row[2]))#qend - qstart
+#         tab_percent.append(round((size_element/size_et[row[0]]) * 100, 2))
+#         tab_size.append(size_element)
+
+#     df_comb["size_per"] = tab_percent
+#     df_comb["size_el"]  = tab_size
+#     df_comb = df_comb[df_comb["size_per"] >= min_size_percent]#min_size_v2 combine
+
+#     df_comb = df_comb[["sseqid", "qseqid", "grain_pident", "size_per", "size_el", "qstart", "qend", "sstart", "send"]]
+#     df_comb = df_comb.sort_values(by=["sseqid", "qseqid"])
+
+
+#     df_comb.to_csv(path_or_buf=combine_name, sep="\t", index=None)
+
+
+#     tab_percent = []
+#     tab_size    = []
+#     for index, row in enumerate(df_comb[["sseqid", "qend", "qstart"]].values):
+#         size_element = abs(int(row[1])-int(row[2]))#qend - qstart
+#         tab_percent.append(round((size_element/size_et[row[0]]) * 100, 2))
+#         tab_size.append(size_element)
+
+
+#     df_comb["size_per"] = tab_percent
+#     df_comb["size_el"]  = tab_size
+#     df_comb             = df_comb[df_comb["size_per"] >= min_size_percent]
+
+
 
 if combine :
     
     print("[" + str(sys.argv[0]) + "] : COMBINE BLAST TE...")
     #COMBINE
     dic_comb = {"qseqid": [], "sseqid": [], "grain_pident":[], "qstart": [], "qend": [], "sstart": [], "send": []}
-    for i, v in enumerate(df_best.values) :
+    qseqid_p = ""
+    sseqid_p = ""
+    pident_p = 0
+    for i, v in enumerate(df_b_to_combine.values) :
 
-        qseqid = df_best["qseqid"].values[i]
-        sseqid = df_best["sseqid"].values[i]
-        pident = df_best["pident"].values[i]
-        df_tmp = df[df["qseqid"].str.contains(qseqid[:-2].replace(":", "\:").replace("+", "\+").replace("-", "\-"))]
-        df_tmp = df_tmp[df_tmp["sseqid"] == sseqid]
+        qseqid = df_b_to_combine["qseqid"].values[i]
+        sseqid = df_b_to_combine["sseqid"].values[i]
+        pident = df_b_to_combine["pident"].values[i]
 
-        sstart_best = df_tmp["sstart"].values[0]
-        send_best  = df_tmp["send"].values[0]
-        qstart_best = df_tmp["qstart"].values[0]
-        qend_best   = df_tmp["qend"].values[0]
+        if qseqid_p != qseqid :
+            if qseqid_p != "" :
+                dic_comb["qseqid"].append(qseqid_p)
+                dic_comb["sseqid"].append(sseqid_p)
+                dic_comb["grain_pident"].append(pident_p)
+                dic_comb["qstart"].append(qstart_global)
+                dic_comb["qend"].append(qend_global)
+                dic_comb["sstart"].append(sstart_global)
+                dic_comb["send"].append(send_global)
 
-        if int(sstart_best) < int(send_best):#forward
-            df_tmp = df_tmp.sort_values(by=["sstart"])
+            qseqid_p = qseqid
+            sseqid_p = sseqid
+            pident_p = pident
+
+            sstart_best = df_b_to_combine["sstart"].values[i]
+            send_best   = df_b_to_combine["send"].values[i]
+            qstart_best = df_b_to_combine["qstart"].values[i]
+            qend_best   = df_b_to_combine["qend"].values[i]
 
             sstart_global = sstart_best
             send_global   = send_best
             qstart_global = qstart_best
             qend_global   = qend_best
+        else :
+            if int(sstart_best) < int(send_best):#forward
 
-            for a, x in enumerate(df_tmp.values):
-                sstart = df_tmp["sstart"].values[a]
-                send  = df_tmp["send"].values[a]
-                qstart = df_tmp["qstart"].values[a]
-                qend   = df_tmp["qend"].values[a]
+                sstart = df_b_to_combine["sstart"].values[i]
+                send   = df_b_to_combine["send"].values[i]
+                qstart = df_b_to_combine["qstart"].values[i]
+                qend   = df_b_to_combine["qend"].values[i]
                 if sstart < sstart_global and send < send_global and qstart < qstart_global and qend < qend_global :
                     sstart_global = sstart
                     qstart_global = qstart
                 elif sstart > sstart_global and send > send_global and qstart > qstart_global and qend > qend_global:
                     send_global   = send
                     qend_global   = qend
+                
+            else:#reverse
 
-            sstart     = sstart_global
-            send       = send_global
-            qstart_min = qstart_global
-            qend_max   = qend_global
-            
-        else:#reverse
-            
-            sstart_global = sstart_best
-            send_global   = send_best
-            qstart_global = qstart_best
-            qend_global   = qend_best
-
-            for a, x in enumerate(df_tmp.values):
-                sstart = df_tmp["sstart"].values[a]
-                send  = df_tmp["send"].values[a]
-                qstart = df_tmp["qstart"].values[a]
-                qend   = df_tmp["qend"].values[a]
+                sstart = df_b_to_combine["sstart"].values[i]
+                send   = df_b_to_combine["send"].values[i]
+                qstart = df_b_to_combine["qstart"].values[i]
+                qend   = df_b_to_combine["qend"].values[i]
                 if sstart > sstart_global and send > send_global and qstart < qstart_global and qend < qend_global :
                     sstart_global = sstart
                     qstart_global = qstart
@@ -284,21 +406,19 @@ if combine :
                     send_global   = send
                     qend_global   = qend
 
-            sstart     = sstart_global
-            send       = send_global
-            qstart_min = qstart_global
-            qend_max   = qend_global
+            #remove :+/:- at no best value
+            df.iloc[df_b_to_combine["index"].values[i], df.columns.get_loc("qseqid")] = df_b_to_combine["qseqid"].values[i][:-2]
 
-        dic_comb["qseqid"].append(qseqid)
-        dic_comb["sseqid"].append(sseqid)
-        dic_comb["grain_pident"].append(pident)
-        dic_comb["qstart"].append(qstart_min)
-        dic_comb["qend"].append(qend_max)
-        dic_comb["sstart"].append(sstart)
-        dic_comb["send"].append(send)
-        
+    if qseqid_p != "" :   
+        dic_comb["qseqid"].append(qseqid_p)
+        dic_comb["sseqid"].append(sseqid_p)
+        dic_comb["grain_pident"].append(pident_p)
+        dic_comb["qstart"].append(qstart_global)
+        dic_comb["qend"].append(qend_global)
+        dic_comb["sstart"].append(sstart_global)
+        dic_comb["send"].append(send_global)
+
     df_comb = pd.DataFrame(dic_comb)
-
 
     #CALCUL SIZE AND PERCENT SIZE
     tab_percent = []
@@ -312,12 +432,11 @@ if combine :
     df_comb["size_el"]  = tab_size
     df_comb = df_comb[df_comb["size_per"] >= min_size_percent]#min_size_v2 combine
 
-    #print(df_comb.shape)
     df_comb = df_comb[["sseqid", "qseqid", "grain_pident", "size_per", "size_el", "qstart", "qend", "sstart", "send"]]
-    df_comb = df_comb.sort_values(by="sseqid")
+    df_comb = df_comb.sort_values(by=["sseqid", "qseqid"])
 
 
-    df_comb.to_csv(combine_name, sep="\t", index=None)
+    df_comb.to_csv(path_or_buf=combine_name, sep="\t", index=None)
 
 
     tab_percent = []
@@ -361,7 +480,7 @@ df = df[["sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapop
 
 
 print("[" + str(sys.argv[0]) + "] : NUMBER TE with minimum size percentage>=" + str(min_size_percent) + ", minimum percent identity>=" + str(min_pident)+" :", len(df.values))
-df.to_csv(output, sep="\t", index=None)
+df.to_csv(path_or_buf=output, sep="\t", index=None)
 
 #*********** COUNT TE FOR GGPLOT *************
 
@@ -372,11 +491,11 @@ df_o = pd.DataFrame(data=d)
 df_o = df_o.sort_values(by="z")
 
 print("[" + str(sys.argv[0]) + "] : BUILD :", dir_out + name_out + "_COUNT.csv")
-df_o.to_csv(dir_out + name_out + "_COUNT.csv", sep="\t", index=None)
+df_o.to_csv(path_or_buf=dir_out + name_out + "_COUNT.csv", sep="\t", index=None)
 
 print("[" + str(sys.argv[0]) + "] : NUMBER TE TOTAL :", sum(df_o["z"].values))
 print("[" + str(sys.argv[0]) + "] : LIST of TE :")
 df_o.columns = ["x", "TE", "NB_TE"]
-print(df_o[["TE", "NB_TE"]])
+print(df_o[["TE", "NB_TE"]].to_string(index=False))
 
 
