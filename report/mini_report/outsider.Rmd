@@ -27,17 +27,21 @@ Informations of **SV.vcf** file.
 array_type=( "INS" "DEL" "DUP" ); 
 echo -e "x\ty" > .tmp_graph_sv.csv; 
 for i in ${array_type[@]}; do 
-    NB=`grep -w $i ../../OUTSIDER/VARIANT_CALLING/SV.vcf | cut -f 2 | sort | uniq | wc -l`;
+    NB=`grep -w $i ../../OUTSIDER/VARIANT_CALLING/SV.vcf | cut -f 2 | sort | uniq | wc -l || echo 0`;
     echo -e "$i\t$NB";
     sed -i "s/%%VALUE_${i}%%/${NB}/g" lib/template_HISTO_TYPE_SV.html
 done >> .tmp_graph_sv.csv;
 
-NB_INS_TrEMOLO=`cat ../../OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed | wc -l`
+NB_INS_TrEMOLO=`cat ../../OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed | wc -l || echo 0`
 sed -i "s/%%VALUE_INS_TrEMOLO%%/${NB_INS_TrEMOLO}/g" lib/template_HISTO_TYPE_SV.html
 
 
-NB_SOFT=`cat ../../OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf | wc -l`
+NB_SOFT=`cat ../../OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf | wc -l || echo 0`
 sed -i "s/%%VALUE_SOFT%%/${NB_SOFT}/g" lib/template_HISTO_TYPE_SV.html
+
+
+NB_HARD=`grep ">" ../..//OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta  | cut -d ":" -f 5 | sort -u | wc -l || echo 0`
+sed -i "s/%%VALUE_HARD%%/${NB_HARD}/g" lib/template_HISTO_TYPE_SV.html
 
 ```
 
@@ -152,7 +156,8 @@ graph
 
 ```{bash FREQB_out, eval=TRUE, include=TRUE, results=TRUE}
 
-test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv | tail -n 50 > .tmp_orderx.txt
+test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && \
+    awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv | tail -n 50 > .tmp_orderx.txt
 
 rm -f .tmp_FREQ_TE.csv
 (test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
@@ -208,6 +213,7 @@ p
 
 Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
 
+<iframe src="lib/template_FREQ_CHROM_OUTSIDER.html" style="width: 100%; height: 1500px; border: none; overflow: hidden;"></iframe>
 
 
 ## TSD
