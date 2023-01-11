@@ -330,7 +330,7 @@ rule TrEMOLO_BUILD :
             ## Instruction par defaut obligatoire
             echo "Trace : {params.OPTIMIZE_FREQUENCE}";
             if [ {params.OPTIMIZE_FREQUENCE} = "True" ]; then
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > MERGE_TE " > {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > HARD_TE > MERGE_TE " > {params.work_directory}/OUTSIDER/instructions.txt
                 
                 if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
                     printf "> FREQ_INSIDER > FREQUENCE " >> {params.work_directory}/OUTSIDER/instructions.txt
@@ -340,7 +340,7 @@ rule TrEMOLO_BUILD :
                 
                 printf "> GET_READS_TE${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
             else
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " > {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > HARD_TE > MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " > {params.work_directory}/OUTSIDER/instructions.txt
             fi
             
             ## Exemple les instruction par default obligatoir
