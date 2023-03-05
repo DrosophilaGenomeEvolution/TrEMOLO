@@ -125,11 +125,11 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
 
         echo "[$0] head : "$head
 
-        #awk -v var=$head 'BEGIN {nb=0} { if( var == $0 || nb == 1 ){print $0; nb = nb + 1;} }' "${FIND_FA}" > ${path_out_dir}/sequence_TE.fasta
-        grep -w $head -A 1 "${FIND_FA}" > ${path_out_dir}/sequence_TE.fasta 
-        # cat ${path_out_dir}/sequence_TE.fasta 
+        #awk -v var=$head 'BEGIN {nb=0} { if( var == $0 || nb == 1 ){print $0; nb = nb + 1;} }' "${FIND_FA}" > ${path_out_dir}/sequence_TE_${id}.fasta
+        grep -w $head -A 1 "${FIND_FA}" > ${path_out_dir}/sequence_TE_${id}.fasta 
+        # cat ${path_out_dir}/sequence_TE_${id}.fasta 
         
-        if ! test -s ${path_out_dir}/sequence_TE.fasta; then
+        if ! test -s ${path_out_dir}/sequence_TE_${id}.fasta; then
             echo "**ERROR** : can't get sequence TE in ${FIND_FA}" ;
             exit 1 ;
         fi;
@@ -138,38 +138,38 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         echo "*********BLAST 1 TE VS READ**********"
         echo "--READS : $reads"
         makeblastdb -in "$reads" -dbtype nucl
-        blastn -db "$reads" -query ${path_out_dir}/sequence_TE.fasta \
+        blastn -db "$reads" -query ${path_out_dir}/sequence_TE_${id}.fasta \
             -perc_identity 100 \
             -outfmt 6 \
-            -out ${path_out_dir}/sequence_TE.bln ;
+            -out ${path_out_dir}/sequence_TE_${id}.bln ;
 
-        echo "--BEGIN sequence_TE.bln"
-        cat ${path_out_dir}/sequence_TE.bln
-        echo "--END sequence_TE.bln"
+        echo "--BEGIN sequence_TE_${id}.bln"
+        cat ${path_out_dir}/sequence_TE_${id}.bln
+        echo "--END sequence_TE_${id}.bln"
 
         # TODO if SIZE FLANK is too big, 
         # get flank bed file
-        awk -v var=$FLANK_SIZE '{if($9 - var > 0){ if($9 < $10){ print $2"\t"$9-var-1"\t"$9-1"\n" $2"\t"$10"\t"$10+var }else{ print $2"\t"$10-var-1"\t"$10-1"\n" $2"\t"$9"\t"$9+var  } } }' ${path_out_dir}/sequence_TE.bln > ${path_out_dir}/flank_TE.bed
+        awk -v var=$FLANK_SIZE '{if($9 - var > 0){ if($9 < $10){ print $2"\t"$9-var-1"\t"$9-1"\n" $2"\t"$10"\t"$10+var }else{ print $2"\t"$10-var-1"\t"$10-1"\n" $2"\t"$9"\t"$9+var  } } }' ${path_out_dir}/sequence_TE_${id}.bln > ${path_out_dir}/flank_TE_${id}.bed
         # get TE SEQ
-        awk '{ if($9 < $10){ print $2"\t"$9-1"\t"$10"\t" "forward" "\t" "1" "\t" "+" }else{ print $2"\t"$10-1"\t"$9"\t" "reverse" "\t" "1" "\t" "-" } }' ${path_out_dir}/sequence_TE.bln > ${path_out_dir}/sequence_TE.bed
+        awk '{ if($9 < $10){ print $2"\t"$9-1"\t"$10"\t" "forward" "\t" "1" "\t" "+" }else{ print $2"\t"$10-1"\t"$9"\t" "reverse" "\t" "1" "\t" "-" } }' ${path_out_dir}/sequence_TE_${id}.bln > ${path_out_dir}/sequence_TE_${id}.bed
 
         # mkdir -p DIR_SEQ_TE_READ_POS
         
-        # cp sequence_TE.bed  DIR_SEQ_TE_READ_POS/sequence_TE_${name}.bed
-        # cp sequence_TE.bln  DIR_SEQ_TE_READ_POS/sequence_TE_${name}.bln
+        # cp sequence_TE_${id}.bed  DIR_SEQ_TE_READ_POS/sequence_TE_${name}.bed
+        # cp sequence_TE_${id}.bln  DIR_SEQ_TE_READ_POS/sequence_TE_${name}.bln
 
 
-        bedtools getfasta -fi $reads -bed ${path_out_dir}/flank_TE.bed > ${path_out_dir}/flank_TE.fasta
-        bedtools getfasta -fi $reads -bed ${path_out_dir}/sequence_TE.bed -name+ > ${path_out_dir}/sequence_TE.fasta
+        bedtools getfasta -fi $reads -bed ${path_out_dir}/flank_TE_${id}.bed > ${path_out_dir}/flank_TE_${id}.fasta
+        bedtools getfasta -fi $reads -bed ${path_out_dir}/sequence_TE_${id}.bed -name+ > ${path_out_dir}/sequence_TE_${id}.fasta
 
         echo "show FLANK"
-        cat ${path_out_dir}/flank_TE.bed
+        cat ${path_out_dir}/flank_TE_${id}.bed
         echo "show END"
 
         echo "[$0] *********BLAST 2 TE VS DBTE**********"
         echo ${DB_TE}
-        makeblastdb -in ${DB_TE} -dbtype nucl
-        blastn -db ${DB_TE} -query ${path_out_dir}/sequence_TE.fasta -outfmt 6 -out ${path_out_dir}/TE_vs_databaseTE.bln
+        #makeblastdb -in ${DB_TE} -dbtype nucl ##comment for threads task
+        blastn -db ${DB_TE} -query ${path_out_dir}/sequence_TE_${id}.fasta -outfmt 6 -out ${path_out_dir}/TE_vs_databaseTE_${id}.bln
 
 
     #COMBINE AWK
@@ -208,20 +208,21 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
     #    END{split(chrom, a, ":"); print chrom, sstart_global, send_global, TE"|"a[5]; }' test.bln
 
 
-        head -n 1 ${path_out_dir}/TE_vs_databaseTE.bln >&2
+        head -n 1 ${path_out_dir}/TE_vs_databaseTE_${id}.bln >&2
         
-        strand=`awk 'NR==1 {if ($9 < $10){print "+"} else {print "-"}}' ${path_out_dir}/TE_vs_databaseTE.bln`
+        strand=`awk 'NR==1 {if ($9 < $10){print "+"} else {print "-"}}' ${path_out_dir}/TE_vs_databaseTE_${id}.bln`
         echo $reads >> ${OUTPUT}
         echo $head  >> ${OUTPUT}
 
         # FIND TSD
         # Warning : path
-        echo "[$0] flank_TE.fasta:"`test -s ${path_out_dir}/flank_TE.fasta && echo "OK" || echo "NONE"`"   sequence_TE.fasta:"`test -s ${path_out_dir}/sequence_TE.fasta && echo "OK" || echo "NONE"`"  $FLANK_SIZE     $id     $strand     $TSD_SIZE"
-        echo -e "\n\n"
-        echo "WHY params ${path_out_dir}/flank_TE.fasta ${path_out_dir}/sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE" >&2
+        echo "[$0] flank_TE_${id}.fasta:"`test -s ${path_out_dir}/flank_TE_${id}.fasta && echo "OK" || echo "NONE"`"   sequence_TE.fasta:"`test -s ${path_out_dir}/sequence_TE_${id}.fasta && echo "OK" || echo "NONE"`"  $FLANK_SIZE     $id     $strand     $TSD_SIZE"
+        echo "";
+        echo "";
+        echo "WHY params ${path_out_dir}/flank_TE_${id}.fasta ${path_out_dir}/sequence_TE_${id}.fasta $FLANK_SIZE $id $strand $TSD_SIZE" >&2
         
-        if test -s ${path_out_dir}/TE_vs_databaseTE.bln; then
-            python3 ${path_this_script}/find_tsd.py ${path_out_dir}/flank_TE.fasta ${path_out_dir}/sequence_TE.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> ${OUTPUT}
+        if test -s ${path_out_dir}/TE_vs_databaseTE_${id}.bln; then
+            python3 ${path_this_script}/find_tsd.py ${path_out_dir}/flank_TE_${id}.fasta ${path_out_dir}/sequence_TE_${id}.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> ${OUTPUT}
             OK=`grep "$head" ${OUTPUT} -A 2 | grep -o "OK" || echo ""`
         else
             OK="";
@@ -229,21 +230,21 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
         
         if [ -n "$OK" ]; then
             TSD=`grep "$head" ${OUTPUT} -A 4 | grep "++:[A-Z]*:++" -o | head -n 1 | grep -o "[A-Z]*"`
-            echo "$head" | awk -v FLANK_SIZE="$FLANK_SIZE"  -F ":" 'OFS="\t"{print $1, $3-FLANK_SIZE, $3+FLANK_SIZE}' | tr -d ">" >> ${path_out_dir}/tmp.bed
-            empty_site=`bedtools getfasta -fi ${GENOME} -bed ${path_out_dir}/tmp.bed | grep -v ">"`
+            echo "$head" | awk -v FLANK_SIZE="$FLANK_SIZE"  -F ":" 'OFS="\t"{print $1, $3-FLANK_SIZE, $3+FLANK_SIZE}' | tr -d ">" >> ${path_out_dir}/tmp_${id}.bed
+            empty_site=`bedtools getfasta -fi ${GENOME} -bed ${path_out_dir}/tmp_${id}.bed | grep -v ">"`
             position_TE_SV=`echo $head | cut -d ":" -f 3`
 
             #echo "$TSD >> $empty_site >> $FLANK_SIZE >> $position_TE_SV"
             python3 ${path_this_script}/find_svi.py $TSD $empty_site $FLANK_SIZE $position_TE_SV >> ${OUTPUT}
-            rm -f ${path_out_dir}/tmp.bed
+            rm -f ${path_out_dir}/tmp_${id}.bed
         fi;
+
+        rm -f ${path_out_dir}/TE_vs_databaseTE_${id}.bln
+        rm -f ${path_out_dir}/sequence_TE_${id}.fasta ${path_out_dir}/sequence_TE_${id}.bln ${path_out_dir}/sequence_TE_${id}.bed
+        rm -f ${path_out_dir}/flank_TE_${id}.fasta ${path_out_dir}/flank_TE_${id}.bed
+       
+
 done;
-
-
-rm -f ${path_out_dir}/TE_vs_databaseTE.bln
-rm -f ${path_out_dir}/sequence_TE.fasta sequence_TE.bln ${path_out_dir}/sequence_TE.bed
-rm -f ${path_out_dir}/flank_TE.fasta ${path_out_dir}/flank_TE.bed
-
 
 number_ok=`grep "OK" ${OUTPUT} -c`
 number_ko=`grep "KO" ${OUTPUT} -c`
