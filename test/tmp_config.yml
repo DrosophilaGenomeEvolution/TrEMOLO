@@ -13,6 +13,7 @@ CHOICE:
         OUTSIDER_VARIANT: True
         INSIDER_VARIANT: True
         REPORT: True
+        MODE_PARALLELING: False
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" #Posibiliti (sniffles, svim)
         INTEGRATE_TE_TO_GENOME: True
