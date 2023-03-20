@@ -161,7 +161,7 @@ while line:
         elif version_vcf == "VCFv4.1" :
             exp_rname = re.search(r'RNAMES=([^;\t]*)', line.strip())
             seq = spl[4]
-            type_v  = "<" + re.search("SVTYPE=([A-Z]+)", spl[7]).group(1) + ">"
+            type_v  = "<" + re.search("SVTYPE=([A-Z]+)", spl[7]).group(1) + ">" if re.search("SVTYPE=([A-Z]+)", spl[7]) else "None"
             ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID#For False ID sniffles
 
 
