@@ -1780,6 +1780,8 @@ rule TE_TOWARD_GENOME :
                     NEW_POS=`(grep "OK:$ID]" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{TE}}.txt -A 5 | grep "TSD_POSITION" | cut -d ":" -f 2) || echo ""`
                     if [ ! -n "$NEW_POS" ] && test -s {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{TE}}_KO_corrected.txt; then
                         NEW_POS=`grep "KO->OK:$ID]" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{TE}}_KO_corrected.txt -A 5 | grep "NEW_POS=" | cut -d "=" -f 2 | cut -d ":" -f 1 || echo "$start"`                
+                    elif [ ! -n "$NEW_POS" ]; then
+                        NEW_POS="$start";
                     fi;
 
                     head=`echo "$head" | awk -v NEW_POS="$NEW_POS" -F ":" 'OFS=":" {{ if( $3 != NEW_POS ){{$3=NEW_POS; $4=NEW_POS+1; $7="PRECISE-TSD"; print $0}}else{{print $0}} }}'`
@@ -4041,8 +4043,10 @@ rule SOFT_TE :
             awk -v psize="$PSIZE" 'NR>1 && $4<psize {{print $2":"$1}}' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP.csv | cut -d ":" -f 5 | sort -u | sed 's/.[RL]//g' | sort | uniq -c | sort -k 1 -n | awk '$1==1 {{print $2}}' \
                 > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/ID_SOFT_EXLUDE.txt
 
-        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/ID_SOFT_EXLUDE.txt && \
-            grep -v -w -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/ID_SOFT_EXLUDE.txt {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP.csv > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP_V2.csv;
+        ( test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/ID_SOFT_EXLUDE.txt && \
+            grep -v -w -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/ID_SOFT_EXLUDE.txt {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP.csv > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP_V2.csv ) || \
+            ( cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP.csv > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP_V2.csv ) || \
+            ( touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP.csv {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT_TE_KEEP_V2.csv );
 
         echo "GETTING TE..."
         
