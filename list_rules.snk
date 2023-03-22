@@ -3123,7 +3123,12 @@ rule FREQUENCE :
                 if [ $RS -eq 0 ]; then
                     echo "in.. ID_type=$ID_type" >> {log}.err
                     if [ "$ID_type" = "sniffles" ] || [ "$ID_type" = "svim" ]; then
-                        RS=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv | cut -f 5 || echo 0`
+                        check_no_error=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv | grep -o "ERROR" || echo "OK"`;
+                        if [ "$check_no_error" != "ERROR" ]; then
+                            RS=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv | cut -f 5 || echo 0`
+                        else
+                            RS=0;
+                        fi;
                         NB_depth=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv | cut -f 3 || echo 0`
                     elif [ "$ID_type" = "TrEMOLO" ]; then
                         RS=`grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv | awk '{{split($2, sp, ":"); print sp[6]}}' `
