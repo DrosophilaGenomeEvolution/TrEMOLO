@@ -5,7 +5,18 @@ SIZE_FLANK=$3
 SIZE_KMER=$4
 WORK_TMP_DIR=$5
 
-NAME_FILE=`echo $FILE_TSD | sed 's/.txt//g'`
+echo "[$0] <<<< PARAMS >>>> ";
+echo "[$0] GENOME : $GENOME ";
+echo "[$0] FILE_TSD : $FILE_TSD ";
+echo "[$0] SIZE_FLANK : $SIZE_FLANK ";
+echo "[$0] SIZE_KMER : $SIZE_KMER ";
+echo "[$0] WORK_TMP_DIR : $WORK_TMP_DIR ";
+echo "";
+
+
+NAME_FILE=`basename $FILE_TSD | sed 's/.txt//g'`
+
+echo "[$0] NAME_FILE : $NAME_FILE";
 
 grep -A 2 -B 2 "KO:" $FILE_TSD > ${NAME_FILE}_KO.txt 
 grep -B 1 KO ${NAME_FILE}_KO.txt | grep ">" | tr -d ">" | awk -F":" -v s_fk="$SIZE_FLANK" 'OFS="\t" {print $1, $3-s_fk, $3, $5":FLANK_LEFT\n"$1, $3, $3+s_fk, $5":FLANK_RIGHT"}' > ${WORK_TMP_DIR}/empty_site_KO_${NAME_FILE}.bed

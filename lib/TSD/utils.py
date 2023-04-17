@@ -51,7 +51,7 @@ def calcule_D(P):
 def calcule_R(P):
     m = len(P) - 1
 
-    R = {"A":0, "T":1, "G":2, "C":3}
+    R = {"A":0, "T":1, "G":2, "C":3, "N":4}
 
     for i in range(1, m + 1):
         R[P[i]] = i
@@ -60,8 +60,8 @@ def calcule_R(P):
 
 #Boyer_moore
 def BM(P, T):
-    P = "#" + P
-    T = "#" + T
+    P = "#" + P.upper()
+    T = "#" + T.upper()
 
     all_position = []
     
@@ -99,7 +99,7 @@ def BM(P, T):
 def rev_comp(seq):
     seq_out = ""
     comp = {"A":"T", "T":"A", "G":"C", "C":"G", "N":"N"}
-    for i, v in enumerate(seq[::-1]) :
+    for i, v in enumerate(seq.upper()[::-1]) :
         if v in comp:
             seq_out += comp[v]
         else:

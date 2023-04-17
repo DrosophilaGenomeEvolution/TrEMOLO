@@ -96,7 +96,7 @@ id_elem          = args.id_elem
 file_sequence_TE = open(args.file_seq_TE, "r")
 seq_lines        = file_sequence_TE.readlines()
 head_seq         = seq_lines[0].strip()
-TE               = seq_lines[1].strip()
+TE               = seq_lines[1].upper().strip()
 
 # def rev_comp(seq):
 #     seq_out = ""
@@ -123,8 +123,8 @@ if args.strands == "-":
 #     sequence_1 = lines[1].strip()
 #     sequence_2 = lines[3].strip()
 
-sequence_1 = lines[1].strip()
-sequence_2 = lines[3].strip()
+sequence_1 = lines[1].upper().strip()
+sequence_2 = lines[3].upper().strip()
 
 
 def align(alignments, size):

@@ -61,6 +61,10 @@ if [ "$#" -ne 3 ]; then
     exit 1 ;
 fi
 
+
+! test -s "$FIND_FA" && echo "[$0] ERROR : $FIND_FA d'osent exist" && exit 2; 
+! test -d "$REPO_READS" && echo "[$0] ERROR : $REPO_READS is not a directory" && exit 3;
+
 REPO_READS=`echo ${REPO_READS} | sed 's/[/]$//g'`
 
 mkdir -p ${OUT_DIR}
@@ -75,10 +79,11 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
     echo "[$0] file : $fr"
     name=`echo $fr | grep -o ".*\."`
     echo "[$0] name : $name"
-    test -s ${REPO_READS}/$fr || echo "[$0] ERROR FILE NOT FOUND"
+    test -f ${REPO_READS}/$fr || echo "[$0] ERROR FILE ${REPO_READS}/$fr NOT FOUND";
     #Warning : path
-    python3 ${path_this_script}/fastq_to_fasta.py ${REPO_READS}/$fr ${OUT_DIR}/${name}fasta
-    i=$(($i + 1))
-    echo "[$0] $i/$nombre_element"
-done
+    test -f ${REPO_READS}/$fr && \
+        python3 ${path_this_script}/fastq_to_fasta.py ${REPO_READS}/$fr ${OUT_DIR}/${name}fasta;
+    i=$(($i + 1));
+    echo "[$0] $i/$nombre_element";
+done;
 
