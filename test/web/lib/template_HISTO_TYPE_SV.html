@@ -33,16 +33,28 @@
     var chart = am4core.create("chartdiv", am4charts.XYChart3D);
 
     chart.data = [{
-      "type_SV": "INS",
-      "number": 186,
+      "type_SV": "sniffles.INS",
+      "number": 60,
+      "color": chart.colors.next()
+    }, {
+      "type_SV": "TrEMOLO.INS",
+      "number": 464,
+      "color": chart.colors.next()
+    }, {
+      "type_SV": "SOFT",
+      "number": 131,
+      "color": chart.colors.next()
+    }, {
+      "type_SV": "HARD",
+      "number": 106,
       "color": chart.colors.next()
     }, {
       "type_SV": "DUP",
-      "number": 97,
+      "number": 28,
       "color": chart.colors.next()
     }, {
       "type_SV": "DEL",
-      "number": 387,
+      "number": 110,
       "color": chart.colors.next()
     }];
 

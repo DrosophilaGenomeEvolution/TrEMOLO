@@ -3,6 +3,12 @@ body {
   font-family: "Roboto", sans-serif;
 }
 
+/*Add for block screen black linux*/
+body{
+  background: white !important;
+  color: black;
+}
+
 html {
   height: 100%;
   display: flex;
@@ -10,6 +16,8 @@ html {
   justify-content: center;
   font-family: "Work Sans", sans-serif;
   text-align: center;
+  background: white;
+  color: black;
 }
 
 .container {

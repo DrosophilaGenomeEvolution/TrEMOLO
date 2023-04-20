@@ -640,7 +640,7 @@ input:nth-of-type(4):checked ~ .worm .worm__segment:before {
   }
 }
 /* Dark mode */
-@media screen and (prefers-color-scheme: dark) {
+/*@media screen and (prefers-color-scheme: dark) {
   body {
     background: #242424;
     color: #f1f1f1;
@@ -652,7 +652,7 @@ input:checked + label span,
     color: #5785f6;
   }
 }
-
+*/
 form.transpose{
   display: flex;
 }

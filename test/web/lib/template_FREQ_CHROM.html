@@ -1,0 +1,603 @@
+<style type="text/css">
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+#chartdiv, #chartTendence {
+  width: 100%;
+  height: 500px;
+}
+
+.block-btn {
+    width: 100%;
+    margin-top: 15px;
+}
+
+.in-block{
+    margin: auto;
+    width: fit-content;
+}
+
+.v-application--wrap {
+    min-height: 0 !important;
+}
+
+.btn {
+    color: white !important;
+    margin: 3px 3px 5px 0px !important;
+    flex: inherit !important;
+    border-radius: 10px !important;
+}
+
+.btn-group {
+    padding: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+button.disabled {
+    background-color: gray !important;
+    border-color: gray !important;
+}
+
+input[type="checkbox"], .btn-group-toggle > .btn input[type="radio"], .btn-group-toggle > .btn-group > .btn input[type="checkbox"], .btn-group-toggle > .btn-group > .btn input[type="radio"] {
+  position: absolute;
+  clip: rect(0,0,0,0);
+  pointer-events: none;
+}
+
+/*.theme--light.v-chip:not(.v-chip--active) {
+  background: cornflowerblue !important;
+  color: white !important;
+}*/
+
+</style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+
+<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+
+
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Data -->
+<!-- <script type="text/javascript" src="data.js"></script> -->
+<!-- <script type="text/javascript" src="chrom.js"></script> -->
+
+<script src="../js/%%VAR_JS%%"></script>
+<script src="../js/%%VAR_GROUP%%"></script>
+<script src="../js/chroms.js"></script>
+<script src="../js/data_ALL_FREQ_CHROM.js"></script>
+
+
+
+
+
+<div id="chartdiv"></div>
+
+<div class="block-btn" >
+    <div id="in-btn_gen" class="in-block">
+    <!-- 
+        <button type="button" class="btn btn-primary active btn-lg gen">INS</button>
+        <button type="button" class="btn btn-primary active btn-lg gen">SOFT</button> 
+    -->
+    </div>
+</div>
+
+<div class="block-btn">
+    <div class="in-block">
+        <div id="in-btn_chrom" class="btn-group btn-group-toggle" data-toggle="buttons">
+          <!-- <label class="btn btn-secondary btn-lg chr active" data-chrom="2L">
+            <input type="radio" name="options" id="2L" autocomplete="off" checked>2L
+          </label> -->
+        </div>
+    </div>
+</div>
+
+<div class="block-btn">
+    <div class="in-block">
+        <button type="button" class="btn btn-primary btn-lg option option-strokes">SHOW STROKES</button>
+    </div>
+</div>
+
+<!-- Vu JS -->
+<div id="app">
+    <v-app id="inspire">
+        <v-container >
+            <v-autocomplete
+                v-model="values_type"
+                :items="items_type"
+                @change="update_Type()"
+                label="strand"
+                placeholder="Selecting Type"
+                color="blue"
+                item-color="blue"
+                auto-select-first
+                chips
+                clearable
+                deletable-chips
+                filled
+                multiple
+                rounded
+                dense
+            ></v-autocomplete>
+
+            <v-autocomplete
+                v-model="values"
+                :items="items"
+                @change="update_TE()"
+                label="TE"
+                placeholder="Selecting TEs"
+                auto-select-first
+                chips
+                clearable
+                deletable-chips
+                filled
+                multiple
+                rounded
+                dense
+            ></v-autocomplete>
+        </v-container>
+    </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+<!-- Init data button ect. -->
+<script type="text/javascript">
+
+    var generation_active = {};
+    var generations_legend = [];
+   
+    $( document ).ready(function() {
+        var i=0;
+        for(const chrom in chroms){
+
+            var laber = "";
+            if(i==0){
+                label = `<label class="btn btn-secondary btn-lg chr active" data-chrom="${chrom}">
+                                <input type="radio" name="options" id="${chrom}" autocomplete="off" checked>${chrom}
+                            </label>`
+            }
+            else{
+                label = `<label class="btn btn-secondary btn-lg chr" data-chrom="${chrom}">
+                                <input type="radio" name="options" id="${chrom}" autocomplete="off" checked>${chrom}
+                            </label>`
+            }
+            $("#in-btn_chrom").append(label);
+            i+=1
+        }
+
+        for(const gen in generations){
+            let label = `<button type="button" class="btn btn-primary active btn-lg gen">${generations[gen]}</button>`
+            $("#in-btn_gen").append(label);
+            generation_active[generations[gen]] = true;
+            generations_legend.push({"name":generations[gen], "color": series[generations[gen]].get("stroke")});
+        }
+
+        $(".gen").on("click", function () {
+            show($(this).text());
+            $(this).toggleClass("active");
+        })
+
+
+        
+        $(".btn.chr").on("click", function () {
+            $(".btn.chr[data-chrom='" + chrom + "'").toggleClass("active");
+            $(this).toggleClass("active");
+            trendSeries1.data.setAll([
+              { x: chroms[chrom], y: 0 },
+              { x: chroms[chrom], y: 1 }
+            ]);
+
+            trendSeries0.appear(10);
+            trendSeries1.appear(10);
+            chrom = $(this).text().trim();
+            data  = all_data[chrom];
+            show();
+            for(const gen in generations){
+                series[generations[gen]].appear(1000);
+            }
+        });
+    
+
+        $(".btn.option-strokes").on("click", function () {
+            if( $(this).hasClass("active") ){
+                for(const gen in generations){
+                    series[generations[gen]].strokes.template.set("strokeOpacity", 0);
+                }
+                $(this).text("SHOW STROKES")
+            }
+            else{
+                for(const gen in generations){
+                    series[generations[gen]].strokes.template.set("strokeOpacity", 1);
+                }
+                $(this).text("HIDE STROKES")
+            }
+
+            for(const gen in generations){
+                series[generations[gen]].appear(1000);
+            }
+
+            $(this).toggleClass("active");
+
+
+        });
+
+        $(".select-te").on("change", function () {
+            TE = $(this).val();
+            show(chrom);
+        })
+
+
+        $(".select-type").on("change", function () {
+            TYPE = $(this).val();
+            show(chrom);
+        })
+    });
+
+</script>
+
+<script type="text/javascript">
+
+    function onlyUnique(value, index, self) {
+        return self.indexOf(value) === index;
+    }
+
+    var data = all_data[Object.keys(chroms)[0]];
+
+    //GET TE
+    var array_TE = [];
+    for(const chrom in all_data){
+        var tmp_dt = all_data[chrom];
+        for( const index in tmp_dt ){
+            array_TE.push(tmp_dt[index]["name"]);
+        }
+    }
+
+    array_TE = array_TE.filter(onlyUnique);
+
+</script>
+
+<script type="text/javascript">
+
+    /**
+     * ---------------------------------------
+     * This demo was created using amCharts 5.
+     * 
+     * For more information visit:
+     * https://www.amcharts.com/
+     * 
+     * Documentation is available at:
+     * https://www.amcharts.com/docs/v5/
+     * ---------------------------------------
+     */
+
+    // $( document ).ready(function() {
+        // Create root element
+        // https://www.amcharts.com/docs/v5/getting-started/#Root_element
+        var root = am5.Root.new("chartdiv");
+
+        // Set themes
+        // https://www.amcharts.com/docs/v5/concepts/themes/
+        root.setThemes([
+          am5themes_Animated.new(root)
+        ]);
+
+        // Create chart
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+          panX: true,
+          panY: true,
+          wheelY: "zoomXY",
+          pinchZoomX:true,
+          pinchZoomY:true
+        }));
+
+        chart.get("colors").set("colors", [
+          am5.color("#e71306"),
+          am5.color("#e5b800"),
+          am5.color("#00e5ad"),
+          am5.color("#002ae5"),
+          am5.color("#c900e5"),
+          am5.color("#000000")
+        ]);
+
+        // Create axes
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
+        var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+            maxPrecision: 0,
+            extraTooltipPrecision: 1,
+            numberFormat: "#.0a",
+            tooltipNumberFormat: "#.0a",
+            renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 100 }),
+            tooltip: am5.Tooltip.new(root, {})
+        }));
+
+        var yAxis = chart.yAxes.push(
+            am5xy.ValueAxis.new(root, {
+                extraTooltipPrecision: 1,
+                min: 0,
+                max: 1,
+                numberFormat: "#.00",
+                tooltipNumberFormat: "#.00",
+                renderer: am5xy.AxisRendererY.new(root, {}),
+                tooltip: am5.Tooltip.new(root, {})
+            })
+        );
+
+        // var all_data_Tend = {};
+        var bulletTemplate = am5.Template.new(root, {});
+
+        bulletTemplate.events.on("click", function(ev) {
+            // console.log("target:", ev.target);
+            // console.log("infos:", ev.target.dataItem.bullets[0]._settings.sprite._settings.radius);
+            // console.log("id:", ev.target.dataItem.dataContext.id);
+            // var id = ev.target.dataItem.dataContext.id;
+            // // ev.target.dataItem.bullets[0]._settings.sprite._settings.radius = 20;
+            
+            // //Add
+            // if(all_data_Tend[id] == undefined){
+            //     for(const dt in data){
+            //         if( data[dt]["id"] == id ){
+            //             all_data_Tend[id] = [];
+            //             for(const gen in generations){
+            //                 if( data[dt][generations[gen]+"y"] != undefined )
+            //                     all_data_Tend[id].push({"generation":generations[gen],"y":data[dt][generations[gen]+"y"]});
+            //                 else{
+            //                     all_data_Tend[id].push({"generation":generations[gen],"y":0});
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
+            // else{
+            //     delete all_data_Tend[id];
+            // }
+            // updateTend();
+        });
+
+        // $(".tend-clear").on("click", function () {
+        //     all_data_Tend = {};
+        //     updateTend();
+        // })
+
+        
+
+        var series = {};
+        // var generations = ["SOFT", "HARD", "TrEMOLO", "sniffles"];
+        var list_snapToSeries = [];
+
+        for(const gen in generations){
+            series[generations[gen]] = chart.series.push(am5xy.LineSeries.new(root, {
+              calculateAggregates: true,
+              xAxis: xAxis,
+              yAxis: yAxis,
+              valueYField: `${generations[gen]}y`,
+              valueXField: `${generations[gen]}x`,
+              name: "name",
+              category: `${generations[gen]}`,
+              tooltip: am5.Tooltip.new(root, {
+                labelText: "[bold]{category}[/] \nPosition : {valueX} \nFrequency : {valueY} \nTE : [bold]{name}[/]"
+              })
+            }));
+
+            series[generations[gen]].bullets.push(function() {
+              var graphics = am5.Circle.new(root, {
+                radius: 5,
+                fillOpacity: 0.8,
+                strokeOpacity: 0.8,
+                fill: series[generations[gen]].get("fill")
+              }, bulletTemplate);
+
+              return am5.Bullet.new(root, {
+                sprite: graphics
+              });
+            });
+
+            series[generations[gen]].strokes.template.set("strokeOpacity", 0);
+
+            list_snapToSeries.push(series[generations[gen]]);
+
+        }
+
+
+       
+        // Add cursor
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/cursor/
+        chart.set("cursor", am5xy.XYCursor.new(root, {
+          xAxis: xAxis,
+          yAxis: yAxis,
+          snapToSeries: list_snapToSeries
+        }));
+
+        // Add scrollbars
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/scrollbars/
+        chart.set("scrollbarX", am5.Scrollbar.new(root, {
+          orientation: "horizontal"
+        }));
+
+        chart.set("scrollbarY", am5.Scrollbar.new(root, {
+          orientation: "vertical"
+        }));
+
+
+        
+        
+
+        for(const gen in generations){
+            series[generations[gen]].data.setAll(data);
+            series[generations[gen]].appear(1000);
+        }
+
+
+        // trend series
+        var trendSeries0 = chart.series.push(am5xy.LineSeries.new(root, {
+          xAxis: xAxis,
+          yAxis: yAxis,
+          valueYField: "y",
+          valueXField: "x",
+          stroke: series[generations[0]].get("stroke")
+        }));
+
+        trendSeries0.data.setAll([
+          { x: 0, y: 0 },
+          { x: 0, y: 1 }
+        ])
+
+        trendSeries0.strokes.template.setAll({
+          strokeWidth: 2,
+          strokeDasharray: [10,5]
+        });
+
+        var trendSeries1 = chart.series.push(am5xy.LineSeries.new(root, {
+          xAxis: xAxis,
+          yAxis: yAxis,
+          valueYField: "y",
+          valueXField: "x",
+          stroke: series[generations[0]].get("stroke")
+        }));
+
+        trendSeries1.strokes.template.setAll({
+          strokeWidth: 2,
+          strokeDasharray: [10,5]
+        });
+
+        trendSeries1.data.setAll([
+          { x: chroms[Object.keys(chroms)[0]], y: 0 },
+          { x: chroms[Object.keys(chroms)[0]], y: 1 }
+        ]);
+
+        trendSeries0.appear(1000);
+        trendSeries1.appear(1000);
+
+        
+
+        trendSeries0.appear(1000);
+
+        // Add legend
+        var legend = chart.children.push(am5.Legend.new(root, {
+            nameField: "name",
+            fillField: "color",
+            strokeField: "color",
+            centerX: am5.percent(50),
+            x: am5.percent(50),
+            y: am5.percent(-3.3),
+        }));
+
+        $( document ).ready(function() {
+            legend.data.setAll(generations_legend);
+        });
+
+        var chrom = Object.keys(chroms)[0];
+
+        // Add scrollbars
+        // chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
+
+        // Make stuff animate on load
+        // https://www.amcharts.com/docs/v5/concepts/animations/
+        // seriesPi.appear();
+
+        chart.appear(1000, 100);
+
+        var Type_selected = [];
+        var TYPE = "ALL";
+
+        var TE_selected = [];
+        var TE = "ALL";
+        function show(generation=null) {
+
+            if( generation != null && generation != "" )
+                generation_active[generation] = !generation_active[generation];
+            
+            // console.log(generation_active[generation], data)
+            
+            var dataNew = data;
+            for(const gen in generation_active){
+                if ( ! generation_active[gen] ) {
+                    dataNew = dataNew.map((dico) => {
+                        var tmp_dico = Object.assign({}, dico);
+                        if ( dico && dico[gen + "x"] != undefined ) {
+                            delete tmp_dico[gen + "x"];
+                            delete tmp_dico[gen + "y"];
+                        }
+                        return tmp_dico;
+                    })
+                }
+            }
+
+            if( TE_selected.length > 0 ){
+                dataNew = dataNew.filter((dico) => {
+                    for(const index in TE_selected){
+                        if( dico["name"] == TE_selected[index] ){
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+            }
+
+
+            if( Type_selected.length > 0 ){
+                dataNew = dataNew.filter((dico) => {
+                    for(const index in Type_selected){
+                        if( dico["type"] == Type_selected[index] ){
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+            }
+
+
+            for(const gen in generations){
+                series[generations[gen]].data.setAll(dataNew);
+                // series[generations[gen]].appear(1000);
+            }
+
+        }
+
+    
+        
+
+    // })
+</script>
+
+
+<!-- Vu JS -->
+<script>
+new Vue({
+  el: '#app',
+  vuetify: new Vuetify(),
+  data: () => ({
+    items: ['foo', 'bar', 'fizz', 'buzz'],
+    values: [],
+    items_type: ['+', '-'],
+    values_type: [],
+    value: null,
+  }),
+  mounted() {
+    this.items = array_TE;
+    TE_selected = this.values;
+  },
+  methods: {
+    update_TE (){
+        TE_selected = this.values;
+        show();
+    },
+    update_Type (){
+        Type_selected = this.values_type;
+        show();
+    },
+  }
+})
+</script>
