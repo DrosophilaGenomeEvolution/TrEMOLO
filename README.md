@@ -105,7 +105,7 @@ git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 [*Singularity* installation Debian/Ubuntu with package](https://sylabs.io/guides/3.0/user-guide/installation.html#install-the-debian-ubuntu-package-using-apt)
 
 ### Compiling yourself
-A [*Singularity* container](https://sylabs.io/) is available with all tools compiled in.
+A [*Singularity* container](https://sylabs.io/) (version 3.10.0+ required) is available with all tools compiled in.
 The *Singularity* file provided in this repo and can be compiled as such:
 
 ```bash
@@ -294,7 +294,7 @@ The output file **your_work_direcetory/TE_INFOS.bed** gathers all the necessary 
  1.    `chrom` : chromosome
  2.    `start` : start position for the TE
  3.    `end` : end position for the TE
- 4.    `TE|ID` :   TE name and ID in **SV.vcf**,**SV_SOFT.vcf** and **SV_INS_CLUST.bed** (for OUTSIDER) or **assemblytics_out.Assemblytics_structural_variants.bed** (for INSIDER)
+ 4.    `TE|ID` :   TE name and ID in **SV.vcf**,**SV_SOFT.vcf**,**HARD.fasta** and **SV_INS_CLUST.bed** (for OUTSIDER) or **assemblytics_out.Assemblytics_structural_variants.bed** (for INSIDER)
  5.    `strand` :  strand of the TE
  6.    `TSD` : TSD SEQUENCE
  7.    `pident` : percentage of identical matches with TE
