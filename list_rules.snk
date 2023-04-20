@@ -560,7 +560,6 @@ rule REPORT :
             
             python3 ${{path_to_pipline}}/lib/python/create_biocircosgenome.py {params.work_directory}/.tmp_index.fai > {params.work_directory}/js/bioCircosGenome.js
 
-            echo "ooo";
             size_cut=1000000
             for i in `grep -f {params.work_directory}/chrom.txt {params.work_directory}/.tmp_index.fai | cut -f 1-2 | tr "\t" ":"`; 
             do 
@@ -992,7 +991,6 @@ rule REPORT :
             fi;
 
             
-            echo "ok"
             #REMOVE OR COUNT OUTSIDER
             ## TODO GESTION DE SUPPRESSION
             if ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv ; then
@@ -1574,40 +1572,42 @@ rule FIND_SV_ON_REF :
 
         mkdir -p {params.work_directory}/OUTSIDER/INSIDER_VR/
         mkdir -p {params.work_directory}/log/
-        #cd {params.work_directory}/OUTSIDER/INSIDER_VR/
-
 
         path_to_pipline=`dirname {params.path_snk}`
 
         minimap2 -ax asm5 --cs -t {params.threads} {input.ref} {input.genome_real} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
 
-        python3 ${{path_to_pipline}}/lib/python/sam2delta.py {output.sam};
+        python3 ${{path_to_pipline}}/lib/python/sam2delta.py {output.sam} || fail_msg "ERROR : SAM TO DELTA ✘\\n" | tee -a {log}.err;
         
 
         python3 ${{path_to_pipline}}/lib/python/Assemblytics_uniq_anchor.py \
             --delta {output.delta} \
             --unique-length 20000 \
             --out {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out \
-            --keep-small-uniques;
+            --keep-small-uniques || fail_msg "ERROR : Assemblytics_uniq_anchor.py ✘\\n" | tee -a {log}.err;
 
 
         perl ${{path_to_pipline}}/lib/perl/Assemblytics_between_alignments.pl \
-        {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.coords.tab \
-        50 \
-        20000 \
-        all-chromosomes \
-        exclude-longrange \
-        bed > {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_between_alignments.bed;
+            {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.coords.tab \
+            50 \
+            20000 \
+            all-chromosomes \
+            exclude-longrange \
+            bed > {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_between_alignments.bed || \
+                fail_msg "ERROR : Assemblytics_between_alignments.pl ✘\\n" | tee -a {log}.err;
 
 
         python3 ${{path_to_pipline}}/lib/python/Assemblytics_within_alignment.py \
             --delta {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.Assemblytics.unique_length_filtered_l20000.delta \
-            --min 50 > {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_within_alignments.bed;
+            --min 50 > {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_within_alignments.bed || \
+                fail_msg "ERROR : Assemblytics_within_alignment.py ✘\\n" | tee -a {log}.err;
 
 
-        cat {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_between_alignments.bed \
-            {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_within_alignments.bed \
-            > {output.bed}
+        test -s {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_between_alignments.bed && \
+            cat {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_between_alignments.bed > {output.bed}
+
+        test -s {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_within_alignments.bed && \
+            cat {params.work_directory}/OUTSIDER/INSIDER_VR/assemblytics_out.variants_within_alignments.bed >> {output.bed}
         
 
         path_ref=`readlink -f {input.ref}`
@@ -1616,7 +1616,8 @@ rule FIND_SV_ON_REF :
         old_path=`pwd`
         
         cd {params.work_directory}/OUTSIDER/INSIDER_VR/
-        python3 ${{path_to_pipline}}/lib/python/filter_gap_SVs.py ${{path_ref}} ${{path_genome}}
+            python3 ${{path_to_pipline}}/lib/python/filter_gap_SVs.py ${{path_ref}} ${{path_genome}} || \
+                fail_msg "ERROR : filter_gap_SVs.py ✘\\n" | tee -a {log}.err;
         cd ${{old_path}}
 
         name_ref=`basename {input.ref}`
@@ -2543,7 +2544,7 @@ rule TSD_MULTI_THREADS :
 
                 echo -e "${{nameTE}}\t${{OK_K_gap_O}}\tTSD OK" >> {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
                 echo -e "${{nameTE}}\t${{KO}}\tTSD KO" >> {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
-            fi,
+            fi;
         }}
 
 
