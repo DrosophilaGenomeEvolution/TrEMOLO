@@ -260,6 +260,7 @@ WORK_DIRECTORY
 │   │   └── TSD
 │   ├── TrEMOLO_SV_TE
 │   │   ├── INS
+│   │   ├── HARD
 │   │   └── SOFT
 │   ├── TE_TOWARD_GENOME ##**FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
 │   │   ├── NEO_GENOME.fasta   ##**GENOME CONTAINS TE OUTSIDER (the best sequence of svim/sniffles)
