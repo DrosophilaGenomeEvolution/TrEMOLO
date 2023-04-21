@@ -304,7 +304,7 @@ The output file **your_work_direcetory/TE_INFOS.bed** gathers all the necessary 
  11.   `FREQ`  : frequence, normalized
  12.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped (OUTSIDER only)
  13.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
- 14.   `TYPE`  : type of insertion can be SOFT,INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
+ 14.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
 
 
 # Licence and Citation<a name="citation"></a>
