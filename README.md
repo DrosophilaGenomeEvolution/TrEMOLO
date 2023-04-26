@@ -16,6 +16,7 @@
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Output files](#output)
+- [strategies](#how_to_use)
 - [Citation & Licence](#citation)
 
 
@@ -307,6 +308,27 @@ The output file **your_work_direcetory/TE_INFOS.bed** gathers all the necessary 
  13.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
  14.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
 
+
+# How to use TrEMOLO<a name="how_to_use"></a>
+
+## What strategy to use
+
+<img src="images/HOW-WORKING-TrEMOLO/16.png">
+<img src="images/HOW-WORKING-TrEMOLO/17.png">
+
+## Example of result obtained with simulated data set
+
+The choice of the right strategy depends on the context.
+
+### Context 1 : Strategy 2 is better
+
+<img src="images/HOW-WORKING-TrEMOLO/18.png">
+<img src="images/HOW-WORKING-TrEMOLO/19.png">
+
+### Context 2 : Strategy 1 is better
+
+<img src="images/HOW-WORKING-TrEMOLO/20.png">
+<img src="images/HOW-WORKING-TrEMOLO/21.png">
 
 # Licence and Citation<a name="citation"></a>
 
