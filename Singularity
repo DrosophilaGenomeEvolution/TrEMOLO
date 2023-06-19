@@ -186,7 +186,7 @@ _EOF_
     cd
     
     #Python libs
-    python3 -m pip install biopython pandas numpy==1.21.2 matplotlib svim==1.4.2 intervaltree scipy pysam
+    python3 -m pip install biopython pandas==1.5.3 numpy==1.21.2 matplotlib svim==1.4.2 intervaltree scipy pysam
 
     # build variables
     export TOOLDIR=/opt/tools
