@@ -273,9 +273,9 @@ rule TrEMOLO_BUILD :
             echo "" >> {params.work_directory}/INSIDER/instructions.txt
 
             ## BUILD SNAKEFILE en fonctions des instructions
-            python3 ${{path_to_pipline}}/lib/python/make_snk.py \
+            python3 ${{path_to_pipline}}/lib/python/build_rules.py \
                 {params.work_directory}/INSIDER/instructions.txt \
-                ${{path_to_pipline}}/list_rules.snk \
+                ${{path_to_pipline}}/rules.snk \
                 ${{path_to_pipline}}/Snakefile \
                 -t ${{path_to_pipline}}/template.snk \
                 -n {params.work_directory}
@@ -373,9 +373,9 @@ rule TrEMOLO_BUILD :
             
 
             ## Creation du snake file en fonction des instructions
-            python3 ${{path_to_pipline}}/lib/python/make_snk.py \
+            python3 ${{path_to_pipline}}/lib/python/build_rules.py \
                 {params.work_directory}/OUTSIDER/instructions.txt \
-                ${{path_to_pipline}}/list_rules.snk \
+                ${{path_to_pipline}}/rules.snk \
                 ${{path_to_pipline}}/Snakefile \
                 -t ${{path_to_pipline}}/template.snk \
                 -n {params.work_directory}

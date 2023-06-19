@@ -16,11 +16,13 @@ From: ubuntu:20.04
         SVIM 1.4.2+
         libfontconfig1-dev
         Python libs
-            Biopython
-            Pandas
-            Numpy
-            pylab
-            intervaltree
+            Biopython 1.79
+            Pandas 1.5.3
+            Numpy 1.21.2
+            matplotlib 3.5.1
+            pysam 0.20.0
+            intervaltree 2.1.0
+            scipy 1.10.1
         R libs
             knitr 1.38
             rmarkdown 2.13
@@ -186,7 +188,7 @@ _EOF_
     cd
     
     #Python libs
-    python3 -m pip install biopython pandas numpy==1.21.2 matplotlib svim==1.4.2 intervaltree scipy pysam
+    python3 -m pip install biopython==1.79 pandas==1.5.3 numpy==1.21.2 matplotlib==3.5.1 svim==1.4.2 intervaltree==2.1.0 scipy==1.10.1 pysam==0.20.0
 
     # build variables
     export TOOLDIR=/opt/tools
@@ -195,7 +197,7 @@ _EOF_
     mkdir -p $TOOLDIR
 
 
-    #installing Sniffles 1.0.12+
+    #installing Sniffles 1.0.12b
     cd $TOOLDIR
     wget https://github.com/fritzsedlazeck/Sniffles/archive/refs/tags/v1.0.12b.tar.gz -O Sniffles.tar.gz
     tar xzvf Sniffles.tar.gz
