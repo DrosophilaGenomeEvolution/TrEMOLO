@@ -3633,15 +3633,16 @@ rule FREQUENCE :
             echo "tmp_info_ins : " >> {log}.err
             cat {params.work_directory}/tmp_info.txt >> {log}.err
 
-            NB_depth=`grep -w DEPTH {params.work_directory}/tmp_info.txt | cut -d ":" -f 2`
+            DEPTH=`grep -w DEPTH {params.work_directory}/tmp_info.txt | cut -d ":" -f 2`
             RS=`grep -w INS {params.work_directory}/tmp_info.txt | cut -d ":" -f 2`
             ID_type=`echo $ID | cut -d "." -f 1`
 
-            #echo "ID_TYPE:$ID_type; RS:$RS; NB_depth:$NB_depth; ID:$ID";
-            echo "ID_TYPE:$ID_type; RS:$RS; NB_depth:$NB_depth; ID:$ID" >> {log}.err
+            #echo "ID_TYPE:$ID_type; RS:$RS; DEPTH:$DEPTH; ID:$ID";
+            echo "ID_TYPE:$ID_type; RS:$RS; DEPTH:$DEPTH; ID:$ID" >> {log}.err
 
-            echo "...GET RS and NB_depth" >> {log}.err
+            echo "...GET RS and DEPTH" >> {log}.err
 
+            ##KEEP OLD FREQUENCY
             if [ $RS -eq 0 ]; then
                 echo "in.. ID_type=$ID_type" >> {log}.err
                 if [ "$ID_type" = "sniffles" ] || [ "$ID_type" = "svim" ]; then
@@ -3654,20 +3655,20 @@ rule FREQUENCE :
                     else
                         RS=0;
                     fi;
-                    NB_depth=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv | cut -f 3 || echo 0`
+                    DEPTH=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/DEPTH_TE.csv | cut -f 3 || echo 0`
                 elif [ "$ID_type" = "TrEMOLO" ]; then
                     echo -e "\\nTrEMOLO >> $ID:" >> {log}.err
                     grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv >> {log}.err || echo "ERROR : $ID" >> {log}.err
 
-                    RS=`grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv | awk '{{split($2, sp, ":"); print sp[6]}}' `
-                    NB_depth=`samtools depth {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -r $chrom:$start-$end | awk '{{s+=$3;}} END{{print int(s/NR);}}' || echo "0"`
+                    RS=`grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bln | grep -w -F "$TE"  | cut -f 1 | sort -u | wc -l`
+                    DEPTH=`samtools depth {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -r $chrom:$start-$end | awk '{{s+=$3;}} END{{print int(s/NR);}}' || echo "0"`
                 elif [ "$ID_type" = "SOFT" ]; then
                     echo -e "\\nSOFT >> $ID:" >> {log}.err
                     grep -w "`echo $ID | sed 's/\.[RL]//g'`" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.bed >> {log}.err || echo "ERROR : $ID" >> {log}.err
 
                     ID_tmp=`echo $ID | sed 's/\.[RL]//g'`
                     RS=`grep -w "$ID_tmp" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.bed | cut -f 4 | cut -d ":" -f 2`
-                    NB_depth=`samtools depth {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -r $chrom:$(($start-50))-$(($end+50)) | awk '{{s+=$3;}} END{{print int(s/NR);}}' || echo 0`
+                    DEPTH=`samtools depth {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -r $chrom:$(($start-50))-$(($end+50)) | awk '{{s+=$3;}} END{{print int(s/NR);}}' || echo 0`
                 elif [ "$ID_type" = "HARD" ]; then
                     echo -e "\\nHARD >> $ID:" >> {log}.err
                     grep -w "`echo $ID | sed 's/\.[RL]//g'`" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bln >> {log}.err || echo "ERROR : $ID" >> {log}.err
@@ -3677,26 +3678,26 @@ rule FREQUENCE :
                     
                     echo "HARD = RS:$RS" >> {log}.err
                     
-                    NB_depth=`samtools depth {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -r $chrom:$(($start-50))-$(($end+50)) | awk '{{s+=$3;}} END{{print int(s/NR);}}' || echo 0`
+                    DEPTH=`samtools depth {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE_MD.sorted.bam -r $chrom:$(($start-50))-$(($end+50)) | awk '{{s+=$3;}} END{{print int(s/NR);}}' || echo 0`
                     
-                    echo "HARD = NB_depth:$NB_depth" >> {log}.err
+                    echo "HARD = DEPTH:$DEPTH" >> {log}.err
                 fi;
                 echo "in..." >> {log}.err
             fi;
 
             echo "....." >> {log}.err
 
-            if [ $NB_depth -eq 0 ]; then
+            if [ $DEPTH -eq 0 ]; then
                 FREQ=0;
                 echo "ERROR : DEPTH=0; ID=$ID;" >> {log}.err
             else
-                echo "RS=$RS : NBD=$NB_depth : ID=$ID" >> {log}.err
-                FREQ=`printf "%.6f" "$(((10**6 * $RS/$NB_depth) * 100))e-6"`;
-                echo "VALIDATE FREQ=$FREQ : NBD=$NB_depth : ID=$ID" >> {log}.err
+                echo "RS=$RS : NBD=$DEPTH : ID=$ID" >> {log}.err
+                FREQ=`printf "%.6f" "$(((10**6 * $RS/$DEPTH) * 100))e-6"`;
+                echo "VALIDATE FREQ=$FREQ : NBD=$DEPTH : ID=$ID" >> {log}.err
             fi;
 
 
-            depth=`echo -e "$chrom\\t$start\\t$NB_depth"`
+            depth=`echo -e "$chrom\\t$start\\t$DEPTH"`
 
             if [ "$ID_type" = "sniffles" ] || [ "$ID_type" = "svim" ]; then
                 TE=`grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv | awk '{{print $1}}'`
@@ -3716,11 +3717,11 @@ rule FREQUENCE :
             echo ".." >> {log}.err
             
             if [ -n "$depth" ] && [ "$depth" != "NONE" ]; then
-                echo "DEPTH OK == $i : $info_TE : $depth : RS=$RS : NB_depth=$NB_depth" >> {log}.err
-                printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t$info_TE\\n" "$FREQ" | tr "," "." >> {output.depth_te}
+                echo "DEPTH OK == $i : $info_TE : $depth : RS=$RS : DEPTH=$DEPTH" >> {log}.err
+                printf "$depth\t$(($DEPTH-$RS))\t$RS\t%.4f\t$info_TE\\n" "$FREQ" | tr "," "." >> {output.depth_te}
             else
-                depth=`echo -e "$chrom\\t$start\\t$NB_depth"`
-                printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t${{info_TE}}|ERROR\n" "0" | tr "," "." >> {output.depth_te}
+                depth=`echo -e "$chrom\\t$start\\t$DEPTH"`
+                printf "$depth\t$(($DEPTH-$RS))\t$RS\t%.4f\t${{info_TE}}|ERROR\n" "0" | tr "," "." >> {output.depth_te}
                 fail_msg "ERROR FOR ${{info_TE}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n" | tee -a {log}.err;
             fi;
 
@@ -3856,12 +3857,7 @@ rule FREQ_INSIDER:
         printf "$show_step";
 
         while read line; do
-            chrom=`echo $line | awk '{{print $1}}'`
-            start=`echo $line | awk '{{print $2}}'`
-            end=`echo $line | awk '{{print $3}}'`
-            info=`echo $line | awk '{{print $4}}'`
-
-            TE=`echo "$line" | awk '{{print $4}}' | cut -d "|" -f 1`
+            read -r chrom start end info TE <<< $(echo $line | awk 'OFS="\t"{{split($4, TE, "|"); print $1, $2, $3, $4, TE[1]}}')
 
             size_TE=$(($end-$start))
 
@@ -4137,12 +4133,12 @@ rule HARD_TE :
         fasta_TE       = config["DATA"]["TE_DB"],
         bam            = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/MAPPING/SAMPLE_mapping_GENOME_MD.sorted.bam",
         SOFT_all_te    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv",
-
+        tr_vcf         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/SV_HARD.tr_vcf",
     output:
         all_te    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv",
         bln       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bln",
         seqs      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta",
-        tr_vcf    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/SV_HARD.tr_vcf",
+        
         bed       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.bed",
 
     params:
@@ -4185,8 +4181,8 @@ rule HARD_TE :
 
         ## CREATE VCF HARD
         echo "CREATE VCF HARD..."
-        python3 ${{path_to_pipline}}/lib/python/parsing/find_hard.py {input.bam} > {output.tr_vcf};
-        awk 'NR>1 {{print $5}}' {output.tr_vcf} | sort -u > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ID.txt
+        ###python3 ${{path_to_pipline}}/lib/python/parsing/find_hard.py {input.bam} > {input.tr_vcf};
+        awk 'NR>1 {{print $5}}' {input.tr_vcf} | sort -u > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ID.txt
 
         ## GET SEQUENCE HARD
         echo "GET SEQUENCE HARD...";
@@ -4205,7 +4201,7 @@ rule HARD_TE :
 
         grep -n ">" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta | tr -d ">" > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta.fa_trml_idx
 
-        python3 ${{path_to_pipline}}/lib/python/parsing/get_seq_hard.py -s "$TrEMOLO_SIZE_MAX_TE" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta.fa_trml_idx {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta {output.tr_vcf} > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed
+        python3 ${{path_to_pipline}}/lib/python/parsing/get_seq_hard.py -s "$TrEMOLO_SIZE_MAX_TE" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta.fa_trml_idx {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta {input.tr_vcf} > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed
 
         ## Warning : WINDOW cluster fixed 100
         ## Warning : tab_head[1] for take start end first detected
@@ -4232,9 +4228,9 @@ rule HARD_TE :
         ##rm -f {output.all_te} {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/*.bed
 
         ## NO TE HARD FOUND
-        if ! test -s {output.tr_vcf} || ! test -s {output.all_te} || ! test -s {output.bln} || ! test -s {output.seqs}; then
+        if ! test -s {input.tr_vcf} || ! test -s {output.all_te} || ! test -s {output.bln} || ! test -s {output.seqs}; then
             warn_msg "[SNK--WARNING] NO TE HARD FOUND";
-            touch {output.tr_vcf}
+            touch {input.tr_vcf}
             touch {output.all_te}
             touch {output.bln}
             touch {output.seqs}
@@ -4259,12 +4255,12 @@ rule SOFT_TE :
         all_te   = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
         fasta_TE = config["DATA"]["TE_DB"],
         bam      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/MAPPING/SAMPLE_mapping_GENOME_MD.sorted.bam",
-        
+        vcf       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf",
     output:
         all_te    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv",
         bln       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.bln",
         seqs      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.fasta",
-        vcf       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf",
+        
         bed       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.bed",
         sv_bed    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.bed",
 
@@ -4308,7 +4304,7 @@ rule SOFT_TE :
 
         ## CREATE VCF SOFT
         echo "CREATE VCF SOFT..."
-        python3 ${{path_to_pipline}}/lib/python/parsing/find_soft.py {input.bam} > {output.vcf};
+        ###python3 ${{path_to_pipline}}/lib/python/parsing/find_soft.py {input.bam} > {input.vcf};
 
         ## GET SEQUENCE SOFT
         echo "GET SEQUENCE SOFT..."
@@ -4353,7 +4349,7 @@ rule SOFT_TE :
 
             print $1"\\t"$2"\\t"$2+1"\\t"$3":"(NB_RS_LEFT + NB_RS_RIGHT) >> out_bed
 
-        }}' {output.vcf} | grep -v "^--" > {output.seqs};
+        }}' {input.vcf} | grep -v "^--" > {output.seqs};
 
         ## BLAST TE
         echo "BLAST TE SOFT..."
@@ -4382,9 +4378,9 @@ rule SOFT_TE :
         ##rm -f {output.all_te} {output.bed} {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/TE_SOFT.bed
 
         ## NO TE SOFT FOUND
-        if ! test -s {output.vcf} || ! test -s {output.all_te} || ! test -s {output.bln} || ! test -s {output.seqs}; then
+        if ! test -s {input.vcf} || ! test -s {output.all_te} || ! test -s {output.bln} || ! test -s {output.seqs}; then
             warn_msg "[SNK--WARNING] NO TE SOFT FOUND";
-            touch {output.vcf}
+            touch {input.vcf}
             touch {output.all_te}
             touch {output.bln}
             touch {output.seqs}
@@ -4520,19 +4516,19 @@ rule DETECTION_TE :
             if [ $i -ne 0 ]; then
                 region=`echo $line | awk '{{print $2}}' | awk -F ":" '{{print $1":"$3"-"$3}}'`
                 depth=`samtools depth {input.bam} -r $region`;
-                NB_depth=`echo $depth | awk '{{print $3}}' || echo ""`
+                DEPTH=`echo $depth | awk '{{print $3}}' || echo ""`
 
                 TE=`echo $line | awk '{{print $1}}'`
                 info_TE=`echo $line | awk 'OFS="\t"{{print $1, $2}}'`
                 RS=`echo $line | awk '{{print $2}}' | awk -F ":" '{{print $6}}'`
 
                 ##TODO WARNING
-                if [ -n "$NB_depth" ] && [ $NB_depth -eq 0 ]; then
+                if [ -n "$DEPTH" ] && [ $DEPTH -eq 0 ]; then
                     echo "ERROR: $info_TE : DEPTH=0" >> {log.DETECTION}.err
                     FREQ=0;
-                elif [ -n "$NB_depth" ]; then
-                    # echo "NB_depth : $NB_depth; $RS";
-                    FREQ=`printf "%.6f" "$(((10**6 * $RS/$NB_depth) * 100))e-6"`
+                elif [ -n "$DEPTH" ]; then
+                    # echo "DEPTH : $DEPTH; $RS";
+                    FREQ=`printf "%.6f" "$(((10**6 * $RS/$DEPTH) * 100))e-6"`
                 else
                     FREQ=0;
                 fi;
@@ -4543,11 +4539,11 @@ rule DETECTION_TE :
                 fi;
 
                 if [ -n "$depth" ]; then
-                    ###echo "$i : $info_TE : $depth : RS=$RS : NB_depth=$NB_depth"
+                    ###echo "$i : $info_TE : $depth : RS=$RS : DEPTH=$DEPTH"
 
-                    printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t$info_TE\\n" "$FREQ" | tr "," "." >> {output.depth_te}
+                    printf "$depth\t$(($DEPTH-$RS))\t$RS\t%.4f\t$info_TE\\n" "$FREQ" | tr "," "." >> {output.depth_te}
                 else
-                    printf "$depth\t$(($NB_depth-$RS))\t$RS\t%.4f\t${{info_TE}}|ERROR\n" "0" | tr "," "." >> {output.depth_te}
+                    printf "$depth\t$(($DEPTH-$RS))\t$RS\t%.4f\t${{info_TE}}|ERROR\n" "0" | tr "," "." >> {output.depth_te}
                     fail_msg "ERROR FOR ${{info_TE}} \\n ERROR GETTING DEPTH YOU NEED TO RECONSTRUCT YOUR BAM FILE\\n";
                 fi;
             else
@@ -4600,7 +4596,8 @@ rule TrEMOLO_SV_TE :
         SV_INS_CLUST_bln = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bln",
         INS_TREMOLO_csv  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv",
         INS_TREMOLO_bed  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.bed",
-    
+        hard_vcf         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/SV_HARD.tr_vcf",
+        soft_vcf         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf",
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -4625,6 +4622,8 @@ rule TrEMOLO_SV_TE :
         path_to_pipline=`dirname {params.path_snk}`
 
         mkdir -p {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/
+        mkdir -p {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/
+        mkdir -p {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/
 
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET INSERTION TrEMOLO [^-^] {params.cend}"
 
@@ -4636,7 +4635,11 @@ rule TrEMOLO_SV_TE :
         samtools index {input.bam} 2> {log}.err
 
         echo "GET INSERTION..."
-        python3 ${{path_to_pipline}}/lib/python/parsing/find_all_ins.py {input.bam} > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed 2>> {log}.err
+        ###python3 ${{path_to_pipline}}/lib/python/parsing/find_all_ins.py {input.bam} > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed 2>> {log}.err
+        python3 ${{path_to_pipline}}/lib/python/parsing/find_all_type_ins.py {input.bam} \
+        --output-soft {output.soft_vcf} \
+        --output-hard {output.hard_vcf} \
+        --output-ins {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed 2>> {log}.err
 
         ! test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed && fail_msg "[{rule}] ERROR : NO INSERTION FOUND\\n" && exit 5;
 
@@ -5259,9 +5262,7 @@ rule TE_INSIDER:
 
         test -s {params.work_directory}/tmp_ID.txt && \
             for id in `cat {params.work_directory}/tmp_ID.txt`; do 
-                chrom=`grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 1`; 
-                start=`grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 2`; 
-                end=`grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 3`; 
+                read -r chrom start end _ <<< $(grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | awk 'OFS="\t"{print $1, $2, $3}')
                 TE=`grep -w "$id" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv | cut -f 1`;
 
                 echo -e "$chrom\t$start\t$end\t$TE|$id" >> {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_TE_ON_REF.bed
@@ -5286,9 +5287,7 @@ rule TE_INSIDER:
         rm -f {params.work_directory}/INSIDER/TE_DETECTION/DELETION_TE.bed
         test -s {params.work_directory}/tmp_ID.txt && \
             for id in `cat {params.work_directory}/tmp_ID.txt`; do 
-                chrom=`grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 10 | cut -d ":" -f 1`; 
-                start=`grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 10 | cut -d ":" -f 2 | cut -d "-" -f 1`; 
-                end=`grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 10 | cut -d ":" -f 2 | cut -d "-" -f 2`; 
+                read -r chrom start end <<< $(grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 10 | awk -F ":" 'OFS="\t"{split($2, pos, "-"); print $1, pos[1], pos[2]}')
                 TE=`grep -w "$id" {params.work_directory}/INSIDER/TE_DETECTION/DELETION.csv | cut -f 1`;
                 echo -e "$chrom\t$start\t$end\t$TE|$id" >> {params.work_directory}/INSIDER/TE_DETECTION/DELETION_TE.bed
             done;

@@ -73,13 +73,14 @@ for line in befile:
                 position_read_end   = count_read
                 position_ref  = reference_start + count_ref
                 #if we have found SOFT to a good position
-                if tupl[0] == 4 && start - window < position_ref && position_ref < start + window :
+                if tupl[0] == 4 and start - window < position_ref and position_ref < start + window :
                     #wirte
                     
                     found = True
 
             if not found:
                 #write
+                pass
 
 
 

@@ -67,7 +67,7 @@ lines = file.readlines()
 
 creat_pseudo_db = False
 for line in lines :
-    if line[0] == ">" and (":" in line.strip() or "/" in line.strip() or "\\" in line.strip() or "|" in line.strip()) :
+    if line[0] == ">" and (":" in line.strip() or "/" in line.strip() or "\\" in line.strip() or "|" in line.strip() or "[" in line.strip() or "]" in line.strip()) :
         creat_pseudo_db = True
         break
 

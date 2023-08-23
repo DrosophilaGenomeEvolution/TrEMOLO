@@ -190,7 +190,6 @@ rule TrEMOLO_BUILD :
         #CHOICE
         call_sv             = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
-        #choice_asm         = config["CHOICE"]["PIPELINE"]["ASSEMBLY_GENOME"],
         choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
         DETECT_ALL_TE       = config["CHOICE"]["INSIDER_VARIANT"]["DETECT_ALL_TE"],
         MODE_PARALLELING    = config["CHOICE"]["PIPELINE"]["MODE_PARALLELING"],

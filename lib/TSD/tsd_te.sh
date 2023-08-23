@@ -145,7 +145,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
                 exit 1 ;
             fi;
 
-            #
+            #Warning : WORK ONLY BECAUSE ERROR IN LONG READS
             echo "[$0] *********BLAST 1 TE VS READ**********"
             echo "[$0] --READS : $reads"
             makeblastdb -in "$reads" -dbtype nucl

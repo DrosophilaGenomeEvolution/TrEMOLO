@@ -66,7 +66,7 @@ for e, read in enumerate(bamfile.fetch()):
             if tupl[0] in [0, 1, 7, 4] : #Check M,I,=,S CIGAR for postion on reads
                 count_read += tupl[1]
 
-            #if we have found INS to a good position
+            #if we have found SOFT to a good position
             if tupl[0] == 4 and tupl[1] >= min_size :
                 
                 if ref_name_pred != REF :
