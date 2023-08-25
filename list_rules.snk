@@ -58,9 +58,11 @@ rule RENAME_PSEUDO_TE:
         ## CHANGE DIRECTORY
         old_path=`pwd`
         basename=`basename {params.work_directory}`
+
+        awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' {params.work_directory}/TE_INFOS.bed | sort -u > {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt
+
         cd {params.work_directory}/REPORT/mini_report/web/js/
 
-        awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' ${{old_path}}/${{basename}}/TE_INFOS.bed | sort -u > ${{old_path}}/${{basename}}/tmp_LIST_TE_TO_CHANGE.txt
 
         ## RENAME TE IN REPORT JS
         echo "RENAME TE IN REPORT JS...";
