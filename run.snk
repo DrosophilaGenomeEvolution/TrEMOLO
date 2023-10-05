@@ -173,7 +173,7 @@ onsuccess:
 #Build Snakemake File
 rule TrEMOLO_BUILD :
     input:  
-
+        TE_DB = config["DATA"]["TE_DB"],
     output:
         #temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
         temp(directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/rep_tmp_snk")),
@@ -229,7 +229,14 @@ rule TrEMOLO_BUILD :
         PARALLELING=""
         if [ {params.MODE_PARALLELING} = "True" ]; then
             PARALLELING="_MULTI_THREADS"
-        fi
+        fi;
+
+        mkdir -p {params.work_directory}/1-UTILS
+
+        awk ' 
+            /^>/ {{ head=substr($0, 2, length($0)); }} 
+            /^[^>]/ && OFS="\t" {{ print head, length($0); }}' \
+                {input.TE_DB} > {params.work_directory}/1-UTILS/TE_SIZE.tsv
 
         ###
         #INSIDER
@@ -332,9 +339,9 @@ rule TrEMOLO_BUILD :
                 printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > HARD_TE > MERGE_TE " > {params.work_directory}/OUTSIDER/instructions.txt
                 
                 if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
-                    printf "> FREQ_INSIDER > FREQUENCE " >> {params.work_directory}/OUTSIDER/instructions.txt
+                    printf "> FREQ_INSIDER > FREQUENCEv2 " >> {params.work_directory}/OUTSIDER/instructions.txt
                 else
-                    printf "> FREQUENCE:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
+                    printf "> FREQUENCEv2:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
                 
                 printf "> GET_READS_TE${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt

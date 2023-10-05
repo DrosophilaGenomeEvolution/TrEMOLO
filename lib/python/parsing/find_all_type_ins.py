@@ -40,12 +40,17 @@ ID_SOFT         = 0
 tab_doublons    = []
 ref_name_pred   = ""
 
+output_soft_bis = open(args.output_soft + ".bis", "w")
 output_soft = open(args.output_soft, "w") 
 output_hard = open(args.output_hard, "w") 
 output_ins  = open(args.output_ins, "w")
 
+output_soft_bis.write("\t".join(["#REF", "START", "END","ID", "ID_READ", "POS_REAL_READ", "FLAG", "SIDE", "SIZE_SEQ", "SEQ"]) + "\n")
+
+
 dico_clust_ins  = []
 dico_clust_soft = []
+dico_clust_soft_bis = []
 dico_clust_hard = []
 for e, read in enumerate(bamfile.fetch()):
     start_query     = read.query_alignment_start
@@ -105,9 +110,14 @@ for e, read in enumerate(bamfile.fetch()):
                 if ref_name_pred != REF :
                     ref_name_pred = REF
                     for indice, dic in enumerate(dico_clust_soft) :
-                        output_soft.write("\t".join([dic["REF"], str(dic["POS"]), "SOFT." + str(dic["ID"]), ";".join(["BEST_L_RS=" + dic["BEST_LEFT"][0], "BEST_L_SIZE=" + dic["BEST_LEFT"][1], "BEST_L_SEQ=" + dic["BEST_LEFT"][2]]), ";".join(["BEST_R_RS=" + dic["BEST_RIGHT"][0], "BEST_R_SIZE=" + dic["BEST_RIGHT"][1], "BEST_R_SEQ=" + dic["BEST_RIGHT"][2]]), "RS_LEFT=" + ",".join(list(numpy.unique(dic["RS_LEFT"]))), "RS_RIGHT=" + ",".join(list(numpy.unique(dic["RS_RIGHT"])))]) + "\n")
+                        output_soft.write("\t".join([dic["REF"], str(dic["POS"]), "SOFT." + str(dic["ID"]), ";".join(["BEST_L_RS=" + dic["BEST_LEFT"][0], "BEST_L_SIZE=" + dic["BEST_LEFT"][1], "BEST_L_SEQ=" + dic["BEST_LEFT"][2]]), ";".join(["BEST_R_RS=" + dic["BEST_RIGHT"][0], "BEST_R_SIZE=" + dic["BEST_RIGHT"][1], "BEST_R_SEQ=" + dic["BEST_RIGHT"][2]]), "RS_LEFT=" + ",".join(list(numpy.unique(dic["RS_LEFT"]))), "RS_RIGHT=" + ",".join(list(numpy.unique(dic["RS_RIGHT"]))), "NB_RS=" + str(dic["NB_RS"])]) + "\n")
                     
+                    ## SOFT BIS
+                    for indice, dic in enumerate(dico_clust_soft_bis) :
+                        output_soft_bis.write("\t".join([dic["REF"], str(dic["POS"]), str(dic["POS"]+1), "SOFT." + str(dic["ID"]), str(dic["ID_READ"]), str(dic["POS_REAL_READ"]), str(dic["FLAG"]), str(dic["SIDE"]), str(dic["SIZE_SEQ"]), str(dic["SEQ"])]) + "\n")
+
                     dico_clust_soft = []
+                    dico_clust_soft_bis = []
 
 
                 if seq and tupl[1] > min_size :
@@ -126,16 +136,23 @@ for e, read in enumerate(bamfile.fetch()):
                                 find = True
                                 if side == "L":
                                     dico_clust_soft[indice]["RS_LEFT"].append(str(read_name) + ":" + seq_vr)
+
+                                    seq_vr_bis = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
+                                    dico_clust_soft_bis.append({"REF":REF, "POS": count_ref + reference_start, "ID":dico_clust_soft[indice]["ID"], "ID_READ":read_name, "POS_REAL_READ":count_read_real, "FLAG":read.flag, "SIDE":"L", "SIZE_SEQ":len(seq_vr_bis), "SEQ":seq_vr_bis})
                                     
                                     if int(dico_clust_soft[indice]["BEST_LEFT"][1]) < tupl[1] :
-                                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
+                                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads TODO : Check
                                         dico_clust_soft[indice]["BEST_LEFT"] = [str(read_name) , str(tupl[1]), seq_vr]
                                 else :
                                     dico_clust_soft[indice]["RS_RIGHT"].append(str(read_name) + ":" + seq_vr)
+
+                                    seq_vr_bis = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
+                                    dico_clust_soft_bis.append({"REF":REF, "POS": count_ref + reference_start, "ID":dico_clust_soft[indice]["ID"], "ID_READ":read_name, "POS_REAL_READ":count_read_real-tupl[1], "FLAG":read.flag, "SIDE":"R", "SIZE_SEQ":len(seq_vr_bis), "SEQ":seq_vr_bis})
                                     
                                     if int(dico_clust_soft[indice]["BEST_RIGHT"][1]) < tupl[1] :
-                                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
+                                        seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads TODO : Check
                                         dico_clust_soft[indice]["BEST_RIGHT"] = [str(read_name) , str(tupl[1]), seq_vr]
+                                    
                                 
                                 dico_clust_soft[indice]["NB_RS"] += 1
 
@@ -148,15 +165,19 @@ for e, read in enumerate(bamfile.fetch()):
                             seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
                             if side == "L" :
                                 dico_clust_soft.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID_SOFT, "BEST_LEFT":[str(read_name) ,  str(tupl[1]), seq_vr],"BEST_RIGHT":["NONE" ,  str(0), "NONE"], "RS_LEFT":[str(read_name) + ":" + str(seq_vr)], "RS_RIGHT":[], "NB_RS":1})
+                                dico_clust_soft_bis.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID_SOFT, "ID_READ":read_name, "POS_REAL_READ":count_read_real, "FLAG":read.flag, "SIDE":"L", "SIZE_SEQ":len(seq_vr), "SEQ":seq_vr})
                             else :
+                                dico_clust_soft_bis.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID_SOFT, "ID_READ":read_name, "POS_REAL_READ":count_read_real-tupl[1], "FLAG":read.flag, "SIDE":"R", "SIZE_SEQ":len(seq_vr), "SEQ":seq_vr}) 
                                 dico_clust_soft.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID_SOFT, "BEST_LEFT":["NONE" ,  str(0), "NONE"],"BEST_RIGHT":[str(read_name) , str(tupl[1]), seq_vr], "RS_LEFT":[], "RS_RIGHT":[str(read_name) + ":" + str(seq_vr)], "NB_RS":1})
                             
                             ID_SOFT += 1
                     else :
                         seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
                         if side == "L" :
+                            dico_clust_soft_bis.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID_SOFT, "ID_READ":read_name, "POS_REAL_READ":count_read_real, "FLAG":read.flag, "SIDE":"L", "SIZE_SEQ":len(seq_vr), "SEQ":seq_vr})
                             dico_clust_soft.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID_SOFT, "BEST_LEFT":[str(read_name) ,  str(tupl[1]), seq_vr],"BEST_RIGHT":["NONE" , str(0), "NONE"], "RS_LEFT":[str(read_name) + ":" + str(seq_vr)], "RS_RIGHT":[], "NB_RS":1})
                         else :
+                            dico_clust_soft_bis.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID_SOFT, "ID_READ":read_name, "POS_REAL_READ":count_read_real-tupl[1], "FLAG":read.flag, "SIDE":"R", "SIZE_SEQ":len(seq_vr), "SEQ":seq_vr}) 
                             dico_clust_soft.append({"REF":REF, "POS": count_ref + reference_start, "ID":ID_SOFT, "BEST_LEFT":["NONE" ,  str(0), "NONE"],"BEST_RIGHT":[str(read_name) , str(tupl[1]), seq_vr], "RS_LEFT":[], "RS_RIGHT":[str(read_name) + ":" + str(seq_vr)], "NB_RS":1})
                         
                         ID_SOFT += 1
@@ -170,7 +191,12 @@ output_hard.write("\t".join(["#REF", "START", "END","ID", "ID_READ", "POS_REAL_R
 for indice, dic in enumerate(dico_clust_hard) :
     output_hard.write("\t".join([dic["REF"], str(dic["POS"]), str(dic["POS"]+1), "HARD." + str(dic["ID"]), str(dic["ID_READ"]), str(dic["POS_REAL_READ"]), str(dic["FLAG"]), str(dic["SIDE"]), str(dic["SIZE_SEQ"]), str(dic["SEQ"])]) + "\n")
 
-#SOFT
+#SOFT_BIS : LAST DATA 
+for indice, dic in enumerate(dico_clust_soft_bis) :
+    output_soft_bis.write("\t".join([dic["REF"], str(dic["POS"]), str(dic["POS"]+1), "SOFT." + str(dic["ID"]), str(dic["ID_READ"]), str(dic["POS_REAL_READ"]), str(dic["FLAG"]), str(dic["SIDE"]), str(dic["SIZE_SEQ"]), str(dic["SEQ"])]) + "\n")
+
+
+#SOFT : LAST DATA 
 for indice, dic in enumerate(dico_clust_soft) :
     output_soft.write("\t".join([dic["REF"], str(dic["POS"]), "SOFT." + str(dic["ID"]), ";".join(["BEST_L_RS=" + dic["BEST_LEFT"][0], "BEST_L_SIZE=" + dic["BEST_LEFT"][1], "BEST_L_SEQ=" + dic["BEST_LEFT"][2]]), ";".join(["BEST_R_RS=" + dic["BEST_RIGHT"][0], "BEST_R_SIZE=" + dic["BEST_RIGHT"][1], "BEST_R_SEQ=" + dic["BEST_RIGHT"][2]]), "RS_LEFT=" + ",".join(dic["RS_LEFT"]), "RS_RIGHT=" + ",".join(dic["RS_RIGHT"]), "NB_RS=" + str(dic["NB_RS"])]) + "\n")
 
