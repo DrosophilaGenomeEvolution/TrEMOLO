@@ -114,16 +114,16 @@ if position != None or True :
                             found = True
 
                         #if we have found HARD to a good position
-                        # if tupl[0] == 5 and tupl[1] >= min_size :
+                        if tupl[0] == 5 and tupl[1] >= min_size :
 
-                        #     identify = ":".join([REF, str(count_ref + reference_start), str(read_name), str(count_read_real), "L", str(len(seq))])
-                        #     if seq and tupl[1] > min_size and identify not in tab_doublons :
+                            identify = ":".join([REF, str(count_ref + reference_start), str(read_name), str(count_read_real), "L", str(len(seq))])
+                            if seq and tupl[1] > min_size and identify not in tab_doublons :
 
-                        #         tab_doublons.append(identify)
-
-                        #         print("H", infos, ".", ".")
-                        #         ID_HARD += 1
-                        #         found = True
+                                tab_doublons.append(identify)
+                                args.output.write(" ".join(["H", str(infos), ".", "."]) + "\n")
+                                #print("H", infos, ".", ".")
+                                ID_HARD += 1
+                                found = True
 
                         #if we have found SOFT to a good position
                         if tupl[0] == 4 and tupl[1] >= min_size :

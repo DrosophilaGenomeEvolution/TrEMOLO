@@ -400,13 +400,12 @@ rule REPORT :
             FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv | cut -f 9 || echo "NONE"`;
             FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv | cut -f 10 || echo "NONE"`;
 
-            ! test -n "$FREQ_BEFOR" && FREQ_BEFOR="NONE";
-            ! test -n "$FREQ_AFTER" && FREQ_AFTER="NONE";
-
+            ! test -n "$FREQ_BEFOR" && FREQ_BEFOR="NONE-FREQB" && echo "NONE-FREQB";
+            ! test -n "$FREQ_AFTER" && FREQ_AFTER="NONE-FREQA" && echo "NONE-FREQA";
 
             ##SIZE SV
-            SV_SIZE=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv | awk 'max<$2{{ max=$2; }} END{{ print max }}' || echo "NONE"`;
-
+            SV_SIZE=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv | awk 'max<$2{{ max=$2; }} END{{ if(max!=""){{ print max }} }}' || echo "NONE"`;
+            ! test -n "$SV_SIZE" && SV_SIZE="NONE";
 
             ##ID TrEMOLO
             IS_CLIPPED=`echo "$ID" | grep -E -o "SOFT|HARD" || echo ""`
@@ -3830,28 +3829,64 @@ rule FREQUENCEv2 :
 
         ##FILTER_BLAST
         ###no header
-        awk 'NR>1' {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv > tmp_FILTER_BLAST_sniffles.csv 
-        cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv \
-            tmp_FILTER_BLAST_sniffles.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.csv
+        ###sniffles
+        awk 'NR>1' {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_sniffles.csv 
+        
+        ###SOFT
+        touch {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv;
+        awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv
 
+        ###HARD
+        touch {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv;
+        awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv
+
+        cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_sniffles.csv \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.csv
+
+        ##SORT
+        awk 'NR>1 && OFS="\t" {{split($2, sp, ":"); print sp[1], sp[3], sp[4]+1, $0}}' \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.csv | bedtools sort | cut -f 4- \
+                > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_INS.sorted.csv
+
+        head -n 1 {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_head.csv
+        cat {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_head.csv \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_INS.sorted.csv \
+                > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv
 
         ##GET SV SIZE
         echo "  GET SV SIZE..." | tee -a {log}.out
         
         ###SV SEQ sniffles
-        awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
-              /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
-            {params.work_directory}/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.fasta \
-                > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
+        test -s {params.work_directory}/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.fasta && \
+            awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
+                /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
+                {params.work_directory}/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.fasta \
+                    > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
         
         ###SV SEQ TrEMOLO
-        awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
-              /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
-            {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.fasta \
-                >> {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
+        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.fasta && \
+            awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
+                /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
+                {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.fasta \
+                    >> {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
+
+        ###SV SEQ SOFT
+        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.fasta && \
+            awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
+                /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
+                {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.fasta \
+                    >> {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
+
+        ###SV SEQ HARD
+        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta && \
+            awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
+                /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
+                {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta \
+                    >> {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
 
         echo "  GET SV SIZE ✔" | tee -a {log}.out
-
         
         ##COUNT READS
         echo "  COUNT READS..." | tee -a {log}.out
@@ -3860,14 +3895,13 @@ rule FREQUENCEv2 :
 
         python3 ${{path_to_pipline}}/lib/python/parsing/getFrequency.py -p ${{sizePercent}} \
             {params.work_directory}/OUTSIDER/MAPPING/SAMPLE_mapping_GENOME_MD.sorted.bam \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.csv \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv \
             {params.work_directory}/1-UTILS/TE_SIZE.tsv \
             {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv \
             {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS.txt 2>> {log}.err \
                 || (fail_msg "...COUNT READS ✘" | tee -a {log}.out && exit 1)
 
-        echo "  COUNT READS ✔ \\n" | tee -a {log}.out
-
+        echo "  COUNT READS ✔" | tee -a {log}.out
 
 
         ##GET FREQUENCY
@@ -3875,8 +3909,10 @@ rule FREQUENCEv2 :
         awk '
             ID!=$3 && NR>1 && OFS="\t" {{ 
                 if(I<_RS) I=_RS; 
-                if(I_Only<_RS) I_Only=_RS; 
-                print position, ID, TE, I_Only, I_clipped, (total-I_clipped), I, total, (I_Only/(total-I_clipped))*100, (I/total)*100;
+                if(I_Only<_RS) I_Only=_RS;
+                if(total<I) total=I;
+                if(total-I_clipped < I_Only) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
+                print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100;
             }}
 
             ID!=$3 {{ total=0; I=0; I_Only=0; I_clipped=0; _RS=$5; ID=$3; TE=$4; position=$9; current_read=""; }}  
@@ -3884,7 +3920,7 @@ rule FREQUENCEv2 :
             $1!="E" && current_read!=$2 {{ 
                 I+=1;
                 current_read=$2;
-                read_added=1;
+                total+=1; 
 
                 if($1!="I"){{
                     I_clipped+=1;
@@ -3894,7 +3930,7 @@ rule FREQUENCEv2 :
                 }}
             }}
 
-            read_added==1 || ($1=="E" && current_read!=$2) {{ total+=1; read_added=0; current_read=$2;}}' \
+            ($1=="E" && current_read!=$2) {{ total+=1; current_read=$2;}}' \
                 {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS.txt \
                     > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv \
                         || (fail_msg "...GET FREQUENCY ✘" | tee -a {log}.out && exit 1)
@@ -3904,12 +3940,9 @@ rule FREQUENCEv2 :
         echo "FREQUENCY DONE ! ✔" | tee -a {log}.out
 
         ##
-        rm -f {params.work_directory}/MAPPING_POSTION_TE.sam
         rm -f {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp*
-        rm -f {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/TE_POSITION_SIZE.txt
         #rm -fr {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
         rm -f `find {params.work_directory} -name "*.fai"`
-        rm -f {params.work_directory}/TE_POS*
         """
 
 
