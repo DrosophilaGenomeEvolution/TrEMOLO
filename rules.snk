@@ -3855,6 +3855,7 @@ rule FREQUENCEv2 :
             {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_INS.sorted.csv \
                 > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv
 
+        ####
         ##GET SV SIZE
         echo "  GET SV SIZE..." | tee -a {log}.out
         
@@ -3887,14 +3888,25 @@ rule FREQUENCEv2 :
                     >> {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
 
         echo "  GET SV SIZE ✔" | tee -a {log}.out
+
+
+        touch {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_POSITION_START_TE.bed
+        awk -v window="50" 'NR>1 && OFS="\t" {{ split($2, sp, ":"); print sp[1], (sp[3]-window > 0 ? sp[3]-window : 1), sp[4]+window }}' {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv \
+            | bedtools merge -d 1 \
+            > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_POSITION_START_TE.bed
+
+        samtools view {params.preset_view} -F 4 -h -b {input.bam} -L {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_POSITION_START_TE.bed > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE.bam
+        samtools index {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE.bam
         
+        echo "GET BAM TE OUTSIDER ✔" | tee -a {log}.out 
+
         ##COUNT READS
         echo "  COUNT READS..." | tee -a {log}.out
 
         sizePercent=`echo "{params.pars_bln_option}" | grep -E 'min-size-percent [0-9]+' -o | awk '$2-10>5{{ print $2-10; }} $2-10<5{{ print 5; }}'`;
 
         python3 ${{path_to_pipline}}/lib/python/parsing/getFrequency.py -p ${{sizePercent}} \
-            {params.work_directory}/OUTSIDER/MAPPING/SAMPLE_mapping_GENOME_MD.sorted.bam \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE.bam \
             {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv \
             {params.work_directory}/1-UTILS/TE_SIZE.tsv \
             {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv \
@@ -3909,9 +3921,11 @@ rule FREQUENCEv2 :
         awk '
             ID!=$3 && NR>1 && OFS="\t" {{ 
                 if(I<_RS) I=_RS; 
-                if(I_Only<_RS) I_Only=_RS;
-                if(total<I) total=I;
-                if(total-I_clipped < I_Only) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
+                if(substr(ID, 1, 8) == "sniffles" && I_Only<_RS){{ 
+                    I_Only=_RS;
+                }}
+                if(total<I || total==0) total=I;
+                if(total-I_clipped < I_Only || total-I_clipped==0) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
                 print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100;
             }}
 
@@ -3930,7 +3944,17 @@ rule FREQUENCEv2 :
                 }}
             }}
 
-            ($1=="E" && current_read!=$2) {{ total+=1; current_read=$2;}}' \
+            ($1=="E" && current_read!=$2) {{ total+=1; current_read=$2;}}
+            
+            END {{ 
+                if(I<_RS) I=_RS; 
+                if(substr(ID, 1, 8) == "sniffles" && I_Only<_RS){{ 
+                    I_Only=_RS;
+                }}
+                if(total<I || total==0) total=I;
+                if(total-I_clipped < I_Only || total-I_clipped==0) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
+                print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100;
+            }}' \
                 {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS.txt \
                     > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv \
                         || (fail_msg "...GET FREQUENCY ✘" | tee -a {log}.out && exit 1)
