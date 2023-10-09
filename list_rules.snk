@@ -4010,7 +4010,7 @@ rule MERGE_TE :
 
         #Get ID Tr/sniffles intersect
         echo "MERGE Tr and svim/sniffles..." | tee -a {log}.out;
-        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed && {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed && \
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed && test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed && \
             bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed -w 100 | awk '{{split($4, sp1, "|");  split($10, sp2, "|"); if(sp1[1] == sp2[1]){{ print $4 }} }}' | sort -u > {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_TrEMOLO.txt
 
         ###if no intersect get all ID Tr
