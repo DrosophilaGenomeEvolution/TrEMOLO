@@ -149,7 +149,7 @@ else :
 
 #GET BLAST OUTFMT 
 
-df = pd.read_csv(name_file, "\t", header=None)
+df = pd.read_csv(filepath_or_buffer=name_file, sep="\t", header=None)
 
 
 df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]

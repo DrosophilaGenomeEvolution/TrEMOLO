@@ -89,76 +89,7 @@ graph
 
 ## FREQUENCY
 
-```{bash FREQB_inout, eval=TRUE, include=FALSE, results=TRUE}
-
-test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv | tail -n 50 > .tmp_orderx.txt || echo
-
-
-(test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
-  cat ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv > .tmp_DEPTH_TE.csv) || \
-  (test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
-    cat ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > .tmp_DEPTH_TE.csv)
-
-
-rm -f FREQ_TE.csv
-(test -s ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv && awk 'NR>1' ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv >> .tmp_DEPTH_TE.csv && python3 ../lib/freq_graph.py .tmp_DEPTH_TE.csv FREQ_TE.csv) || echo ;
-
-(test -s FREQ_TE.csv && echo -e "x\ty\tcondition" > .tmp_depth.csv && grep -w -f .tmp_orderx.txt FREQ_TE.csv >> .tmp_depth.csv && mv .tmp_depth.csv FREQ_TE.csv) || echo
-
-
-##NEW CHART
-test -s .tmp_ALL_TE_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' .tmp_ALL_TE_COUNT.csv > .tmp_orderx.txt || echo
-
-test -s FREQ_TE.csv && \
-    python3 ../lib/conv_js_histo_grouped_ggplot.py FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_INOUTSIDER_CHART.js
-
-sed 's/%%VAR_JS%%/FREQ_INOUTSIDER_CHART.js/g' lib/template_FREQ_TE_CHART.html \
-    > lib/template_FREQ_TE_INOUTSIDER_CHART.html
-
-```
-
-
-
-```{r FREQ_INOUT, eval=FALSE, include=FALSE, results=FALSE, out.width="90%", echo=FALSE}
-
-
-if( file.exists("FREQ_TE.csv") ){
-  data = read.csv("FREQ_TE.csv", sep="\t")
-
-  #data$x <- factor(data$x, levels = order_TE)
-
-  order <- read.table("orderc.txt", header = FALSE)
-  data$condition <- factor(data$condition, levels = order$V1)
-
-  orderx <- read.table(".tmp_orderx.txt", header = FALSE)
-  data$x <- factor(data$x, levels = orderx$V1)
-
-
-  p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
-          geom_bar(position="stack", stat="identity") +
-          xlab("TE") +
-          ylab("NUMBER") +
-          labs(fill = "FREQUENCY") +
-          #scale_fill_viridis(discrete = T) +
-          scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
-          theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
-              panel.background = element_rect(fill="white", colour="white", 
-                                            linetype="solid", color="white"))
-
-  p
-  #ggsave(p, file=output)
-}
-
-```
-
-<iframe src="lib/template_FREQ_TE_INOUTSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
-
-## TE POSITION
-
-
-<iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_INOUTSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
-
-Select TE family
+<iframe src="lib/template_FREQ_CHROM_INOUTSIDER.html" style="width: 100%; height: 100vh; border: none; overflow: hidden;"></iframe>
 
 
 <!-- remove inutiles files -->

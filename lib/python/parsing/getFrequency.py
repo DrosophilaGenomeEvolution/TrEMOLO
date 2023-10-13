@@ -1,3 +1,36 @@
+#!/usr/bin python3
+# -*- coding: utf-8 -*-
+
+###################################################################################################################################
+#
+# Copyright 2019-2020 IRD-CNRS-Lyon1 University
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/> or
+# write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+# You should have received a copy of the CeCILL-C license with this program.
+#If not see <http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.txt>
+#
+# Intellectual property belongs to authors and IRD, CNRS, and Lyon 1 University  for all versions
+# Version 0.1 written by Mourdas Mohamed
+#                                                                                                                                   
+####################################################################################################################################
+
+
+
 import pysam
 import argparse
 import numpy
@@ -67,6 +100,7 @@ for _, row in df.iterrows():
     ID     = qseqid.split(":")[4]
     sseqid = row["sseqid"] #TE
     RS     = qseqid.split(":")[5]
+    svType = ID.split(".")[1]
 
     position = {"chrom": qseqid.split(":")[0], "start":qseqid.split(":")[2], "end": qseqid.split(":")[3]}
 
@@ -99,51 +133,77 @@ for _, row in df.iterrows():
                     count_read_real += tupl[1]
 
                 distance = min(abs( (reference_start + count_ref) -  int(position["end"]) ), abs( (reference_start + count_ref) -  int(position["start"]) ))
-                infos = " ".join([read_name, ID, str(sseqid), str(RS), str(sv_size_dic[ID]), str(te_size_dic[sseqid]), str(reference_start + count_ref), str(position["chrom"]+":"+position["start"]+"-"+position["end"]), qseqid, str(distance), str(reference_start), str(count_ref),  str(count_read), str(count_read_real)])
+                infos = [read_name, ID, str(sseqid), str(RS), str(sv_size_dic[ID]), str(te_size_dic[sseqid]), ".", str(reference_start + count_ref), str(position["chrom"]+":"+position["start"]+"-"+position["end"]), qseqid, str(distance), str(reference_start), str(count_ref),  str(count_read), str(count_read_real), svType]
 
-                if max(int(position["start"])-window, 1) <= reference_start + count_ref and reference_start + count_ref <= int(position["end"])+window:
-
-                    #if we have found INS to a good position
-                    if tupl[0] == 1 and tupl[1] >= ((size_percent/100) * int(te_size_dic[sseqid])) :
-                        size_seq = tupl[1]
-                        if seq :
-                            seq_vr = seq[count_read-tupl[1]:count_read]
-                            #print("I", infos, size_seq, seq_vr)
-                            args.output.write(" ".join(["I", str(infos), str(size_seq), str(seq_vr)]) + "\n")
-                        else:
-                            args.output.write(" ".join(["I", str(infos), str(size_seq), "."]) + "\n")
-                            #print("I", infos, size_seq, ".")
-                        found = True
-
-                    #if we have found HARD to a good position
-                    if tupl[0] == 5 and tupl[1] >= min_size :
-
-                        identify = ":".join([REF, str(count_ref + reference_start), str(read_name), str(count_read_real), "L", str(len(seq))])
-                        if seq and tupl[1] > min_size and identify not in tab_doublons :
-
-                            tab_doublons.append(identify)
-                            args.output.write(" ".join(["H", str(infos), ".", "."]) + "\n")
-                            #print("H", infos, ".", ".")
-                            found = True
-
-                    #if we have found SOFT to a good position
-                    if tupl[0] == 4 and tupl[1] >= min_size :
+                if svType == "INS":
+                    if max(int(position["start"])-window, 1) <= reference_start + count_ref and reference_start + count_ref <= int(position["end"])+window:
                         
-                        if ref_name_pred != REF :
-                            ref_name_pred = REF
+                            #if we have found INS to a good position
+                            if tupl[0] == 1 and tupl[1] >= ((size_percent/100) * int(te_size_dic[sseqid])) :
+                                size_seq = tupl[1]
+                                infos[6] = str(size_seq)
+                                if seq :
+                                    seq_vr = seq[count_read-tupl[1]:count_read]
+                                    #print("I", infos, size_seq, seq_vr)
+                                    args.output.write(" ".join(["I", str(" ".join(infos)), str(size_seq), str(seq_vr)]) + "\n")
+                                else:
+                                    args.output.write(" ".join(["I", str(" ".join(infos)), str(size_seq), "."]) + "\n")
+                                    #print("I", infos, size_seq, ".")
+                                found = True
 
-                        if seq and tupl[1] > min_size :
+                            #if we have found HARD to a good position
+                            if tupl[0] == 5 and tupl[1] >= min_size :
 
-                            find = False
-                            seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
-                            args.output.write(" ".join(["S", str(infos), str(tupl[1]), str(seq_vr)]) + "\n")
-                            #print("S", infos, tupl[1], seq_vr)
+                                identify = ":".join([REF, str(count_ref + reference_start), str(read_name), str(count_read_real), "L", str(len(seq))])
+                                if seq and tupl[1] > min_size and identify not in tab_doublons :
+                                    infos[6] = str(tupl[1])
+                                    tab_doublons.append(identify)
+                                    args.output.write(" ".join(["H", str(" ".join(infos)), ".", "."]) + "\n")
+                                    #print("H", infos, ".", ".")
+                                    found = True
+
+                            #if we have found SOFT to a good position
+                            if tupl[0] == 4 and tupl[1] >= min_size :
+                                
+                                if ref_name_pred != REF :
+                                    ref_name_pred = REF
+
+                                if seq and tupl[1] > min_size :
+                                    infos[6] = str(tupl[1])
+                                    find = False
+                                    seq_vr = seq[count_read-tupl[1]:count_read] #get SEQ SOFT in reads
+                                    args.output.write(" ".join(["S", str(" ".join(infos)), str(tupl[1]), str(seq_vr)]) + "\n")
+                                    #print("S", infos, tupl[1], seq_vr)
+                                    found = True
+                else :
+                    #2R_RaGOO_RaGOO:1912908-1915168
+                    # if ID=="sniffles.DEL.198" and "095a30f8-e7cb-46a3-b20e-1f1e5fe733b3"==read_name and 1912908 < reference_start + count_ref - tupl[1] and reference_start + count_ref - tupl[1] < 1915168 :
+                    #     print(tupl, reference_start, count_ref, (reference_start + count_ref), (reference_start + count_ref-tupl[1]), (int(position["start"])-window), (int(position["start"])-window), int(position["end"]), ((size_percent/100) * int(te_size_dic[sseqid])), size_percent, int(te_size_dic[sseqid]), sv_size_dic[ID])
+                    if max(int(position["start"])-window, 1) <= reference_start + count_ref - tupl[1] and reference_start + count_ref - tupl[1] <= int(position["end"])+window:
+                        if tupl[0] == 2 and tupl[1] >= int(sv_size_dic[ID]) :
+                            
+                            size_seq = 20
+                            infos[7] = str(reference_start + count_ref - tupl[1])
+                            infos[6] = str(tupl[1])
+                            #infos = [read_name, ID, str(sseqid), str(RS), str(sv_size_dic[ID]), str(te_size_dic[sseqid]), str(reference_start + count_ref - tupl[1]), str(position["chrom"]+":"+position["start"]+"-"+position["end"]), qseqid, str(distance), str(reference_start), str(count_ref),  str(count_read), str(count_read_real), svType]
+                            if seq :
+                                #print(count_read, size_seq, len(seq))
+                                #seq_vr = seq[(count_read-int(size_seq/2)):(count_read+int(size_seq/2))]
+                                if 0 < count_read - 30 and count_read + 30 < len(seq) :
+                                    seq_vr = seq[count_read - 30:count_read] + ":" + seq[count_read:(count_read + 30)]
+                                else :
+                                    seq_vr = "."
+                                #print("I", infos, size_seq, seq_vr)
+                                args.output.write(" ".join(["D", str(" ".join(infos)), str(size_seq), str(seq_vr)]) + "\n")
+                            else:
+                                args.output.write(" ".join(["D", str(" ".join(infos)), str(size_seq), "."]) + "\n")
+                                #print("I", infos, size_seq, ".")
                             found = True
 
             distance = min(abs( (reference_start + count_ref) -  int(position["end"]) ), abs( (reference_start + count_ref) -  int(position["start"]) ))
-            infos = " ".join([read_name, ID, str(sseqid), str(RS),  str(sv_size_dic[ID]), str(te_size_dic[sseqid]), str(reference_start + count_ref) , str(position["chrom"]+":"+position["start"]+"-"+position["end"]), qseqid, str(distance), str(reference_start), str(count_ref),  str(count_read), str(count_read_real)])
+            infos = [read_name, ID, str(sseqid), str(RS),  str(sv_size_dic[ID]), str(te_size_dic[sseqid]), ".", str(reference_start + count_ref) , str(position["chrom"]+":"+position["start"]+"-"+position["end"]), qseqid, str(distance), str(reference_start), str(count_ref),  str(count_read), str(count_read_real), svType]
             if not found:
-                args.output.write(" ".join(["E", str(infos), ".", "."]) + "\n")
+                args.output.write(" ".join(["E", str(" ".join(infos)), ".", "."]) + "\n")
                 #print("E", infos, ".", ".")
 
 

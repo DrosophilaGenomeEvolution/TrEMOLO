@@ -167,7 +167,7 @@ PARAMS:
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 option is map-ont by default (map-pb, map-ont)
-            OPTION: '-t 8' # more option of minimap2 can be specified here
+            OPTION: '' # more option of minimap2 can be specified here
         SAMTOOLS_VIEW:
             PRESET_OPTION: ''
         SAMTOOLS_SORT:
@@ -176,11 +176,11 @@ PARAMS:
             PRESET_OPTION: ''
         TSD:
             FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for the reference elements (format="TE SIZE", one TE per line) [optional]
-            SIZE_FLANK: 30  # flanking sequence size for calculation of TSD; put value > 4
+            SIZE_FLANK: 15  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 500" #sequence recovery file in the vcf
-        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80 -k 'INS|DEL'" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
 
@@ -285,12 +285,12 @@ The most useful output files are :
 
 * The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/48d1d238be3a6a181ce44641f7738ad8b237b538/test/web/index.html)
 
-The output file **your_work_direcetory/TE_INFOS.bed** gathers all the necessary information.
+The output file **your_work_directory/TE_INFOS.bed** gathers all the necessary information.
 
-|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | pident | psize_TE | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  | TYPE |
-| --------------- | -------- | -------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- | -------------- |
-|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175 |     +     |   GTACA   | 97.026 | 99.2  | 9006    | 16943978 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  | INS |
-|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG  | 98.6 | 90.5  | 8435    | 21629413         | 11.1111 |    10.0000     | TE_ID_INSIDER.77237.Repeat_expansion.8 | Repeat_expansion |
+|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD     | pident | psize_TE | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | SV_SIZE | ID_TrEMOLO  | TYPE |
+| --------------- | -------- | -------- | ---------- | --------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- | -------------- | -------------- |
+|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175  |     +     |   GTACA   | 97.026 | 99.2  | 9006    | 16943978 | 28.5714 |    28.5714     | 9000  |  TE_ID_OUTSIDER.94047.INS.107508.0  | INS |
+|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG  | 98.6 | 90.5  | 8435    | 21629413         | 11.1111 |    10.0000   | 8000  | TE_ID_INSIDER.77237.Repeat_expansion.8 | Repeat_expansion |
 
 
  1.    `chrom` : chromosome
@@ -305,8 +305,9 @@ The output file **your_work_direcetory/TE_INFOS.bed** gathers all the necessary 
  10.   `NEW_POS` :  position corrected with calculated TSD (only for OUTSIDER)
  11.   `FREQ`  : frequence, normalized
  12.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped (OUTSIDER only)
- 13.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
- 14.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
+ 13.   `SV_SIZE`  : size of the structural variant (may be larger than the size of the TE)
+ 14.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
+ 15.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
 
 
 # How to use TrEMOLO<a name="how_to_use"></a>

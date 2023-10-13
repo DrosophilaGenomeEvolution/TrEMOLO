@@ -175,65 +175,11 @@ hover your mouse over the bars or navigate with the slider if the number of diff
 
 ## FREQUENCY
 
-
-```{bash FREQB2, eval=TRUE, include=TRUE, results=TRUE}
-
-test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && awk -F "\t" 'NR>1 {print $2}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv | tail -n 50 > .tmp_orderx.txt
-
-
-test -s ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv && python3 ../lib/freq_graph.py ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv .tmp_FREQ_TE.csv && echo -e "x\ty\tcondition" > FREQ_TE.csv && grep -w -f .tmp_orderx.txt .tmp_FREQ_TE.csv >> FREQ_TE.csv || echo ;
-
-
-##NEW CHART
-
-test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && awk -F "\t" 'NR>1 {print $2}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv > .tmp_orderx.txt
-
-
-test -s .tmp_FREQ_TE.csv && \
-    python3 ../lib/conv_js_histo_grouped_ggplot.py .tmp_FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_INSIDER_CHART.js
-
-sed 's/%%VAR_JS%%/FREQ_INSIDER_CHART.js/g' lib/template_FREQ_TE_CHART.html \
-    > lib/template_FREQ_TE_INSIDER_CHART.html
-
-```
-
-
-
-```{r FREQIN, eval=FALSE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
-
-data = read.csv("FREQ_TE.csv", sep="\t")
-
-#data$x <- factor(data$x, levels = order_TE)
-
-#order condition percent
-order <- read.table("orderc.txt", header = FALSE)
-data$condition <- factor(data$condition, levels = order$V1)
-
-orderx <- read.table(".tmp_orderx.txt", header = FALSE)
-data$x <- factor(data$x, levels = orderx$V1)
-
-p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
-        geom_bar(position="stack", stat="identity") +
-        xlab("TE") +
-        ylab("NUMBER") +
-        labs(fill = "FREQUENCY") +
-        #scale_fill_viridis(discrete = T) +
-        scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
-        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
-            panel.background = element_rect(fill="white", colour="white", 
-                                          linetype="solid", color="white"))
-
-p
-
-```
-
 <iframe src="lib/template_FREQ_TE_INSIDER.html" style="width: 100%; height: 1800px; border: none; overflow: hidden;"></iframe> <!-- TE_INSIDER_INS -->
-<iframe src="lib/template_FREQ_TE_INSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe> <!-- TE_INSIDER_INS -->
-
 
 Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20** <!-- TE_INSIDER_INS -->
 
-<iframe src="lib/template_FREQ_CHROM_INSIDER.html" style="width: 100%; height: 1500px; border: none; overflow: hidden;"></iframe> <!-- TE_INSIDER_INS -->
+<iframe src="lib/template_FREQ_CHROM_INSIDER.html" style="width: 100%; height: 100vh; border: none; overflow: hidden;"></iframe> <!-- TE_INSIDER_INS -->
 
 
 ## TSD
@@ -256,13 +202,6 @@ TSD [KO] : these are the TE without TSD **`r readLines(".tmp_TE_TSD_KO.txt");`/`
 <iframe src="lib/template_TSD_INSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe> <!-- TE_INSIDER_INS -->
 
 Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20** <!-- TE_INSIDER_INS -->
-
-## TE POSITION
-
-<iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_INSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe> <!-- TE_INSIDER_INS -->
-
-Select TE family <!-- TE_INSIDER_INS -->
-
 
 <!-- remove inutile fiels -->
 
