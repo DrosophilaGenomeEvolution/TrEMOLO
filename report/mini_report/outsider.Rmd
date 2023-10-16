@@ -10,11 +10,11 @@ Information `samtools stats`
 
 File : **OUTSIDER/MAPPING/stats.txt**
 
-```{bash, eval=FALSE, include=FALSE, results=TRUE}
+```{bash MAPPING_STATS_OUTSIDER, eval=FALSE, include=FALSE, results=TRUE}
     cat "../../OUTSIDER/MAPPING/stats.txt"
 ```
 
-```{r, eval=TRUE, include=TRUE, results=TRUE}
+```{r show_STATS, eval=TRUE, include=TRUE, results=TRUE}
     print(gsub("\t" , "    ", readLines("../../OUTSIDER/MAPPING/stats.txt")))
 ```
 
@@ -22,7 +22,7 @@ File : **OUTSIDER/MAPPING/stats.txt**
 
 Informations of **SV.vcf** file.
 
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash COUNT_SV_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 array_type=( "INS" "DEL" "DUP" ); 
 echo -e "x\ty" > .tmp_graph_sv.csv; 
@@ -136,7 +136,7 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 <!-- calcul number of TE TSD -->
 
 
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash COUNT_TSD_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 grep "OK" ../../VALUES_TSD_GROUP_OUTSIDER.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD NOT FOUND"
 
@@ -183,7 +183,7 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 
 
 <!-- remove inutiles files -->
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash rm_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 rm -f FREQ_TE.csv
 rm -f .tmp_*v;

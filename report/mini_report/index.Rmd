@@ -11,21 +11,14 @@ description: "mini report of TrEMOLO analyzes"
 ---
 
 
-```{r, echo=FALSE}
+```{r init, echo=FALSE}
 #install.packages("bookdown")
 # or the development version
 # devtools::install_github("rstudio/bookdown")
 knitr::opts_chunk$set(engine.path = list(python='/usr/bin/python3'), echo=FALSE, message=FALSE, cache=FALSE, include=TRUE, results=FALSE, eval=TRUE)
 ```
 
-```{r include=FALSE}
-# automatically create a bib database for R packages
-knitr::write_bib(c(
-  .packages(), 'bookdown', 'knitr', 'rmarkdown'
-), 'packages.bib')
-```
-
-```{r, eval=TRUE, include=TRUE, results=FALSE}
+```{r get_library, eval=TRUE, include=TRUE, results=FALSE}
 
 library(ggplot2)
 library(dplyr)
@@ -43,7 +36,7 @@ library(viridis)
 # Resume parameters
 
 
-```{r, eval=TRUE, include=TRUE, results=TRUE}
+```{r PARAMETERS, eval=TRUE, include=TRUE, results=TRUE}
 
 params <- fromJSON(file="../../params.log", method='C')
 

@@ -6,7 +6,7 @@
 ## NUMBER OF TE
 
 
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash COUNT_TE_INOUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 (test -s ../../TE_INFOS.bed && \
     awk 'NR>1{split($4, sp, "|"); print sp[1]}' ../../TE_INFOS.bed | sort | uniq -c | awk '{print $1"\t"$2}' | sort -k 1 -n | awk 'BEGIN{print "x\ty\tz"} OFS="\t"{print "", $2, $1}' > .tmp_ALL_TE_COUNT.csv)
@@ -93,7 +93,7 @@ graph
 
 
 <!-- remove inutiles files -->
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash rm_INOUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 
 rm -f FREQ_TE.csv

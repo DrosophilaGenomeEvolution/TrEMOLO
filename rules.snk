@@ -719,7 +719,7 @@ rule REPORT :
             #REMOVE OR COUNT INSIDER
             ## TODO GESTION DE SUPPRESSION
             if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv ; then
-                sed -i 's/r insider1, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+                sed -i 's/r COUNT_TE_INSIDER_INSERTION, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
 
                 #DELET LINE USELESS
                 sed -i '/TE_INSIDER_INS/d' index.Rmd
@@ -830,7 +830,7 @@ rule REPORT :
             #REMOVE OR COUNT INSIDER DELETION
             ## TODO GESTION DE SUPPRESSION
             if ! test -s ../../INSIDER/TE_DETECTION/DELETION.csv ; then
-                sed -i 's/r insider11, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
+                sed -i 's/r COUNT_TE_INSIDER_DELETION, eval=TRUE,/r, eval=FALSE,/g' index.Rmd
                 
                 #DELET LINE INUTILE
                 sed -i '/TE_INSIDER_DEL/d' index.Rmd
@@ -873,134 +873,9 @@ rule REPORT :
                     sed 's/%%VAR_JS%%/FREQ_TE_OUTSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_OUTSIDER.html
 
                 
-                #TODO calcul FREQ
+                #TODO calcul FREQ OUT
 
-                bedtools sort -i ../../TE_INFOS.bed | awk -v IN_OUT="INOUTSIDER" '
-                    BEGIN{{ print "chrom\tx\ty\tgroup\tname\ttype\tIN_OUT\tID" }} 
-                    OFS="\t" {{ 
-                        if($12 != "NONE"){{FREQ=$12}}else if($11 != "NONE"){{FREQ=$11}}else{{FREQ="NONE"}};  
-                        if(FREQ!="NONE"){{ split($4, sp, "|"); split(sp[2], group, "."); print $1, $2, FREQ/100, $15, $1":"$2":"sp[1], $5, IN_OUT, $4}} 
-                    }}' | tr "," "." > tmp_scatter.csv
-
-                awk '
-                    BEGIN{{
-                        gen="";
-                        name="";
-                        chrom="";
-                        id="";
-                        type="";
-                        IN_OUT="";
-                    }} 
-
-                    NR>1 {{
-                        if( chrom != $1 ){{
-                            if( chrom != "" ){{
-                                print "\\"type\\": \\""type"\\",";
-                                print "\\"id\\": \\""id"\\",";
-                                print "\\"name\\": \\""name"\\"\\n}}];\\n\\n";
-                            }}
-
-                            chrom=$1;
-
-                            print "var data"chrom" = [{{";
-                            print "\\""$4"x\\": "$2",";
-                            print "\\""$4"y\\": "$3",";
-                            print "\\""$4"io\\": \\""$7"\\",";
-                            gen=$4;
-                            id=$5;
-                            type=$6;
-                            IN_OUT=$7;
-                            split($5, sp, ":");
-                            name=sp[3];
-                        }}
-                        else if( id != $5 ){{
-                            print "\\"type\\": \\""type"\\",";
-                            print "\\"id\\": \\""id"\\",";
-                            print "\\"name\\": \\""name"\\"";
-                            print "}}, {{\\n""\\""$4"x\\": "$2",";
-                            print "\\""$4"y\\": "$3",";
-                            print "\\""$4"io\\": \\""$7"\\",";
-                            gen=$4;
-                            id=$5;
-                            type=$6;
-                            IN_OUT=$7;
-                            split($5, sp, ":");
-                            name=sp[3];
-                        }}
-                        else {{
-                            print "\\""$4"x\\": "$2",";
-                            print "\\""$4"y\\": "$3",";
-                            print "\\""$4"io\\": \\""$7"\\",";
-                        }}
-                    }}
-
-                    END{{
-                        print "\\"name\\": \\""name"\\"\\n}}]";
-                    }}' tmp_scatter.csv > js/FREQ_TE_INOUTSIDER_CHROM.js
-
-                cut -f 1 tmp_scatter.csv | sort -u > tmp_chrom.txt
-                grep -v -f tmp_chrom.txt ${{path_fai}} | cut -f 1 | awk '{{print "var data"$1" = []"}}' >> js/FREQ_TE_INOUTSIDER_CHROM.js || echo ""
-                test -s js/FREQ_TE_INOUTSIDER_CHROM.js && \
-                    sed 's/%%VAR_JS%%/FREQ_TE_INOUTSIDER_CHROM.js/g' lib/template_FREQ_CHROM.html > lib/template_FREQ_CHROM_INOUTSIDER.html
-
-                test -s js/groups_INOUTSIDER.js && \
-                    sed -i 's/%%VAR_GROUP%%/groups_INOUTSIDER.js/g' lib/template_FREQ_CHROM_INOUTSIDER.html
-
-                rm -f tmp.csv tmp_freq.csv tmp_scatter.csv
-            fi;
-
-            ## GET AUTHOR RANDOM
-            #author=`(curl "localhost:4242/author" > tmp_author.txt && cat tmp_author.txt) || echo "<strong>Author<\/strong> : Maybe You ?"`
-            author=`(curl https://author.infinity-atom.fr/author > tmp.txt && cat tmp.txt) || echo "<strong>Author<\/strong> : Maybe You ?"`
-            
-            if [ `echo $author | grep "404 Not Found" -c` -eq 1 ]; 
-            then 
-                sed -i "s/unknown/<strong>Author<\/strong> : Maybe You ?/g" index.Rmd
-            else
-                sed -i "s/unknown/$author/g" index.Rmd
-            fi;
-
-            #rm -f tmp_author.txt
-
-            #REMOVE OR COUNT INOUTSIDER
-            ## TODO GESTION DE SUPPRESSION
-            if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv || ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv; then
-                echo "ERROR NO TE INSERTION FOUND";
-            else
-                test -s ../../TE_INFOS.bed && \
-                    awk 'NR>1 {{split($4, sp, "|"); print sp[1]}}' ../../TE_INFOS.bed | sort | uniq -c | awk '{{print $1"\t"$2}}' | sort -k 1 -n | awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > tmp_ALL_TE_COUNT.csv
-                
-                awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' tmp_ALL_TE_COUNT.csv  > tmp.csv
-                python3 ${{path_to_pipline}}/lib/python/graphs/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INOUTSIDER.js
-
-                test -s js/COUNT_TE_INOUTSIDER.js && \
-                    sed 's/%%VAR_JS%%/COUNT_TE_INOUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INOUTSIDER.html
-
-                #FREQUENCE INOUTSIDER
-                #test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
-                #    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv > tmp_freq.csv
-                    
-                #! test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
-                #    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > tmp_freq.csv
-                
-                #test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && \
-                #    awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv >> js/FREQ_TE_OUTSIDER.js
-
-                #test -s ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv && \
-                #    awk 'NR>1 {{print $7","$6}}' ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv >> tmp_freq.csv
-
-                #test -s tmp_freq.csv && \
-                #    python3 ${{path_to_pipline}}/lib/python/graphs/conv_js_histo_grouped.py tmp_freq.csv data_freq > js/FREQ_TE_INOUTSIDER.js
-                
-                #test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && \
-                #    awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv >> js/FREQ_TE_INOUTSIDER.js
-
-                #test -s js/FREQ_TE_INOUTSIDER.js && \
-                #    sed 's/%%VAR_JS%%/FREQ_TE_INOUTSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_INOUTSIDER.html;
-
-                #TODO calcul FREQ
-
-                bedtools sort -i ../../TE_INFOS.bed | grep OUTSIDER | awk -v IN_OUT="OUTSIDER" '
+                 bedtools sort -i ../../TE_INFOS.bed | grep OUTSIDER | awk -v IN_OUT="OUTSIDER" '
                     BEGIN{{ print "chrom\tx\ty\tgroup\tname\ttype\tIN_OUT\tID" }} 
                     OFS="\t" {{ 
                         if($12 != "NONE"){{FREQ=$12}}else if($11 != "NONE"){{FREQ=$11}}else{{FREQ="NONE"}};  
@@ -1074,6 +949,130 @@ rule REPORT :
                 rm -f tmp.csv tmp_freq.csv tmp_scatter.csv
 
                 rm -f tmp.csv
+            fi;
+
+            ## GET AUTHOR RANDOM
+            #author=`(curl "localhost:4242/author" > tmp_author.txt && cat tmp_author.txt) || echo "<strong>Author<\/strong> : Maybe You ?"`
+            author=`(curl https://author.infinity-atom.fr/author > tmp.txt && cat tmp.txt) || echo "<strong>Author<\/strong> : Maybe You ?"`
+            
+            if [ `echo $author | grep "404 Not Found" -c` -eq 1 ]; 
+            then 
+                sed -i "s/unknown/<strong>Author<\/strong> : Maybe You ?/g" index.Rmd
+            else
+                sed -i "s/unknown/$author/g" index.Rmd
+            fi;
+
+            #rm -f tmp_author.txt
+
+            #REMOVE OR COUNT INOUTSIDER
+            ## TODO GESTION DE SUPPRESSION
+            if ! test -s ../../INSIDER/TE_DETECTION/INSERTION.csv || ! test -s ../../OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv; then
+                echo "ERROR NO TE INSERTION FOUND";
+            else
+                test -s ../../TE_INFOS.bed && \
+                    awk 'NR>1 {{split($4, sp, "|"); print sp[1]}}' ../../TE_INFOS.bed | sort | uniq -c | awk '{{print $1"\t"$2}}' | sort -k 1 -n | awk 'BEGIN{{print "x\ty\tz"}} OFS="\t"{{print "", $2, $1}}' > tmp_ALL_TE_COUNT.csv
+                
+                awk -F "\t" 'BEGIN{{print "name,value"}}NR>1{{print $2","$3}}' tmp_ALL_TE_COUNT.csv  > tmp.csv
+                python3 ${{path_to_pipline}}/lib/python/graphs/conv_js_histo_grouped.py tmp.csv data > js/COUNT_TE_INOUTSIDER.js
+
+                test -s js/COUNT_TE_INOUTSIDER.js && \
+                    sed 's/%%VAR_JS%%/COUNT_TE_INOUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INOUTSIDER.html
+
+                #FREQUENCE INOUTSIDER
+                #test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
+                #    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv > tmp_freq.csv
+                    
+                #! test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
+                #    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > tmp_freq.csv
+                
+                #test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && \
+                #    awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv >> js/FREQ_TE_OUTSIDER.js
+
+                #test -s ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv && \
+                #    awk 'NR>1 {{print $7","$6}}' ../../INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv >> tmp_freq.csv
+
+                #test -s tmp_freq.csv && \
+                #    python3 ${{path_to_pipline}}/lib/python/graphs/conv_js_histo_grouped.py tmp_freq.csv data_freq > js/FREQ_TE_INOUTSIDER.js
+                
+                #test -s ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv && \
+                #    awk -F "\t" 'BEGIN{{chain="var order = ["}} NR>1 {{ if(NR!=2){{ chain=chain", \\""$2"\\""}}else{{chain=chain"\\""$2"\\""}} }} END{{print chain"]"}}' ../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv >> js/FREQ_TE_INOUTSIDER.js
+
+                #test -s js/FREQ_TE_INOUTSIDER.js && \
+                #    sed 's/%%VAR_JS%%/FREQ_TE_INOUTSIDER.js/g' lib/template_FREQ_TE.html > lib/template_FREQ_TE_INOUTSIDER.html;
+
+                #TODO calcul FREQ INOUT
+                bedtools sort -i ../../TE_INFOS.bed | awk -v IN_OUT="INOUTSIDER" '
+                    BEGIN{{ print "chrom\tx\ty\tgroup\tname\ttype\tIN_OUT\tID" }} 
+                    OFS="\t" {{ 
+                        if($12 != "NONE"){{FREQ=$12}}else if($11 != "NONE"){{FREQ=$11}}else{{FREQ="NONE"}};  
+                        if(FREQ!="NONE"){{ split($4, sp, "|"); split(sp[2], group, "."); print $1, $2, FREQ/100, $15, $1":"$2":"sp[1], $5, IN_OUT, $4}} 
+                    }}' | tr "," "." > tmp_scatter.csv
+
+                awk '
+                    BEGIN{{
+                        gen="";
+                        name="";
+                        chrom="";
+                        id="";
+                        type="";
+                        IN_OUT="";
+                    }} 
+
+                    NR>1 {{
+                        if( chrom != $1 ){{
+                            if( chrom != "" ){{
+                                print "\\"type\\": \\""type"\\",";
+                                print "\\"id\\": \\""id"\\",";
+                                print "\\"name\\": \\""name"\\"\\n}}];\\n\\n";
+                            }}
+
+                            chrom=$1;
+
+                            print "var data"chrom" = [{{";
+                            print "\\""$4"x\\": "$2",";
+                            print "\\""$4"y\\": "$3",";
+                            print "\\""$4"io\\": \\""$7"\\",";
+                            gen=$4;
+                            id=$5;
+                            type=$6;
+                            IN_OUT=$7;
+                            split($5, sp, ":");
+                            name=sp[3];
+                        }}
+                        else if( id != $5 ){{
+                            print "\\"type\\": \\""type"\\",";
+                            print "\\"id\\": \\""id"\\",";
+                            print "\\"name\\": \\""name"\\"";
+                            print "}}, {{\\n""\\""$4"x\\": "$2",";
+                            print "\\""$4"y\\": "$3",";
+                            print "\\""$4"io\\": \\""$7"\\",";
+                            gen=$4;
+                            id=$5;
+                            type=$6;
+                            IN_OUT=$7;
+                            split($5, sp, ":");
+                            name=sp[3];
+                        }}
+                        else {{
+                            print "\\""$4"x\\": "$2",";
+                            print "\\""$4"y\\": "$3",";
+                            print "\\""$4"io\\": \\""$7"\\",";
+                        }}
+                    }}
+
+                    END{{
+                        print "\\"name\\": \\""name"\\"\\n}}]";
+                    }}' tmp_scatter.csv > js/FREQ_TE_INOUTSIDER_CHROM.js
+
+                cut -f 1 tmp_scatter.csv | sort -u > tmp_chrom.txt
+                grep -v -f tmp_chrom.txt ${{path_fai}} | cut -f 1 | awk '{{print "var data"$1" = []"}}' >> js/FREQ_TE_INOUTSIDER_CHROM.js || echo ""
+                test -s js/FREQ_TE_INOUTSIDER_CHROM.js && \
+                    sed 's/%%VAR_JS%%/FREQ_TE_INOUTSIDER_CHROM.js/g' lib/template_FREQ_CHROM.html > lib/template_FREQ_CHROM_INOUTSIDER.html
+
+                test -s js/groups_INOUTSIDER.js && \
+                    sed -i 's/%%VAR_GROUP%%/groups_INOUTSIDER.js/g' lib/template_FREQ_CHROM_INOUTSIDER.html
+
+                rm -f tmp.csv tmp_freq.csv tmp_scatter.csv
                 rm -f tmp_ALL_TE_COUNT.csv
             fi;
 
@@ -1925,15 +1924,13 @@ rule TSD :
 
         if [ {params.choice_outsider_sv} = "True" ]; then
             
+            ! test -s "{params.FILE_SIZE_TE_TSD}" && warn_msg "  WARNING : FILE TSD SIZE {params.FILE_SIZE_TE_TSD} NOT FOUND\\n";
             ln -sfr {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS.txt {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/
             NB_FILE=`ls {params.work_directory}/OUTSIDER/ET_FIND_FA | wc -l` ;
             i=0 ;
             for TE_found_fa in `ls {params.work_directory}/OUTSIDER/ET_FIND_FA/`; do
                 
                 nameTE=`echo $TE_found_fa | sed -E 's/TE_REPORT_FOUND_|\.fasta//g'`;
-                
-                ! test -s "{params.FILE_SIZE_TE_TSD}" && warn_msg "  WARNING : FILE TSD SIZE {params.FILE_SIZE_TE_TSD} NOT FOUND\\n";
-                
                 SIZE_TSD=`test -n "{params.FILE_SIZE_TE_TSD}" && test -s "{params.FILE_SIZE_TE_TSD}" && grep -w "${{nameTE}}" {params.FILE_SIZE_TE_TSD} || echo "NONE"`; # EX: ZAM 4 :or: -1
                 
                 #echo "TE : $nameTE"
@@ -2905,17 +2902,17 @@ rule GET_READS_TE :
 
         #GET ID only TE found sniffles
         ( test -s {input.merge_TE_bed} && \
-            grep "sniffles.INS" {input.merge_TE_bed} | cut -f 4 | cut -d "|" -f 2 > {params.work_directory}/ID_TE_SV_REPORT.txt && \
+            grep -E "sniffles.INS|sniffles.DEL" {input.merge_TE_bed} | cut -f 4 | cut -d "|" -f 2 > {params.work_directory}/ID_TE_SV_REPORT.txt && \
                 echo "GET ID TE OUTSIDER sniffles ✔" | tee -a {log}.out ) || warn_msg "WARNING : FAIL GET ID TE OUTSIDER sniffles ✘\\n" | tee -a {log}.err ; 
 
         ##TODO : EXTRACT DEL
         #EXTRACT ID ALL READS SUPPORT sniffles
         ## sniffles/svim
         ( test -s {input.vcf} && \
-            python3 ${{path_to_pipline}}/lib/python/parsing/extract_region_reads_vcf.py {params.GET_SEQ_REPORT_OPTION} -c '{params.CHROM_KEEP}' \
+            python3 ${{path_to_pipline}}/lib/python/parsing/extract_region_reads_vcf.py {params.GET_SEQ_REPORT_OPTION} -t "." -c '{params.CHROM_KEEP}' \
               {input.vcf} \
              -d {params.work_directory}/OUTSIDER/ID_READS_TE \
-             -i {params.work_directory}/ID_TE_SV_REPORT.txt && \
+             -i {params.work_directory}/ID_TE_SV_REPORT.txt 2>> {log}.err && \
                 echo "EXTRACT ALL ID READS SUPPORT sniffles ✔" | tee -a {log}.out ) || warn_msg "WARNING : EXTRACT ALL ID READS SUPPORT sniffles ✘\\n" | tee -a {log}.err;
 
         echo "  READS SUPPORT sniffles EXTRACTED : "`ls {params.work_directory}/OUTSIDER/ID_READS_TE | wc -l`

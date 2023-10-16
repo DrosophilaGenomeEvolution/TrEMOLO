@@ -163,9 +163,9 @@ env="source `dirname " + path_snk + "`/env.sh"
 #SHOW TITLE
 os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
-onerror:
-    print("AN ERROR OCCURRED ")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
+# onerror:
+#     print("AN ERROR OCCURRED !!")
+#     shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` >&2 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
 
 onsuccess:
     shell("rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\"` ")

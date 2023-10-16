@@ -12,7 +12,7 @@ Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/INSERTION.cs
 
 Number of family found : **`r data=read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_INS -->
 
-```{r insider1, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
+```{r COUNT_TE_INSIDER_INSERTION, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
 
 data = read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t")
 #kbl(data)
@@ -96,7 +96,7 @@ Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/DELETION.csv
 Number of family found : **`r data=read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_DEL -->
 
 
-```{r insider11, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
+```{r COUNT_TE_INSIDER_DELETION, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
 
 data = read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t")
 #kbl(data)
@@ -184,7 +184,7 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 
 ## TSD
 
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash TSD_INSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 grep "OK" ../../VALUES_TSD_INSIDER_GROUP.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD"
 
@@ -205,7 +205,7 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 
 <!-- remove inutile fiels -->
 
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash rm_INSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 
 rm -f FREQ_TE.csv

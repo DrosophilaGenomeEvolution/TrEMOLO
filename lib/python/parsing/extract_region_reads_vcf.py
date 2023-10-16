@@ -99,12 +99,12 @@ parser.add_argument("--max-len-seq", dest='max_len_seq', type=int, default=-1,
 args = parser.parse_args()
 
 
-rep_region = args.directory_name
-os.system("rm -fr " + rep_region)
-os.system("mkdir -p " + rep_region)
+repRegion = args.directory_name
+os.system("rm -fr " + repRegion)
+os.system("mkdir -p " + repRegion)
 
 #check if an element of the array is at least part of the value
-def regex_in_list(value, liste):
+def regexInList(value, liste):
     for index, pattern in enumerate(liste):
         if re.search(pattern, value):
             return True
@@ -112,29 +112,29 @@ def regex_in_list(value, liste):
     return False
 
 
-list_id = None
+listId = None
 if args.id_sv:
-    file_id = open(args.id_sv, "r")
-    list_id = [i.strip() for i in file_id.readlines()]
+    fileId = open(args.id_sv, "r")
+    listId = [i.strip() for i in fileId.readlines()]
 
 file = open(args.vcf_file, "r")
 
-#regex_in_list(chrom, chrom_list)
-type_list   = args.type.split(",")#NOT KEEP THIS
-chrom_list  = args.chrom.split(",")#KEEP ON
+#regexInList(chrom, chromList)
+typeList   = args.type.split(",")#NOT KEEP THIS
+chromList  = args.chrom.split(",")#KEEP ON
 
-print("[" + str(sys.argv[0]) + "]", "exclude type : ", type_list)
-print("[" + str(sys.argv[0]) + "]", "chromosome liste : ", chrom_list)
+print("[" + str(sys.argv[0]) + "]", "exclude type : ", typeList)
+print("[" + str(sys.argv[0]) + "]", "chromosome liste : ", chromList)
 
-dico_chrom = {}#just for resume
+dicoChrom = {}#just for resume
 
 line = file.readline()
 
-version_vcf =  line.split("=")[1].strip()
-print("version_vcf=", version_vcf)
+versionVcf =  line.split("=")[1].strip()
+print("versionVcf=", versionVcf)
 ##fileformat=VCFv4.3
 #Check format vcf file
-if version_vcf != "VCFv4.3" and version_vcf != "VCFv4.2" and version_vcf != "VCFv4.1":
+if versionVcf != "VCFv4.3" and versionVcf != "VCFv4.2" and versionVcf != "VCFv4.1":
     print("[" + str(sys.argv[0]) + "] : ERROR format vcf must be VCFv4.3 not " + str(line.split("=")[1].strip()) )
     print("[" + str(sys.argv[0]) + "] : please change format of vcf file, or use Snifflesv1.0.10 for genrate the good vcf file")
     exit(1)
@@ -147,46 +147,46 @@ while line:
         chrom  = spl[0]
         start  = spl[1]
         ID     = spl[2]
-        type_v = spl[4]
+        typeV = spl[4]
         
         #end    = spl[7].split(";")[3].split("=")[1]
-        exp_end = re.search(r'END=([^;]*);', line.strip())
+        expEnd = re.search(r'END=([^;]*);', line.strip())
 
         
-        if version_vcf == "VCFv4.3" :
-            ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID#For False ID sniffles
-            exp_rname = re.search(r'RNAMES=([^;]*);', line.strip())
+        if versionVcf == "VCFv4.3" :
+            ID = "sniffles." + typeV.replace("<", "").replace(">", "") + "." + ID#For False ID sniffles
+            expRName = re.search(r'RNAMES=([^;]*);', line.strip())
         
-        elif version_vcf == "VCFv4.2" :#svim
-            exp_rname = re.search(r'READS=([^;\t]*)', line.strip())
+        elif versionVcf == "VCFv4.2" :#svim
+            expRName = re.search(r'READS=([^;\t]*)', line.strip())
         
-        elif version_vcf == "VCFv4.1" :
-            exp_rname = re.search(r'RNAMES=([^;\t]*)', line.strip())
+        elif versionVcf == "VCFv4.1" :
+            expRName = re.search(r'RNAMES=([^;\t]*)', line.strip())
             seq = spl[4]
-            type_v  = "<" + re.search("SVTYPE=([A-Z]+)", spl[7]).group(1) + ">" if re.search("SVTYPE=([A-Z]+)", spl[7]) else "None"
-            ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID#For False ID sniffles
+            typeV  = "<" + re.search("SVTYPE=([A-Z]+)", spl[7]).group(1) + ">" if re.search("SVTYPE=([A-Z]+)", spl[7]) else "None"
+            ID = "sniffles." + typeV.replace("<", "").replace(">", "") + "." + ID#For False ID sniffles
 
 
-        if list_id == None or (list_id and ID in list_id) :
+        if listId == None or (ID in listId) :
 
-            if type_v[0] == "<" and type_v not in type_list and regex_in_list(chrom, chrom_list) and exp_end and exp_rname :
-                end   = exp_end.group(1)
-                rname = exp_rname.group(1)
+            if typeV[0] == "<" and typeV not in typeList and regexInList(chrom, chromList) and expEnd != None and expRName != None :
+                end   = expEnd.group(1)
+                rname = expRName.group(1)
 
                 lrname = rname.split(",")
                 #just for resume
-                if chrom not in dico_chrom:
-                    dico_chrom[chrom] = 1
+                if chrom not in dicoChrom:
+                    dicoChrom[chrom] = 1
                 else:
-                    dico_chrom[chrom] += 1
+                    dicoChrom[chrom] += 1
 
-                file_out  = open( rep_region + "/reads_"+str(chrom)+":"+str(ID)+":"+str(start)+"-"+str(end)+".txt", "w")
+                fileOut  = open( repRegion + "/reads_"+str(chrom)+":"+str(ID)+":"+str(start)+"-"+str(end)+".txt", "w")
                 for index, value in enumerate(lrname) :
-                    file_out.write(str(value) + "\n")
+                    fileOut.write(str(value) + "\n")
 
-                file_out.close()
+                fileOut.close()
     line = file.readline()
 
 file.close()
 
-print("[" + str(sys.argv[0]) + "] resume TE number by chromosome : ", dico_chrom)
+print("[" + str(sys.argv[0]) + "] resume TE number by chromosome : ", dicoChrom)
