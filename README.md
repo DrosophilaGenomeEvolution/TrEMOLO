@@ -310,7 +310,7 @@ WORK_DIRECTORY
 
 The most useful output files are :
 
-* The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/48d1d238be3a6a181ce44641f7738ad8b237b538/test/web/index.html)
+* The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/c10d73fec0455f5e1d00129bd95670f39c9aa0e5/test/web/index.html)
 
 The output file **your_work_directory/TE_INFOS.bed** gathers all the necessary information.
 
