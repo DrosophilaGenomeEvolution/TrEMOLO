@@ -38,9 +38,35 @@ Through remapping of reads that have been used to assemble the genome of interes
 In the same way as for insiders, you will obtain a [set of files](#output) with the location of these variable insertions and deletions.
 
 
-# Release notes<a name="release"></a>
+## Release notes<a name="release"></a>
 
-# Current limitations
+**Version 3.0.0**
+
+* Added the capability to detect **DELETION** for **OUTSIDER**. Use the parameter `-k 'INS|DEL'` for **OUTSIDER**. Example: `PARS_BLN_OPTION: " --min-size-percent 80 --min-pident 80 -k 'INS|DEL'"`
+
+* Updated frequency calculation method for **OUTSIDER**:
+  * Faster and more accurate calculation.
+  * Every insertion is now assigned a frequency.
+  * Fixed bugs where frequency exceeded 100% or equaled NONE.
+  * Frequency calculations now include **DELETION** (DEL).
+
+* Fixed bugs in `MODE_PARALLELING = True` mode.
+
+* Option to decide if **CLIPPED READS** (SOFT, HARD) should be treated as new insertions. Setting `CLIPPED_READS = False` (default) reduces computation time.
+
+* Updated the `OUTSIDER/REPORT/report.html` report to retain only essential graphs.
+
+* Faster extraction of `INSERTION`, `SOFT`, `HARD` using **CIGAR**.
+
+## Current limitations
+
+* Frequencies are calculated based only on the size and location of the insertions. They don't identify every TE in all presumed reads support (RS), which might skew the calculation if you have a TE insertion within another TE insertion.
+
+* The pipeline won't directly notify about TE insertions nested within another TE insertion. However, this can be deduced by examining information in columns **9** (SIZE_TE) and **13** (SV_SIZE) of the `TE_INFOS.bed` file. If, for instance, the SV size is twice the size of the identified TE, you might want to delve into the intermediate files for more details.
+
+* In **INSIDER_VARIANT** mode, TE annotation on the **REFERENCE** (parameter **INTEGRATE_TE_TO_GENOME**) is suboptimal. Some TEs might not be annotated on the reference.
+
+* **svim** is no longer managed.
 
 # Requirements<a name="requirements"></a>
 
@@ -157,6 +183,7 @@ CHOICE:
         CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, svim
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the INSIDER integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATED WITH CLIPPING READS
+        CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:
         DETECT_ALL_TE: False    # detect ALL TE on genome (parameter GENOME) assembly not only new insertion. Warning! it may be take several hours on big genomes
     INTERMEDIATE_FILE: True     # Conserve the intermediate analyses files to process them latter.
@@ -251,7 +278,7 @@ WORK_DIRECTORY
 │   │   └── TE_REPORT_FOUND_ZAM.fasta
 ...
 │   ├── FREQ_OPTIMIZED
-│   │   └── DEPTH_TE.csv
+│   │   └── FREQUENCY_TE_INS.tsv
 │   ├── INSIDER_VR
 │   ├── MAPPING ##**FOLDER CONTAINS FILES MAPPING ON GENOME
 │   ├── MAPPING_TO_REF ##**FOLDER CONTAINS FILES MAPPING ON REFERENCE GENOME

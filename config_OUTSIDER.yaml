@@ -12,11 +12,12 @@ CHOICE:
         OUTSIDER_VARIANT: True  # TE no assembled (out of genome)
         INSIDER_VARIANT: False  # D'ont change it
         REPORT: True            # for getting report.html with graph
-        MODE_PARALLELING: False
+        MODE_PARALLELING: True
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" # possibility (sniffles, svim) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATE WITH CLIPPING READS
+        CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:
         DETECT_ALL_TE: False    # Warning can take long time
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 

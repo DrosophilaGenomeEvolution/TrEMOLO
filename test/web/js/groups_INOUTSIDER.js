@@ -1,1 +1,1 @@
-var generations = ["INS", "INSERTION", "Repeat_expansion"]
+var typesSV = ["DEL", "INS", "INSERTION", "Repeat_expansion"]

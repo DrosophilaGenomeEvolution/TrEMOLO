@@ -12,13 +12,11 @@
 </style>
 
 
-<!-- <script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
 <script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
-<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script> -->
-<script src="../js/lib/charts/core.js"></script>
-<script src="../js/lib/charts/charts.js"></script>
-<script src="../js/lib/charts/themes/animated.js"></script>
-<script src="../js/lib/charts/themes/dataviz.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/themes/kelly.js"></script>
+
 
 <div id="chartdiv"></div>
 
@@ -26,7 +24,7 @@
 <script>
     // Themes begin
     am4core.useTheme(am4themes_animated);
-    am4core.useTheme(am4themes_dataviz);
+    am4core.useTheme(am4themes_kelly);
     // Themes end
 
     // Create chart instance
@@ -42,11 +40,11 @@
       "color": chart.colors.next()
     }, {
       "type_SV": "SOFT",
-      "number": 131,
+      "number": 114,
       "color": chart.colors.next()
     }, {
       "type_SV": "HARD",
-      "number": 106,
+      "number": 0,
       "color": chart.colors.next()
     }, {
       "type_SV": "DUP",

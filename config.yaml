@@ -13,7 +13,7 @@ CHOICE:
         OUTSIDER_VARIANT: True  # TE no assembled (out of genome)
         INSIDER_VARIANT: True   # TE assembled (in genome)
         REPORT: True            # for getting report.html with graph
-        MODE_PARALLELING: False # test time : with True value 50m53,983s; with False value 138m55,985s; With 8 threads
+        MODE_PARALLELING: True # test time : with True value 50m53,983s; with False value 138m55,985s; With 8 threads
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" # possibility (sniffles, svim) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
@@ -42,7 +42,7 @@ PARAMS:
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "[23][RL],4,X" ; Put "." for keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 500" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
-        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py  Warning d'ont put -c option
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80 -k 'INS|DEL'" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py  Warning d'ont put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" 
         
