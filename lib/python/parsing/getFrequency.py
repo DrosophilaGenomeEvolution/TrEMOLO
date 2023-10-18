@@ -176,9 +176,6 @@ for _, row in df.iterrows():
                                     #print("S", infos, tupl[1], seq_vr)
                                     found = True
                 else :
-                    #2R_RaGOO_RaGOO:1912908-1915168
-                    # if ID=="sniffles.DEL.198" and "095a30f8-e7cb-46a3-b20e-1f1e5fe733b3"==read_name and 1912908 < reference_start + count_ref - tupl[1] and reference_start + count_ref - tupl[1] < 1915168 :
-                    #     print(tupl, reference_start, count_ref, (reference_start + count_ref), (reference_start + count_ref-tupl[1]), (int(position["start"])-window), (int(position["start"])-window), int(position["end"]), ((size_percent/100) * int(te_size_dic[sseqid])), size_percent, int(te_size_dic[sseqid]), sv_size_dic[ID])
                     if max(int(position["start"])-window, 1) <= reference_start + count_ref - tupl[1] and reference_start + count_ref - tupl[1] <= int(position["end"])+window:
                         if tupl[0] == 2 and tupl[1] >= int(sv_size_dic[ID]) :
                             

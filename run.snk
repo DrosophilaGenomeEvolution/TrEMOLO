@@ -163,9 +163,9 @@ env="source `dirname " + path_snk + "`/env.sh"
 #SHOW TITLE
 os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
-# onerror:
-#     print("AN ERROR OCCURRED !!")
-#     shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` >&2 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
+onerror:
+    print("AN ERROR OCCURRED !!")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` >&2 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
 
 onsuccess:
     shell("rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\"` ")
@@ -190,6 +190,7 @@ rule TrEMOLO_BUILD :
         #CHOICE
         call_sv             = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         choice_outsider_sv  = config["CHOICE"]["PIPELINE"]["OUTSIDER_VARIANT"],
+        CLIPPED_READS       = config["CHOICE"]["OUTSIDER_VARIANT"]["CLIPPED_READS"],
         choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
         DETECT_ALL_TE       = config["CHOICE"]["INSIDER_VARIANT"]["DETECT_ALL_TE"],
         MODE_PARALLELING    = config["CHOICE"]["PIPELINE"]["MODE_PARALLELING"],
@@ -336,8 +337,15 @@ rule TrEMOLO_BUILD :
             ## Instruction par defaut obligatoire
             echo "Trace : {params.OPTIMIZE_FREQUENCE}";
             if [ {params.OPTIMIZE_FREQUENCE} = "True" ]; then
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > HARD_TE > MERGE_TE " > {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE " > {params.work_directory}/OUTSIDER/instructions.txt
                 
+                ##CLIPPED
+                if [ {params.CLIPPED_READS} = "True" ]; then
+                    printf "%s" "> SOFT_TE > HARD_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
+                fi;
+
+                printf "%s" "> MERGE_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
+
                 if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
                     printf "> FREQ_INSIDER > FREQUENCEv2 " >> {params.work_directory}/OUTSIDER/instructions.txt
                 else
@@ -346,7 +354,14 @@ rule TrEMOLO_BUILD :
                 
                 printf "> GET_READS_TE${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
             else
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE > SOFT_TE > HARD_TE > MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " > {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE " > {params.work_directory}/OUTSIDER/instructions.txt
+
+                ##CLIPPED
+                if [ {params.CLIPPED_READS} = "True" ]; then
+                    printf "%s" "> SOFT_TE > HARD_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
+                fi;
+
+                printf "%s" "> MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
             fi
             
             ## Exemple les instruction par default obligatoir
@@ -368,14 +383,14 @@ rule TrEMOLO_BUILD :
                 fi;
             fi;
 
-            #if [ {params.REPORT} ]; then
+            ###if [ {params.REPORT} ]; then
                 printf "%s" "> REPORT " >> {params.work_directory}/OUTSIDER/instructions.txt
 
                 #RENAME IF PSEUDO DB
                 if test -s {params.work_directory}/LIST_HEADER_DB_TE.csv; then
                     printf "%s" "> RENAME_PSEUDO_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
-            #fi
+            ###fi
             
 
             ## Creation du snake file en fonction des instructions

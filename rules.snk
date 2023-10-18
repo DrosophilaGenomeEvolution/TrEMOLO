@@ -2407,6 +2407,12 @@ rule TSD_MULTI_THREADS :
                     
             fi;
 
+            ERROR=`grep "ERROR-404" -o -c {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt || echo "TE:$nameTE;TSD:NOT ERROR-404" >&2`;
+            if [[ -n "$ERROR" ]] && [[ $ERROR -ne 0 ]]; then
+                rm -f {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt
+                warn_msg "ERROR-403 : TSD not evaluated TE=$nameTE; \\n"
+            fi;
+
             ## GET SEQUENCE TE with TSD
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt && \
                 grep "OK:" {params.work_directory}/OUTSIDER/TE_DETECTION/TSD/TSD_${{nameTE}}.txt -A 2 | awk -v TE="$nameTE" '{{
@@ -3688,8 +3694,6 @@ rule FREQUENCEv2 :
         bam           = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/MAPPING/SAMPLE_mapping_GENOME_MD.sorted.bam",
         all_te        = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
         genome        = config["DATA"]["GENOME"],
-        SOFT_TE       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv",
-        bed           = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.bed",
         bed_INS       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.bed",
         merge_TE_bed  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed",
         outsider_bed  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/POSITION_TE_OUTSIDER.bed",
@@ -3704,6 +3708,8 @@ rule FREQUENCEv2 :
     params:
         path_snk        = path_snk,
         work_directory  = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        threads        = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
 
         preset_view    = re.sub("--threads [0-9]+|-@ [0-9]+", "", config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_VIEW"]["PRESET_OPTION"]) + " --threads " + str(config["PARAMS"]["THREADS"]),
         preset_sort    = re.sub("--threads [0-9]+|-@ [0-9]+", "", config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_SORT"]["PRESET_OPTION"]) + " --threads " + str(config["PARAMS"]["THREADS"]),
@@ -3749,11 +3755,13 @@ rule FREQUENCEv2 :
         
         ###SOFT
         touch {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv;
-        awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv
+        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv && \
+            awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv
 
         ###HARD
         touch {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv;
-        awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv
+        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv && \
+            awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv
 
         cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv \
             {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_sniffles.csv \
@@ -3819,14 +3827,69 @@ rule FREQUENCEv2 :
         echo "  COUNT READS..." | tee -a {log}.out
 
         sizePercent=`echo "{params.pars_bln_option}" | grep -E 'min-size-percent [0-9]+' -o | awk '$2-10>5{{ print $2-10; }} $2-10<5{{ print 5; }}'`;
-
-        python3 ${{path_to_pipline}}/lib/python/parsing/getFrequency.py -p ${{sizePercent}} \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE.bam \
+        
+        
+        echo "  BUILD CHUNKS..." | tee -a {log}.out
+        python3 ${{path_to_pipline}}/lib/python/format_files/divideToChunks.py \
             {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv \
-            {params.work_directory}/1-UTILS/TE_SIZE.tsv \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS.txt 2>> {log}.err \
-                || (fail_msg "...COUNT READS ✘" | tee -a {log}.out && exit 1)
+            {params.threads} \
+            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/CHUNKS
+        
+        coutReadsFreq () {{
+            echo "    CHUNK N=$1 -->" | tee -a {log}.out
+            python3 ${{path_to_pipline}}/lib/python/parsing/getFrequency.py -p ${{sizePercent}} \
+                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE.bam \
+                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/CHUNKS/tmp_chunk_${{1}}.csv \
+                {params.work_directory}/1-UTILS/TE_SIZE.tsv \
+                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv \
+                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS_${{1}}.txt 2>> {log}.err \
+                    || (fail_msg "...COUNT READS ✘" | tee -a {log}.out && exit 1)
+        }}
+
+        
+
+        ###RUN PARLELIZE
+        NB_FILE=`ls {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/CHUNKS/ | wc -l` ;
+        i=0 ;
+
+        #PARLELIZE
+        count_task_running=0;
+        pids=();
+        for chunk in `ls {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/CHUNKS/`; do
+            echo "  CHUNK : $chunk"
+            
+            coutReadsFreq $(($count_task_running+1)) &
+            pids[${{count_task_running}}]=$!;
+            count_task_running=$(($count_task_running+1));
+
+            if [ $count_task_running -ge {params.threads} ]; then
+                c=1;
+                for pid in ${{pids[*]}}; do
+                    wait $pid || echo > /dev/null;
+                    c=$(($c+1));
+                done;
+                pids=();
+                count_task_running=0;
+            fi;
+
+            i=$(($i + 1)) ;
+            printf "%s\\n" "{params.cmess} [SNK]--[`date`] [CHUNK:snk] : $i/$NB_FILE {params.cend}"
+        done;
+
+        #WAIT LAST TASKS
+        if [ $count_task_running -lt {params.threads} ]; then
+            pids[${{count_task_running}}]=$!
+            task=1;
+            for pid in ${{pids[*]}}; do
+                wait $pid || echo > /dev/null;
+                task=$(($task+1));
+            done;
+        fi;
+
+        ##MERGE COUNT_READS
+        echo "  MERGE CHUNKS COUNT READS..." | tee -a {log}.out
+        cat {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS_*.txt | sort -k 3 \
+            > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS.txt;
 
         echo "  COUNT READS ✔" | tee -a {log}.out
 
@@ -3914,7 +3977,6 @@ rule FREQ_INSIDER:
         merge_TE_bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed",
         TE_INS       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION.csv",
         bam          = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/MAPPING/SAMPLE_mapping_GENOME_MD.sorted.bam",
-        SOFT_TE      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv",
 
     output:
         DEPTH = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv",
@@ -4613,6 +4675,7 @@ rule DETECTION_TE :
         preset_sort    = re.sub("--threads [0-9]+|-@ [0-9]+", "", config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_SORT"]["PRESET_OPTION"]) + " --threads " + str(config["PARAMS"]["THREADS"]),
         preset_callmd  = re.sub("--threads [0-9]+|-@ [0-9]+", "", config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_CALLMD"]["PRESET_OPTION"]) + " --threads " + str(config["PARAMS"]["THREADS"]),
 
+        
         call_sv                = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         CHROM_KEEP             = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
         pars_bln_option        = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
@@ -4787,9 +4850,12 @@ rule TrEMOLO_SV_TE :
         INS_TREMOLO_bed  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.bed",
         hard_vcf         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/SV_HARD.tr_vcf",
         soft_vcf         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf",
+        soft_te          = [config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.bed", config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.bed"] if not config["CHOICE"]["OUTSIDER_VARIANT"]["CLIPPED_READS"] else [],
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
+
+        CLIPPED_READS   = config["CHOICE"]["OUTSIDER_VARIANT"]["CLIPPED_READS"],  
 
         pars_bln_option = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
         threads         = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
@@ -4910,6 +4976,14 @@ rule TrEMOLO_SV_TE :
               --combine_name {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COMBINE_INS_TREMOLO.csv -c {params.pars_bln_option} 2>> {log}.err 
 
         awk 'NR>1 && OFS="\t" {{ split($2, sp, ":"); print sp[1], sp[3], sp[3]+1, $1"|"sp[5], $5, sp[9] }}' {output.INS_TREMOLO_csv} > {output.INS_TREMOLO_bed}
+
+        # ##CLIPPED
+        if [ {params.CLIPPED_READS} = "False" ]; then
+            touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.bed
+            touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv
+            touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.bed
+        fi;
+            
 
         """
 
