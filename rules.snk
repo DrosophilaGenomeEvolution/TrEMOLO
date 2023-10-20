@@ -236,7 +236,7 @@ rule REPORT :
         input_link=[],
 
     output:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_INFOS.bed",
+        #config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_INFOS.bed",
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/REPORT/report.html" if config["CHOICE"]["PIPELINE"]["REPORT"] == "True" else [],
         #output_link=[],
         
@@ -3916,7 +3916,7 @@ rule FREQUENCEv2 :
                 }}
             }}
 
-            ID!=$3 {{ total=0; D=0; I=0; I_Only=0; I_clipped=0; svType=$17; _RS=$5; ID=$3; TE=$4; position=$9; current_read=""; }}  
+            ID!=$3 {{ total=0; D=0; I=0; I_Only=0; I_clipped=0; svType=$17; _RS=$5; ID=$3; TE=$4; position=$10; current_read=""; }}  
             
             $1!="E" && current_read!=$2 {{ 
                 if(svType=="INS")

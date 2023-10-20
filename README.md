@@ -62,7 +62,7 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 
 * Frequencies are calculated based only on the size and location of the insertions. They don't identify every TE in all presumed reads support (RS), which might skew the calculation if you have a TE insertion within another TE insertion.
 
-* The pipeline won't directly notify about TE insertions nested within another TE insertion. However, this can be deduced by examining information in columns **9** (SIZE_TE) and **13** (SV_SIZE) of the `TE_INFOS.bed` file. If, for instance, the SV size is twice the size of the identified TE, you might want to delve into the intermediate files for more details.
+* The pipeline won't directly notify about TE insertions nested within another TE insertion. However, this can be deduced by examining information in columns **9** (SIZE_TE) and **13** (SV_SIZE **new column**) of the `TE_INFOS.bed` file. If, for instance, the SV size is twice the size of the identified TE, you might want to delve into the intermediate files for more details.
 
 * In **INSIDER_VARIANT** mode, TE annotation on the **REFERENCE** (parameter **INTEGRATE_TE_TO_GENOME**) is suboptimal. Some TEs might not be annotated on the reference.
 
