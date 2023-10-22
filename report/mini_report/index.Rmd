@@ -28,8 +28,8 @@ library(forcats)# reorder
 library(RColorBrewer)
 library(ggthemes)
 library(rjson)
-library(viridisLite)
-library(viridis)
+# library(viridisLite)
+# library(viridis)
 
 ```
 

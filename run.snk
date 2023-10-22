@@ -336,7 +336,8 @@ rule TrEMOLO_BUILD :
             
             ## Instruction par defaut obligatoire
             echo "Trace : {params.OPTIMIZE_FREQUENCE}";
-            if [ {params.OPTIMIZE_FREQUENCE} = "True" ]; then
+            ####Warn for optimize frequency
+            if [ {params.OPTIMIZE_FREQUENCE} = "True" ] || [ 1 ]; then
                 printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE " > {params.work_directory}/OUTSIDER/instructions.txt
                 
                 ##CLIPPED

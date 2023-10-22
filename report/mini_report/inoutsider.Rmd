@@ -68,7 +68,7 @@ graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) +
     coord_fixed() +
     scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
     #scale_fill_viridis(option="heat") +
-theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
+theme(panel.background = element_rect(fill = "white", colour = "grey", linewidth=0)
   #,panel.border = element_rect(linetype = "dashed", fill = NA)
   #, panel.grid.major = element_line(colour = "black")
 ) +

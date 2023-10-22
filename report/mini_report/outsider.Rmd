@@ -40,7 +40,7 @@ NB_SOFT=`cat ../../OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf | wc -l || echo 0`
 sed -i "s/%%VALUE_SOFT%%/${NB_SOFT}/g" lib/template_HISTO_TYPE_SV.html
 
 
-NB_HARD=`grep ">" ../../OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta  | cut -d ":" -f 5 | sort -u | wc -l || echo 0`
+NB_HARD=`(test -s ../../OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta && grep ">" ../../OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta  | cut -d ":" -f 5 | sort -u | wc -l) || echo 0`
 sed -i "s/%%VALUE_HARD%%/${NB_HARD}/g" lib/template_HISTO_TYPE_SV.html
 
 ```
@@ -104,7 +104,7 @@ Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/MERGE_T
         coord_fixed() +
         scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
         #scale_fill_viridis(option="heat") +
-        theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
+        theme(panel.background = element_rect(fill = "white", colour = "grey", linewidth=0)
         #,panel.border = element_rect(linetype = "dashed", fill = NA)
         #, panel.grid.major = element_line(colour = "black")
     ) +
