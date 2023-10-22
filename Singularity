@@ -36,14 +36,14 @@ From: ubuntu:20.04
             dplyr 1.0.8
             kableExtra 1.3.4
             extrafont 0.17
-            ggplot2 3.3.5
+            ggplot2 3.4.2
             RColorBrewer 1.1-2
         Perl v5.26.2
 
 %labels
-    VERSION "TrEMOLO v2.0"
+    VERSION "TrEMOLO v3.0.3"
     Maintainer Francois Sabot <francois.sabot@ird.fr>
-    March, 2021
+    Oct, 2023
 
 %post
     # faster apt downloads
@@ -130,7 +130,7 @@ _EOF_
     R --slave -e 'require(devtools); install_version("dplyr", version = "1.0.8")'
     R --slave -e 'require(devtools); install_version("kableExtra", version = "1.3.4")'
     R --slave -e 'require(devtools); install_version("extrafont", version = "0.17")'
-    R --slave -e 'require(devtools); install_version("ggplot2", version = "3.3.5")'
+    R --slave -e 'require(devtools); install_version("ggplot2", version = "3.4.2")'
     R --slave -e 'require(devtools); install_version("RColorBrewer", version = "1.1-2")'    
     
     ##minimap2-2.24
@@ -227,6 +227,10 @@ _EOF_
     R --save -e 'install.packages("stringi")'
     R --save -e 'install.packages("stringr")'
 
+    #Force R path container
+    mkdir -p /opt/init-file/
+    echo '.libPaths(c("/usr/local/lib/R/site-library", "/usr/lib/R/site-library", "/usr/lib/R/library"))' > /opt/init-file/.Rprofile
+
 %environment
     export LC_ALL=C
     export TOOLDIR=/opt/tools
@@ -242,6 +246,9 @@ _EOF_
     # export PATH="$PATH:/usr/bin/samtools-1.15.1"
     # export PATH="$PATH:/usr/bin/htslib-1.15.1"
     export PATH="$PATH:/usr/bin/samtools/bcftools/"
+    # Force R path contenair
+    export R_PROFILE=/opt/init-file/.Rprofile
+    export R_LIBS="/usr/local/lib/R/site-library:/usr/lib/R/site-library:/usr/lib/R/library"
 
 %runscript
     exec "$@"
