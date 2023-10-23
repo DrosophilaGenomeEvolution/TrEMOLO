@@ -62,8 +62,7 @@ Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/MERGE_T
     uniqy = unique(data$y)
     uniqx = unique(data$x)
 
-    for (y in uniqy)
-    {
+    for (y in uniqy){
         datay = data[data$y %in% y, ]
         for(x in uniqx){
             datax = datay[datay$x %in% x, ]
@@ -94,25 +93,18 @@ Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/MERGE_T
 
     nb_diff_TE = length( unique(data$y) )
 
-        #print("ok--s")
     xlabel = ''
     graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
         geom_tile() + 
         ggtitle("") +
-        
         theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=5, angle=0)) +
         coord_fixed() +
         scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
         #scale_fill_viridis(option="heat") +
-        theme(panel.background = element_rect(fill = "white", colour = "grey", linewidth=0)
-        #,panel.border = element_rect(linetype = "dashed", fill = NA)
-        #, panel.grid.major = element_line(colour = "black")
-    ) +
-    geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9 , inherit.aes = FALSE , linetype="twodash") +
-    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
-    geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
-
-    order_TE = data$y
+        theme(panel.background = element_rect(fill = "white", colour = "grey", linewidth=0)) +
+        geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9 , inherit.aes = FALSE , linetype="twodash") +
+        labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+        geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
 
     graph
 
@@ -165,9 +157,15 @@ p = ggplot(data, aes(fill=condition, y=y, x=x)) +
         labs(fill = "TYPE TSD") +
         #scale_fill_viridis(discrete = T) +
         scale_fill_manual(values=c("#6EB9FF", "#0064D4")) +
-        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
-            panel.background = element_rect(fill="white", colour="white", 
-                                          linetype="solid", color="white"))
+        theme(
+            axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+            panel.background = element_rect(
+                    fill="white", 
+                    colour="white", 
+                    linetype="solid", 
+                    color="white"
+                )
+            )
 
 p
 #ggsave(p, file=output)

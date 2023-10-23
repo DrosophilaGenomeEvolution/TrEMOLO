@@ -19,33 +19,31 @@ data = read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t")
 
 data = tail(data, 50)
 
-
 uniqy = unique(data$y)
 uniqx = unique(data$x)
 
-for (y in uniqy)
-{
-  datay = data[data$y %in% y, ]
-  for(x in uniqx){
-    datax = datay[datay$x %in% x, ]
-    if(nrow(datax) != 1){
-      new_line_data <- data.frame(x, y, 0)
-      names(new_line_data) <- c("x", "y", "z")
+for (y in uniqy){
+	datay = data[data$y %in% y, ]
+	for(x in uniqx){
+		datax = datay[datay$x %in% x, ]
+		if(nrow(datax) != 1){
+			new_line_data <- data.frame(x, y, 0)
+			names(new_line_data) <- c("x", "y", "z")
 
-      data <- rbind(data, new_line_data)
-    }
-  }
+			data <- rbind(data, new_line_data)
+		}
+	}
 }
 
 
 max=0
 namx=""
 for(x in uniqx){
-  datax = data[data$x %in% x, ]
-  if(max(datax$z)>max){
-    max  = max(datax$z)
-    namx = x
-  }
+	datax = data[data$x %in% x, ]
+	if(max(datax$z)>max){
+		max  = max(datax$z)
+		namx = x
+	}
 }
 
 datax = data[data$x %in% namx, ]
@@ -59,25 +57,18 @@ xlabel = ''
 graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
     geom_tile() + 
     ggtitle("") +
-    
-    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)) +
     coord_fixed() +
     scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
     #scale_fill_viridis(option="heat") +
-theme(panel.background = element_rect(fill = "white", colour = "grey", linewidth=0)
-  #,panel.border = element_rect(linetype = "dashed", fill = NA)
-  #, panel.grid.major = element_line(colour = "black")
-) +
-geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9, inherit.aes = FALSE , linetype="twodash") +
-
+    theme(
+		panel.background = element_rect(fill = "white", colour = "grey", linewidth=0),
+		axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)
+	) +
+    geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9, inherit.aes = FALSE , linetype="twodash") +
     labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
-geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
+    geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
 
-order_TE = data$y
-
-#graph
 graph
-#ggsave(name_output)
 
 ```
 
@@ -99,38 +90,34 @@ Number of family found : **`r data=read.csv("../../INSIDER/TE_DETECTION/DELETION
 ```{r COUNT_TE_INSIDER_DELETION, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
 
 data = read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t")
-#kbl(data)
-#test
 
 data = tail(data, 50)
-
 
 uniqy = unique(data$y)
 uniqx = unique(data$x)
 
-for (y in uniqy)
-{
-  datay = data[data$y %in% y, ]
-  for(x in uniqx){
-    datax = datay[datay$x %in% x, ]
-    if(nrow(datax) != 1){
-      new_line_data <- data.frame(x, y, 0)
-      names(new_line_data) <- c("x", "y", "z")
+for (y in uniqy){
+	datay = data[data$y %in% y, ]
+	for(x in uniqx){
+		datax = datay[datay$x %in% x, ]
+		if(nrow(datax) != 1){
+			new_line_data <- data.frame(x, y, 0)
+			names(new_line_data) <- c("x", "y", "z")
 
-      data <- rbind(data, new_line_data)
-    }
-  }
+			data <- rbind(data, new_line_data)
+		}
+	}
 }
 
 
 max=0
 namx=""
 for(x in uniqx){
-  datax = data[data$x %in% x, ]
-  if(max(datax$z)>max){
-    max  = max(datax$z)
-    namx = x
-  }
+	datax = data[data$x %in% x, ]
+	if(max(datax$z)>max){
+		max  = max(datax$z)
+		namx = x
+	}
 }
 
 datax = data[data$x %in% namx, ]
@@ -140,27 +127,20 @@ data$y <- factor(data$y, levels = datax$y)
 
 nb_diff_TE = length( unique(data$y) )
 
-    #print("ok--s")
 xlabel = ''
 graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
     geom_tile() + 
     ggtitle("") +
-    
-    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)) +
     coord_fixed() +
     scale_fill_gradientn(colours=brewer.pal(n= 9, name="YlGnBu")) +
     #scale_fill_viridis(option="heat") +
-theme(panel.background = element_rect(fill = "white", colour = "grey", linewidth=0)
-  #,panel.border = element_rect(linetype = "dashed", fill = NA)
-  #, panel.grid.major = element_line(colour = "black")
-) +
-geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9 , inherit.aes = FALSE , linetype="twodash") +
-
-
+	theme(
+		panel.background = element_rect(fill = "white", colour = "grey", linewidth=0),
+		axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)
+	) +
+	geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9 , inherit.aes = FALSE , linetype="twodash") +
     labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
-geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
-
-order_TE = data$y
+	geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
 
 graph
 
