@@ -1,7 +1,7 @@
 Bootstrap: docker
 From: ubuntu:20.04
 %help
-    Container for TrEMOLO v2.0
+    Container for TrEMOLO v2.4
     https://github.com/DrosophilaGenomeEvolution/TrEMOLO
     Includes
         Blast 2.2+
@@ -41,7 +41,7 @@ From: ubuntu:20.04
         Perl v5.26.2
 
 %labels
-    VERSION "TrEMOLO v3.0.3"
+    VERSION "TrEMOLO v2.4"
     Maintainer Francois Sabot <francois.sabot@ird.fr>
     Oct, 2023
 
@@ -116,7 +116,7 @@ _EOF_
     #rmarkdown_2.13     knitr_1.36         bookdown_0.25      viridis_0.6.2     
     #viridisLite_0.4.0  rjson_0.2.20       ggthemes_4.2.4     forcats_0.5.1     
     #reshape2_1.4.4     dplyr_1.0.8        kableExtra_1.3.4   extrafont_0.17    
-    #ggplot2_3.3.5      RColorBrewer_1.1-2
+    #ggplot2_3.4.2      RColorBrewer_1.1-2
 
     R --slave -e 'require(devtools); install_version("knitr", version = "1.38")'
     R --slave -e 'require(devtools); install_version("rmarkdown", version = "2.13")'
@@ -246,7 +246,7 @@ _EOF_
     # export PATH="$PATH:/usr/bin/samtools-1.15.1"
     # export PATH="$PATH:/usr/bin/htslib-1.15.1"
     export PATH="$PATH:/usr/bin/samtools/bcftools/"
-    # Force R path contenair
+    # Fix force R path container
     export R_PROFILE=/opt/init-file/.Rprofile
     export R_LIBS="/usr/local/lib/R/site-library:/usr/lib/R/site-library:/usr/lib/R/library"
 
