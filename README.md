@@ -2,7 +2,7 @@
 
 [![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/5391)
 
-<img src="images/tremolo_logo.png" width="500" height="500" >
+<img src="images/TrEMOLO9.png">
 
 - [Introduction](#introduction)
     - [Global variations](#in)
