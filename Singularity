@@ -1,7 +1,7 @@
 Bootstrap: docker
 From: ubuntu:20.04
 %help
-    Container for TrEMOLO v2.0
+    Container for TrEMOLO v2.4
     https://github.com/DrosophilaGenomeEvolution/TrEMOLO
     Includes
         Blast 2.2+
@@ -16,11 +16,13 @@ From: ubuntu:20.04
         SVIM 1.4.2+
         libfontconfig1-dev
         Python libs
-            Biopython
-            Pandas
-            Numpy
-            pylab
-            intervaltree
+            Biopython 1.79
+            Pandas 1.5.3
+            Numpy 1.21.2
+            matplotlib 3.5.1
+            pysam 0.20.0
+            intervaltree 2.1.0
+            scipy 1.10.1
         R libs
             knitr 1.38
             rmarkdown 2.13
@@ -34,14 +36,14 @@ From: ubuntu:20.04
             dplyr 1.0.8
             kableExtra 1.3.4
             extrafont 0.17
-            ggplot2 3.3.5
+            ggplot2 3.4.2
             RColorBrewer 1.1-2
         Perl v5.26.2
 
 %labels
-    VERSION "TrEMOLO v2.0"
+    VERSION "TrEMOLO v2.4"
     Maintainer Francois Sabot <francois.sabot@ird.fr>
-    March, 2021
+    Oct, 2023
 
 %post
     # faster apt downloads
@@ -114,7 +116,7 @@ _EOF_
     #rmarkdown_2.13     knitr_1.36         bookdown_0.25      viridis_0.6.2     
     #viridisLite_0.4.0  rjson_0.2.20       ggthemes_4.2.4     forcats_0.5.1     
     #reshape2_1.4.4     dplyr_1.0.8        kableExtra_1.3.4   extrafont_0.17    
-    #ggplot2_3.3.5      RColorBrewer_1.1-2
+    #ggplot2_3.4.2      RColorBrewer_1.1-2
 
     R --slave -e 'require(devtools); install_version("knitr", version = "1.38")'
     R --slave -e 'require(devtools); install_version("rmarkdown", version = "2.13")'
@@ -128,7 +130,7 @@ _EOF_
     R --slave -e 'require(devtools); install_version("dplyr", version = "1.0.8")'
     R --slave -e 'require(devtools); install_version("kableExtra", version = "1.3.4")'
     R --slave -e 'require(devtools); install_version("extrafont", version = "0.17")'
-    R --slave -e 'require(devtools); install_version("ggplot2", version = "3.3.5")'
+    R --slave -e 'require(devtools); install_version("ggplot2", version = "3.4.2")'
     R --slave -e 'require(devtools); install_version("RColorBrewer", version = "1.1-2")'    
     
     ##minimap2-2.24
@@ -186,7 +188,7 @@ _EOF_
     cd
     
     #Python libs
-    python3 -m pip install biopython pandas==1.5.3 numpy==1.21.2 matplotlib svim==1.4.2 intervaltree scipy pysam
+    python3 -m pip install biopython==1.79 pandas==1.5.3 numpy==1.21.2 matplotlib==3.5.1 svim==1.4.2 intervaltree==2.1.0 scipy==1.10.1 pysam==0.20.0
 
     # build variables
     export TOOLDIR=/opt/tools
@@ -195,7 +197,7 @@ _EOF_
     mkdir -p $TOOLDIR
 
 
-    #installing Sniffles 1.0.12+
+    #installing Sniffles 1.0.12b
     cd $TOOLDIR
     wget https://github.com/fritzsedlazeck/Sniffles/archive/refs/tags/v1.0.12b.tar.gz -O Sniffles.tar.gz
     tar xzvf Sniffles.tar.gz
@@ -225,6 +227,10 @@ _EOF_
     R --save -e 'install.packages("stringi")'
     R --save -e 'install.packages("stringr")'
 
+    #Force R path container
+    mkdir -p /opt/init-file/
+    echo '.libPaths(c("/usr/local/lib/R/site-library", "/usr/lib/R/site-library", "/usr/lib/R/library"))' > /opt/init-file/.Rprofile
+
 %environment
     export LC_ALL=C
     export TOOLDIR=/opt/tools
@@ -240,6 +246,9 @@ _EOF_
     # export PATH="$PATH:/usr/bin/samtools-1.15.1"
     # export PATH="$PATH:/usr/bin/htslib-1.15.1"
     export PATH="$PATH:/usr/bin/samtools/bcftools/"
+    # Fix force R path container
+    export R_PROFILE=/opt/init-file/.Rprofile
+    export R_LIBS="/usr/local/lib/R/site-library:/usr/lib/R/site-library:/usr/lib/R/library"
 
 %runscript
     exec "$@"

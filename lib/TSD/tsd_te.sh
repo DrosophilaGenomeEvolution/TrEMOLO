@@ -113,15 +113,88 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
 
         echo "[$0] ------FIND INFOS READS------"
         fr="`ls ${REPO_READS} | grep ":$id:"`"
+        type=`echo $id | grep -w -o -E "INS|DEL"`
         echo "[$0] id : $id--"
         echo "[$0] file : $fr--"
+        echo "[$0] type : $type--"
         name=`echo $fr | grep -o ".*\."`
         echo "[$0] name : $name"
         i=$(($i + 1))
         echo "[$0] $i/$number_element"
 
         if [ ! -n "$fr" ]; then
-            echo "[$0] **ERROR** : FILE NOT FOUND FOR ID : $id";
+            if [ "$type" = "DEL" ]; then
+                echo 
+                echo "[$0] ------TSD DEL------"
+                echo "[$0] reads : NONE"
+                echo "[$0] id : "$id
+                echo "[$0] find_file : ${FIND_FA}"
+                head=`grep ".*:.*:$id:[0-9]*:[PI]" ${FIND_FA}`
+
+                echo "[$0] head : "$head
+
+
+                grep -w $head -A 1 "${FIND_FA}" > ${path_out_dir}/sequence_TE_${id}.fasta 
+                # cat ${path_out_dir}/sequence_TE_${id}.fasta 
+                
+                if ! test -s ${path_out_dir}/sequence_TE_${id}.fasta; then
+                    echo "[$0] **ERROR** : can't get sequence TE in ${FIND_FA}" ;
+                    exit 1 ;
+                fi;
+
+                grep -w $id ${path_out_dir}/COUNT_READS.txt | awk -v sizeFlank="30" '
+                    $19!="." && max<$8 {max=$8; seq=$19; rd=$2; rf_cr=$9; count_read=$15;} 
+                
+                    END{
+                        split(seq, sp, ":"); 
+                        print ">"rd":"(rf_cr-sizeFlank)"-"(rf_cr)
+                        print sp[1]
+                        print ">"rd":"(rf_cr)"-"(rf_cr+sizeFlank)
+                        print sp[2]
+                    }' > ${path_out_dir}/flank_TE_${id}.fasta
+
+                
+
+                echo "[$0] head ${path_out_dir}/TE_vs_databaseTE_${id}.bln" >&2; 
+                head -n 1 ${path_out_dir}/TE_vs_databaseTE_${id}.bln >&2
+                echo "" >&2
+                
+                #Waring strand
+                strand="+"
+                echo $reads >> ${OUTPUT}
+                echo $head  >> ${OUTPUT}
+
+                # FIND TSD
+                # Warning : path
+                echo "[$0] flank_TE_${id}.fasta:"`test -s "${path_out_dir}/flank_TE_${id}.fasta" && echo "OK" || echo "NONE"`"   sequence_TE.fasta:"`test -s "${path_out_dir}/sequence_TE_${id}.fasta" && echo "OK" || echo "NONE"`"  FK_S:$FLANK_SIZE     id:$id     strand:$strand     TSD_SIZE:$TSD_SIZE"
+                echo "";
+                echo "";
+                echo "[$0] WHY params ${path_out_dir}/flank_TE_${id}.fasta ${path_out_dir}/sequence_TE_${id}.fasta $FLANK_SIZE $id $strand $TSD_SIZE" >&2
+                
+                if test -s "${path_out_dir}/TE_vs_databaseTE_${id}.bln" && test -n "$FLANK_SIZE" && test -n "$id" && test -n "$strand" && test -n "$TSD_SIZE"; then
+                    python3 ${path_this_script}/find_tsd.py ${path_out_dir}/flank_TE_${id}.fasta ${path_out_dir}/sequence_TE_${id}.fasta $FLANK_SIZE $id $strand $TSD_SIZE >> ${OUTPUT}
+                    OK=`grep "$head" ${OUTPUT} -A 2 | grep -o "OK" || echo ""`
+                else
+                    OK="";
+                fi;
+                
+                if [ -n "$OK" ]; then
+                    TSD=`grep "$head" ${OUTPUT} -A 4 | grep "++:[A-Z]*:++" -o | head -n 1 | grep -o "[A-Z]*"`
+                    echo "$head" | awk -v FLANK_SIZE="$FLANK_SIZE"  -F ":" 'OFS="\t"{print $1, $3-FLANK_SIZE, $3+FLANK_SIZE}' | tr -d ">" >> ${path_out_dir}/tmp_${id}.bed
+                    empty_site=`bedtools getfasta -fi ${GENOME} -bed ${path_out_dir}/tmp_${id}.bed | grep -v ">"`
+                    position_TE_SV=`echo $head | cut -d ":" -f 3`
+
+                    echo "[$0] TSD:$TSD >> empty_site:$empty_site >> FLANK_SIZE:$FLANK_SIZE >> position_TE_SV:$position_TE_SV"
+                    echo "[$0] TSD:$TSD >> empty_site:$empty_site >> FLANK_SIZE:$FLANK_SIZE >> position_TE_SV:$position_TE_SV" >&2
+
+                    ( test -n "$TSD" && test -n "$empty_site" && test -n "$FLANK_SIZE" && test -n "$position_TE_SV" && \
+                        python3 ${path_this_script}/find_svi.py $TSD $empty_site $FLANK_SIZE $position_TE_SV >> ${OUTPUT} ) || echo "[$0] ERROR : MISSING ARGS FOR find_svi.py " >&2;
+                    rm -f ${path_out_dir}/tmp_${id}.bed
+                fi;
+
+                else
+                    echo "[$0] **ERROR** : FILE NOT FOUND FOR ID : $id";
+                fi;
             # exit 1;
         else
             reads=${REPO_READS_FA}/${name}fasta
@@ -145,7 +218,7 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
                 exit 1 ;
             fi;
 
-            #
+            #Warning : WORK ONLY BECAUSE ERROR IN LONG READS
             echo "[$0] *********BLAST 1 TE VS READ**********"
             echo "[$0] --READS : $reads"
             makeblastdb -in "$reads" -dbtype nucl
@@ -175,42 +248,6 @@ for id in `grep ">" ${FIND_FA} | grep -o "[0-9]:[A-Za-z\.0-9]*:[0-9]*:[PI]" | gr
             echo "[$0] ${DB_TE}"
             #makeblastdb -in ${DB_TE} -dbtype nucl ##comment for threads task
             blastn -db ${DB_TE} -query ${path_out_dir}/sequence_TE_${id}.fasta -outfmt 6 -out ${path_out_dir}/TE_vs_databaseTE_${id}.bln
-
-
-            #COMBINE AWK
-            # sstart_global=`awk 'NR==1 {print $7}' test.bln`
-            # send_global=`awk 'NR==1 {print $8}' test.bln`
-            # qstart_global=`awk 'NR==1 {print $9}' test.bln`
-            # qend_global=`awk 'NR==1 {print $10}' test.bln`
-
-
-            # awk -v ssg="$sstart_global" -v seg="$send_global" -v qsg="$qstart_global" -v qeg="$qend_global" '
-            #     BEGIN{
-            #         chrom=""
-            #         sstart_global=ssg; 
-            #         send_global=seg; 
-            #         qstart_global=qsg; 
-            #         qend_global=qeg; 
-            #     }
-
-            #      OFS="\t"  {
-            #         chrom=$1
-            #         TE=$2
-            #         sstart = $7
-            #         ssend  = $8
-            #         qstart = $9
-            #         qend   = $10
-            #         if (sstart < sstart_global && send < send_global && qstart < qstart_global && qend < qend_global ){
-            #             sstart_global = sstart
-            #             qstart_global = qstart
-            #         }
-            #         else if ( sstart > sstart_global && send > send_global && qstart > qstart_global && qend > qend_global ){
-            #             send_global   = send
-            #             qend_global   = qend
-            #         }
-            #     }
-
-            #    END{split(chrom, a, ":"); print chrom, sstart_global, send_global, TE"|"a[5]; }' test.bln
 
             echo "[$0] head ${path_out_dir}/TE_vs_databaseTE_${id}.bln" >&2; 
             head -n 1 ${path_out_dir}/TE_vs_databaseTE_${id}.bln >&2
@@ -273,5 +310,5 @@ if [ $number_total -ne 0 ]; then
     echo "OK% : $(($number_ok*100/$number_total))%" >> ${OUTPUT}
 
 else
-    echo "ERROR NUMBER TOTAL OF TE EQUAL 0 " >> ${OUTPUT}
+    echo "ERROR-404: NUMBER TOTAL OF TE EQUAL 0 " >> ${OUTPUT}
 fi;

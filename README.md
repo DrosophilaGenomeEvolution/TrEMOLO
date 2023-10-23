@@ -37,9 +37,41 @@ Through remapping of reads that have been used to assemble the genome of interes
 In the same way as for insiders, you will obtain a [set of files](#output) with the location of these variable insertions and deletions.
 
 
-# Release notes<a name="release"></a>
+## Release notes<a name="release"></a>
 
-# Current limitations
+**Version 2.4.0**
+
+* Added the capability to detect **DELETION** for **OUTSIDER**. Use the parameter `-k 'INS|DEL'` for **OUTSIDER**. Example: `PARS_BLN_OPTION: " --min-size-percent 80 --min-pident 80 -k 'INS|DEL'"`
+
+* Updated frequency calculation method for **OUTSIDER**:
+  * Faster and more accurate calculation.
+  * Every insertion is now assigned a frequency.
+  * Fixed bugs where frequency exceeded 100% or equaled NONE.
+  * Frequency calculations now include **DELETION** (DEL).
+
+* Fixed bugs in `MODE_PARALLELING = True` mode.
+
+* Option to decide if **CLIPPED READS** (SOFT, HARD) should be treated as new insertions. Setting `CLIPPED_READS = False` (default) reduces computation time.
+
+* Updated the `OUTSIDER/REPORT/report.html` report to retain only essential graphs.
+
+* Faster extraction of `INS`, `SOFT`, `HARD` using **CIGAR**.
+
+* **svim** is no longer managed.
+
+* Fix problem R library path in the Singularity definition file
+  * Update the ggplot2 package to version 3.4.2
+
+## Current limitations
+
+* Frequencies are calculated based only on the size and location of the insertions. They don't identify every TE in all presumed reads support (RS), which might skew the calculation if you have a TE insertion within another TE insertion.
+
+* The pipeline won't directly notify about TE insertions nested within another TE insertion. However, this can be deduced by examining information in columns **9** (SIZE_TE) and **13** (SV_SIZE **new column**) of the `TE_INFOS.bed` file. If, for instance, the SV size is twice the size of the identified TE, you might want to delve into the intermediate files for more details.
+
+* In **INSIDER_VARIANT** mode, TE annotation on the **REFERENCE** (parameter **INTEGRATE_TE_TO_GENOME**) is suboptimal. Some TEs might not be annotated on the reference.
+
+* Difficulty in identifying the true positives concerning clipped insertions (SOFT, HARD)
+
 
 # Requirements<a name="requirements"></a>
 
@@ -80,7 +112,7 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
     - [dplyr 1.0.8](https://www.r-project.org/nosvn/pandoc/dplyr.html)
     - [kableExtra 1.3.4](https://bookdown.org/yihui/rmarkdown-cookbook/kableextra.html)
     - [extrafont 0.17](https://cran.r-project.org/web/packages/extrafont/README.html)
-    - [ggplot2 3.3.5](https://ggplot2.tidyverse.org/)
+    - [ggplot2 3.4.2](https://ggplot2.tidyverse.org/)
     - [RColorBrewer 1.1-2](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)       
     - [stringr 1.4.0](https://cran.r-project.org/web/packages/stringr/index.html)
     - [stringi 1.7.6](https://cran.r-project.org/web/packages/stringi/index.html)
@@ -156,6 +188,7 @@ CHOICE:
         CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, svim
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the INSIDER integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATED WITH CLIPPING READS
+        CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:
         DETECT_ALL_TE: False    # detect ALL TE on genome (parameter GENOME) assembly not only new insertion. Warning! it may be take several hours on big genomes
     INTERMEDIATE_FILE: True     # Conserve the intermediate analyses files to process them latter.
@@ -166,7 +199,7 @@ PARAMS:
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 option is map-ont by default (map-pb, map-ont)
-            OPTION: '-t 8' # more option of minimap2 can be specified here
+            OPTION: '' # more option of minimap2 can be specified here
         SAMTOOLS_VIEW:
             PRESET_OPTION: ''
         SAMTOOLS_SORT:
@@ -175,11 +208,11 @@ PARAMS:
             PRESET_OPTION: ''
         TSD:
             FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for the reference elements (format="TE SIZE", one TE per line) [optional]
-            SIZE_FLANK: 30  # flanking sequence size for calculation of TSD; put value > 4
+            SIZE_FLANK: 15  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 500" #sequence recovery file in the vcf
-        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80 -k 'INS|DEL'" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
 
@@ -250,7 +283,7 @@ WORK_DIRECTORY
 │   │   └── TE_REPORT_FOUND_ZAM.fasta
 ...
 │   ├── FREQ_OPTIMIZED
-│   │   └── DEPTH_TE.csv
+│   │   └── FREQUENCY_TE_INS.tsv
 │   ├── INSIDER_VR
 │   ├── MAPPING ##**FOLDER CONTAINS FILES MAPPING ON GENOME
 │   ├── MAPPING_TO_REF ##**FOLDER CONTAINS FILES MAPPING ON REFERENCE GENOME
@@ -282,14 +315,14 @@ WORK_DIRECTORY
 
 The most useful output files are :
 
-* The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/48d1d238be3a6a181ce44641f7738ad8b237b538/test/web/index.html)
+* The html report in **your_work_directory/REPORT/report.html** with summary graphics, as shown [here](https://rawcdn.githack.com/DrosophilaGenomeEvolution/TrEMOLO/c10d73fec0455f5e1d00129bd95670f39c9aa0e5/test/web/index.html)
 
-The output file **your_work_direcetory/TE_INFOS.bed** gathers all the necessary information.
+The output file **your_work_directory/TE_INFOS.bed** gathers all the necessary information.
 
-|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD   | pident | psize_TE | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | ID_TrEMOLO  | TYPE |
-| --------------- | -------- | -------- | -------- | -------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- | -------------- |
-|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175 |     +     |   GTACA   | 97.026 | 99.2  | 9006    | 16943978 | 28.5714 |    28.5714     |    TE_ID_OUTSIDER.94047.INS.107508.0  | INS |
-|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG  | 98.6 | 90.5  | 8435    | 21629413         | 11.1111 |    10.0000     | TE_ID_INSIDER.77237.Repeat_expansion.8 | Repeat_expansion |
+|      chrom      |  start   | end      |   TE\|ID   |   strand  |    TSD     | pident | psize_TE | SIZE_TE |      NEW_POS     |  FREQ (%) | FREQ_OPTIMIZED (%) | SV_SIZE | ID_TrEMOLO  | TYPE |
+| --------------- | -------- | -------- | ---------- | --------- | ---------- | --------- | -------- | ------- | ---------------- | ------- | -------------- | -------------- | -------------- | -------------- |
+|  2R_RaGOO_RaGOO | 16943971 | 16943972 | roo\|svim.INS.175  |     +     |   GTACA   | 97.026 | 99.2  | 9006    | 16943978 | 28.5714 |    28.5714     | 9000  |  TE_ID_OUTSIDER.94047.INS.107508.0  | INS |
+|  X_RaGOO_RaGOO  | 21629415 | 21629416 | ZAM\|Assemblytics_w_534  |     -     |   CGCG  | 98.6 | 90.5  | 8435    | 21629413         | 11.1111 |    10.0000   | 8000  | TE_ID_INSIDER.77237.Repeat_expansion.8 | Repeat_expansion |
 
 
  1.    `chrom` : chromosome
@@ -304,8 +337,9 @@ The output file **your_work_direcetory/TE_INFOS.bed** gathers all the necessary 
  10.   `NEW_POS` :  position corrected with calculated TSD (only for OUTSIDER)
  11.   `FREQ`  : frequence, normalized
  12.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped (OUTSIDER only)
- 13.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
- 14.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
+ 13.   `SV_SIZE`  : size of the structural variant (may be larger than the size of the TE)
+ 14.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
+ 15.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
 
 
 # How to use TrEMOLO<a name="how_to_use"></a>
@@ -330,6 +364,10 @@ The choice of the right strategy depends on the context.
 <img src="images/HOW-WORKING-TrEMOLO/21.png">
 
 # Licence and Citation<a name="citation"></a>
+
+Mourdas MOHAMED.
+
+This work is licensed under CC BY 4.0 for all docs and manuals. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/
 
 It is licencied under [CeCill-C](Licence_CeCILL-C_V1-en.txt) and [GPLv3](LICENSE).
 

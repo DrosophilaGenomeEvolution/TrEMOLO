@@ -10,11 +10,11 @@ Information `samtools stats`
 
 File : **OUTSIDER/MAPPING/stats.txt**
 
-```{bash, eval=FALSE, include=FALSE, results=TRUE}
+```{bash MAPPING_STATS_OUTSIDER, eval=FALSE, include=FALSE, results=TRUE}
     cat "../../OUTSIDER/MAPPING/stats.txt"
 ```
 
-```{r, eval=TRUE, include=TRUE, results=TRUE}
+```{r show_STATS, eval=TRUE, include=TRUE, results=TRUE}
     print(gsub("\t" , "    ", readLines("../../OUTSIDER/MAPPING/stats.txt")))
 ```
 
@@ -22,7 +22,7 @@ File : **OUTSIDER/MAPPING/stats.txt**
 
 Informations of **SV.vcf** file.
 
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash COUNT_SV_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 array_type=( "INS" "DEL" "DUP" ); 
 echo -e "x\ty" > .tmp_graph_sv.csv; 
@@ -40,41 +40,12 @@ NB_SOFT=`cat ../../OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.vcf | wc -l || echo 0`
 sed -i "s/%%VALUE_SOFT%%/${NB_SOFT}/g" lib/template_HISTO_TYPE_SV.html
 
 
-NB_HARD=`grep ">" ../..//OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta  | cut -d ":" -f 5 | sort -u | wc -l || echo 0`
+NB_HARD=`(test -s ../../OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta && grep ">" ../../OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta  | cut -d ":" -f 5 | sort -u | wc -l) || echo 0`
 sed -i "s/%%VALUE_HARD%%/${NB_HARD}/g" lib/template_HISTO_TYPE_SV.html
 
 ```
 
 <iframe src="lib/template_HISTO_TYPE_SV.html" style="width: 100%; height: 400px; border: none; overflow: hidden;"></iframe>
-
-
-
-```{r, eval=FALSE, include=FALSE, results=TRUE}
-
-df = read.csv(".tmp_graph_sv.csv", sep="\t")
-#kbl(df)
-
-p = ggplot(df, aes(y=y, x=x), width=0.5) + 
-    geom_bar(stat="identity", fill="#F85533", width=0.5) +
-    coord_flip()+
-    #geom_text(aes(label=y), vjust=1.6, color="white",
-    #        position = position_dodge(0.9), size=5) +
-    xlab("TYPE") +
-    ylab("NUMBER") +
-    #labs(fill = legendLabel) +
-    theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.4),
-      panel.background = element_rect(fill="white", colour="white", 
-                                           color="white"))
-
-
-colnames(df) <- c("type", "number")
-kbl(df)
-
-
-p
-#ggsave(p, file=output)
-
-```
 
 ## NUMBER OF TE
 
@@ -84,67 +55,58 @@ Number of family found : **`r data=read.csv("../../OUTSIDER/TE_DETECTION/MERGE_T
 
 ```{r NB_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
 
-data = read.csv("../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv", sep="\t")
-#kbl(data)
-data = tail(data, 50)
+    data = read.csv("../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv", sep="\t")
+    #kbl(data)
+    data = tail(data, 50)
 
-uniqy = unique(data$y)
-uniqx = unique(data$x)
+    uniqy = unique(data$y)
+    uniqx = unique(data$x)
 
-for (y in uniqy)
-{
-  datay = data[data$y %in% y, ]
-  for(x in uniqx){
-    datax = datay[datay$x %in% x, ]
-    if(nrow(datax) != 1){
-      new_line_data <- data.frame(x, y, 0)
-      names(new_line_data) <- c("x", "y", "z")
+    for (y in uniqy){
+        datay = data[data$y %in% y, ]
+        for(x in uniqx){
+            datax = datay[datay$x %in% x, ]
+            if(nrow(datax) != 1){
+                new_line_data <- data.frame(x, y, 0)
+                names(new_line_data) <- c("x", "y", "z")
 
-      data <- rbind(data, new_line_data)
+                data <- rbind(data, new_line_data)
+            }
+        }
     }
-  }
-}
 
 
-max=0
-namx=""
-for(x in uniqx){
-  datax = data[data$x %in% x, ]
-  if(max(datax$z)>max){
-    max  = max(datax$z)
-    namx = x
-  }
-}
+    max=0
+    namx=""
+    for(x in uniqx){
+        datax = data[data$x %in% x, ]
+        if(max(datax$z)>max){
+            max  = max(datax$z)
+            namx = x
+        }
+    }
 
-datax = data[data$x %in% namx, ]
-datax = datax[order(datax$z), ]
+    datax = data[data$x %in% namx, ]
+    datax = datax[order(datax$z), ]
 
-data$y <- factor(data$y, levels = datax$y)
+    data$y <- factor(data$y, levels = datax$y)
 
-nb_diff_TE = length( unique(data$y) )
+    nb_diff_TE = length( unique(data$y) )
 
-    #print("ok--s")
-xlabel = ''
-graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
-    geom_tile() + 
-    ggtitle("") +
-    
-    theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=5, angle=0)) +
-    coord_fixed() +
-    scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
-    #scale_fill_viridis(option="heat") +
-theme(panel.background = element_rect(fill = "white", colour = "grey", size=0)
-  #,panel.border = element_rect(linetype = "dashed", fill = NA)
-  #, panel.grid.major = element_line(colour = "black")
-) +
-geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, size=0.9 , inherit.aes = FALSE , linetype="twodash") +
+    xlabel = ''
+    graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+        geom_tile() + 
+        ggtitle("") +
+        theme(axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=5, angle=0)) +
+        coord_fixed() +
+        scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
+        #scale_fill_viridis(option="heat") +
+        theme(panel.background = element_rect(fill = "white", colour = "grey", linewidth=0)) +
+        geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9 , inherit.aes = FALSE , linetype="twodash") +
+        labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+        geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
 
-    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
-geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
-
-order_TE = data$y
-
-graph
+    graph
 
 ```
 
@@ -154,66 +116,11 @@ graph
 
 ## FREQUENCY
 
-```{bash FREQB_out, eval=TRUE, include=TRUE, results=TRUE}
-
-test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && \
-    awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv | tail -n 50 > .tmp_orderx.txt
-
-rm -f .tmp_FREQ_TE.csv
-(test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
-  python3 ../lib/freq_graph.py ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv .tmp_FREQ_TE.csv) || \
-  (test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
-  python3 ../lib/freq_graph.py ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv .tmp_FREQ_TE.csv)
-
-test -s .tmp_FREQ_TE.csv && echo -e "x\ty\tcondition" > FREQ_TE.csv && grep -w -f .tmp_orderx.txt .tmp_FREQ_TE.csv >> FREQ_TE.csv
-
-
-test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && awk -F "\t" 'NR>1 {print $2}' ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv > .tmp_orderx.txt
-
-test -s .tmp_FREQ_TE.csv && \
-    python3 ../lib/conv_js_histo_grouped_ggplot.py .tmp_FREQ_TE.csv data -c orderc.txt -x .tmp_orderx.txt > js/FREQ_OUTSIDER_CHART.js
-
-sed 's/%%VAR_JS%%/FREQ_OUTSIDER_CHART.js/g' lib/template_FREQ_TE_CHART.html \
-    > lib/template_FREQ_TE_OUTSIDER_CHART.html
-
-```
-
-
-
-```{r FREQOUT, eval=FALSE, include=TRUE, results=FALSE, out.width="90%", echo=FALSE}
-
-data = read.csv("FREQ_TE.csv", sep="\t")
-
-#data$x <- factor(data$x, levels = order_TE)
-
-order <- read.table("orderc.txt", header = FALSE)
-data$condition <- factor(data$condition, levels = order$V1)
-
-orderx <- read.table(".tmp_orderx.txt", header = FALSE)
-data$x <- factor(data$x, levels = orderx$V1)
-
-
-p = ggplot(data, aes(fill=condition, y=y, x=x)) + 
-        geom_bar(position="stack", stat="identity") +
-        xlab("TE") +
-        ylab("NUMBER") +
-        labs(fill = "FREQUENCY") +
-        #scale_fill_viridis(discrete = T) +
-        scale_fill_manual(values=brewer.pal(n = length(unique(data$condition)), name="Reds")) +
-        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
-            panel.background = element_rect(fill="white", colour="white", 
-                                          linetype="solid", color="white"))
-
-p
-
-```
-
 <iframe src="lib/template_FREQ_TE_OUTSIDER.html" style="width: 100%; height: 1800px; border: none; overflow: hidden;"></iframe>
-<iframe src="lib/template_FREQ_TE_OUTSIDER_CHART.html" style="width: 100%; height: 800px; border: none; overflow: hidden;"></iframe>
 
 Hover your mouse over the bars or navigate with the slider if the number of different TE families is **greater than 20**
 
-<iframe src="lib/template_FREQ_CHROM_OUTSIDER.html" style="width: 100%; height: 1500px; border: none; overflow: hidden;"></iframe>
+<iframe src="lib/template_FREQ_CHROM_OUTSIDER.html" style="width: 100%; height: 100vh; border: none; overflow: hidden;"></iframe>
 
 
 ## TSD
@@ -221,7 +128,7 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 <!-- calcul number of TE TSD -->
 
 
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
+```{bash COUNT_TSD_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 grep "OK" ../../VALUES_TSD_GROUP_OUTSIDER.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD NOT FOUND"
 
@@ -250,9 +157,15 @@ p = ggplot(data, aes(fill=condition, y=y, x=x)) +
         labs(fill = "TYPE TSD") +
         #scale_fill_viridis(discrete = T) +
         scale_fill_manual(values=c("#6EB9FF", "#0064D4")) +
-        theme(axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
-            panel.background = element_rect(fill="white", colour="white", 
-                                          linetype="solid", color="white"))
+        theme(
+            axis.text.x = element_text(face="plain", color="#222222", size=10, angle=90, vjust=0.5),
+            panel.background = element_rect(
+                    fill="white", 
+                    colour="white", 
+                    linetype="solid", 
+                    color="white"
+                )
+            )
 
 p
 #ggsave(p, file=output)
@@ -267,21 +180,11 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 <!-- <iframe src="lib/template_TSD_ALL_histo.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe> -->
 
 
-## TE POSITION
-
-
-<iframe src="lib/template_COUNT_TE_GENOME_CIRCOS_OUTSIDER.html" style="width: 100%; height: 700px; border: none; overflow: hidden;"></iframe>
-
-Select TE family
-
-
 <!-- remove inutiles files -->
-```{bash, eval=TRUE, include=TRUE, results=TRUE}
-
+```{bash rm_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
 rm -f FREQ_TE.csv
 rm -f .tmp_*v;
-
 
 ```
 

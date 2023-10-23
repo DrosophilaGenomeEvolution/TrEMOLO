@@ -67,7 +67,7 @@ lines = file.readlines()
 
 creat_pseudo_db = False
 for line in lines :
-    if line[0] == ">" and (":" in line.strip() or "/" in line.strip() or "\\" in line.strip() or "|" in line.strip()) :
+    if line[0] == ">" and (":" in line.strip() or "/" in line.strip() or "\\" in line.strip() or "|" in line.strip() or "[" in line.strip() or "]" in line.strip()) :
         creat_pseudo_db = True
         break
 
@@ -130,7 +130,7 @@ onsuccess:
     print("\nDONE NO ERROR DETECTED ✔ \n")
 
 onerror:
-    print("AN ERROR OCCURRED")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> tmp.log && rm -f tmp.log")
+    print("AN ERROR OCCURRED!")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` >&2 2> tmp.log && rm -f tmp.log")
 
 

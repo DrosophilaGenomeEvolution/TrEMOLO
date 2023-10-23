@@ -204,11 +204,6 @@ while not find and size_k > 3 :
                       chaine += ">"+head+"\n"+seq_and_tsd+"\n"
               tab_none.append(chaine)
 
-        #     if find :
-        #         break
-        # if find :
-        #     break
-
     size_k -= 1
 
 
