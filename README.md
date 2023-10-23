@@ -40,7 +40,7 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 
 ## Release notes<a name="release"></a>
 
-**Version 3.0.0**
+**Version 2.4.0**
 
 * Added the capability to detect **DELETION** for **OUTSIDER**. Use the parameter `-k 'INS|DEL'` for **OUTSIDER**. Example: `PARS_BLN_OPTION: " --min-size-percent 80 --min-pident 80 -k 'INS|DEL'"`
 
@@ -56,7 +56,12 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 
 * Updated the `OUTSIDER/REPORT/report.html` report to retain only essential graphs.
 
-* Faster extraction of `INSERTION`, `SOFT`, `HARD` using **CIGAR**.
+* Faster extraction of `INS`, `SOFT`, `HARD` using **CIGAR**.
+
+* **svim** is no longer managed.
+
+* Fix problem R library path in the Singularity definition file
+  * Update the ggplot2 package to version 3.4.2
 
 ## Current limitations
 
@@ -66,7 +71,8 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 
 * In **INSIDER_VARIANT** mode, TE annotation on the **REFERENCE** (parameter **INTEGRATE_TE_TO_GENOME**) is suboptimal. Some TEs might not be annotated on the reference.
 
-* **svim** is no longer managed.
+* Difficulty in identifying the true positives concerning clipped insertions (SOFT, HARD)
+
 
 # Requirements<a name="requirements"></a>
 
@@ -107,7 +113,7 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
     - [dplyr 1.0.8](https://www.r-project.org/nosvn/pandoc/dplyr.html)
     - [kableExtra 1.3.4](https://bookdown.org/yihui/rmarkdown-cookbook/kableextra.html)
     - [extrafont 0.17](https://cran.r-project.org/web/packages/extrafont/README.html)
-    - [ggplot2 3.3.5](https://ggplot2.tidyverse.org/)
+    - [ggplot2 3.4.2](https://ggplot2.tidyverse.org/)
     - [RColorBrewer 1.1-2](https://www.rdocumentation.org/packages/RColorBrewer/versions/1.1-2=)       
     - [stringr 1.4.0](https://cran.r-project.org/web/packages/stringr/index.html)
     - [stringi 1.7.6](https://cran.r-project.org/web/packages/stringi/index.html)
@@ -359,6 +365,10 @@ The choice of the right strategy depends on the context.
 <img src="images/HOW-WORKING-TrEMOLO/21.png">
 
 # Licence and Citation<a name="citation"></a>
+
+Mourdas MOHAMED.
+
+This work is licensed under CC BY 4.0 for all docs and manuals. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/
 
 It is licencied under [CeCill-C](Licence_CeCILL-C_V1-en.txt) and [GPLv3](LICENSE).
 
