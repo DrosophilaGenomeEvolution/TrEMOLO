@@ -66,16 +66,21 @@ df_new_bed = df_new_bed.sort_values(by=["chrom", "start"])
 
 df_new_bed.to_csv(args.out_bed_file, sep="\t", index=None, header=None)
 
+if not os.path.isfile(f"{args.genome_file}.fai"):
+    print("Error:", f"File {args.genome_file}.fai not found.")
+    exit(1)
+
 genome_file_out = open(args.out_genome_file, "w")
 
 #Integration
 genome_file = open(args.genome_file, "r")
+genome_file_fai = open(f"{args.genome_file}.fai", "r")
 
 line = genome_file.readline()
+line_fai = genome_file_fai.readline()
 while line :
-    if line[0] ==   ">" :
-
-        chrom_g      = line[1:].strip()
+    if line[0] == ">" :
+        chrom_g      = line_fai.strip().split("\t")[0]
         sequence     = genome_file.readline()
         df_tmp_chrom = df_new_bed[df_new_bed["chrom"] == chrom_g]
         for i, v in enumerate(df_tmp_chrom.values):
@@ -83,7 +88,7 @@ while line :
             end   = df_tmp_chrom["end"].values[i]
             name  = df_tmp_chrom["name"].values[i]
             ID    = name.split(":")[-1]
-            out_line = find_seq_in_fa(":"+ID+":[0-9]*:[IP]", args.TE_seq_file, "-A 1")
+            out_line = find_seq_in_fa(f":{ID}:[0-9]*:[IP]", args.TE_seq_file, "-A 1")
             #ET      = str(out_line[-2]).strip().replace("N", "A")
             ET       = str(out_line[-2]).strip()
             if end != start + len(ET):
@@ -97,6 +102,7 @@ while line :
         genome_file_out.write(sequence.strip() + "\n")
 
     line = genome_file.readline()
+    line_fai = genome_file_fai.readline()
 
 
 genome_file.close()
