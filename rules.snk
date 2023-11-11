@@ -564,8 +564,9 @@ rule REPORT :
             mkdir -p {params.work_directory}/js
 
             echo "  BUILD chroms for scatter FREQUENCY js ..."
-            grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | awk 'BEGIN{{print "var chroms = {{"}} {{print "   \\""$1"\\" : "$2","}} END{{print "}}"}}'  > {params.work_directory}/js/chroms.js || fail_msg "ERROR : NO CHROM IN REPORT\\n"
-            grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | awk 'BEGIN{{print "const all_data = {{"}} {{print "   \\""$1"\\" : data"$1","}} END{{print "}}"}}'  > {params.work_directory}/js/data_ALL_FREQ_CHROM.js || fail_msg "ERROR : NO TE FOR FREQUENCY IN REPORT\\n"
+            cut -f 1 {params.work_directory}/TE_INFOS.bed | sort -u > {params.work_directory}/tmp_chrom_with_TE.txt
+            grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt | awk 'BEGIN{{print "var chroms = {{"}} {{print "   \\""$1"\\" : "$2","}} END{{print "}}"}}'  > {params.work_directory}/js/chroms.js || fail_msg "ERROR : NO CHROM IN REPORT\\n"
+            grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt | awk 'BEGIN{{print "const all_data = {{"}} {{print "   \\""$1"\\" : data"$1","}} END{{print "}}"}}'   > {params.work_directory}/js/data_ALL_FREQ_CHROM.js || fail_msg "ERROR : NO TE FOR FREQUENCY IN REPORT\\n"
             path_fai=`realpath {input.genome}.fai`;
 
             echo "  BUILD group for scatter FREQUENCY js ..."
@@ -1723,7 +1724,19 @@ rule TE_TOWARD_GENOME :
                 echo "ERROR : CONVERT BED SEQUENCE_INDEL.bed to SEQUENCE_INDEL_as_TE.bed ✘" >> {log}.err;
         
 
+        echo "CHECK POSITION..."
+        NB_POS_BAD=`awk '$3<=$2' {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_TE.bed | wc -l`
+        if [ $NB_POS_BAD -eq 0 ]; then
+            echo "   CHECK POSITION  ✔";
+        else
+            echo "   ERROR : BAD POSITION FOUND ERROR ✘";
+        fi;
+
+
         echo "INTEGRATE TE DB_ID TO GENOME..."
+
+        SIZE_TO_ADD=`awk '/^[^>]/ {{size+=length($0)}} END{{print size}}' {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta`;
+        echo "   SIZE TO ADD : $SIZE_TO_ADD";
 
         ## INTEGRATE TE TO GENOME
         python3 ${{path_to_pipline}}/lib/python/vr_to_genome.py \
@@ -1732,6 +1745,17 @@ rule TE_TOWARD_GENOME :
             {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_TE.bed \
             {params.work_directory}/tmp_genome_format.fasta \
             {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta 2>> {log}.err
+
+
+        SIZE_GENOME_BEFOR=`awk '{{s+=$2}} END{{print s}}' {params.work_directory}/tmp_genome_format.fasta.fai`;
+        samtools faidx {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/PSEUDO_GENOME_TE_DB_ID.fasta;
+        SIZE_GENOME_AFTER=`awk '{{s+=$2}} END{{print s}}' {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/PSEUDO_GENOME_TE_DB_ID.fasta.fai`;
+
+        echo "   SIZE GENOME BEFORE INTEGRATION : $SIZE_GENOME_BEFOR";
+        echo "   SIZE GENOME AFTER INTEGRATION  : $SIZE_GENOME_AFTER";
+        echo "   SIZE ADDED : $((SIZE_GENOME_AFTER-SIZE_GENOME_BEFOR))";
+
+
 
         ( test -s {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE_PSEUDO.bed && \
             cat {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE_PSEUDO.bed | tr ":" "|" > {params.work_directory}/POSITION_TE_OUTSIDER_IN_PSEUDO_GENOME.bed ) || \
@@ -1813,6 +1837,8 @@ rule TE_TOWARD_GENOME :
         done < {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE_READS.bed | tr " " "\t" > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_TE_READS.bed
         echo  "INTEGRATE TE IN READS TO GENOME..."
 
+        SIZE_TO_ADD=`awk '/^[^>]/ {{size+=length($0)}} END{{print size}}' {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE_READS.fasta`;
+        echo "   SIZE TO ADD : $SIZE_TO_ADD";
 
         ## INTEGRATE TE TO GENOME
         python3 ${{path_to_pipline}}/lib/python/vr_to_genome.py \
@@ -1824,6 +1850,12 @@ rule TE_TOWARD_GENOME :
 
         cat {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE_NEO.bed | tr ":" "|" > {params.work_directory}/POSITION_TE_OUTSIDER_IN_NEO_GENOME.bed
 
+        samtools faidx {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/NEO_GENOME.fasta;
+        SIZE_GENOME_AFTER=`awk '{{s+=$2}} END{{print s}}' {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/NEO_GENOME.fasta.fai`;
+
+        echo "   SIZE GENOME BEFORE INTEGRATION : $SIZE_GENOME_BEFOR";
+        echo "   SIZE GENOME AFTER INTEGRATION  : $SIZE_GENOME_AFTER";
+        echo "   SIZE ADDED : $((SIZE_GENOME_AFTER-SIZE_GENOME_BEFOR))";
 
         ## CHECKING TE INTEGRATED ##
         echo  "CHECKING TE INTEGRATED..."
