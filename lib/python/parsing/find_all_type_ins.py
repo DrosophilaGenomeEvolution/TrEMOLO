@@ -22,7 +22,7 @@ parser.add_argument("-w", "--window", dest='window', type=int, default=50,
                     help="Maximum distance to group SV together.")
 parser.add_argument("-m", "--max_distance", dest='max_distance', type=int, default=30,
                     help="Maximum distance to group SV together.")
-parser.add_argument("-s", "--min-size", dest="min_size", type=int, default=200,
+parser.add_argument("-s", "--min-size", dest="min_size", type=int, default=30,
                     help="minimum size sequence.")
 
 args = parser.parse_args()
