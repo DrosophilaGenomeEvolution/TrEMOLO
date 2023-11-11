@@ -70,7 +70,7 @@ if "SAMPLE" in config["DATA"] :
 
 
 
-print("CHECKING OF DB TE...\n\n")
+print("CHECKING OF DB TE....\n\n")
 
 file  = open(config["DATA"]["TE_DB"], "r")
 lines = file.readlines()
@@ -106,6 +106,12 @@ else :
     os.system("test -s `realpath " + config["DATA"]["TE_DB"] + "` && ln -s  `realpath "  + config["DATA"]["TE_DB"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"]))
 
 file.close()
+
+#GET PATH TO PSEUDO DB OR TE DB
+if creat_pseudo_db :
+    config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"])
+else :
+    config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"])
 
 
 # Get path snakefile

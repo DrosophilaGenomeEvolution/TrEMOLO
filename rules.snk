@@ -57,12 +57,11 @@ rule RENAME_PSEUDO_TE:
 
         ## CHANGE DIRECTORY
         old_path=`pwd`
+        _realpath=`realpath {params.work_directory}`
         basename=`basename {params.work_directory}`
-
-        awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' {params.work_directory}/TE_INFOS.bed | sort -u > {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt
-
         cd {params.work_directory}/REPORT/mini_report/web/js/
 
+        awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' ${{_realpath}}/TE_INFOS.bed | sort -u > ${{_realpath}}/tmp_LIST_TE_TO_CHANGE.txt
 
         ## RENAME TE IN REPORT JS
         echo "RENAME TE IN REPORT JS...";
@@ -70,7 +69,7 @@ rule RENAME_PSEUDO_TE:
         for file in `ls | grep ".js$" | grep -e  "SIDER" | grep -v "TRUE_NAME_" | grep -v "TE_INSIDER_DEL"`; do
             echo "FILE : $file";
             #rm -f TRUE_NAME_$file && cat $file > TRUE_NAME_$file;
-            for ID in `cat ${{old_path}}/${{basename}}/tmp_LIST_TE_TO_CHANGE.txt`; do 
+            for ID in `cat ${{_realpath}}/tmp_LIST_TE_TO_CHANGE.txt`; do 
                 new=`grep -w $ID ../../../../LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
                 #echo "ID: $ID; new : $new;"
                 #sed -i "s/$ID\\"/$new\\"/g" TRUE_NAME_$file;
@@ -86,7 +85,7 @@ rule RENAME_PSEUDO_TE:
             #     sed -i "s/${{file}}/TRUE_NAME_${{file}}/g" ${{template_file}};
             # fi;
         done;
-        #rm -f ${{old_path}}/${{basename}}/tmp_LIST_TE_TO_CHANGE.txt
+        #rm -f ${{_realpath}}/tmp_LIST_TE_TO_CHANGE.txt
 
         #rm -f TRUE_NAME_COUNT_TE_INSIDER_DEL.js && cat COUNT_TE_INSIDER_DEL.js > TRUE_NAME_COUNT_TE_INSIDER_DEL.js;
         for ID in `grep -w "TrEMOLOTE[0-9]*" COUNT_TE_INSIDER_DEL.js -o | sort -u`; do 
@@ -239,7 +238,7 @@ rule REPORT :
 
     output:
         #config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/TE_INFOS.bed",
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/REPORT/report.html" if config["CHOICE"]["PIPELINE"]["REPORT"] == "True" else [],
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/REPORT/report.html",
         #output_link=[],
         
     params:
@@ -1157,7 +1156,7 @@ rule REPORT :
 
         rm -f COMBINE_TE.csv
         rm -f {params.work_directory}/test.csv
-        rm -f {params.work_directory}/params.log;
+        #rm -f {params.work_directory}/params.log;
         rm -fr {params.work_directory}/tmp* ;
         #rm -fr {params.work_directory}/INPUT
         """
@@ -1643,6 +1642,9 @@ rule TE_TOWARD_GENOME :
         [[ "`tail -n 1 {params.work_directory}/.tmp_check_ft_genome.txt`" != "True" ]] && fail_msg "ERROR : BAD FORMAT FASTA GENOME FOR INTEGRATION TE ✘\\n" && exit 6
 
         echo "CHECK FORMAT GENOME ✔" | tee -a {log}.out;
+
+        #create index genome
+        samtools faidx {params.work_directory}/tmp_genome_format.fasta
 
         ( test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed && \
             cut -f 4 {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed | cut -d "|" -f 2 > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/ID.txt && \
@@ -4223,7 +4225,6 @@ rule MERGE_TE :
 
         #Get ID Tr/sniffles intersect
         echo "MERGE Tr and svim/sniffles..." | tee -a {log}.out;
-
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed && \
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed && \
             bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed -w 100 | \
