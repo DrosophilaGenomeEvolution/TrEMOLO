@@ -1671,9 +1671,9 @@ rule TE_TOWARD_GENOME :
                         ID_CSV=`( grep -w "$ID_TE" {input.all_te} || grep -w "$ID_TE" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv ) | cut -f 2`
 
                         if [[ $strand = "+" ]]; then
-                            seq_TE_cannonical=`grep -w "$TE" {input.fasta_TE} -A 1 | grep -v ">" | tr "atgcn" "ATGCN"`
+                            seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | tr "atgcn" "ATGCN"`
                         else
-                            seq_TE_cannonical=`grep -w "$TE" {input.fasta_TE} -A 1 | grep -v ">" | tr "ATGCatgcn" "TACGTACGN" | rev`
+                            seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | tr "ATGCatgcn" "TACGTACGN" | rev`
                         fi
                         
                         #echo "ID_TE:$ID_TE; TE:$TE; ID_CSV:$ID_CSV";
