@@ -199,12 +199,9 @@ rule TrEMOLO_BUILD :
         CLIPPED_READS       = config["CHOICE"]["OUTSIDER_VARIANT"]["CLIPPED_READS"],
         choice_insider_sv   = config["CHOICE"]["PIPELINE"]["INSIDER_VARIANT"],
         DETECT_ALL_TE       = config["CHOICE"]["INSIDER_VARIANT"]["DETECT_ALL_TE"],
-        MODE_PARALLELING    = config["CHOICE"]["PIPELINE"]["MODE_PARALLELING"],
 
         INTEGRATE_TE_TO_GENOME = config["CHOICE"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"],
         OPTIMIZE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["OPTIMIZE_FREQUENCE"],
-
-        REPORT                 = config["CHOICE"]["PIPELINE"]["REPORT"],
 
         #COLOR 
         cmess          = bcolors.CYAN,
@@ -233,10 +230,7 @@ rule TrEMOLO_BUILD :
         node ${{path_to_pipline}}/lib/nodejs/load.js &
         echo $! > {params.work_directory}/.pid
 
-        PARALLELING=""
-        if [ {params.MODE_PARALLELING} = "True" ]; then
-            PARALLELING="_MULTI_THREADS"
-        fi;
+        PARALLELING="_MULTI_THREADS"
 
         mkdir -p {params.work_directory}/1-UTILS
 
@@ -264,14 +258,14 @@ rule TrEMOLO_BUILD :
             if  [ {params.DETECT_ALL_TE} == "True" ] ; then
                 if [ {params.choice_outsider_sv} != "True" ] ; then
                     sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
-                    printf "%s" "> TE_ALL_IN_ASSEMBLY > TSD_MULTI_THREADS " >> {params.work_directory}/INSIDER/instructions.txt
+                    printf "%s" "> TSD_INSIDER > TE_ALL_IN_ASSEMBLY " >> {params.work_directory}/INSIDER/instructions.txt
                 else
-                    printf "%s" "> TE_ALL_IN_ASSEMBLY:NO " >> {params.work_directory}/INSIDER/instructions.txt
-                fi;
-            elif [ {params.choice_outsider_sv} != "True" ]; then
-                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
-                printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/INSIDER/instructions.txt
+                    printf "%s" "> TSD_INSIDER > TE_ALL_IN_ASSEMBLY:NO " >> {params.work_directory}/INSIDER/instructions.txt
+                fi;    
             fi;
+
+            sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
+            printf "%s" "> TSD_INSIDER " >> {params.work_directory}/INSIDER/instructions.txt
 
             if [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
@@ -371,36 +365,29 @@ rule TrEMOLO_BUILD :
                 printf "%s" "> MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
             fi
             
-            ## Exemple les instruction par default obligatoir
+            ## MUST BE LOADED
             printf "%s" "> GET_SEQ_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
-            printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
+            printf "%s" "> TSD_OUTSIDER " >> {params.work_directory}/OUTSIDER/instructions.txt
 
             if [ {params.choice_insider_sv} = "True" ] && [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                 printf "%s" "> TE_TOWARD_GENOME " >> {params.work_directory}/OUTSIDER/instructions.txt
                 printf "%s" "> FIND_SV_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
                 printf "%s" "> FIND_TE_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
-                #printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
             else
                 if [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                     printf "%s" "> TE_TOWARD_GENOME " >> {params.work_directory}/OUTSIDER/instructions.txt
-                    # printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
-                #else
-                    #:NI = NO INPUT
-                    # printf "%s" "> TSD${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
             fi;
 
-            ###if [ {params.REPORT} ]; then
-                printf "%s" "> REPORT " >> {params.work_directory}/OUTSIDER/instructions.txt
+            printf "%s" "> REPORT " >> {params.work_directory}/OUTSIDER/instructions.txt
 
-                #RENAME IF PSEUDO DB
-                if test -s {params.work_directory}/LIST_HEADER_DB_TE.csv; then
-                    printf "%s" "> RENAME_PSEUDO_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
-                fi;
-            ###fi
+            #RENAME IF PSEUDO DB
+            if test -s {params.work_directory}/LIST_HEADER_DB_TE.csv; then
+                printf "%s" "> RENAME_PSEUDO_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
+            fi;
             
 
-            ## Creation du snake file en fonction des instructions
+            ## Creation du snake file en fonction des instruction
             python3 ${{path_to_pipline}}/lib/python/build_rules.py \
                 {params.work_directory}/OUTSIDER/instructions.txt \
                 ${{path_to_pipline}}/rules.snk \

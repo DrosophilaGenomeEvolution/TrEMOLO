@@ -17,7 +17,11 @@ parser.add_argument("--output-ins", dest="output_ins", type=str, default="INS.tx
                     help="output ins")
 parser.add_argument("--output-hard", dest="output_hard", type=str, default="HARD.txt",
                     help="output hard")
+parser.add_argument("--output-seq-tsd", dest="output_seq_tsd", type=argparse.FileType('w'), default=None,
+                    help="output seq for found TSD")
 
+parser.add_argument("-f", "--flank-size", dest="flank_size", type=int, default=30,
+                    help="flanking size sequence for get TSD.")
 parser.add_argument("-w", "--window", dest='window', type=int, default=50,
                     help="Maximum distance to group SV together.")
 parser.add_argument("-m", "--max_distance", dest='max_distance', type=int, default=30,
@@ -28,6 +32,9 @@ parser.add_argument("-s", "--min-size", dest="min_size", type=int, default=30,
 args = parser.parse_args()
 
 name_bamfile = args.bam_file
+
+output_seq_tsd = args.output_seq_tsd
+flank_size = args.flank_size
 
 min_size     = args.min_size
 max_distance = args.max_distance
@@ -80,8 +87,23 @@ for e, read in enumerate(bamfile.fetch()):
             if tupl[0] == 1 and tupl[1] >= min_size :
                 
                 if seq :
-                    seq_vr = seq[count_read-tupl[1]:count_read]
-                    output_ins.write("\t".join([str(REF), str(reference_start + count_ref), str(reference_start + count_ref + 1), str(read_name), str(seq_vr)]) + "\n")
+                    pos_min = max((count_read-tupl[1])-flank_size, 0)
+                    pos_max = min((count_read+flank_size), len(seq))
+                    seq_te_tsd = seq[count_read-tupl[1]:count_read]
+                    fk_L = seq[pos_min:pos_min+flank_size]
+                    fk_R = seq[pos_max-flank_size:pos_max]
+                    seq_full = seq[pos_min:pos_max]
+                    #seq_vr = seq[count_read-tupl[1]:count_read]
+                    seq_vr = seq_full
+                    output_ins.write("\t".join([str(REF), str(reference_start + count_ref), str(reference_start + count_ref + 1), str(read_name), str(seq_vr), str(count_read), str(count_read_real), str(tupl[1])]) + "\n")
+                    if output_seq_tsd != None:
+                        # pos_min = max((count_read-tupl[1])-flank_size, 0)
+                        # pos_max = min((count_read+flank_size), len(seq))
+                        # seq_te_tsd = seq[count_read-tupl[1]:count_read]
+                        # fk_L = seq[pos_min:pos_min+flank_size]
+                        # fk_R = seq[pos_max-flank_size:pos_max]
+                        # seq_full = seq[pos_min:pos_max]
+                        output_seq_tsd.write("\t".join([str(REF), str(reference_start + count_ref), str(read_name), str(f'{fk_L}|{seq_vr}|{fk_R}'), str(seq_full), str(count_read), str(count_read_real), str(tupl[1])]) + "\n")
 
             #if we have found HARD to a good position
             if tupl[0] == 5 and tupl[1] >= min_size :
