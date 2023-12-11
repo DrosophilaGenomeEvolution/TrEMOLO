@@ -2522,14 +2522,14 @@ rule TSD_MULTI_THREADS :
         makeblastdb -in {input.fasta_TE} -dbtype nucl
 
         ###RUN PARLELIZE
-        if [ {params.choice_outsider_sv} = "True" ]; then
+        count_task_running=0;
+        if [ {params.choice_outsider_sv} = "True" ] && test -d {params.work_directory}/OUTSIDER/ET_FIND_FA; then
             
-
             NB_FILE=`ls {params.work_directory}/OUTSIDER/ET_FIND_FA | wc -l` ;
             i=0 ;
 
             #PARLELIZE
-            count_task_running=0;
+            
             pids=();
             for TE_found_fa in `ls {params.work_directory}/OUTSIDER/ET_FIND_FA/`; do
                 
@@ -2553,20 +2553,21 @@ rule TSD_MULTI_THREADS :
                 i=$(($i + 1)) ;
                 printf "%s\\n" "{params.cmess} [SNK]--[`date`] [TSD:snk] : $i/$NB_FILE {params.cend}"
             done;
+
+            #WAIT LAST TASKS
+            if [ $count_task_running -lt {params.threads} ]; then
+                pids[${{count_task_running}}]=$!
+                task=1;
+                for pid in ${{pids[*]}}; do
+                    wait $pid || echo > /dev/null;
+                    #echo "PID : $pid; TASK : $i; N : $c; done !"
+                    task=$(($task+1));
+                done;
+            fi;
         fi;
 
-        #WAIT LAST TASKS
-        if [ $count_task_running -lt {params.threads} ]; then
-            pids[${{count_task_running}}]=$!
-            task=1;
-            for pid in ${{pids[*]}}; do
-                wait $pid || echo > /dev/null;
-                #echo "PID : $pid; TASK : $i; N : $c; done !"
-                task=$(($task+1));
-            done;
-        fi;
 
-
+        echo "4"
         #fun parallel
         find_TSD_INSIDER () {{
             i=$1;
