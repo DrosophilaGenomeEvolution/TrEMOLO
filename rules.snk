@@ -462,6 +462,7 @@ rule REPORT :
 
             test -s {params.work_directory}/tmp.txt || touch {params.work_directory}/tmp.txt
 
+            #ici--
             #TSD
             #grep "OK:$ID]" {params.work_directory}/tmp.txt || echo "NONE";
             SIZE_TE="";
