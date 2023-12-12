@@ -393,19 +393,21 @@ rule REPORT :
 
         printf "\b%.0s" `seq 1 10`
 
+        echo "NEW-1"
+
         awk '
             BEGIN{{
                 OFS="\t"; 
                 print "x", "y", "condition";
             }} 
             
-            $6!="NONE" {{
+            NR>1 && $6!="NONE" {{
                 split($4, sp, "|"); 
                 FAMILY[sp[1]]=1; 
                 TSDOK[sp[1]]+=1;
             }} 
             
-            $6=="NONE" {{
+            NR>1 && $6=="NONE" {{
                 split($4, sp, "|"); 
                 FAMILY[sp[1]]; 
                 TSDKO[sp[1]]+=1;
@@ -418,11 +420,11 @@ rule REPORT :
                 }}
             }}' {params.work_directory}/TE_INFOS.bed > {params.work_directory}/VALUES_TSD_GROUP_OUTSIDER.csv
         
-
+        echo "..."
         #BUILD TE_INFO INSIDER
         #INSIDER
         test -s {params.work_directory}/POSITION_TE_INSIDER.bed && \
-        echo "BUILD TE_INFO INSIDER..."
+            echo "BUILD TE_INFO INSIDER..."
 
         num_TE_INSIDER=0;
         test -s {params.work_directory}/POSITION_TE_INSIDER.bed && while read line;
@@ -510,56 +512,60 @@ rule REPORT :
 
         echo
 
-        grep "_INSIDER" {params.work_directory}/TE_INFOS.bed | awk '
-            BEGIN{{
-                OFS="\t"; 
-                print "x", "y", "condition";
-            }} 
-            
-            $6!="NONE" {{
-                split($4, sp, "|"); 
-                FAMILY[sp[1]]=1; 
-                TSDOK[sp[1]]+=1;
-            }} 
-            
-            $6=="NONE" {{
-                split($4, sp, "|"); 
-                FAMILY[sp[1]]; 
-                TSDKO[sp[1]]+=1;
-            }}
-            
-            END{{
-                for(key in FAMILY){{
-                    print key, (TSDOK[key]!="" ? TSDOK[key] : 0), "TSD OK"; 
-                    print key, (TSDKO[key]!="" ? TSDKO[key] : 0 ), "TSD KO"; 
+        ( test -s {params.work_directory}/POSITION_TE_INSIDER.bed && test -s {params.work_directory}/TE_INFOS.bed && \
+            grep "_INSIDER" {params.work_directory}/TE_INFOS.bed | awk '
+                BEGIN{{
+                    OFS="\t"; 
+                    print "x", "y", "condition";
+                    print "test" > teste.txt
+                }} 
+                
+                $6!="NONE" {{
+                    split($4, sp, "|"); 
+                    FAMILY[sp[1]]=1; 
+                    TSDOK[sp[1]]+=1;
+                }} 
+                
+                $6=="NONE" {{
+                    split($4, sp, "|"); 
+                    FAMILY[sp[1]]; 
+                    TSDKO[sp[1]]+=1;
                 }}
-            }}' > {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv
+                
+                END{{
+                    for(key in FAMILY){{
+                        print key, (TSDOK[key]!="" ? TSDOK[key] : 0), "TSD OK"; 
+                        print key, (TSDKO[key]!="" ? TSDKO[key] : 0 ), "TSD KO"; 
+                    }}
+                }}' > {params.work_directory}/VALUES_TSD_INSIDER_GROUP.csv ) || \
+                ( test -s {params.work_directory}/POSITION_TE_INSIDER.bed && warn_msg "Warning : NO INSIDER IN REPORT\\n" ) || echo "...";
 
-
-        awk '
-            BEGIN{{
-                OFS="\t"; 
-                print "x", "y", "condition";
-            }} 
-            
-            $6!="NONE" {{
-                split($4, sp, "|"); 
-                FAMILY[sp[1]]=1; 
-                TSDOK[sp[1]]+=1;
-            }} 
-            
-            $6=="NONE" {{
-                split($4, sp, "|"); 
-                FAMILY[sp[1]]; 
-                TSDKO[sp[1]]+=1;
-            }}
-            
-            END{{
-                for(key in FAMILY){{
-                    print key, (TSDOK[key]!="" ? TSDOK[key] : 0), "TSD OK"; 
-                    print key, (TSDKO[key]!="" ? TSDKO[key] : 0 ), "TSD KO"; 
+        test -s {params.work_directory}/TE_INFOS.bed &&
+            awk '
+                BEGIN{{
+                    OFS="\t"; 
+                    print "x", "y", "condition";
+                }} 
+                
+                NR>1 && $6!="NONE" {{
+                    split($4, sp, "|"); 
+                    FAMILY[sp[1]]=1; 
+                    TSDOK[sp[1]]+=1;
+                }} 
+                
+                NR>1 && $6=="NONE" {{
+                    split($4, sp, "|"); 
+                    FAMILY[sp[1]]; 
+                    TSDKO[sp[1]]+=1;
                 }}
-            }}' {params.work_directory}/TE_INFOS.bed > {params.work_directory}/VALUES_TSD_ALL_GROUP.csv
+                
+                END{{
+                    for(key in FAMILY){{
+                        print key, (TSDOK[key]!="" ? TSDOK[key] : 0), "TSD OK"; 
+                        print key, (TSDKO[key]!="" ? TSDKO[key] : 0 ), "TSD KO"; 
+                    }}
+                }}' {params.work_directory}/TE_INFOS.bed > {params.work_directory}/VALUES_TSD_ALL_GROUP.csv || \
+                    warn_msg "WARN : NO TE DETECTED..."
 
         ######------------------------------
         #BUILD FILE to report.html
@@ -1972,12 +1978,14 @@ rule TSD_OUTSIDER :
 
         mkdir -p {params.work_directory}/OUTSIDER/TSD;
 
+        echo "GET TSD IN READS..."
         python3 ${{path_to_pipline}}/lib/python/TSD/getTSDreads.py \
             {params.work_directory}/OUTSIDER/FK/ALL_FK_REPORT_FT.bed \
             {params.threads} \
                 > {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv 2>> {log}.err | tee -a {log}.out \
                 || warn_msg "WARNING : FAIL GET TSD OUTSIDER ✘\\n" | tee -a {log}.err ; 
         
+        echo "TSD OUTSIDER DONE !";
 
         """
 
@@ -2125,8 +2133,8 @@ rule GET_SEQ_TE :
 
                     ##SVI GENOME
                     if(founded==1){{
-                        print infos[1], max(0, infos[3]-sizeFlank), infos[3], $2, $1":FKL" >> dir"/../FK/GENOME/"prefix"_SVI_"$1".bed"
-                        print infos[1], infos[3], min(infos[3]+sizeFlank, dic[infos[1]]), $2, $1":FKR" >> dir"/../FK/GENOME/"prefix"_SVI_"$1".bed"
+                        print infos[1], max(0, infos[3]-sizeFlank-1), infos[3]-1, $2, $1":FKL" >> dir"/../FK/GENOME/"prefix"_SVI_"$1".bed"
+                        print infos[1], infos[3]-1, min(infos[3]+sizeFlank-1, dic[infos[1]]), $2, $1":FKR" >> dir"/../FK/GENOME/"prefix"_SVI_"$1".bed"
                     }}
 
                 }}' {params.work_directory}/OUTSIDER/SIZE_SEQ.tsv {params.work_directory}/tmp_TE_all.csv || \
@@ -2134,6 +2142,8 @@ rule GET_SEQ_TE :
 
         ##TrEMOLO INS and sniffles/svim MERGE
         cat {input.snif_seqs} {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.fasta > {params.work_directory}/tmp_SEQ_TE_ALL.fasta
+
+        cp {params.work_directory}/tmp_TE_all.csv {params.work_directory}/Keep_TE_all.csv
 
         echo "GET SEQ TE..."
         for i in `ls {params.work_directory}/OUTSIDER/ET_FIND_FA | grep ".bed$"`; 
@@ -2540,7 +2550,9 @@ rule GET_READS_TE_MULTI_THREADS :
                 num=`echo $i | cut -d ":" -f 2`; 
                 name_file=`ls {params.work_directory}/OUTSIDER/ID_READS_TE/ | grep -w "$ID"`; 
 
-                awk -v num="$num" -v ID="$ID" 'NR == num {{print "ID="ID";RD="$0}}' {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file >> {params.work_directory}/OUTSIDER/ID_BEST_READ_TE.txt;
+                ( test -s {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file && \
+                    awk -v num="$num" -v ID="$ID" 'NR == num {{print "ID="ID";RD="$0}}' {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file \
+                        >> {params.work_directory}/OUTSIDER/ID_BEST_READ_TE.txt ) || echo "WARNING ID:$ID";
             done && \
                 echo "GET BEST ID READ TrEMOLO ✔" | tee -a {log}.out ) || warn_msg "WARNING : GET BEST ID READ TrEMOLO ✘\\n" | tee -a {log}.err;
 
@@ -2549,7 +2561,7 @@ rule GET_READS_TE_MULTI_THREADS :
         ## REMOVE
         rm -f {params.work_directory}/ID_RD_SEQ.txt {params.work_directory}/ID_TE_SV_REPORT.txt
         rm -f `find {params.work_directory} -name "*.fai"`
-        rm -fr {params.work_directory}/OUTSIDER/ID_READS_TE
+        #rm -fr {params.work_directory}/OUTSIDER/ID_READS_TE
         """
 
 
@@ -4274,7 +4286,7 @@ rule TSD_INSIDER :
                 > {params.work_directory}/INSIDER/TSD/TSD_TE.tsv 2>> {log}.err | tee -a {log}.out \
                 || warn_msg "WARNING : FAIL GET TSD OUTSIDER ✘\\n" | tee -a {log}.err ; 
 
-
+        echo "TSD INSIDER DONE !"
         """
 
 #END TSD_INSIDER
