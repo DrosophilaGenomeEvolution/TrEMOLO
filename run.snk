@@ -171,7 +171,7 @@ os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 onerror:
     print("AN ERROR OCCURRED !!")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` >&2 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
 
 onsuccess:
     shell("rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\"` ")
@@ -348,12 +348,12 @@ rule TrEMOLO_BUILD :
                 printf "%s" "> MERGE_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
 
                 if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
-                    printf "> FREQ_INSIDER > FREQUENCEv2 " >> {params.work_directory}/OUTSIDER/instructions.txt
+                    printf "> FREQ_INSIDERv2 > FREQUENCEv2 " >> {params.work_directory}/OUTSIDER/instructions.txt
                 else
                     printf "> FREQUENCEv2:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
                 
-                printf "> GET_READS_TE${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
+                #printf "> GET_READS_TE${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
             else
                 printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE " > {params.work_directory}/OUTSIDER/instructions.txt
 
@@ -362,7 +362,8 @@ rule TrEMOLO_BUILD :
                     printf "%s" "> SOFT_TE > HARD_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
                 fi;
 
-                printf "%s" "> MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
+                #printf "%s" "> MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "> MERGE_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
             fi
             
             ## MUST BE LOADED
