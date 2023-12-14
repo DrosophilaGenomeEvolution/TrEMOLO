@@ -370,9 +370,7 @@ rule REPORT :
                 #GET ID_TrEMOLO
                 ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id`
                 TYPE=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv ) | cut -f 2  | cut -d ":" -f 2 | sed 's/[<>]//g'`
-                file_tmp=`ls {params.work_directory}/OUTSIDER/READ_FASTQ_TE/ | awk -v ID="$ID" -F ":" '$2==ID'`
-                test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/$file_tmp || warn_msg "ID=$ID : fastq file not found";
-                RS=`(test -f {params.work_directory}/OUTSIDER/READ_FASTQ_TE/$file_tmp && grep "^[@]" {params.work_directory}/OUTSIDER/READ_FASTQ_TE/$file_tmp | ${{path_to_pipline}}/lib/C++/bin/chain_to_id) || echo "ERROR_RS_$ID" >{log}.err`
+                RS=`(test -s {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv && grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv | cut -f 4 | ${{path_to_pipline}}/lib/C++/bin/chain_to_id) || echo "ERROR_RS_$ID" >{log}.err`
                 ! test -n "$RS" && RS=0;
                 ID_TrEMOLO="TE_ID_OUTSIDER.$ID_POS.$TYPE.$RS";
             else
@@ -392,8 +390,6 @@ rule REPORT :
         rm -f {params.work_directory}/ID_OUTSIDER_INTERSECT_TO_DEL.txt
 
         printf "\b%.0s" `seq 1 10`
-
-        echo "NEW-1"
 
         awk '
             BEGIN{{
@@ -460,7 +456,6 @@ rule REPORT :
 
             test -s {params.work_directory}/tmp.txt || touch {params.work_directory}/tmp.txt
 
-            #ici--
             #TSD
             #grep "OK:$ID]" {params.work_directory}/tmp.txt || echo "NONE";
             SIZE_TE="";
@@ -517,7 +512,6 @@ rule REPORT :
                 BEGIN{{
                     OFS="\t"; 
                     print "x", "y", "condition";
-                    print "test" > teste.txt
                 }} 
                 
                 $6!="NONE" {{
@@ -1979,10 +1973,10 @@ rule TSD_OUTSIDER :
         mkdir -p {params.work_directory}/OUTSIDER/TSD;
 
         echo "GET TSD IN READS..."
-        python3 ${{path_to_pipline}}/lib/python/TSD/getTSDreads.py \
+        python3 ${{path_to_pipline}}/lib/python/TSD/getTSDreads.py -t {params.threads} \
             {params.work_directory}/OUTSIDER/FK/ALL_FK_REPORT_FT.bed \
-            {params.threads} \
-                > {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv 2>> {log}.err | tee -a {log}.out \
+            {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv \
+                1>> {log}.out 2>> {log}.err | tee -a {log}.out \
                 || warn_msg "WARNING : FAIL GET TSD OUTSIDER ✘\\n" | tee -a {log}.err ; 
         
 
@@ -1995,11 +1989,10 @@ rule TSD_OUTSIDER :
 #Get just sequence potentiel candidate of TE
 rule GET_SEQ_TE :
     input:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/ID_BEST_READ_TE.txt",
         genome            = config["DATA"]["GENOME"],
         all_te            = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
         snif_seqs         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.fasta",
-
+        depth_te          = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv",
     output:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FK/ALL_FK_REPORT_FT.bed",
         directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/ET_FIND_FA/"),
@@ -2071,7 +2064,7 @@ rule GET_SEQ_TE :
         echo "sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore" | tr -d " " | tr "," "\t" > {params.work_directory}/test.csv
         
         ( test -s {params.work_directory}/.tmp_combine.csv && \
-            awk 'NR>1 && OFS="\t"{{print $1, $2, $3, $4, $5, "mismatch", "gapopen", $6, $7, $8, $9, "evalue", "bitscore"}}' {params.work_directory}/.tmp_combine.csv >> {params.work_directory}/tmp.csv ) || \
+            awk 'NR>1 && OFS="\t"{{print $1, $2, $3, $4, $5, "mismatch", "gapopen", $6, $7, $8, $9, "evalue", "bitscore"}}' {params.work_directory}/.tmp_combine.csv > {params.work_directory}/tmp.csv ) || \
                 warn_msg "NO TE COMBINE FOUND HEAD...\\n" | tee -a {log}.err
 
         rm -f {params.work_directory}/tmp_TE_all.csv;
@@ -2200,7 +2193,7 @@ rule GET_SEQ_TE :
                 #FK_L
                 NR%2==1 {{
                     split($1, sp, ":"); 
-                    ID=sp[8]; 
+                    ID=sp[5]; 
                     TE=sp[1]; 
                     seqL=$2; 
                     infos=""; 
@@ -2221,13 +2214,15 @@ rule GET_SEQ_TE :
                 BEGIN{{OFS="\t"}}
                 
                 NR == FNR {{ 
-                    dic[FNR][1]=$4;
-                    dic[FNR][2]=$5;
+                    dic[$3, 1]=$4;
+                    dic[$3, 2]=$5;
                     next;
                 }}
                 
-                OFS="\t" {{ 
-                    print $0, dic[FNR][1], dic[FNR][2];
+                OFS="\t" {{
+                    if(dic[$3, 1] != "" && dic[$3, 2] != ""){{
+                        print $0, dic[$3, 1], dic[$3, 2];
+                    }}
                 }}
             ' {params.work_directory}/OUTSIDER/FK/ALL_FK_REPORT_FT_GENOME.bed {params.work_directory}/OUTSIDER/FK/ALL_FK_REPORT_FT_READS.bed \
                 > {params.work_directory}/OUTSIDER/FK/ALL_FK_REPORT_FT.bed;
@@ -2851,7 +2846,7 @@ rule FREQUENCEv2 :
 #END FREQUENCEv2
 
 
-rule FREQ_INSIDER:
+rule FREQ_INSIDERv2:
     input:
         merge_TE_bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed",
         TE_INS       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION.csv",
@@ -2941,27 +2936,49 @@ rule FREQ_INSIDER:
 
         echo "CSV to BED ✔" >> {log}.out
 
+        echo "GET DELETION...";
+        test -s {params.work_directory}/OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed && \
+            python3 ${{path_to_pipline}}/lib/python/parsing/find_deletions.py -m 30 \
+                {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam \
+                {params.work_directory}/OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed \
+                    > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEL_NB.bed
+
+        echo "BUILD BED FK...";
+        awk -v size="30" 'OFS="\t"{{
+            print $1, $2-size, $2-size+1; 
+            print $1, $3+size-1, $3+size;
+        }}' {params.work_directory}/OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed \
+            > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.bed
+
+        echo "GET FLANKING DEPTH...";
+        samtools depth {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam \
+            -b {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.bed | \
+                awk 'OFS="\t" {{print $1":"$2, $3}}' > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt
+
         printf "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\tread_support_percent\tTE\tinfo_TE\\n" > {output.DEPTH}
         
         number_lines=`cat {params.work_directory}/OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed | wc -l`
         i=0;
 
+        echo "GET FREQUENCY...";
         show_step="$i/$number_lines TE"
         number_of_char=`echo "$show_step" | wc -c`
         number_of_char=$(($number_of_char-1));
         printf "\b%.0s" `seq 1 $number_of_char`
         printf "$show_step";
 
+        
         while read line; do
             read -r chrom start end info TE <<< $(echo $line | awk 'OFS="\t"{{split($4, TE, "|"); print $1, $2, $3, $4, TE[1]}}')
 
             size_TE=$(($end-$start))
 
             if test -s {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam; then
-                NB_DEL=`python3 ${{path_to_pipline}}/lib/python/parsing/find_del.py {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam "$chrom:$start-$end" -m 30`
-                
-                depth_fk_left=`samtools depth {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam -r $chrom:$(($start-30))-$(($start-30)) | cut -f 3`;
-                depth_fk_right=`samtools depth {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam -r $chrom:$(($end+30))-$(($end+30)) | cut -f 3`;
+
+                NB_DEL=`grep -w "$info" {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEL_NB.bed | cut -f 5 || echo "0"`;
+
+                depth_fk_left=`grep -w "$chrom:$(($start-30+1))" {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt | cut -f 2 || echo 0`;
+                depth_fk_right=`grep -w "$chrom:$(($end+30))" {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt | cut -f 2 || echo 0`;
 
                 if [ -n "$depth_fk_left" ] && [ -n "$depth_fk_right" ] ; then
 
@@ -3002,7 +3019,7 @@ rule FREQ_INSIDER:
         """
 
 
-#END FREQ_INSIDER
+#END FREQ_INSIDERv2
 
 
 rule MERGE_TE :
@@ -3590,10 +3607,12 @@ rule DETECTION_TE :
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCE VARIANT [^-^] {params.cend}"
         python3 ${{path_to_pipline}}/lib/python/parsing/get_seq_vcf.py {params.GET_SEQ_REPORT_OPTION} -c '{params.CHROM_KEEP}' {input.vcf} {output.snif_seqs} 2>> {log.DETECTION}.err ;
         test -s {output.snif_seqs} || (fail_msg "ERROR NO SEQUENCE SV FOUND" && exit 1)
-        
+        echo "   GET SEQUENCE REPORT ✔"
         version_vcf=`grep fileformat {input.vcf} | cut -d "=" -f 2`
 
+        #TODO: GET RS VIA TrEMOLO INS
         #GET ALL SEQUENCE OF READ SUPPORT FOR SNIFFLES
+        echo "GET ALL SEQUENCE OF READ SUPPORT FOR SNIFFLES..."
         if [ "$version_vcf" = "VCFv4.1" ] || [ "$version_vcf" = "VCFv4.2" ] || [ "$version_vcf" = "VCFv4.3" ]; then
             #echo "SNIFFLES"
             awk 'OFS="\t"{{ if(substr($0, 1, 1) == ">"){{ split($0, sp, ":"); header=""substr(sp[1], 2, 500)"\t"sp[3]"\t"sp[4]"\t"substr($0, 2, 500); }}else{{ header=header"\t"length($0)"\t"$0; print header}} }}' \
@@ -4279,10 +4298,10 @@ rule TSD_INSIDER :
                 ' > {params.work_directory}/INSIDER/TSD/FK_INS_FT.bed;
 
         echo "GET TSD INSIDER..."
-        python3 ${{path_to_pipline}}/lib/python/TSD/getTSDgenome.py \
+        python3 ${{path_to_pipline}}/lib/python/TSD/getTSDgenome.py -t {params.threads} \
             {params.work_directory}/INSIDER/TSD/FK_INS_FT.bed \
-            {params.threads} \
-                > {params.work_directory}/INSIDER/TSD/TSD_TE.tsv 2>> {log}.err | tee -a {log}.out \
+            {params.work_directory}/INSIDER/TSD/TSD_TE.tsv \
+                1>> {log}.out 2>> {log}.err | tee -a {log}.out \
                 || warn_msg "WARNING : FAIL GET TSD OUTSIDER ✘\\n" | tee -a {log}.err ; 
 
         echo "TSD INSIDER DONE !"
