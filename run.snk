@@ -261,11 +261,13 @@ rule TrEMOLO_BUILD :
                     printf "%s" "> TSD_INSIDER > TE_ALL_IN_ASSEMBLY " >> {params.work_directory}/INSIDER/instructions.txt
                 else
                     printf "%s" "> TSD_INSIDER > TE_ALL_IN_ASSEMBLY:NO " >> {params.work_directory}/INSIDER/instructions.txt
-                fi;    
+                fi;
+            else
+                sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
+                printf "%s" "> TSD_INSIDER " >> {params.work_directory}/INSIDER/instructions.txt   
             fi;
 
-            sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt
-            printf "%s" "> TSD_INSIDER " >> {params.work_directory}/INSIDER/instructions.txt
+            
 
             if [ {params.choice_outsider_sv} != "True" ]; then
                 sed -i  's/TE_INSIDER:N/TE_INSIDER/g' {params.work_directory}/INSIDER/instructions.txt

@@ -1216,7 +1216,6 @@ rule FIND_TE_ON_REF :
         delta       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/INSIDER_VR/pm_against_ref.sam.delta",
         bed         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/INSIDER_VR/assemblytics_out.Assemblytics_structural_variants.bed",
         stats       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/INSIDER_VR/assemblytics_out.Assemblytics_assembly_stats.txt",
-        ©
     output:
         output_link=[],
         
@@ -3290,7 +3289,7 @@ rule HARD_TE :
         step=0,
 
     log:
-        hard = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/HARD"
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/HARD"
 
 
     shell:
@@ -3321,24 +3320,36 @@ rule HARD_TE :
 
         PATH=`echo $PATH | sed "s|${{SAMTOOLS_1_9}}|${{SAMTOOLS_1_15_1}}|g"`
         
-        test -s {input.read}.fai || samtools fqidx {input.read} 2>> {log.hard}
-        samtools fqidx {input.read} --fai-idx {input.read}.fai -r {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ID.txt > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fastq
+        FT_GZ=`ls {input.read} | grep ".gz$" >/dev/null && echo 1 || echo 0`;
+
+        if [ $FT_GZ -eq 0 ]; then 
+            test -s {input.read}.fai || samtools fqidx {input.read} 2>> {log}.err
+            samtools fqidx {input.read} --fai-idx {input.read}.fai -r {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ID.txt > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fastq 2>> {log}.err
+        else
+            gunzip -c {input.read} > {params.work_directory}/INPUT/READS_UNCOMPRESS.fastq;
+            samtools fqidx {params.work_directory}/INPUT/READS_UNCOMPRESS.fastq 2>> {log}.err
+            samtools fqidx {params.work_directory}/INPUT/READS_UNCOMPRESS.fastq --fai-idx {params.work_directory}/INPUT/READS_UNCOMPRESS.fastq.fai -r {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ID.txt > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fastq 2>> {log}.err
         
+        fi;
+        echo "2"
         python3 ${{path_to_pipline}}/lib/python/format_files/fastq_to_fasta.py {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fastq {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta
 
+        echo "3"
         grep -n ">" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta | tr -d ">" > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta.fa_trml_idx
 
+        echo "4"
         python3 ${{path_to_pipline}}/lib/python/parsing/get_seq_hard.py -s "$TrEMOLO_SIZE_MAX_TE" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta.fa_trml_idx {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta {input.tr_vcf} > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed
 
+        echo "5"
         ## Warning : WINDOW cluster fixed 100
         ## Warning : tab_head[1] for take start end first detected
         bedtools sort -i {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed | bedtools cluster -d 100 | awk 'BEGIN{{count=0; id="";}}  OFS=":"{{if(id != $8){{ if(NR>1){{ for(i=1; i<count+1; i++){{print tab_head[1], count, "IMPRECISE", (i-1); print tab_seq[i]}} }}; id=$8; count=0; delete tab_head; delete tab_seq;}}else{{tab_head[count+1] = ">"$1":<HARD>:"$2":"$3":HARD."id"."$6; tab_seq[count+1] = $5; count+=1}} }}' > {output.seqs}
 
         ## BLAST TE
         echo "BLAST TE HARD..."
-        makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.hard}.err;
+        makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log}.err;
         test -s {output.seqs} && \
-            blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log.hard}.err;
+            blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log}.err;
 
         ## PARSING
         test -s {output.bln} && \
@@ -3369,6 +3380,7 @@ rule HARD_TE :
         #rm -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ID*;
         #rm -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/SV_SOFT_TE_KEEP*;
         rm -f `find {params.work_directory} -name "*.fai"`
+        rm -f {params.work_directory}/INPUT/READS_UNCOMPRESS.fastq*
         """
 
 
@@ -4121,6 +4133,7 @@ rule mapping :
 
 rule TE_ALL_IN_ASSEMBLY:
     input:
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TSD/TSD_TE.tsv",
         csv      = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION.csv",
         query    = config["DATA"]["GENOME"],
         fasta_TE = config["DATA"]["TE_DB"],
