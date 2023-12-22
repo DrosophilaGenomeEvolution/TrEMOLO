@@ -172,7 +172,7 @@ DATA:
     GENOME:          "/path/to/genome_file.fasta"      #genome (fasta file) [required]
     TE_DB:           "/path/to/database_TE.fasta"      #Database of TE (a fasta file) [required]
     REFERENCE:       "/path/to/reference_file.fasta"   #reference genome (fasta file) only if INSIDER_VARIANT = True [optional]
-    SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq file) only if OUTSIDER_VARIANT = True [optional]
+    SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq[.gz] file) only if OUTSIDER_VARIANT = True [optional]
     #At least, provide either REFERENCE or SAMPLE. Both can be provided
     WORK_DIRECTORY:  "/path/to/directory"         #name of output directory [optional, will be created as 'TrEMOLO_OUTPUT']
 
@@ -183,7 +183,6 @@ CHOICE:
         OUTSIDER_VARIANT: True  # outsiders, TE not in the assembly - population variation
         INSIDER_VARIANT: True   # insiders, TE in the assembly
         REPORT: True            # for getting a report.html file with graphics
-        MODE_PARALLELING: False # test time : with True value 50m53,983s; with False value 138m55,985s; With 8 threads
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, svim
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the INSIDER integrated in
@@ -207,11 +206,10 @@ PARAMS:
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
         TSD:
-            FILE_SIZE_TE_TSD: "/path/to/SIZE_TSD.txt" # File of TSD sizes for the reference elements (format="TE SIZE", one TE per line) [optional]
             SIZE_FLANK: 15  # flanking sequence size for calculation of TSD; put value > 4
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
-            GET_SEQ_REPORT_OPTION: "-m 500" #sequence recovery file in the vcf
+            GET_SEQ_REPORT_OPTION: "-m 30" #sequence recovery file in the vcf
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80 -k 'INS|DEL'" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders

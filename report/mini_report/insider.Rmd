@@ -8,67 +8,69 @@
 
 ### INSERTION
 
-Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/INSERTION.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_INS -->
+Total number of **TE : `r if( file.exists("../../INSIDER/TE_DETECTION/INSERTION.csv") && file.size("../../INSIDER/TE_DETECTION/INSERTION.csv") > 5 ) { data=read.csv("../../INSIDER/TE_DETECTION/INSERTION.csv", sep="\t"); nrow(data); }else{ print(0) }`** <!-- TE_INSIDER_INS -->
 
-Number of family found : **`r data=read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_INS -->
+Number of family found : **`r if( file.exists("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv") && file.size("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv") > 5 ){ data=read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t"); nrow(data); } else { print(0) }`** <!-- TE_INSIDER_INS -->
 
 ```{r COUNT_TE_INSIDER_INSERTION, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
 
-data = read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t")
-#kbl(data)
+if( file.exists("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv") && file.size("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv") > 5 ){
+	data = read.csv("../../INSIDER/TE_DETECTION/INSERTION_COUNT_TE.csv", sep="\t")
+	#kbl(data)
 
-data = tail(data, 50)
+	data = tail(data, 50)
 
-uniqy = unique(data$y)
-uniqx = unique(data$x)
+	uniqy = unique(data$y)
+	uniqx = unique(data$x)
 
-for (y in uniqy){
-	datay = data[data$y %in% y, ]
-	for(x in uniqx){
-		datax = datay[datay$x %in% x, ]
-		if(nrow(datax) != 1){
-			new_line_data <- data.frame(x, y, 0)
-			names(new_line_data) <- c("x", "y", "z")
+	for (y in uniqy){
+		datay = data[data$y %in% y, ]
+		for(x in uniqx){
+			datax = datay[datay$x %in% x, ]
+			if(nrow(datax) != 1){
+				new_line_data <- data.frame(x, y, 0)
+				names(new_line_data) <- c("x", "y", "z")
 
-			data <- rbind(data, new_line_data)
+				data <- rbind(data, new_line_data)
+			}
 		}
 	}
-}
 
 
-max=0
-namx=""
-for(x in uniqx){
-	datax = data[data$x %in% x, ]
-	if(max(datax$z)>max){
-		max  = max(datax$z)
-		namx = x
+	max=0
+	namx=""
+	for(x in uniqx){
+		datax = data[data$x %in% x, ]
+		if(max(datax$z)>max){
+			max  = max(datax$z)
+			namx = x
+		}
 	}
+
+	datax = data[data$x %in% namx, ]
+	datax = datax[order(datax$z), ]
+
+	data$y <- factor(data$y, levels = datax$y)
+
+	nb_diff_TE = length( unique(data$y) )
+
+	xlabel = ''
+	graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+		geom_tile() + 
+		ggtitle("") +
+		coord_fixed() +
+		scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
+		#scale_fill_viridis(option="heat") +
+		theme(
+			panel.background = element_rect(fill = "white", colour = "grey", linewidth=0),
+			axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)
+		) +
+		geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9, inherit.aes = FALSE , linetype="twodash") +
+		labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+		geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
+
+	graph
 }
-
-datax = data[data$x %in% namx, ]
-datax = datax[order(datax$z), ]
-
-data$y <- factor(data$y, levels = datax$y)
-
-nb_diff_TE = length( unique(data$y) )
-
-xlabel = ''
-graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
-    geom_tile() + 
-    ggtitle("") +
-    coord_fixed() +
-    scale_fill_gradientn(colours=brewer.pal(n= 9, name="Reds")) +
-    #scale_fill_viridis(option="heat") +
-    theme(
-		panel.background = element_rect(fill = "white", colour = "grey", linewidth=0),
-		axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)
-	) +
-    geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9, inherit.aes = FALSE , linetype="twodash") +
-    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
-    geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
-
-graph
 
 ```
 
@@ -82,67 +84,69 @@ hover your mouse over the bars or navigate with the slider if the number of diff
 
 ### DELETION
 
-Total number of **TE : `r data=read.csv("../../INSIDER/TE_DETECTION/DELETION.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_DEL -->
+Total number of **TE : `r if( file.exists("../../INSIDER/TE_DETECTION/DELETION.csv") && file.size("../../INSIDER/TE_DETECTION/DELETION.csv") > 5 ) { data=read.csv("../../INSIDER/TE_DETECTION/DELETION.csv", sep="\t"); nrow(data); } else {print(0)}`** <!-- TE_INSIDER_DEL -->
 
-Number of family found : **`r data=read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t"); nrow(data);`** <!-- TE_INSIDER_DEL -->
+Number of family found : **`r if( file.exists("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv") && file.size("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv") > 5 ) {data=read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t"); nrow(data); }else{print(0)}`** <!-- TE_INSIDER_DEL -->
 
 
 ```{r COUNT_TE_INSIDER_DELETION, eval=TRUE, include=TRUE, results=TRUE, out.width="90%"}
 
-data = read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t")
+if( file.exists("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv") && file.size("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv") > 5 ) {
+	data = read.csv("../../INSIDER/TE_DETECTION/DELETION_COUNT_TE.csv", sep="\t")
 
-data = tail(data, 50)
+	data = tail(data, 50)
 
-uniqy = unique(data$y)
-uniqx = unique(data$x)
+	uniqy = unique(data$y)
+	uniqx = unique(data$x)
 
-for (y in uniqy){
-	datay = data[data$y %in% y, ]
-	for(x in uniqx){
-		datax = datay[datay$x %in% x, ]
-		if(nrow(datax) != 1){
-			new_line_data <- data.frame(x, y, 0)
-			names(new_line_data) <- c("x", "y", "z")
+	for (y in uniqy){
+		datay = data[data$y %in% y, ]
+		for(x in uniqx){
+			datax = datay[datay$x %in% x, ]
+			if(nrow(datax) != 1){
+				new_line_data <- data.frame(x, y, 0)
+				names(new_line_data) <- c("x", "y", "z")
 
-			data <- rbind(data, new_line_data)
+				data <- rbind(data, new_line_data)
+			}
 		}
 	}
-}
 
 
-max=0
-namx=""
-for(x in uniqx){
-	datax = data[data$x %in% x, ]
-	if(max(datax$z)>max){
-		max  = max(datax$z)
-		namx = x
+	max=0
+	namx=""
+	for(x in uniqx){
+		datax = data[data$x %in% x, ]
+		if(max(datax$z)>max){
+			max  = max(datax$z)
+			namx = x
+		}
 	}
+
+	datax = data[data$x %in% namx, ]
+	datax = datax[order(datax$z), ]
+
+	data$y <- factor(data$y, levels = datax$y)
+
+	nb_diff_TE = length( unique(data$y) )
+
+	xlabel = ''
+	graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
+		geom_tile() + 
+		ggtitle("") +
+		coord_fixed() +
+		scale_fill_gradientn(colours=brewer.pal(n= 9, name="YlGnBu")) +
+		#scale_fill_viridis(option="heat") +
+		theme(
+			panel.background = element_rect(fill = "white", colour = "grey", linewidth=0),
+			axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)
+		) +
+		geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9 , inherit.aes = FALSE , linetype="twodash") +
+		labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
+		geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
+
+	graph
 }
-
-datax = data[data$x %in% namx, ]
-datax = datax[order(datax$z), ]
-
-data$y <- factor(data$y, levels = datax$y)
-
-nb_diff_TE = length( unique(data$y) )
-
-xlabel = ''
-graph <- ggplot(data, aes(x, y, fill=z, width=0.95, height=0.95)) + 
-    geom_tile() + 
-    ggtitle("") +
-    coord_fixed() +
-    scale_fill_gradientn(colours=brewer.pal(n= 9, name="YlGnBu")) +
-    #scale_fill_viridis(option="heat") +
-	theme(
-		panel.background = element_rect(fill = "white", colour = "grey", linewidth=0),
-		axis.text.x = element_blank(), axis.text.y = element_text(face="plain", color="#222222", size=6, angle=0)
-	) +
-	geom_segment( aes(x = 5, y = 1, xend = 5, yend = nb_diff_TE ), colour = "black", alpha=0, linewidth=0.9 , inherit.aes = FALSE , linetype="twodash") +
-    labs(y="TE", x=xlabel, fill="NUMBER OF TE") +
-	geom_text(aes(label = z), nudge_x=1.2, color = "#222222", size = 2) 
-
-graph
 
 ```
 
@@ -166,11 +170,15 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 
 ```{bash TSD_INSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
-grep "OK" ../../VALUES_TSD_INSIDER_GROUP.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD"
+touch .tmp_TE_TSD_OK.txt .tmp_TE_TSD_KO.txt .tmp_TE_TSD_TOTAL.txt
 
-grep "KO" ../../VALUES_TSD_INSIDER_GROUP.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_KO.txt || echo "ERROR TSD"
+test -s ../../VALUES_TSD_INSIDER_GROUP.csv && \
+	grep "OK" ../../VALUES_TSD_INSIDER_GROUP.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD"
+test -s ../../VALUES_TSD_INSIDER_GROUP.csv && \
+	grep "KO" ../../VALUES_TSD_INSIDER_GROUP.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_KO.txt || echo "ERROR TSD"
 
-awk 'BEGIN{somme=0} NR>1 {somme+=$2}END{print somme}' ../../VALUES_TSD_INSIDER_GROUP.csv > .tmp_TE_TSD_TOTAL.txt || echo "ERROR TSD"
+test -s ../../VALUES_TSD_INSIDER_GROUP.csv && \
+	awk 'BEGIN{somme=0} NR>1 {somme+=$2}END{print somme}' ../../VALUES_TSD_INSIDER_GROUP.csv > .tmp_TE_TSD_TOTAL.txt || echo "ERROR TSD"
 
 ```
 

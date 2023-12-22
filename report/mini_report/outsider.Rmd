@@ -130,6 +130,8 @@ Hover your mouse over the bars or navigate with the slider if the number of diff
 
 ```{bash COUNT_TSD_OUTSIDER, eval=TRUE, include=TRUE, results=TRUE}
 
+touch .tmp_TE_TSD_OK.txt .tmp_TE_TSD_KO.txt .tmp_TE_TSD_TOTAL.txt
+
 grep "OK" ../../VALUES_TSD_GROUP_OUTSIDER.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_OK.txt || echo "ERROR TSD NOT FOUND"
 
 grep "KO" ../../VALUES_TSD_GROUP_OUTSIDER.csv | awk 'BEGIN{somme=0}{somme+=$2}END{print somme}' > .tmp_TE_TSD_KO.txt || echo
