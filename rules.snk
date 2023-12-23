@@ -353,14 +353,14 @@ rule REPORT :
             FREQ_BEFOR="";
             FREQ_AFTER="";
 
-            FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv | cut -f 9 || echo "NONE"`;
-            FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv | cut -f 10 || echo "NONE"`;
+            FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 9 || echo "NONE"`;
+            FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 10 || echo "NONE"`;
 
             ! test -n "$FREQ_BEFOR" && FREQ_BEFOR="NONE-FREQB" && echo "NONE-FREQB";
             ! test -n "$FREQ_AFTER" && FREQ_AFTER="NONE-FREQA" && echo "NONE-FREQA";
 
             ##SIZE SV
-            SV_SIZE=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv | awk 'max<$2{{ max=$2; }} END{{ if(max!=""){{ print max }} }}' || echo "NONE"`;
+            SV_SIZE=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv | awk 'max<$2{{ max=$2; }} END{{ if(max!=""){{ print max }} }}' || echo "NONE"`;
             ! test -n "$SV_SIZE" && SV_SIZE="NONE";
 
             ##ID TrEMOLO
@@ -370,7 +370,7 @@ rule REPORT :
                 #GET ID_TrEMOLO
                 ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id`
                 TYPE=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv ) | cut -f 2  | cut -d ":" -f 2 | sed 's/[<>]//g'`
-                RS=`(test -s {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv && grep -w "$ID" {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv | cut -f 4 | ${{path_to_pipline}}/lib/C++/bin/chain_to_id) || echo "ERROR_RS_$ID" >{log}.err`
+                RS=`(test -s {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv && grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 4 | ${{path_to_pipline}}/lib/C++/bin/chain_to_id) || echo "ERROR_RS_$ID" >{log}.err`
                 ! test -n "$RS" && RS=0;
                 ID_TrEMOLO="TE_ID_OUTSIDER.$ID_POS.$TYPE.$RS";
             else
@@ -1016,10 +1016,10 @@ rule REPORT :
                     sed 's/%%VAR_JS%%/COUNT_TE_INOUTSIDER.js/g' lib/template_COUNT_TE.html > lib/template_COUNT_TE_INOUTSIDER.html
 
                 #FREQUENCE INOUTSIDER
-                #test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && \
-                #    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv > tmp_freq.csv
+                #test -s ../../OUTSIDER/FREQUENCY/DEPTH_TE.csv && \
+                #    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/FREQUENCY/DEPTH_TE.csv > tmp_freq.csv
                     
-                #! test -s ../../OUTSIDER/FREQ_OPTIMIZED/DEPTH_TE.csv && test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
+                #! test -s ../../OUTSIDER/FREQUENCY/DEPTH_TE.csv && test -s ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv && \
                 #    awk 'BEGIN{{print "name,value"}} NR>1 {{print $7","$6}}' ../../OUTSIDER/TE_DETECTION/DEPTH_TE.csv > tmp_freq.csv
                 
                 #test -s ../../OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL_COUNT.csv && \
@@ -1991,7 +1991,7 @@ rule GET_SEQ_TE :
         genome            = config["DATA"]["GENOME"],
         all_te            = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
         snif_seqs         = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.fasta",
-        depth_te          = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv",
+        depth_te          = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv",
     output:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FK/ALL_FK_REPORT_FT.bed",
         directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/ET_FIND_FA/"),
@@ -2244,324 +2244,6 @@ rule GET_SEQ_TE :
 #END GET_SEQ_TE
 
 
-#GET READS PARALLELIZE
-rule GET_READS_TE_MULTI_THREADS :
-    input:
-        all_te       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv",
-        bln          = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
-        vcf          = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/VARIANT_CALLING/SV.vcf",
-        merge_TE_bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed",
-        read         = config["DATA"]["SAMPLE"],
-        fasta_TE     = config["DATA"]["TE_DB"],
-        depth_te     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv",
-
-    output:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/ID_BEST_READ_TE.txt",
-        output_link=[],
-
-    params:
-        path_snk       = path_snk,
-        work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
-
-        env            = env, #source environnement
-
-        threads                = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
-
-        CHROM_KEEP             = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
-        GET_SEQ_REPORT_OPTION  = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["GET_SEQ_REPORT_OPTION"],
-        #Color message
-        cmess          = bcolors.CYAN,
-        cfail          = bcolors.FAIL,
-        cend           = bcolors.END,
-        cbold          = bcolors.BOLD,
-
-        step=0,
-    log:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/GET_READS_TE"
-
-    shell:
-        """
-        {params.env}
-        rm -f {log}*
-
-        printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] GET READS [^-^] {params.cend}"
-
-        echo "[`date`] LOG TASK {log}.out, {log}.err"
-
-
-        rm -fr {params.work_directory}/OUTSIDER/READ_FASTQ_TE
-        mkdir -p {params.work_directory}/OUTSIDER/READ_FASTQ_TE ;
-
-        path_to_pipline=`dirname {params.path_snk}`
-
-        echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
-
-        ###TEST DEBUG
-        #####test OUTSIDER TE EMPTY
-        ###printf "" > {input.merge_TE_bed}
-
-        test -s {input.merge_TE_bed} || warn_msg "WARNING : NO TE OUTSIDER\\n" | tee -a {log}.err;
-
-        #GET ID only TE found sniffles
-        ( test -s {input.merge_TE_bed} && \
-            grep "sniffles.INS" {input.merge_TE_bed} | cut -f 4 | cut -d "|" -f 2 > {params.work_directory}/ID_TE_SV_REPORT.txt && \
-                echo "GET ID TE OUTSIDER sniffles ✔" | tee -a {log}.out ) || warn_msg "WARNING : FAIL GET ID TE OUTSIDER sniffles ✘\\n" | tee -a {log}.err ; 
-
-
-        #EXTRACT ID ALL READS SUPPORT sniffles
-        ## sniffles/svim
-        ( test -s {input.vcf} && \
-            python3 ${{path_to_pipline}}/lib/python/parsing/extract_region_reads_vcf.py {params.GET_SEQ_REPORT_OPTION} -c '{params.CHROM_KEEP}' \
-              {input.vcf} \
-             -d {params.work_directory}/OUTSIDER/ID_READS_TE \
-             -i {params.work_directory}/ID_TE_SV_REPORT.txt && \
-                echo "EXTRACT ALL ID READS SUPPORT sniffles ✔" | tee -a {log}.out ) || warn_msg "WARNING : EXTRACT ID ALL READS SUPPORT sniffles ✘\\n" | tee -a {log}.err;
-
-        echo "  READS SUPPORT sniffles EXTRACTED : "`ls {params.work_directory}/OUTSIDER/ID_READS_TE | wc -l`
-
-
-        ( test -s {input.merge_TE_bed} && \
-            grep "TrEMOLO.INS" {input.merge_TE_bed} | cut -f 4 | cut -d "|" -f 2 | cut -d "." -f 3 > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt || \
-                touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt && \
-                    echo "GET ID TrEMOLO ✔" | tee -a {log}.out ) || warn_msg "WARNING : GET ID TrEMOLO ✘\\n" | tee -a {log}.err; 
-
-        rm -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/tmp_clust.bed;
-        ##TODO create index file for more fast traitement
-        ( test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt && \
-            for ID in `cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt`; 
-            do 
-                awk -v ID="$ID" '$6==ID {{print $0}}' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed >> {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/tmp_clust.bed; 
-            done && \
-                echo "GET BED TE CLUST TrEMOLO ✔" | tee -a {log}.out ) || warn_msg "WARNING : GET BED TE CLUST TrEMOLO ✘\\n" | tee -a {log}.err ;
-
-
-        ##INS CIGAR EXTRACTION
-        ( test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/tmp_clust.bed && \
-            awk -v path="{params.work_directory}/OUTSIDER/ID_READS_TE" '
-                BEGIN{{
-                    clust = 0;
-                }}
-
-                {{
-                    if(clust == 0){{
-                        chrom=$1; 
-                        start=$2; 
-                        end=$3; 
-                        clust=$6;
-                        
-                        dic_clust[clust][1]["ID"]      = "TrEMOLO.INS."clust;
-                        dic_clust[clust][1]["seq"]     = $5;
-                        dic_clust[clust][1]["RS"]      = 1;
-                        dic_clust[clust][1]["READ"]    = $4;
-                    }}
-                    else if(clust != 0 && clust != $6){{
-                        chrom=$1; 
-                        start=$2; 
-                        end=$3;
-                        
-                        for(i=1; i <= dic_clust[clust][1]["RS"]; i++){{
-                            print dic_clust[clust][i]["READ"] >> path"/reads_"chrom":"dic_clust[clust][1]["ID"]":"start"-"end".txt";
-                        }}
-
-                        clust=$6;
-
-                        dic_clust[clust][1]["ID"]      = "TrEMOLO.INS."clust;
-                        dic_clust[clust][1]["RS"]      = 1;
-                        dic_clust[clust][1]["READ"]    = $4;
-
-                    }}
-                    else{{#CHECK READ EXIST
-                        IN = 0;
-                        for(i=1; i <= dic_clust[clust][1]["RS"]; i++){{
-                            if(dic_clust[clust][i]["READ"] == $4){{
-                                IN = 1;
-                                i = dic_clust[clust][1]["RS"] + 1;
-                            }}
-                        }}
-
-                        if(IN == 0){{
-                            dic_clust[clust][1]["RS"] += 1;
-                            dic_clust[clust][dic_clust[clust][1]["RS"]]["READ"] = $4;
-                        }}
-                        
-                    }} 
-                }}
-
-                END{{
-                    for(i=1; i <= dic_clust[clust][1]["RS"]; i++){{
-                        print dic_clust[clust][i]["READ"] >> path"/reads_"chrom":"dic_clust[clust][1]["ID"]":"start"-"end".txt";
-                    }}
-                }}' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/tmp_clust.bed && \
-                    echo "GET READS TrEMOLO ✔" | tee -a {log}.out ) || warn_msg "WARNING : GET READS TrEMOLO ✘\\n" | tee -a {log}.err ; 
-
-        echo "  READS SUPPORT TrEMOLO EXTRACTED : "`ls {params.work_directory}/OUTSIDER/ID_READS_TE | grep "TrEMOLO" | wc -l` | tee -a {log}.out
-
-        ##TODO SOFT CIGAR EXTRACTION
-
-
-        NB_FILE=`ls {params.work_directory}/OUTSIDER/ID_READS_TE | grep -v total -c` ;
-        i=0 ;
-
-        show_step="$i/$NB_FILE TE "
-        number_of_char=`echo "$show_step" | wc -c`
-        number_of_char=$(($number_of_char-1));
-        printf "\b%.0s" `seq 1 $number_of_char`
-        printf "$show_step";
-
-        get_read() {{
-            read_file=$1;
-            i=$2;
-
-            region=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]"` ;
-
-            echo -e "@read_file:$read_file; \\n@##region:$region" >> {log}.err
-            
-            if ! test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq; then
-
-                id=`echo $read_file | grep -o "[_].*\." | grep -o "[^_].*[^.]" | cut -d":" -f 2`
-                nb_read=`cat {params.work_directory}/OUTSIDER/ID_READS_TE/$read_file | sort | uniq | wc -l`
-                #TODO ?
-                #TE=`(grep ":$id:[0-9]*:[IP]" {input.all_te} || grep ":$id:[0-9]*:[IP]" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv) | cut -f 1 || echo "NONE"`
-
-                printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [GET_READS_TE:snk] $read_file {params.cend}" >> {log}.out
-                printf "%s\\n" "      {params.cmess} [SNK]--[`date`] [GET_READS_TE:snk] [GET_READS_TE:snk] $i/$NB_FILE : nb_read=$nb_read : id=$id {params.cend}" >> {log}.out
-
-                test -s {input.read}.fai || samtools fqidx {input.read}
-
-                ## EXTRACT READS
-                ( test -s {params.work_directory}/OUTSIDER/ID_READS_TE/$read_file && \
-                    samtools fqidx {input.read} --fai-idx {input.read}.fai -r {params.work_directory}/OUTSIDER/ID_READS_TE/$read_file > \
-                        {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq ) || echo "$id NOT FOUND TrEMOLO" >> {log}.err ;
-
-                ## CHANGE TO GOOD EXACTLY FORMAT FASTQ
-                ( test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq && \
-                    python3 ${{path_to_pipline}}/lib/python/format_files/fastq_to_fastq.py \
-                         {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq \
-                         {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq >> {log}.out 2>> {log}.err ) || ( fail_msg "READ EXTRACT id=$id FAIL NOT FOUND \\n" && exit 1);
-
-                test -s {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fastq || echo "[ERROR EXTRACT READ] $id" >> {log}.err
-                
-                rm -f {params.work_directory}/OUTSIDER/READ_FASTQ_TE/reads_${{region}}.fq
-            fi;
-        }}
-
-        
-        PATH=`echo $PATH | sed "s|${{SAMTOOLS_1_9}}|${{SAMTOOLS_1_15_1}}|g"`
-        #index
-        samtools fqidx {input.read}
-
-        #PARLELIZE
-        count_task_running=0;
-        pids=();
-        #EXTRACT ALL READS SUPPORT
-        for read_file in `ls {params.work_directory}/OUTSIDER/ID_READS_TE`; do
-
-            get_read "$read_file" "$i" &
-            pids[${{count_task_running}}]=$!;
-            count_task_running=$(($count_task_running+1));
-
-            if [ $count_task_running -ge {params.threads} ]; then
-                c=1;
-                for pid in ${{pids[*]}}; do
-                    wait $pid || echo > /dev/null;
-                    #echo "PID : $pid; TASK : $i; N : $c; done !"
-                    c=$(($c+1));
-                done;
-                pids=();
-                count_task_running=0;
-            fi;
-
-            i=$(($i + 1));
-
-            show_step="$i/$NB_FILE TE "
-            number_of_char=`echo "$show_step" | wc -c`
-            number_of_char=$(($number_of_char-1));
-            printf "\b%.0s" `seq 1 $number_of_char`
-            printf "$show_step";
-        done;
-
-        #WAIT LAST TASKS
-        if [ $count_task_running -lt {params.threads} ]; then
-            pids[${{count_task_running}}]=$!
-            task=1;
-            for pid in ${{pids[*]}}; do
-                wait $pid || echo > /dev/null;
-                #echo "PID : $pid; TASK : $i; N : $c; done !"
-                task=$(($task+1));
-            done;
-        fi;
-
-        printf "\\n%s\\n" "{params.cmess} [SNK]--[`date`] EXTRACT DONE ! {params.cend}"
-
-        #CHECK IF ALL READS ARE EXTRACTED
-        NB_REGION=`ls {params.work_directory}/OUTSIDER/ID_READS_TE | wc -l`;
-        NB_READS=`ls {params.work_directory}/OUTSIDER/READ_FASTQ_TE | wc -l`;
-
-        echo "READS EXTRACTED : $NB_READS/$NB_REGION" | tee -a {log}.out
-
-        ##GET BEST ID TE sniffles
-        rm -f {params.work_directory}/tmp_ID_RD_SEQ.txt
-        ( test -s {input.all_te} && \
-            awk 'NR>1 {{print $2}}' {input.all_te} | cut -d ":" -f 5,8 > {params.work_directory}/tmp_ID_RD_SEQ.txt ) || \
-                echo "WARNING : GET BEST ID READ tmp_ID_RD_SEQ sniffles ✘" >> {log}.err;
-
-        ( test -s {params.work_directory}/ID_TE_SV_REPORT.txt && test -s {params.work_directory}/tmp_ID_RD_SEQ.txt && \
-            grep -w -f {params.work_directory}/ID_TE_SV_REPORT.txt {params.work_directory}/tmp_ID_RD_SEQ.txt > {params.work_directory}/ID_RD_SEQ.txt ) || \
-                echo "WARNING : GET BEST ID READ ID_RD_SEQ sniffles ✘" >> {log}.err;
-
-        rm -f {params.work_directory}/OUTSIDER/ID_BEST_READ_TE.txt
-        ( test -s {params.work_directory}/ID_RD_SEQ.txt && \
-            for i in `cat {params.work_directory}/ID_RD_SEQ.txt`; 
-            do  
-                ID=`echo $i | cut -d ":" -f 1`; 
-                num=`echo $i | cut -d ":" -f 2`; 
-                name_file=`ls {params.work_directory}/OUTSIDER/ID_READS_TE/ | grep -w "$ID"`; 
-
-                awk -v num="$num" -v ID="$ID" 'NR-1 == num {{print "ID="ID";RD="$0}}' {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file >> {params.work_directory}/OUTSIDER/ID_BEST_READ_TE.txt;
-            done && \
-                echo "GET BEST ID READ sniffles ✔" | tee -a {log}.out ) || warn_msg "WARNING : GET BEST ID READ sniffles ✘\\n" | tee -a {log}.err;
-
-
-        ##GET BEST ID TE TrEMOLO
-        rm -f {params.work_directory}/tmp_ID_RD_SEQ.txt
-        ( test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv && \
-            awk 'NR>1 {{print $2}}' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv | cut -d ":" -f 5,8 > {params.work_directory}/tmp_ID_RD_SEQ.txt ) || \
-                echo "WARNING : GET BEST ID READ tmp_ID_RD_SEQ TrEMOLO ✘" >> {log}.err;
-
-        ( test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt && \
-            awk '{{print "TrEMOLO.INS."$0}}' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/tmp_ID_TrEMOLO.txt ) || \
-                echo "WARNING : GET BEST ID READ tmp_ID_TrEMOLO TrEMOLO ✘" >> {log}.err;
-
-        ( test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/tmp_ID_TrEMOLO.txt && test -s {params.work_directory}/tmp_ID_RD_SEQ.txt && \
-            grep -w -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/tmp_ID_TrEMOLO.txt {params.work_directory}/tmp_ID_RD_SEQ.txt > {params.work_directory}/ID_RD_SEQ.txt ) || \
-                echo "WARNING : GET BEST ID READ ID_RD_SEQ TrEMOLO ✘" >> {log}.err;
-
-        ( test -s {params.work_directory}/ID_RD_SEQ.txt && \
-            for i in `cat {params.work_directory}/ID_RD_SEQ.txt`;
-            do
-                ID=`echo $i | cut -d ":" -f 1`;
-                num=`echo $i | cut -d ":" -f 2`; 
-                name_file=`ls {params.work_directory}/OUTSIDER/ID_READS_TE/ | grep -w "$ID"`; 
-
-                ( test -s {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file && \
-                    awk -v num="$num" -v ID="$ID" 'NR == num {{print "ID="ID";RD="$0}}' {params.work_directory}/OUTSIDER/ID_READS_TE/$name_file \
-                        >> {params.work_directory}/OUTSIDER/ID_BEST_READ_TE.txt ) || echo "WARNING ID:$ID";
-            done && \
-                echo "GET BEST ID READ TrEMOLO ✔" | tee -a {log}.out ) || warn_msg "WARNING : GET BEST ID READ TrEMOLO ✘\\n" | tee -a {log}.err;
-
-        PATH=`echo $PATH | sed "s|${{SAMTOOLS_1_15_1}}|${{SAMTOOLS_1_9}}|g"`
-
-        ## REMOVE
-        rm -f {params.work_directory}/ID_RD_SEQ.txt {params.work_directory}/ID_TE_SV_REPORT.txt
-        rm -f `find {params.work_directory} -name "*.fai"`
-        #rm -fr {params.work_directory}/OUTSIDER/ID_READS_TE
-        """
-
-
-#END GET_READS_TE_MULTI_THREADS
-
-
-
 rule FREQUENCEv2 :
     input:
         vcf           = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/VARIANT_CALLING/SV.vcf",
@@ -2576,7 +2258,7 @@ rule FREQUENCEv2 :
         input_link=[],
 
     output:
-        depth_te  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv",
+        depth_te  = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv",
         
     params:
         path_snk        = path_snk,
@@ -2614,7 +2296,7 @@ rule FREQUENCEv2 :
 
         path_to_pipline=`dirname {params.path_snk}`
 
-        mkdir -p {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
+        mkdir -p {params.work_directory}/OUTSIDER/FREQUENCY
 
         rm -f {log}.out {log}.err
         echo "[`date`] LOG TASK {log}.out, {log}.err"
@@ -2624,32 +2306,32 @@ rule FREQUENCEv2 :
         ##FILTER_BLAST
         ###no header
         ###sniffles
-        awk 'NR>1' {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_sniffles.csv 
+        awk 'NR>1' {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv > {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_sniffles.csv 
         
         ###SOFT
-        touch {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv;
+        touch {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_SOFT.csv;
         test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv && \
-            awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv
+            awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv > {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_SOFT.csv
 
         ###HARD
-        touch {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv;
+        touch {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_HARD.csv;
         test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv && \
-            awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv
+            awk 'NR>1' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv > {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_HARD.csv
 
         cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_sniffles.csv \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_SOFT.csv \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_HARD.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.csv
+            {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_sniffles.csv \
+            {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_SOFT.csv \
+            {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_HARD.csv > {params.work_directory}/OUTSIDER/FREQUENCY/FILTER_BLAST_INS.csv
 
         ##SORT
         awk 'NR>1 && OFS="\t" {{split($2, sp, ":"); print sp[1], sp[3], sp[4]+1, $0}}' \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.csv | bedtools sort | cut -f 4- \
-                > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_INS.sorted.csv
+            {params.work_directory}/OUTSIDER/FREQUENCY/FILTER_BLAST_INS.csv | bedtools sort | cut -f 4- \
+                > {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_INS.sorted.csv
 
-        head -n 1 {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.csv > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_head.csv
-        cat {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_head.csv \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_FILTER_BLAST_INS.sorted.csv \
-                > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv
+        head -n 1 {params.work_directory}/OUTSIDER/FREQUENCY/FILTER_BLAST_INS.csv > {params.work_directory}/OUTSIDER/FREQUENCY/tmp_head.csv
+        cat {params.work_directory}/OUTSIDER/FREQUENCY/tmp_head.csv \
+            {params.work_directory}/OUTSIDER/FREQUENCY/tmp_FILTER_BLAST_INS.sorted.csv \
+                > {params.work_directory}/OUTSIDER/FREQUENCY/FILTER_BLAST_INS.sorted.csv
 
         ####
         ##GET SV SIZE
@@ -2660,39 +2342,39 @@ rule FREQUENCEv2 :
             awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
                 /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
                 {params.work_directory}/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.fasta \
-                    > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
+                    > {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv
         
         ###SV SEQ TrEMOLO
         test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.fasta && \
             awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
                 /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
                 {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.fasta \
-                    >> {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
+                    >> {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv
 
         ###SV SEQ SOFT
         test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.fasta && \
             awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
                 /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
                 {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.fasta \
-                    >> {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
+                    >> {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv
 
         ###SV SEQ HARD
         test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta && \
             awk ' /^>/ {{ head=substr($0, 2, length($0)); }} 
                 /^[^>]/ && OFS="\t"{{ print head, length($0) }}' \
                 {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.fasta \
-                    >> {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv
+                    >> {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv
 
         echo "  GET SV SIZE ✔" | tee -a {log}.out
 
 
-        touch {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_POSITION_START_TE.bed
-        awk -v window="50" 'NR>1 && OFS="\t" {{ split($2, sp, ":"); print sp[1], (sp[3]-window > 0 ? sp[3]-window : 1), sp[4]+window }}' {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv \
+        touch {params.work_directory}/OUTSIDER/FREQUENCY/tmp_POSITION_START_TE.bed
+        awk -v window="50" 'NR>1 && OFS="\t" {{ split($2, sp, ":"); print sp[1], (sp[3]-window > 0 ? sp[3]-window : 1), sp[4]+window }}' {params.work_directory}/OUTSIDER/FREQUENCY/FILTER_BLAST_INS.sorted.csv \
             | bedtools merge -d 1 \
-            > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_POSITION_START_TE.bed
+            > {params.work_directory}/OUTSIDER/FREQUENCY/tmp_POSITION_START_TE.bed
 
-        samtools view {params.preset_view} -q 10 -F 4 -h -b {input.bam} -L {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp_POSITION_START_TE.bed > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE.bam
-        samtools index {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE.bam
+        samtools view {params.preset_view} -q 10 -F 4 -h -b {input.bam} -L {params.work_directory}/OUTSIDER/FREQUENCY/tmp_POSITION_START_TE.bed > {params.work_directory}/OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam
+        samtools index {params.work_directory}/OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam
         
         echo "GET BAM TE OUTSIDER ✔" | tee -a {log}.out 
 
@@ -2704,31 +2386,31 @@ rule FREQUENCEv2 :
         
         echo "  BUILD CHUNKS..." | tee -a {log}.out
         python3 ${{path_to_pipline}}/lib/python/format_files/divideToChunks.py \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FILTER_BLAST_INS.sorted.csv \
+            {params.work_directory}/OUTSIDER/FREQUENCY/FILTER_BLAST_INS.sorted.csv \
             {params.threads} \
-            {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/CHUNKS
+            {params.work_directory}/OUTSIDER/FREQUENCY/CHUNKS
         
         coutReadsFreq () {{
             echo "    CHUNK N=$1 -->" | tee -a {log}.out
             python3 ${{path_to_pipline}}/lib/python/parsing/getFrequency.py -p ${{sizePercent}} \
-                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/MAPPING_POSTION_TE.bam \
-                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/CHUNKS/tmp_chunk_${{1}}.csv \
+                {params.work_directory}/OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam \
+                {params.work_directory}/OUTSIDER/FREQUENCY/CHUNKS/tmp_chunk_${{1}}.csv \
                 {params.work_directory}/1-UTILS/TE_SIZE.tsv \
-                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/SV_SIZE.tsv \
-                {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS_${{1}}.txt 2>> {log}.err \
+                {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv \
+                {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_READS_${{1}}.txt 2>> {log}.err \
                     || (fail_msg "...COUNT READS ✘" | tee -a {log}.out && exit 1)
         }}
 
         
 
         ###RUN PARLELIZE
-        NB_FILE=`ls {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/CHUNKS/ | wc -l` ;
+        NB_FILE=`ls {params.work_directory}/OUTSIDER/FREQUENCY/CHUNKS/ | wc -l` ;
         i=0 ;
 
         #PARLELIZE
         count_task_running=0;
         pids=();
-        for chunk in `ls {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/CHUNKS/`; do
+        for chunk in `ls {params.work_directory}/OUTSIDER/FREQUENCY/CHUNKS/`; do
             echo "  CHUNK : $chunk"
             
             coutReadsFreq $(($count_task_running+1)) &
@@ -2761,82 +2443,105 @@ rule FREQUENCEv2 :
 
         ##MERGE COUNT_READS
         echo "  MERGE CHUNKS COUNT READS..." | tee -a {log}.out
-        cat {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS_*.txt | sort -k 3 \
-            > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS.txt;
+        cat {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_READS_*.txt | sort -k 3 \
+            > {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_READS.txt;
 
         echo "  COUNT READS ✔" | tee -a {log}.out
 
 
         ##GET FREQUENCY
         echo "  GET FREQUENCY..." | tee -a {log}.out
-        awk '{{ print $3":"$2":"$1, $0 }}' {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/COUNT_READS.txt | \
-        sort | cut -d " " -f 2- | \
-        awk '
-            ID!=$3 && NR>1 && OFS="\t" {{ 
-                if(svType=="INS"){{
-                    if(I<_RS) I=_RS; 
-                    if(substr(ID, 1, 8) == "sniffles" && I_Only<_RS){{ 
-                        I_Only=_RS;
+        awk '{{ print $3":"$2":"$1, $0 }}' {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_READS.txt | \
+            sort | cut -d " " -f 2- | \
+            awk '
+                ID!=$3 && NR>1 && OFS="\t" {{ 
+                    if(svType=="INS"){{
+                        if(I<_RS) I=_RS; 
+                        if(substr(ID, 1, 8) == "sniffles" && I_Only<_RS){{ 
+                            I_Only=_RS;
+                        }}
+                        if(total<I || total==0) total=I;
+                        if(total-I_clipped < I_Only || total-I_clipped==0) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
+                        print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100, svType;
                     }}
-                    if(total<I || total==0) total=I;
-                    if(total-I_clipped < I_Only || total-I_clipped==0) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
-                    print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100, svType;
-                }}
-                else if(svType=="DEL") {{
-                    if(D<_RS) D=_RS;
-                    if(total<D || total==0) total=D;
-                    print position, ID, TE, D, ".", total, (total-D), total, ((total-D)/total)*100, ((total-D)/total)*100, svType;
-                }}
-            }}
-
-            ID!=$3 {{ total=0; D=0; I=0; I_Only=0; I_clipped=0; svType=$17; _RS=$5; ID=$3; TE=$4; position=$10; current_read=""; }}  
-            
-            $1!="E" && current_read!=$2 {{ 
-                if(svType=="INS")
-                    I+=1;
-
-                if(svType=="DEL")
-                    D+=1;
-
-                current_read=$2;
-                total+=1; 
-
-                if($1=="S" || $1=="H"){{
-                    I_clipped+=1;
-                }}
-                else if($1=="I"){{
-                    I_Only+=1;
-                }}
-            }}
-
-            ($1=="E" && current_read!=$2) {{ total+=1; current_read=$2;}}
-            
-            END {{ 
-                if(svType=="INS"){{
-                    if(I<_RS) I=_RS; 
-                    if(substr(ID, 1, 8) == "sniffles" && I_Only<_RS){{ 
-                        I_Only=_RS;
+                    else if(svType=="DEL") {{
+                        if(D<_RS) D=_RS;
+                        if(total<D || total==0) total=D;
+                        print position, ID, TE, D, ".", total, (total-D), total, ((total-D)/total)*100, ((total-D)/total)*100, svType;
                     }}
-                    if(total<I || total==0) total=I;
-                    if(total-I_clipped < I_Only || total-I_clipped==0) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
-                    print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100, svType;
                 }}
-                else if(svType=="DEL") {{
-                    if(D<_RS) D=_RS;
-                    if(total<D || total==0) total=D;
-                    print position, ID, TE, D, ".", total, (total-D), total, ((total-D)/total)*100, ((total-D)/total)*100, svType;
+
+                ID!=$3 {{ total=0; D=0; I=0; I_Only=0; I_clipped=0; svType=$17; _RS=$5; ID=$3; TE=$4; position=$10; current_read=""; }}  
+                
+                $1!="E" && current_read!=$2 {{ 
+                    if(svType=="INS")
+                        I+=1;
+
+                    if(svType=="DEL")
+                        D+=1;
+
+                    current_read=$2;
+                    total+=1; 
+
+                    if($1=="S" || $1=="H"){{
+                        I_clipped+=1;
+                    }}
+                    else if($1=="I"){{
+                        I_Only+=1;
+                    }}
                 }}
-            }}' \
-                > {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/FREQUENCY_TE_INS.tsv \
-                    || (fail_msg "...GET FREQUENCY ✘" | tee -a {log}.out && exit 1)
+
+                ($1=="E" && current_read!=$2) {{ total+=1; current_read=$2;}}
+                
+                END {{ 
+                    if(svType=="INS"){{
+                        if(I<_RS) I=_RS; 
+                        if(substr(ID, 1, 8) == "sniffles" && I_Only<_RS){{ 
+                            I_Only=_RS;
+                        }}
+                        if(total<I || total==0) total=I;
+                        if(total-I_clipped < I_Only || total-I_clipped==0) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
+                        print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100, svType;
+                    }}
+                    else if(svType=="DEL") {{
+                        if(D<_RS) D=_RS;
+                        if(total<D || total==0) total=D;
+                        print position, ID, TE, D, ".", total, (total-D), total, ((total-D)/total)*100, ((total-D)/total)*100, svType;
+                    }}
+                }}' \
+                    > {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv \
+                        || (fail_msg "...GET FREQUENCY ✘" | tee -a {log}.out && exit 1)
 
         echo "  GET FREQUENCY ✔" | tee -a {log}.out
+
+        ##FREQ OPTIMIZED
+        echo "FREQ OPTIMIZ...";
+
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/COUNT_TE_IN_RS.txt && \
+            cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COUNT_TE_IN_RS.txt {params.work_directory}/OUTSIDER/TE_DETECTION/COUNT_TE_IN_RS.txt \
+                > {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_TE_IN_RS.txt 2>> {log}.err || \
+                fail_msg "ERROR GET FILE TE IN RS\\n";
+        
+        test -s {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_TE_IN_RS.txt && \
+            test -s {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv && \
+            awk '
+                NR==FNR {{ 
+                    dic[$1]=$2; 
+                    next;
+                }} 
+                
+                dic[$2":"$3]>0 && OFS="\t" {{ 
+                    rsi=dic[$2":"$3];
+                    print $1, $2, $3, rsi, $5, $6, (rsi+$5), $7, ((rsi/$6)*100), (((rsi+$5)/$7)*100), "INS"; 
+                }}' {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_TE_IN_RS.txt {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv \
+                    > {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv 2>> {log}.err ||
+                    fail_msg "ERROR FREQUENCY OPTIMIZED\\n"
+
 
         echo "FREQUENCY DONE ! ✔" | tee -a {log}.out
 
         ##
-        rm -f {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED/tmp*
-        #rm -fr {params.work_directory}/OUTSIDER/FREQ_OPTIMIZED
+        rm -f {params.work_directory}/OUTSIDER/FREQUENCY/tmp*
         rm -f `find {params.work_directory} -name "*.fai"`
         """
 
@@ -3331,16 +3036,13 @@ rule HARD_TE :
             samtools fqidx {params.work_directory}/INPUT/READS_UNCOMPRESS.fastq --fai-idx {params.work_directory}/INPUT/READS_UNCOMPRESS.fastq.fai -r {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ID.txt > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fastq 2>> {log}.err
         
         fi;
-        echo "2"
+
         python3 ${{path_to_pipline}}/lib/python/format_files/fastq_to_fasta.py {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fastq {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta
 
-        echo "3"
         grep -n ">" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta | tr -d ">" > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta.fa_trml_idx
 
-        echo "4"
         python3 ${{path_to_pipline}}/lib/python/parsing/get_seq_hard.py -s "$TrEMOLO_SIZE_MAX_TE" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta.fa_trml_idx {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/RS_HARD.fasta {input.tr_vcf} > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed
 
-        echo "5"
         ## Warning : WINDOW cluster fixed 100
         ## Warning : tab_head[1] for take start end first detected
         bedtools sort -i {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed | bedtools cluster -d 100 | awk 'BEGIN{{count=0; id="";}}  OFS=":"{{if(id != $8){{ if(NR>1){{ for(i=1; i<count+1; i++){{print tab_head[1], count, "IMPRECISE", (i-1); print tab_seq[i]}} }}; id=$8; count=0; delete tab_head; delete tab_seq;}}else{{tab_head[count+1] = ">"$1":<HARD>:"$2":"$3":HARD."id"."$6; tab_seq[count+1] = $5; count+=1}} }}' > {output.seqs}
@@ -3669,6 +3371,19 @@ rule DETECTION_TE :
             exit 3;
         fi;
 
+        echo "COUNT TE IN RS..."
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv && \
+            awk 'NR>1 {{ split($2, sp, ":"); if(sp[2] == "<INS>"){{ print sp[5]; }} }}' {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv \
+                > {params.work_directory}/OUTSIDER/TE_DETECTION/ID.txt || fail_msg "COMBINE TE FILE ERROR\\n";
+
+        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/ID.txt && \
+            test -s {output.bln} && \
+            grep -w -f {params.work_directory}/OUTSIDER/TE_DETECTION/ID.txt {output.bln} \
+                | awk '{{print $1":"$2}}'  | sort -u | \
+                awk -F ":" '{{ print $5":"$9}}' | sort | uniq -c | awk 'OFS="\t"{{print $2, $1}}' \
+                > {params.work_directory}/OUTSIDER/TE_DETECTION/COUNT_TE_IN_RS.txt || \
+                fail_msg "ERROR COUNT TE IN READ SUPPORT\\n";
+
         #** REMOVE **#
         rm -f `find {params.work_directory} -name "*.fai"`
         """
@@ -3828,7 +3543,21 @@ rule TrEMOLO_SV_TE :
 
         awk 'NR>1 && OFS="\t" {{ split($2, sp, ":"); print sp[1], sp[3], sp[3]+1, $1"|"sp[5], $5, sp[9] }}' {output.INS_TREMOLO_csv} > {output.INS_TREMOLO_bed}
 
-        # ##CLIPPED
+        ###COUNT TE IN RS
+        echo "COUNT TE IN RS..."
+        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COMBINE_INS_TREMOLO.csv && \
+            awk 'NR>1 {{ split($2, sp, ":"); if(sp[2] == "<INS>"){{ print sp[5]; }} }}' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COMBINE_INS_TREMOLO.csv \
+                > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID.txt || fail_msg "COMBINE TE FILE ERROR\\n";
+
+        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID.txt && \
+            test -s {output.SV_INS_CLUST_bln} && \
+            grep -w -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID.txt {output.SV_INS_CLUST_bln} \
+                | awk '{{print $1":"$2}}'  | sort -u | \
+                awk -F ":" '{{ print $5":"$9}}' | sort | uniq -c | awk 'OFS="\t"{{print $2, $1}}' \
+                > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COUNT_TE_IN_RS.txt || \
+                fail_msg "ERROR COUNT TE IN READ SUPPORT\\n";
+
+        ####CLIPPED
         if [ {params.CLIPPED_READS} = "False" ]; then
             touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.bed
             touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv
