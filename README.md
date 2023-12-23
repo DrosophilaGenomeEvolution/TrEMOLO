@@ -184,8 +184,8 @@ CHOICE:
         INSIDER_VARIANT: True   # insiders, TE in the assembly
         REPORT: True            # for getting a report.html file with graphics
     OUTSIDER_VARIANT:
-        CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, svim
-        INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the INSIDER integrated in
+        CALL_SV: "sniffles"     # possibilities for SV tools: sniffles
+        INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the OUTSIDER integrated in
         OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATED WITH CLIPPING READS
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:
