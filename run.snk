@@ -201,7 +201,6 @@ rule TrEMOLO_BUILD :
         DETECT_ALL_TE       = config["CHOICE"]["INSIDER_VARIANT"]["DETECT_ALL_TE"],
 
         INTEGRATE_TE_TO_GENOME = config["CHOICE"]["OUTSIDER_VARIANT"]["INTEGRATE_TE_TO_GENOME"],
-        OPTIMIZE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["OPTIMIZE_FREQUENCE"],
 
         #COLOR 
         cmess          = bcolors.CYAN,
@@ -318,8 +317,6 @@ rule TrEMOLO_BUILD :
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_insider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_insider.log
             fi;
-
-
         fi;
         
 
@@ -337,37 +334,21 @@ rule TrEMOLO_BUILD :
             rm -f {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
             
             ## Instruction par defaut obligatoire
-            echo "Trace : {params.OPTIMIZE_FREQUENCE}";
-            ####Warn for optimize frequency
-            if [ {params.OPTIMIZE_FREQUENCE} = "True" ] || [ 1 ]; then
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE " > {params.work_directory}/OUTSIDER/instructions.txt
-                
-                ##CLIPPED
-                if [ {params.CLIPPED_READS} = "True" ]; then
-                    printf "%s" "> SOFT_TE > HARD_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
-                fi;
-
-                printf "%s" "> MERGE_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
-
-                if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
-                    printf "> FREQ_INSIDERv2 > FREQUENCEv2 " >> {params.work_directory}/OUTSIDER/instructions.txt
-                else
-                    printf "> FREQUENCEv2:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
-                fi;
-                
-                #printf "> GET_READS_TE${{PARALLELING}} " >> {params.work_directory}/OUTSIDER/instructions.txt
-            else
-                printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE " > {params.work_directory}/OUTSIDER/instructions.txt
-
-                ##CLIPPED
-                if [ {params.CLIPPED_READS} = "True" ]; then
-                    printf "%s" "> SOFT_TE > HARD_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
-                fi;
-
-                #printf "%s" "> MERGE_TE > GET_READS_TE${{PARALLELING}}:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
-                printf "%s" "> MERGE_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
-            fi
+            printf "%s" "mapping > samtools > {params.call_sv} > TrEMOLO_SV_TE > DETECTION_TE " > {params.work_directory}/OUTSIDER/instructions.txt
             
+            ##CLIPPED
+            if [ {params.CLIPPED_READS} = "True" ]; then
+                printf "%s" "> SOFT_TE > HARD_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
+            fi;
+
+            printf "%s" "> MERGE_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
+
+            if [ {params.choice_insider_sv} = "True" ] && test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv; then
+                printf "> FREQ_INSIDERv2 > FREQUENCEv2 " >> {params.work_directory}/OUTSIDER/instructions.txt
+            else
+                printf "> FREQUENCEv2:NI " >> {params.work_directory}/OUTSIDER/instructions.txt
+            fi;
+                
             ## MUST BE LOADED
             printf "%s" "> GET_SEQ_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
             printf "%s" "> TSD_OUTSIDER " >> {params.work_directory}/OUTSIDER/instructions.txt

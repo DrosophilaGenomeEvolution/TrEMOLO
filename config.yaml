@@ -16,7 +16,6 @@ CHOICE:
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" # possibility (sniffles, svim) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with outsiders integrated in
-        OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATE WITH CLIPPING READS
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:
         DETECT_ALL_TE: False    # detect ALL TE on genome (parameter GENOME) assembly not only new insertion. Warning! it may be take several hours on big genomes
