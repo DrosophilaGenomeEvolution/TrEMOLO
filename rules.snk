@@ -316,7 +316,7 @@ rule REPORT :
         printf "\b%.0s" `seq 1 $number_of_char`
         printf "$show_step";
         rm -f {params.work_directory}/TE_INFOS.bed
-        echo -e "#chrom\tstart\tend\tTE|ID\tstrand\tTSD\tpident\tpsize_TE\tSIZE_TE\tNEW_POS\tFREQ\tFREQ_OPTIMIZED\tSV_SIZE\tID_TrEMOLO\tTYPE" > {params.work_directory}/TE_INFOS.bed
+        echo -e "#chrom\tstart\tend\tTE|ID\tstrand\tTSD\tpident\tpsize_TE\tSIZE_TE\tNEW_POS\tFREQ\tFREQ_WITH_CLIPPED\tSV_SIZE\tID_TrEMOLO\tTYPE" > {params.work_directory}/TE_INFOS.bed
         test -s {params.work_directory}/POSITION_TE_OUTSIDER.bed && \
             while read line;
         do
@@ -353,8 +353,14 @@ rule REPORT :
             FREQ_BEFOR="";
             FREQ_AFTER="";
 
-            FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 9 || echo "NONE"`;
-            FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 10 || echo "NONE"`;
+            test -s {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv && \
+                FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv | awk '$9<=100{{ print $9; }} $9>100{{ print "NONE"; }}' || echo "NONE"` && \
+                FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv | awk '$10<=100{{ print $10; }} $10>100{{ print "NONE"; }}' || echo "NONE"`;
+            
+            if [ "$FREQ_BEFOR" == "" ] || [ "$FREQ_BEFOR" == "NONE" ] || [ "$FREQ_AFTER" == "" ] || [ "$FREQ_AFTER" == "NONE" ]; then
+                FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 9 || echo "NONE"`;
+                FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 10 || echo "NONE"`;
+            fi;
 
             ! test -n "$FREQ_BEFOR" && FREQ_BEFOR="NONE-FREQB" && echo "NONE-FREQB";
             ! test -n "$FREQ_AFTER" && FREQ_AFTER="NONE-FREQA" && echo "NONE-FREQA";
@@ -2399,6 +2405,7 @@ rule FREQUENCEv2 :
                 {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv \
                 {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_READS_${{1}}.txt 2>> {log}.err \
                     || (fail_msg "...COUNT READS ✘" | tee -a {log}.out && exit 1)
+            echo "    CHUNK N=$1 DONE ✔";
         }}
 
         
@@ -2460,6 +2467,7 @@ rule FREQUENCEv2 :
                         if(substr(ID, 1, 8) == "sniffles" && I_Only<_RS){{ 
                             I_Only=_RS;
                         }}
+                        if(I_Only==0) I_Only=_RS;
                         if(total<I || total==0) total=I;
                         if(total-I_clipped < I_Only || total-I_clipped==0) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
                         print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100, svType;
@@ -2495,10 +2503,11 @@ rule FREQUENCEv2 :
                 
                 END {{ 
                     if(svType=="INS"){{
-                        if(I<_RS) I=_RS; 
+                        if(I<_RS) I=_RS;
                         if(substr(ID, 1, 8) == "sniffles" && I_Only<_RS){{ 
                             I_Only=_RS;
                         }}
+                        if(I_Only==0) I_Only=_RS;
                         if(total<I || total==0) total=I;
                         if(total-I_clipped < I_Only || total-I_clipped==0) total_no_clipped=total; else total_no_clipped=(total-I_clipped);
                         print position, ID, TE, I_Only, I_clipped, total_no_clipped, I, total, (I_Only/total_no_clipped)*100, (I/total)*100, svType;
@@ -2532,7 +2541,10 @@ rule FREQUENCEv2 :
                 
                 dic[$2":"$3]>0 && OFS="\t" {{ 
                     rsi=dic[$2":"$3];
-                    print $1, $2, $3, rsi, $5, $6, (rsi+$5), $7, ((rsi/$6)*100), (((rsi+$5)/$7)*100), "INS"; 
+                    if(rsi==$6+1) #+1 cause:0: sniffles RS
+                        print $1, $2, $3, rsi, $5, $6+1, (rsi+$5), $8+1, ((rsi/($6+1))*100), (((rsi+$5)/($8+1))*100), "INS"; 
+                    else
+                        print $1, $2, $3, rsi, $5, $6, (rsi+$5), $8, ((rsi/$6)*100), (((rsi+$5)/$8)*100), "INS"; 
                 }}' {params.work_directory}/OUTSIDER/FREQUENCY/COUNT_TE_IN_RS.txt {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv \
                     > {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv 2>> {log}.err ||
                     fail_msg "ERROR FREQUENCY OPTIMIZED\\n"
@@ -3282,7 +3294,6 @@ rule DETECTION_TE :
         preset_sort    = re.sub("--threads [0-9]+|-@ [0-9]+", "", config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_SORT"]["PRESET_OPTION"]) + " --threads " + str(config["PARAMS"]["THREADS"]),
         preset_callmd  = re.sub("--threads [0-9]+|-@ [0-9]+", "", config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_CALLMD"]["PRESET_OPTION"]) + " --threads " + str(config["PARAMS"]["THREADS"]),
 
-        OPTIMIZE_FREQUENCE     = config["CHOICE"]["OUTSIDER_VARIANT"]["OPTIMIZE_FREQUENCE"],
         call_sv                = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
         CHROM_KEEP             = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["CHROM_KEEP"],
         pars_bln_option        = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],

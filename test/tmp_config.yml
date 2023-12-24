@@ -13,11 +13,9 @@ CHOICE:
         OUTSIDER_VARIANT: True
         INSIDER_VARIANT: True
         REPORT: True
-        MODE_PARALLELING: True
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" #Posibiliti (sniffles, svim)
         INTEGRATE_TE_TO_GENOME: True
-        OPTIMIZE_FREQUENCE: True
         CLIPPED_READS: False
     INSIDER_VARIANT:
         DETECT_ALL_TE: True
@@ -29,20 +27,19 @@ PARAMS:
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # -x minimap2 preset option is map-pb by default (map-pb, map-ont etc)
-            OPTION: '-t 8'
+            OPTION: ''
         SAMTOOLS_VIEW:
-            PRESET_OPTION: '-F 4'
+            PRESET_OPTION: ''
         SAMTOOLS_SORT:
             PRESET_OPTION: ''
         SAMTOOLS_CALLMD:
             PRESET_OPTION: ''
         TSD:
-            FILE_SIZE_TE_TSD: ""
             SIZE_FLANK: 10
         TE_DETECTION:
             CHROM_KEEP: "^[23][RL]_,^[X4Y]_"  #regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3R,3L,X" ; put "." for keep all chromosome
-            GET_SEQ_REPORT_OPTION: "-m 1000 -t '<DEL>' " #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
-        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 94 -k 'INS|DEL' "
+            GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
+        PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 90 -k 'INS|DEL' "
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
         

@@ -186,7 +186,6 @@ CHOICE:
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles"     # possibilities for SV tools: sniffles
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the OUTSIDER integrated in
-        OPTIMIZE_FREQUENCE: True # (True, False) FREQUENCE CALCULATED WITH CLIPPING READS
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:
         DETECT_ALL_TE: False    # detect ALL TE on genome (parameter GENOME) assembly not only new insertion. Warning! it may be take several hours on big genomes
@@ -270,7 +269,8 @@ WORK_DIRECTORY
 ├── INSIDER ##**FOLDER CONTAINS FILES TRAITEMENT INSIDER
 │   ├── FREQ_INSIDER
 │   ├── TE_DETECTION
-│   │   └── TSD
+│   ├── TSD
+│   │   └── TSD_TE.tsv
 │   ├── TE_INSIDER_VR
 │   └── VARIANT_CALLING
 ├── log  ##**log file to check if you have any error
@@ -280,15 +280,17 @@ WORK_DIRECTORY
 │   │   ├── TE_REPORT_FOUND_blood.fasta
 │   │   └── TE_REPORT_FOUND_ZAM.fasta
 ...
-│   ├── FREQ_OPTIMIZED
+│   ├── FREQUENCY
+|   |   ├── FREQUENCY_TE_INS_PRECISE.fasta
 │   │   └── FREQUENCY_TE_INS.tsv
 │   ├── INSIDER_VR
 │   ├── MAPPING ##**FOLDER CONTAINS FILES MAPPING ON GENOME
 │   ├── MAPPING_TO_REF ##**FOLDER CONTAINS FILES MAPPING ON REFERENCE GENOME
 │   ├── READ_FASTQ_TE ##**FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
 │   ├── TE_DETECTION
-│   │   ├── MERGE_TE
-│   │   └── TSD
+│   │   └── MERGE_TE
+│   ├── TSD
+│   │   └── TSD_TE.tsv
 │   ├── TrEMOLO_SV_TE
 │   │   ├── INS
 │   │   ├── HARD
@@ -333,8 +335,8 @@ The output file **your_work_directory/TE_INFOS.bed** gathers all the necessary i
  8.    `psize_TE` : percentage of size with TE in database
  9.    `SIZE_TE` :  TE size
  10.   `NEW_POS` :  position corrected with calculated TSD (only for OUTSIDER)
- 11.   `FREQ`  : frequence, normalized
- 12.   `FREQ_OPTIMIZED`  : frequence optimized with conversion of clipped read to not clipped (OUTSIDER only)
+ 11.   `FREQ`  : frequency, normalized
+ 12.   `FREQ_WITH_CLIPPED`  : frequency with clipped read (OUTSIDER only)
  13.   `SV_SIZE`  : size of the structural variant (may be larger than the size of the TE)
  14.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
  15.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
