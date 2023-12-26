@@ -39,32 +39,22 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 
 ## Release notes<a name="release"></a>
 
-**Version 2.4.0**
+**Version 2.5.0**
 
-* Added the capability to detect **DELETION** for **OUTSIDER**. Use the parameter `-k 'INS|DEL'` for **OUTSIDER**. Example: `PARS_BLN_OPTION: " --min-size-percent 80 --min-pident 80 -k 'INS|DEL'"`
+* Improvement (TSD) : Increased calculation speed for TSD (issue#14)
+  * Enhanced detection of TSD
 
-* Updated frequency calculation method for **OUTSIDER**:
-  * Faster and more accurate calculation.
-  * Every insertion is now assigned a frequency.
-  * Fixed bugs where frequency exceeded 100% or equaled NONE.
-  * Frequency calculations now include **DELETION** (DEL).
+* Improvement (FREQUENCY) :
+  * OUTSIDER: Some frequencies are more accurate as they take into account the actual number of TEs in the supporting reads. This prevents calculation bias when we have insertions that combine several different TEs (ex: TE's Cluster).
+  * INSIDER: Faster frequency processing for INSIDERS.
 
-* Fixed bugs in `MODE_PARALLELING = True` mode.
+* Bug Fix: The `REPORT` rule returned an error when no INSIDER or OUTSIDER TE was identified.
 
-* Option to decide if **CLIPPED READS** (SOFT, HARD) should be treated as new insertions. Setting `CLIPPED_READS = False` (default) reduces computation time.
+* Bug Fix: The `HARD` rule failed when a `fastq.gz` file was passed.
 
-* Updated the `OUTSIDER/REPORT/report.html` report to retain only essential graphs.
-
-* Faster extraction of `INS`, `SOFT`, `HARD` using **CIGAR**.
-
-* **svim** is no longer managed.
-
-* Fix problem R library path in the Singularity definition file
-  * Update the ggplot2 package to version 3.4.2
+* Bug Fix: An error in retrieving chromosome names from the GENOME file was preventing the correct integration of Transposable Elements (TE) into the genome (issue#13).
 
 ## Current limitations
-
-* Frequencies are calculated based only on the size and location of the insertions. They don't identify every TE in all presumed reads support (RS), which might skew the calculation if you have a TE insertion within another TE insertion.
 
 * The pipeline won't directly notify about TE insertions nested within another TE insertion. However, this can be deduced by examining information in columns **9** (SIZE_TE) and **13** (SV_SIZE **new column**) of the `TE_INFOS.bed` file. If, for instance, the SV size is twice the size of the identified TE, you might want to delve into the intermediate files for more details.
 
