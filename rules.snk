@@ -462,7 +462,6 @@ rule REPORT :
 
             test -s {params.work_directory}/tmp.txt || touch {params.work_directory}/tmp.txt
 
-            #ici--
             #TSD
             #grep "OK:$ID]" {params.work_directory}/tmp.txt || echo "NONE";
             SIZE_TE="";
@@ -1985,6 +1984,7 @@ rule TSD_OUTSIDER :
                 1>> {log}.out 2>> {log}.err | tee -a {log}.out \
                 || warn_msg "WARNING : FAIL GET TSD OUTSIDER ✘\\n" | tee -a {log}.err ; 
         
+        echo "TSD OUTSIDER DONE !";
 
         """
 
