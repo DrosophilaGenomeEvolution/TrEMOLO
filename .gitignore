@@ -3,3 +3,5 @@ test/*.*.*
 lib/C++/bin/*
 lib/TSD/*pycache*
 lib/TSD/__pycache__/utils.*
+lib/python/TSD/*pycache*
+lib/python/TSD/__pycache__/utils.*
