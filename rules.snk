@@ -3072,7 +3072,7 @@ rule HARD_TE :
                 {output.bln} \
                 {input.fasta_TE} \
                 {output.all_te} \
-                --combine_name {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/COMBINE_SV_HARD.csv -c -k "HARD" {params.pars_bln_option}
+                {params.pars_bln_option} --combine_name {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/COMBINE_SV_HARD.csv -c -k "HARD"
 
         test -s {output.all_te} && \
             awk 'NR>1 {{print $2":"$1":"$5}}' {output.all_te} | awk -F ":" 'OFS="\t"{{print $1, $3, $4, $10"|"$5, $11, $9}}' > {output.bed}
@@ -3241,7 +3241,7 @@ rule SOFT_TE :
                 {output.bln} \
                 {input.fasta_TE} \
                 {output.all_te} \
-                --combine_name {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/COMBINE_SV_SOFT.csv -c -k "SOFT" {params.pars_bln_option}
+                {params.pars_bln_option} --combine_name {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/COMBINE_SV_SOFT.csv -c -k "SOFT"
 
         test -s {output.all_te} && \
             awk 'NR>1 {{print $2":"$1}}' {output.all_te} | awk -F ":" 'OFS="\t"{{print $1, $3, $4, $10"|"$5}}' > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/TE_SOFT.bed

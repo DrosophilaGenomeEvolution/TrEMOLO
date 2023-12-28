@@ -48,6 +48,10 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
   * OUTSIDER: Some frequencies are more accurate as they take into account the actual number of TEs in the supporting reads. This prevents calculation bias when we have insertions that combine several different TEs (ex: TE's Cluster).
   * INSIDER: Faster frequency processing for INSIDERS.
 
+* Removal: In the `config.yaml` and `rules.snk` files:
+  * Removal of the parameters `OPTIMIZE_FREQUENCE`, `MODE_PARALLELING`, `FILE_SIZE_TE_TSD`.
+  * Removal of the `GET_READS_TE` step.
+
 * Bug Fix: The `REPORT` rule returned an error when no INSIDER or OUTSIDER TE was identified.
 
 * Bug Fix: The `HARD` rule failed when a `fastq.gz` file was passed.
@@ -276,7 +280,6 @@ WORK_DIRECTORY
 │   ├── INSIDER_VR
 │   ├── MAPPING ##**FOLDER CONTAINS FILES MAPPING ON GENOME
 │   ├── MAPPING_TO_REF ##**FOLDER CONTAINS FILES MAPPING ON REFERENCE GENOME
-│   ├── READ_FASTQ_TE ##**FOLDER CONTAINS ALL THE READs ASSOCIATED WITH THE TE
 │   ├── TE_DETECTION
 │   │   └── MERGE_TE
 │   ├── TSD
