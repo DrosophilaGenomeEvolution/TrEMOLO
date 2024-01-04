@@ -307,7 +307,8 @@ rule REPORT :
             awk '{{ split($4, sp1, "|"); split($10, sp2, "|"); if(sp1[1] == sp2[1]){{ print sp1[2] }} }}' > {params.work_directory}/ID_OUTSIDER_INTERSECT_TO_DEL.txt
 
         #BUILD TE_INFO OUTSIDER
-        echo "BUILD TE_INFO OUTSIDER...";
+        test -s {params.work_directory}/POSITION_TE_OUTSIDER.bed && \
+            echo "BUILD TE_INFO OUTSIDER...";
 
         i=0;
         show_step="$i/$NB_TE TE"
@@ -374,9 +375,9 @@ rule REPORT :
 
             if ! test -n "$IS_CLIPPED"; then
                 #GET ID_TrEMOLO
-                ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id`
+                ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id 2>/dev/null || echo "0"`
                 TYPE=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv ) | cut -f 2  | cut -d ":" -f 2 | sed 's/[<>]//g'`
-                RS=`(test -s {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv && grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 4 | ${{path_to_pipline}}/lib/C++/bin/chain_to_id) || echo "ERROR_RS_$ID" >{log}.err`
+                RS=`(test -s {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv && grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 4 | ${{path_to_pipline}}/lib/C++/bin/chain_to_id 2>/dev/null) || echo "ERROR_RS_$ID" >{log}.err`
                 ! test -n "$RS" && RS=0;
                 ID_TrEMOLO="TE_ID_OUTSIDER.$ID_POS.$TYPE.$RS";
             else
@@ -437,33 +438,11 @@ rule REPORT :
             start=`echo "$line" | cut -f 2`
             end=`echo "$line" | cut -f 3`
 
-            # size_ins=$((end-start));
-
-            # #recalculate start with jonctionne TE position
-            # start_more=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 6 || echo 0`            
-            # start=$((start+start_more));
-
-            # #recalculate end with jonctionne TE position
-            # diff=$((size_ins-end));
-            # end=$((end-diff));
-
             strand=`echo "$line" | cut -f 6`
             pident=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 3 || echo "NONE"`;
             size_per=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 4 || echo "NONE"`
 
-
-            #echo "ID : $ID";
-            #echo "TE : $TE";
-            test -s {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{TE}}.txt && \
-                cat {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{TE}}.txt > {params.work_directory}/tmp.txt
-
-            test -s {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{TE}}_KO_corrected.txt && \
-                cat {params.work_directory}/INSIDER/TE_DETECTION/TSD/TSD_${{TE}}_KO_corrected.txt >> {params.work_directory}/tmp.txt
-
-            test -s {params.work_directory}/tmp.txt || touch {params.work_directory}/tmp.txt
-
             #TSD
-            #grep "OK:$ID]" {params.work_directory}/tmp.txt || echo "NONE";
             SIZE_TE="";
             TSD_OK=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv | cut -f 2 || echo ""`
             if [ ! -n "$TSD_OK" ]; then
@@ -474,18 +453,18 @@ rule REPORT :
             fi;
 
             if [ ! -n "$SIZE_TE" ]; then
-                SIZE_TE="NONE"; 
+                SIZE_TE="NONE";
             fi;
 
             #TSD NEW POS
             NEW_POS=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv | cut -f 3 || echo "$start"`
 
             #FREQUENCE
-            FREQ_BEFOR=`grep -w "$TE|$ID" {params.work_directory}/INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv | cut -f 6 || echo "NONE"`
+            FREQ_BEFOR=`grep -w "$TE|$ID" {params.work_directory}/INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv 2>/dev/null | cut -f 6 || echo "NONE"`
             FREQ_AFTER="INSIDER";
 
             #GET ID_TrEMOLO
-            ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id`
+            ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id 2>/dev/null || echo "0"`
             TYPE=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 2 | cut -d ":" -f 3 || echo "UNKNOWN"`
 
             SV_SIZE=`grep -w "$ID" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | awk '

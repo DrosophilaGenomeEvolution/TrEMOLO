@@ -131,6 +131,6 @@ onsuccess:
 
 onerror:
     print("AN ERROR OCCURRED!")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> tmp.log && rm -f tmp.log")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" 2>/dev/null | awk '$8==\"node\" {{print $2}}'` 2>/dev/null")
 
 

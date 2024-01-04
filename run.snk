@@ -171,7 +171,7 @@ os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 onerror:
     print("AN ERROR OCCURRED !!")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> tmp.log; rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> /dev/null; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
 
 onsuccess:
     shell("rm -f tmp.log; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\"` ")
@@ -409,7 +409,7 @@ rule TrEMOLO_BUILD :
 
         fi;
 
-        kill -s 15 `cat {params.work_directory}/.pid` || echo
+        kill -s 15 `cat {params.work_directory}/.pid` 2>/dev/null || echo
 
         ## pour les plus malin ^^
         if [ {params.choice_insider_sv} != "True" ] && [ {params.choice_outsider_sv} != "True" ]; then

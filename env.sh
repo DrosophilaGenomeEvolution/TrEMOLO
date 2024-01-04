@@ -77,33 +77,3 @@ run_cmd () {
         cat ${log}.out;
     fi;
 };
-
-
-
-
-
-chain_to_id (){
-    #if [ -n "$1" ]; then
-    #    chain="$1";
-    #else
-        chain=`cat "/dev/stdin"`
-    #fi;
-    
-    ind=0;
-    s=0;
-
-    for char in $(seq 1 ${#chain}); do
-        i="$(echo $chain | cut -c$char)";
-        #echo "i = $i";
-        #echo "ind = $ind";
-        ascii=$( printf "%d" "'${i}" );
-        echo "ascii : $ascii"
-        #echo | awk -v ascii="$ascii" -v ind="$ind" -v s="$s" '{ printf "%.14f" , (s+(ascii + ( 7 + ind/(5 - ascii)) ))}'
-        s=`echo | awk -v ascii="$ascii" -v ind="$ind" -v s="$s" '{ printf "%.14f" , (s+(ascii + ( 7 + ind/(5 - ascii)) ))}'`;
-        echo "s = $s"
-        ind=$(($ind+1));
-    done;
-    s=`echo | awk -v s="$s" '{ printf "%d" , ( ((s - int(s)) * 100000 ) + int(s) ) }'`;
-    echo $s;
-}
-
