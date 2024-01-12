@@ -586,7 +586,7 @@ rule REPORT :
             echo "  BUILD chroms for scatter FREQUENCY js ..."
             cut -f 1 {params.work_directory}/TE_INFOS.bed | sort -u > {params.work_directory}/tmp_chrom_with_TE.txt
             grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt | awk 'BEGIN{{print "var chroms = {{"}} {{print "   \\""$1"\\" : "$2","}} END{{print "}}"}}'  > {params.work_directory}/js/chroms.js || fail_msg "ERROR : NO CHROM IN REPORT\\n"
-            grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt | awk 'BEGIN{{print "const all_data = {{"}} {{print "   \\""$1"\\" : data"$1","}} END{{print "}}"}}'   > {params.work_directory}/js/data_ALL_FREQ_CHROM.js || fail_msg "ERROR : NO TE FOR FREQUENCY IN REPORT\\n"
+            # grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt | awk 'BEGIN{{print "const all_data = {{"}} {{print "   \\""$1"\\" : data"$1","}} END{{print "}}"}}'   > {params.work_directory}/js/data_ALL_FREQ_CHROM.js || fail_msg "ERROR : NO TE FOR FREQUENCY IN REPORT\\n"
             path_fai=`realpath {input.genome}.fai`;
 
             echo "  BUILD group for scatter FREQUENCY js ..."
@@ -781,6 +781,7 @@ rule REPORT :
                 
                 awk '
                     BEGIN{{
+                        print "all_data = {{"
                         gen="";
                         name="";
                         chrom="";
@@ -794,12 +795,12 @@ rule REPORT :
                             if( chrom != "" ){{
                                 print "\\"type\\": \\""type"\\",";
                                 print "\\"id\\": \\""id"\\",";
-                                print "\\"name\\": \\""name"\\"\\n}}];\\n\\n";
+                                print "\\"name\\": \\""name"\\"\\n}}],\\n\\n";
                             }}
 
                             chrom=$1;
 
-                            print "var data"chrom" = [{{";
+                            print "\\""chrom"\\": [{{";
                             print "\\""$4"x\\": "$2",";
                             print "\\""$4"y\\": "$3",";
                             print "\\""$4"io\\": \\""$7"\\",";
@@ -832,12 +833,14 @@ rule REPORT :
                     }}
 
                     END{{
-                        print "\\"name\\": \\""name"\\"\\n}}]";
+                        print "\\"type\\": \\""type"\\",";
+                        print "\\"id\\": \\""id"\\",";
+                        print "\\"name\\": \\""name"\\"\\n}}]}};";
                     }}' tmp_scatter.csv > js/FREQ_TE_INSIDER_CHROM.js
 
                 #rest chrom
-                awk 'NR>1 {{ print $1 }}' tmp_scatter.csv | sort -u > tmp_chrom.txt
-                grep -v -f tmp_chrom.txt ${{path_fai}} | cut -f 1 | awk '{{print "var data"$1" = []"}}' >> js/FREQ_TE_INSIDER_CHROM.js || echo ""
+                # awk 'NR>1 {{ print $1 }}' tmp_scatter.csv | sort -u > tmp_chrom.txt
+                # grep -v -f tmp_chrom.txt ${{path_fai}} | cut -f 1 | awk '{{print "var data"$1" = []"}}' >> js/FREQ_TE_INSIDER_CHROM.js || echo ""
 
                 test -s js/FREQ_TE_INSIDER_CHROM.js && \
                     sed 's/%%VAR_JS%%/FREQ_TE_INSIDER_CHROM.js/g' lib/template_FREQ_CHROM.html > lib/template_FREQ_CHROM_INSIDER.html
@@ -906,6 +909,7 @@ rule REPORT :
 
                 awk '
                     BEGIN{{
+                        print "all_data = {{"
                         gen="";
                         name="";
                         chrom="";
@@ -919,12 +923,12 @@ rule REPORT :
                             if( chrom != "" ){{
                                 print "\\"type\\": \\""type"\\",";
                                 print "\\"id\\": \\""id"\\",";
-                                print "\\"name\\": \\""name"\\"\\n}}];\\n\\n";
+                                print "\\"name\\": \\""name"\\"\\n}}],\\n\\n";
                             }}
 
                             chrom=$1;
 
-                            print "var data"chrom" = [{{";
+                            print "\\""chrom"\\": [{{";
                             print "\\""$4"x\\": "$2",";
                             print "\\""$4"y\\": "$3",";
                             print "\\""$4"io\\": \\""$7"\\",";
@@ -957,11 +961,13 @@ rule REPORT :
                     }}
 
                     END{{
-                        print "\\"name\\": \\""name"\\"\\n}}]";
+                        print "\\"type\\": \\""type"\\",";
+                        print "\\"id\\": \\""id"\\",";
+                        print "\\"name\\": \\""name"\\"\\n}}]}};";
                     }}' tmp_scatter.csv > js/FREQ_TE_OUTSIDER_CHROM.js
 
-                cut -f 1 tmp_scatter.csv | sort -u > tmp_chrom.txt
-                grep -v -f tmp_chrom.txt ${{path_fai}} | cut -f 1 | awk '{{print "var data"$1" = []"}}' >> js/FREQ_TE_OUTSIDER_CHROM.js || echo ""
+                # cut -f 1 tmp_scatter.csv | sort -u > tmp_chrom.txt
+                # grep -v -f tmp_chrom.txt ${{path_fai}} | cut -f 1 | awk '{{print "var data"$1" = []"}}' >> js/FREQ_TE_OUTSIDER_CHROM.js || echo ""
                 test -s js/FREQ_TE_OUTSIDER_CHROM.js && \
                     sed 's/%%VAR_JS%%/FREQ_TE_OUTSIDER_CHROM.js/g' lib/template_FREQ_CHROM.html > lib/template_FREQ_CHROM_OUTSIDER.html
 
@@ -1032,6 +1038,7 @@ rule REPORT :
 
                 awk '
                     BEGIN{{
+                        print "all_data = {{"
                         gen="";
                         name="";
                         chrom="";
@@ -1045,12 +1052,12 @@ rule REPORT :
                             if( chrom != "" ){{
                                 print "\\"type\\": \\""type"\\",";
                                 print "\\"id\\": \\""id"\\",";
-                                print "\\"name\\": \\""name"\\"\\n}}];\\n\\n";
+                                print "\\"name\\": \\""name"\\"\\n}}],\\n\\n";
                             }}
 
                             chrom=$1;
 
-                            print "var data"chrom" = [{{";
+                            print "\\""chrom"\\": [{{";
                             print "\\""$4"x\\": "$2",";
                             print "\\""$4"y\\": "$3",";
                             print "\\""$4"io\\": \\""$7"\\",";
@@ -1083,7 +1090,9 @@ rule REPORT :
                     }}
 
                     END{{
-                        print "\\"name\\": \\""name"\\"\\n}}]";
+                        print "\\"type\\": \\""type"\\",";
+                        print "\\"id\\": \\""id"\\",";
+                        print "\\"name\\": \\""name"\\"\\n}}]}};";
                     }}' tmp_scatter.csv > js/FREQ_TE_INOUTSIDER_CHROM.js
 
                 cut -f 1 tmp_scatter.csv | sort -u > tmp_chrom.txt
@@ -2120,7 +2129,7 @@ rule GET_SEQ_TE :
         ##TrEMOLO INS and sniffles/svim MERGE
         cat {input.snif_seqs} {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.fasta > {params.work_directory}/tmp_SEQ_TE_ALL.fasta
 
-        cp {params.work_directory}/tmp_TE_all.csv {params.work_directory}/Keep_TE_all.csv
+        #cp {params.work_directory}/tmp_TE_all.csv {params.work_directory}/Keep_TE_all.csv
 
         echo "GET SEQ TE..."
         for i in `ls {params.work_directory}/OUTSIDER/ET_FIND_FA | grep ".bed$"`; 

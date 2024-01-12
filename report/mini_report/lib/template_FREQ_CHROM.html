@@ -109,7 +109,7 @@
 <script src="../js/%%VAR_JS%%"></script>
 <script src="../js/%%VAR_GROUP%%"></script>
 <script src="../js/chroms.js"></script>
-<script src="../js/data_ALL_FREQ_CHROM.js"></script>
+<!-- <script src="../js/data_ALL_FREQ_CHROM.js"></script> -->
 
 <!-- graph -->
 <div id="chartdiv"></div>
@@ -227,7 +227,7 @@
         return self.indexOf(value) === index;
     }
 
-    var data = all_data[Object.keys(chroms)[0]];
+    var data = all_data[Object.keys(all_data)[0]];
 
     //GET TE and chrom
     var arrayChroms = [];
@@ -410,8 +410,8 @@
     });
 
     trendSeries1.data.setAll([
-        { x: chroms[Object.keys(chroms)[0]], y: 0 },
-        { x: chroms[Object.keys(chroms)[0]], y: 1 }
+        { x: chroms[Object.keys(all_data)[0]], y: 0 },
+        { x: chroms[Object.keys(all_data)[0]], y: 1 }
     ]);
 
     trendSeries0.appear(1000);
@@ -431,7 +431,7 @@
         legend.data.setAll(typesSV_legend);
     });
 
-    var chrom = Object.keys(chroms)[0];
+    var chrom = Object.keys(all_data)[0];
     chart.appear(1000, 100);
 
     var Type_selected = [];
