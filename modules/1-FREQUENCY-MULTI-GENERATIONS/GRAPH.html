@@ -1,11 +1,25 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@100&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+
 <style type="text/css">
     body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        font-family: 'Rubik', "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+
+    h5 {
+        font-family: Rubik !important;
+        margin: 20px auto !important;
     }
 
     #chartdiv, #chartTendence {
         width: 100%;
         height: 500px;
+    }
+
+    .chart-div {
+        width: 85% !important;
+        margin: auto !important;
     }
 
     .block-btn {
@@ -47,15 +61,64 @@
         font-size: 21px;
     }
 
+
+    .go-to-down {
+        position: absolute;
+        box-shadow: 1px 2px 2px gray;
+        top: 15px;
+        right: 15px;
+        width: 50px;
+        height: 50px;
+        border-radius: 500px !important;
+    }
+
+    .go-to-down span, .go-to-up span {
+        font-size: 25px;
+        font-weight: bold;
+    }
+
+    .go-to-up {
+        position: absolute;
+        box-shadow: 1px 2px 2px gray;
+        bottom: 15px;
+        right: 15px;
+        width: 50px;
+        height: 50px;
+        border-radius: 500px !important;
+    }
+
+
+    .zoom-bounce {
+        animation: zoomBounce 0.7s ease-out;
+    }
+
+    @keyframes zoomBounce {
+        0% {
+            transform: scale(0);
+        }
+        50% {
+            transform: scale(1.2);
+        }
+        70% {
+            transform: scale(0.9);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
 </style>
 
 <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/vuetify@3.4.10/dist/vuetify.min.css" rel="stylesheet">
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
 <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
 
 <!-- Data -->
 <script type="text/javascript" src="data.js"></script>
@@ -63,7 +126,13 @@
 <script type="text/javascript" src="generations.js"></script>
 <script type="text/javascript" src="piCluster_Cyto.js"></script>
 
-<div id="chartdiv"></div>
+<!-- commun frequencies -->
+<button type="button" class="btn btn-primary go-to-down">
+    <span class="mdi mdi-chevron-down"></span>
+</button>
+
+<h5 style="text-align: center;">Generation Frequencies</h5>
+<div id="chartdiv" class="chart-div"></div>
 
 <!-- <div class="block-btn">
     <div class="in-block">
@@ -73,161 +142,173 @@
 
 <!-- Vu JS -->
 <div id="app">
-    <v-app id="inspire">
-        <v-container >
-            <div class="contain-switch">
-                <v-btn
-                    class="mx-auto"
-                    variant="plain"
-                    style="display: flex;"
-                >
-                    <v-switch
-                        class="type-frequency"
-                        :class="{'active' : withClipped }"
-                        v-model="withClipped"
-                        color="primary"
-                    >
-                        <template v-slot:label="{ props }">
-                            <v-icon icon="mdi-content-cut"/>
-                        </template>
-                        
-                    </v-switch>
-
-                    <v-tooltip
-                        activator="parent"
-                        location="top"
-                    >{{ withClipped ? 'FREQUENCY WITH CLIPPED READS' : 'FREQUENCY WITHOUT CLIPPED READS' }}</v-tooltip>
-                </v-btn>
-            </div>
-
-            <!-- tendence  -->
-            <div class="contain-btn-type" style="display: flex;">
-                <v-btn 
-                    :color="pente.data['+'] ? 'primary' : 'white' "
-                    icon
-                    @click="pente.data['+']=!pente.data['+']; updatePente()"
-                >
-                    <span class="mdi mdi-chevron-double-up"></span>
-                    <v-tooltip
-                        activator="parent"
-                        location="top"
-                    >rising frequency</v-tooltip>
-                </v-btn>
-
-                <v-btn 
-                    :color="pente.data['~'] ? 'primary' : 'white' "
-                    icon
-                    @click="pente.data['~']=!pente.data['~']; updatePente()"
-                >
-                    <span class="mdi mdi-chart-timeline-variant-shimmer"></span>
-                    <v-tooltip
-                        activator="parent"
-                        location="top"
-                    >frequency varies</v-tooltip>
-                </v-btn>
-
-                <v-btn 
-                    :color="pente.data['='] ? 'primary' : 'white' "
-                    icon
-                    @click="pente.data['=']=!pente.data['=']; updatePente()"
-                >
-                    <span class="mdi mdi-minus"></span>
-                    <v-tooltip
-                        activator="parent"
-                        location="top"
-                    >constant frequency</v-tooltip>
-                </v-btn>
-
-                <v-btn 
-                    :color="pente.data['-'] ? 'primary' : 'white' "
-                    icon
-                    @click="pente.data['-']=!pente.data['-']; updatePente()"
-                >
-                    <span class="mdi mdi-chevron-double-down"></span>
-                    <v-tooltip
-                        activator="parent"
-                        location="top"
-                    >decreasing frequency</v-tooltip>
-                </v-btn>
-                
-            </div>
-
-            <!-- generations -->
-            <v-autocomplete
-                v-model="generations.values"
-                :items="generations.items"
-                @update:model-value="updateGenerations()"
-                multiple
-                chips
-                closable-chips
-                label="generations"
-                placeholder="Selecting generation"
-                color="blue"
-                item-color="blue"
-                variant="solo-filled"
-            ></v-autocomplete>
-
-            <!-- chrom -->
-            <v-autocomplete
-                v-model="chrom.value"
-                :items="chrom.items"
-                @update:model-value="updateChrom()"
-                label="chromosome"
-                placeholder="Selecting chrom"
-                color="blue"
-                item-color="blue"
-                auto-select-first
-                variant="solo-filled"
-                chips
-            ></v-autocomplete>
-
-            <!-- TE -->
-            <v-autocomplete
-                v-model="TE.values"
-                :items="TE.items"
-                @update:model-value="update_TE()"
-                label="TE"
-                multiple
-                chips
-                closable-chips
-                placeholder="Selecting TEs"
-                variant="solo-inverted"
-            ></v-autocomplete>
-
-            <v-slider
-                v-model="minGenInterV"
-                hint="minimum number of common generations"
-                prepend-icon="mdi-nfc-tap"
-                :ticks="tickLabelsSlider"
-                :min="1"
-                :max="maxGen"
-                :step="1"
-                show-ticks="always"
-                tick-size="4"
-                thumb-label
-                @update:model-value="update_Min_Gen_Inter()"
+    <v-container >
+        <div class="contain-switch">
+            <v-btn
+                class="mx-auto"
+                variant="plain"
+                :ripple="false"
+                style="display: flex;"
             >
-            </v-slider>
-        </v-container>
-    </v-app>
+                <v-switch
+                    class="type-frequency"
+                    :class="{'active' : withClipped }"
+                    v-model="withClipped"
+                    color="primary"
+                >
+                    <template v-slot:label="{ props }">
+                        <v-icon icon="mdi-content-cut"/>
+                    </template>
+                    
+                </v-switch>
+
+                <v-tooltip
+                    activator="parent"
+                    location="top"
+                >{{ withClipped ? 'FREQUENCY WITH CLIPPED READS' : 'FREQUENCY WITHOUT CLIPPED READS' }}</v-tooltip>
+            </v-btn>
+        </div>
+
+        <!-- tendence  -->
+        <div class="contain-btn-type" style="display: flex;">
+            <v-btn 
+                :color="pente.data['+'] ? 'primary' : 'white' "
+                icon
+                @click="pente.data['+']=!pente.data['+']; updatePente()"
+            >
+                <span class="mdi mdi-chevron-double-up"></span>
+                <v-tooltip
+                    activator="parent"
+                    location="top"
+                >rising frequency</v-tooltip>
+            </v-btn>
+
+            <v-btn 
+                :color="pente.data['~'] ? 'primary' : 'white' "
+                icon
+                @click="pente.data['~']=!pente.data['~']; updatePente()"
+            >
+                <span class="mdi mdi-chart-timeline-variant-shimmer"></span>
+                <v-tooltip
+                    activator="parent"
+                    location="top"
+                >frequency varies</v-tooltip>
+            </v-btn>
+
+            <v-btn 
+                :color="pente.data['='] ? 'primary' : 'white' "
+                icon
+                @click="pente.data['=']=!pente.data['=']; updatePente()"
+            >
+                <span class="mdi mdi-minus"></span>
+                <v-tooltip
+                    activator="parent"
+                    location="top"
+                >constant frequency</v-tooltip>
+            </v-btn>
+
+            <v-btn 
+                :color="pente.data['-'] ? 'primary' : 'white' "
+                icon
+                @click="pente.data['-']=!pente.data['-']; updatePente()"
+            >
+                <span class="mdi mdi-chevron-double-down"></span>
+                <v-tooltip
+                    activator="parent"
+                    location="top"
+                >decreasing frequency</v-tooltip>
+            </v-btn>
+            
+        </div>
+
+        <!-- generations -->
+        <v-autocomplete
+            v-model="generations.values"
+            :items="generations.items"
+            @update:model-value="updateGenerations()"
+            multiple
+            chips
+            closable-chips
+            label="generations"
+            placeholder="Selecting generation"
+            color="blue"
+            item-color="blue"
+            variant="solo-filled"
+        ></v-autocomplete>
+
+        <!-- chrom -->
+        <v-autocomplete
+            v-model="chrom.value"
+            :items="chrom.items"
+            @update:model-value="updateChrom()"
+            label="chromosome"
+            placeholder="Selecting chrom"
+            color="blue"
+            item-color="blue"
+            auto-select-first
+            variant="solo-filled"
+            chips
+        ></v-autocomplete>
+
+        <!-- TE -->
+        <v-autocomplete
+            v-model="TE.values"
+            :items="TE.items"
+            @update:model-value="update_TE()"
+            label="TE"
+            multiple
+            chips
+            closable-chips
+            placeholder="Selecting TEs"
+            variant="solo-inverted"
+        ></v-autocomplete>
+
+        <v-slider
+            v-model="minGenInterV"
+            hint="minimum number of common generations"
+            prepend-icon="mdi-nfc-tap"
+            :ticks="tickLabelsSlider"
+            :min="1"
+            :max="maxGen"
+            :step="1"
+            show-ticks="always"
+            tick-size="4"
+            thumb-label
+            @update:model-value="update_Min_Gen_Inter()"
+        >
+        </v-slider>
+    </v-container>
 </div>
 
-<!-- <h5>Evolution <span style="color: gray; font-weight: initial; font-size:0.9em;">(click on a point on the top graph to see something)</span></h5>
 
-<div id="chartTendence"></div>
+<!-- trend frequencies -->
+<h5 style="text-align: center;">Evolution <span style="color: gray; font-weight: initial; font-size:0.9em; ">(click on a point on the top graph to see something)</span></h5>
+<div id="chartTendence" class="chart-div"></div>
 <div class="block-btn" style="margin-bottom: 15px;">
     <div class="in-block">
         <button type="button" class="btn btn-primary btn-lg tend-clear">CLEAR</button>
         <button type="button" class="btn btn-primary btn-lg mod-reg">REAL DISTANCE</button>
         <button type="button" class="btn btn-primary btn-lg rm-zero">REMOVE ZERO</button>
     </div>
-</div> -->
+</div>
+
+<button type="button" class="btn btn-primary go-to-up">
+    <span class="mdi mdi-chevron-up"></span>
+</button>
 
 <script src="https://unpkg.com/vue@3.4.7/dist/vue.global.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@3.4.10/dist/vuetify.min.js"></script>
-
-
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+<script type="text/javascript">
+    $(".go-to-down").on("click", function(){
+        $("body").scrollTop($("body").height());
+    })
+
+    $(".go-to-up").on("click", function(){
+        $("body").scrollTop(0);
+    })
+</script>
 
 <script type="text/javascript">
 
@@ -243,142 +324,215 @@
      * ---------------------------------------
      */
 
-    // Create root element
-    // https://www.amcharts.com/docs/v5/getting-started/#Root_element
-    var root = am5.Root.new("chartdiv");
+    // $(document).load(function(){
+        // Create root element
+        // https://www.amcharts.com/docs/v5/getting-started/#Root_element
+        var root = am5.Root.new("chartdiv");
 
-    // Set themes
-    // https://www.amcharts.com/docs/v5/concepts/themes/
-    root.setThemes([
-      am5themes_Animated.new(root)
-    ]);
+        // Set themes
+        // https://www.amcharts.com/docs/v5/concepts/themes/
+        root.setThemes([
+            am5themes_Animated.new(root)
+        ]);
 
-    // Create chart
-    // https://www.amcharts.com/docs/v5/charts/xy-chart/
-    var chart = root.container.children.push(am5xy.XYChart.new(root, {
-      panX: true,
-      panY: true,
-      wheelY: "zoomXY",
-      pinchZoomX:true,
-      pinchZoomY:true
-    }));
+        // Create chart
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            panX: true,
+            panY: true,
+            wheelY: "zoomXY",
+            pinchZoomX:true,
+            pinchZoomY:true
+        }));
+    
+        var dotColors = [
+            am5.color("#10B0E6"),
+            am5.color("#106CE6"),
+            am5.color("#3C10E6"),
+            am5.color("#E6A410"),
+            am5.color("#E68910"),
+            am5.color("#E66410"),
+            am5.color("#E63B0D")
+        ];
+        chart.get("colors").set("colors", dotColors);
 
-    chart.get("colors").set("colors", [
-        am5.color("#10B0E6"),
-        am5.color("#106CE6"),
-        am5.color("#3C10E6"),
-        am5.color("#E6A410"),
-        am5.color("#E68910"),
-        am5.color("#E66410"),
-        am5.color("#E63B0D")
-    ]);
-
-    // Create axes
-    // https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
-    var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
-        maxPrecision: 0,
-        extraTooltipPrecision: 1,
-        numberFormat: "#.0a",
-        tooltipNumberFormat: "#.0a",
-        renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 100 }),
-        tooltip: am5.Tooltip.new(root, {})
-    }));
-
-    var yAxis = chart.yAxes.push(
-        am5xy.ValueAxis.new(root, {
+        // Create axes
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
+        var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+            maxPrecision: 0,
             extraTooltipPrecision: 1,
-            min: 0,
-            max: 1,
-            numberFormat: "#.00",
-            tooltipNumberFormat: "#.00",
-            renderer: am5xy.AxisRendererY.new(root, {}),
+            numberFormat: "#.0a",
+            tooltipNumberFormat: "#.0a",
+            renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 100 }),
             tooltip: am5.Tooltip.new(root, {})
-        })
-    );
+        }));
 
-    var allDataTE = {};
-    var withClipped = false;
-    var bulletTemplate = am5.Template.new(root, {});
+        var yAxis = chart.yAxes.push(
+            am5xy.ValueAxis.new(root, {
+                extraTooltipPrecision: 1,
+                min: 0,
+                max: 1,
+                numberFormat: "#.00",
+                tooltipNumberFormat: "#.00",
+                renderer: am5xy.AxisRendererY.new(root, {}),
+                tooltip: am5.Tooltip.new(root, {})
+            })
+        );
 
-    bulletTemplate.events.on("click", function(ev) {
-        // console.log("target:", ev.target);
-        // console.log("infos:", ev.target.dataItem.bullets[0]._settings.sprite._settings.radius);
-        console.log("id:", ev.target.dataItem.dataContext.id);
-        var id = ev.target.dataItem.dataContext.id;
-        
-        ev.target.dataItem.bullets[0]._settings.sprite._settings.radius = 50;
-        
-        //add
-        if(allDataTE[id] == undefined){
-            for(const dt in data){
-                if( data[dt]["id"] == id ){
-                    allDataTE[id] = [];
-                    for(const gen in generations){
-                        if( data[dt][generations[gen] + "y1"] != undefined ){
-                            const ob = {
-                                    "generation": generations[gen],
-                                    "y": data[dt][generations[gen] + (withClipped ? "y2" : "y1")]
-                                };
+        var allDataTE = {};
+        var withClipped = false;
+        var bulletTemplate = am5.Template.new(root, {});
 
-                            allDataTE[id].push(
-                                ob
-                            );
-                        }
-                        else{
-                            allDataTE[id].push(
-                                {
-                                    "generation": generations[gen],
-                                    "y": 0
-                                }
-                            );
-                        }
+        bulletTemplate.events.on("click", function(ev) {
+            // console.log("target:", ev.target);
+            // console.log("infos:", ev.target.dataItem.bullets[0]._settings.sprite._settings.radius);
+            console.log("id:", ev.target.dataItem.dataContext.id);
+            var id = ev.target.dataItem.dataContext.id;
+            
+            ev.target.dataItem.bullets[0]._settings.sprite._settings.radius = 50;
+            
+            //add
+            if(allDataTE[id] == undefined){
+                allDataTE[id] = [];
+                let genGot = [];
+                for(const dt in data){
+                    if( data[dt]["id"] == id ){
+                        const gen = Object.keys(data[dt]).find((key) => key.match(/G[0-9]+x/g) != null && key.match(/G[0-9]+x/g)).replace("x", "");
+                        console.log("l:", gen, data[dt][gen + (withClipped ? "y2" : "y1")] );
+                        const ob = {
+                            "generation": gen,
+                            "y": data[dt][gen + (withClipped ? "y2" : "y1")],
+                            "type1": data[dt]["type1"],
+                            "type2": data[dt]["type2"],
+                        };
+
+                        allDataTE[id].push(
+                            ob
+                        );
+
+                        genGot.push(gen)
                     }
                 }
+
+                for (const key in generations) {
+                    const gen = generations[key];
+                    if( ! genGot.includes(gen) ){
+                        allDataTE[id].push(
+                            {
+                                "generation": gen,
+                                "y": 0
+                            }
+                        );
+                    }
+                }
+
+                allDataTE[id] = allDataTE[id].slice().sort((a, b) => {
+                    return parseInt(a.generation.replace("G", "")) - parseInt(b.generation.replace("G", ""))
+                });
+
+                
+                $(".go-to-down").addClass("zoom-bounce");
+                setTimeout(function(){
+                    $(".go-to-down").removeClass("zoom-bounce");
+                }, 700)
+
             }
+            else{
+                delete allDataTE[id];
+            }
+            console.log("tend:", allDataTE, allDataTE[id]);
+            updateTend();
+        });
+
+        function updateDataTend(){
+            console.log("updateDataTend");
+            if(Object.keys(allDataTE).length > 0){
+                
+                let tempData = {}
+                
+                for (const id in allDataTE) {
+                        
+                        const typeBool = Type_selected.includes(withClipped ? allDataTE[id]["type2"] : allDataTE[id]["type1"])
+                        if(typeBool || true){
+                            tempData[id] = [];
+                            let genGot = [];
+                            for(const dt in data){
+                                if( data[dt]["id"] == id ){
+                                    const gen = Object.keys(data[dt]).find((key) => key.match(/G[0-9]+x/g) != null && key.match(/G[0-9]+x/g)).replace("x", "");
+                                    console.log("l22:", gen, data[dt][gen + (withClipped ? "y2" : "y1")] );
+                                    const ob = {
+                                        "generation": gen,
+                                        "y": data[dt][gen + (withClipped ? "y2" : "y1")],
+                                        "type1": allDataTE[id]["type1"],
+                                        "type2": allDataTE[id]["type2"],
+                                    };
+
+                                    tempData[id].push(
+                                        ob
+                                    );
+
+                                    genGot.push(gen)
+                                }
+                            }
+
+                            for (const key in generations) {
+                                const gen = generations[key];
+                                if( ! genGot.includes(gen) ){
+                                    tempData[id].push(
+                                        {
+                                            "generation": gen,
+                                            "y": 0
+                                        }
+                                    );
+                                }
+                            }
+
+                            tempData[id] = tempData[id].slice().sort((a, b) => {
+                                return parseInt(a.generation.replace("G", "")) - parseInt(b.generation.replace("G", ""))
+                            });
+                        }
+                }
+
+                allDataTE = tempData;
+                console.log("updateDataTend", allDataTE);
+            }
+            updateTend();
         }
-        else{
-            delete allDataTE[id];
+
+        $(".tend-clear").on("click", function () {
+            allDataTE = {};
+            updateTend();
+        })
+
+        function onlyUnique(value, index, self) {
+            return self.indexOf(value) === index;
         }
-        // updateTend();
-    });
 
-    $(".tend-clear").on("click", function () {
-        allDataTE = {};
-        //updateTend();
-    })
+        var series = [{}, {}];
+        var generationsSelected = generations;
+        var list_snapToSeries = [];
 
-    function onlyUnique(value, index, self) {
-        return self.indexOf(value) === index;
-    }
-
-    var series = {};
-    var series2 = {};
-    var generationsSelected = generations;
-    var list_snapToSeries = [];
-
-    /*1*/
-    for(const gen in generationsSelected){
-        if(generationsSelected[gen]){
-            series[generationsSelected[gen]] = chart.series.push(am5xy.LineSeries.new(root, {
+        function createSerie(type, gen){
+            series[type][gen] = chart.series.push(am5xy.LineSeries.new(root, {
                 calculateAggregates: true,
                 xAxis: xAxis,
                 yAxis: yAxis,
-                valueYField: `${generationsSelected[gen]}y1`,
-                valueXField: `${generationsSelected[gen]}x`,
+                valueYField: `${gen}${type == 0 ? 'y1' : 'y2'}`,
+                valueXField: `${gen}x`,
                 name: "name",
-                category: `${generationsSelected[gen]}`,
+                category: `${gen}`,
                 tooltip: am5.Tooltip.new(root, {
                     labelText: "[bold]{category}[/] \nPosition : {valueX} \nFrequency : {valueY} \nTE : [bold]{name}[/]"
                 })
             }));
 
-            series[generationsSelected[gen]].bullets.push(function() {
-                if(generationsSelected[gen] != undefined){
+            series[type][gen].bullets.push(function() {
+                if(gen != undefined){
                     var graphics = am5.Circle.new(root, {
-                            radius: 5,
+                            radius: 5.7,
                             fillOpacity: 0.5,
                             strokeOpacity: 0.5,
-                            fill: series[generationsSelected[gen]].get("fill")
+                            fill: dotColors[generations.indexOf(gen)]
                         }, bulletTemplate);
 
                     return am5.Bullet.new(root, {
@@ -387,357 +541,299 @@
                 }
             });
 
-            series[generationsSelected[gen]].strokes.template.set("strokeOpacity", 0);
+            series[type][gen].strokes.template.set("strokeOpacity", 0);
 
-            list_snapToSeries.push(series[generationsSelected[gen]]);
+            list_snapToSeries.push(series[type][gen]);
         }
 
-    }
+        function createSeries(data){
+            list_snapToSeries = [];
+            for(const gen in generations){
+                createSerie(0, generations[gen]);
+                createSerie(1, generations[gen]);
+            }
+        }
 
-    /*2*/
-    for(const gen in generationsSelected){
-        series2[generationsSelected[gen]] = chart.series.push(am5xy.LineSeries.new(root, {
-            calculateAggregates: true,
+        createSeries();
+    
+        // Add cursor
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/cursor/
+        chart.set("cursor", am5xy.XYCursor.new(root, {
             xAxis: xAxis,
             yAxis: yAxis,
-            valueYField: `${generationsSelected[gen]}y2`,
-            valueXField: `${generationsSelected[gen]}x`,
-            name: "name",
-            category: `${generationsSelected[gen]}`,
-            tooltip: am5.Tooltip.new(root, {
-                labelText: "[bold]{category}[/] \nPosition : {valueX} \nFrequency : {valueY} \nTE : [bold]{name}[/]"
-            })
+            snapToSeries: list_snapToSeries
+        }));    
+
+        // Add scrollbars
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/scrollbars/
+        chart.set("scrollbarX", am5.Scrollbar.new(root, {
+            orientation: "horizontal"
         }));
 
-        series2[generationsSelected[gen]].bullets.push(function() {
-            if(generationsSelected[gen] != undefined){
-                var graphics = am5.Circle.new(root, {
-                        radius: 5,
-                        fillOpacity: 0.5,
-                        strokeOpacity: 0.5,
-                        fill: series[generationsSelected[gen]].get("fill")
-                    }, bulletTemplate);
+        chart.set("scrollbarY", am5.Scrollbar.new(root, {
+            orientation: "vertical"
+        }));
 
-                return am5.Bullet.new(root, {
-                    sprite: graphics
-                });
-            }
-        });
-
-        series2[generationsSelected[gen]].strokes.template.set("strokeOpacity", 0);
-
-        list_snapToSeries.push(series2[generationsSelected[gen]]);
-    }
-
-
-   
-    // Add cursor
-    // https://www.amcharts.com/docs/v5/charts/xy-chart/cursor/
-    chart.set("cursor", am5xy.XYCursor.new(root, {
-        xAxis: xAxis,
-        yAxis: yAxis,
-        snapToSeries: list_snapToSeries
-    }));    
-
-    // Add scrollbars
-    // https://www.amcharts.com/docs/v5/charts/xy-chart/scrollbars/
-    chart.set("scrollbarX", am5.Scrollbar.new(root, {
-        orientation: "horizontal"
-    }));
-
-    chart.set("scrollbarY", am5.Scrollbar.new(root, {
-        orientation: "vertical"
-    }));
-
-    
-    const all_data = allData
-    const chromInit = Object.keys(all_data)[0];
-    var data = all_data[chromInit];
-
-    //GET TE
-    var array_TE = [];
-    for(const chrom in all_data){
-        var tmp_dt = all_data[chrom];
-        for( const index in tmp_dt ){
-            array_TE.push(tmp_dt[index]["name"]);
+        
+        const all_data = allData
+        
+        const chromInit = Object.keys(all_data)[0];
+        var data = all_data[chromInit];
+        for(const index in data){
+            data[index].index = index;
         }
-    }
 
-    array_TE = array_TE.filter(onlyUnique);
-
-    //GET TYPE
-    var Type_selected = "";
-    var array_Type = [];
-    // for(const chrom in all_data){
-    //     var tmp_dt = all_data[chrom];
-    //     for( const index in tmp_dt ){
-    //         array_Type.push(withClipped ? tmp_dt[index]["type2"] : tmp_dt[index]["type1"]);
-    //     }
-    // }
-
-    // array_Type = array_Type.filter(onlyUnique);
-
-    var Min_gen_inter = 1;
-
-
-    for(const gen in generationsSelected){
-        series[generationsSelected[gen]].data.setAll(data);
-        series2[generationsSelected[gen]].data.setAll(data);
-        series2[generationsSelected[gen]].hide();
-        //series[generationsSelected[gen]].appear(1000);
-    }
-
-    function changeSeries(num){
-        if(num==1){
-            for(const gen in generationsSelected){
-                series2[generationsSelected[gen]].hide()
-                series[generationsSelected[gen]].show()
-                // series[generationsSelected[gen]].appear(1000);
-            }
-        }
-        else{
-            for(const gen in generationsSelected){
-                series[generationsSelected[gen]].hide();
-                series2[generationsSelected[gen]].show();
-                // series2[generationsSelected[gen]].appear(1000);
-            }
-        }
-    }
-
-    // trend series
-    // var trendSeries0 = chart.series.push(am5xy.LineSeries.new(root, {
-    //   xAxis: xAxis,
-    //   yAxis: yAxis,
-    //   valueYField: "y",
-    //   valueXField: "x",
-    //   stroke: series["G11"].get("stroke")
-    // }));
-
-    // trendSeries0.data.setAll([
-    //   { x: 0, y: 0 },
-    //   { x: 0, y: 1 }
-    // ])
-
-    // trendSeries0.strokes.template.setAll({
-    //   strokeWidth: 2,
-    //   strokeDasharray: [10,5]
-    // });
-
-    var trendSeries1 = chart.series.push(am5xy.LineSeries.new(root, {
-        xAxis: xAxis,
-        yAxis: yAxis,
-        valueYField: "y",
-        valueXField: "x",
-        stroke: series[generations[0]].get("stroke")
-    }));
-
-    trendSeries1.strokes.template.setAll({
-        strokeWidth: 2,
-        strokeDasharray: [10,5]
-    });
-
-    trendSeries1.data.setAll([
-        { x: chroms[chromInit], y: 0 },
-        { x: chroms[chromInit], y: 1 }
-    ]);
-
-    // trendSeries0.appear(1000);
-    trendSeries1.appear(1000);
-
-    // Add legend
-    var legend = chart.children.push(am5.Legend.new(root, {
-        nameField: "name",
-        fillField: "color",
-        strokeField: "color",
-        centerX: am5.percent(50),
-        x: am5.percent(50),
-        y: am5.percent(-3.3),
-    }));
-
-    let legendStroke = []
-    for (const index in generations) {
-        legendStroke.push({
-                "name": generations[index], 
-                "color": series[generations[index]].get("stroke")
-            });
-    }
-
-    legend.data.setAll(legendStroke);
-
-
-    // Add series
-    // https://www.amcharts.com/docs/v5/charts/xy-chart/series/
-    /*var seriesPi = chart.series.push(am5xy.ColumnSeries.new(root, {
-        xAxis: xAxis,
-        yAxis: yAxis,
-        openValueYField: "ydeb",
-        valueYField: "yend",
-        openValueXField: "xdeb",
-        valueXField: "xend",
-        name:"name",
-        sequencedInterpolation: true,
-        fill: am5.color("#0082e2"),
-        stroke: am5.color("#0082e2"),
-    }));
-
-    seriesPi.columns.template.setAll({
-        stroke: am5.color("#e71306"),
-        fillOpacity: 0.4,
-        templateField: "columnSettings",
-        strokeOpacity: 0,
-        tooltipText: "piCluster : [bold]{name}[/]\nPosition : [bold]{openValueX}[/] - [bold]{valueX}[/]"
-    });*/
-
-    /*var tmp_pi = dataPi.map((dico) => {
-        var tmp_dico = Object.assign({}, dico);
-        if ( dico["chrom"] == chrom ) {
-            return tmp_dico;
-        }
-        return undefined;
-    })
-
-    var tmp_pi = dataPi.filter((dico) => dico["chrom"] == chrom)
-
-    seriesPi.data.setAll(tmp_pi);*/
-
-    // Add scrollbars
-    // chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
-
-    // Make stuff animate on load
-    // https://www.amcharts.com/docs/v5/concepts/animations/
-    // seriesPi.appear();
-
-    //chart.appear(1000, 100);
-
-    // init ex :  {"G11": true, "G17": true, "G31": true, "G73": true, "G88": true, "G100": true};
-    var generation_active = {};
-    for (const index in generations) {
-        generation_active[generations[index]] = true;
-    }
-
-    var TE_selected = [];
-    function showUpdate() {
-        for (const index in generations) {
-            generation_active[generations[index]] = generationsSelected.includes(generations[index]);
-        }
-                
-        var dataNew = data;
-        for(const gen in generation_active){
-            if ( ! generation_active[gen] ) {
-                dataNew = dataNew.map((dico) => {
-                    var tmp_dico = Object.assign({}, dico);
-                    if ( dico && dico[gen + "x"] != undefined ) {
-                        delete tmp_dico[gen + "x"];
-                        delete tmp_dico[gen + "y1"];
-                        delete tmp_dico[gen + "y2"];
-                    }
-                    return tmp_dico;
-                })
+        //GET TE
+        var array_TE = [];
+        for(const chrom in all_data){
+            var tmp_dt = all_data[chrom];
+            for( const index in tmp_dt ){
+                array_TE.push(tmp_dt[index]["name"]);
             }
         }
 
-        /* Filter by TE */
-        if( TE_selected.length > 0 ){
-            dataNew = dataNew.filter((dico) => {
-                for(const index in TE_selected){
-                    if( dico["name"] == TE_selected[index] ){
-                        return true;
-                    }
+        array_TE = array_TE.filter(onlyUnique);
+
+        var Type_selected = [];
+        var Min_gen_inter = 1;
+
+        function putDataSerie(_data, type, generation){
+            const gen = generation;
+            series[type][gen].data.clear();
+            series[type][gen].data.setAll(_data.slice().filter((dico) => {
+                const _gen = Object.keys(dico).find((key) => key.match(/G[0-9]+x/g) != null && key.match(/G[0-9]+x/g)).replace("x", "");
+                return _gen == gen;
+            }));
+        }
+
+        var tmp_data = data;
+        for(const gen in generations){
+            putDataSerie(tmp_data, 0, generations[gen]);
+            putDataSerie(tmp_data, 1, generations[gen]);
+            series[1][generationsSelected[gen]].hide();
+        }
+
+        function changeSeries(num){
+            if(num==1){
+                for(const gen in generationsSelected){
+                    series[0][generationsSelected[gen]].show();
+                    series[1][generationsSelected[gen]].hide();
                 }
-                return false;
-            })
-        }
-
-        /* Filter by type */
-        if( Type_selected.length > 0 ){
-            dataNew = dataNew.filter((dico) => {
-                for(const index in Type_selected){
-                    if(withClipped){
-                        if( dico["type2"] == Type_selected[index] ){
-                            return true;
-                        }
-                    }
-                    else{
-                        if( dico["type1"] == Type_selected[index] ){
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            })
-        }
-
-        let genById = {}
-        for (const key in dataNew) {
-            if(! ( dataNew[key].id in genById ) ){
-                genById[dataNew[key].id] = [Object.keys(dataNew[key]).find((key) => key.match(/G[0-9]+x/g) != null && key.match(/G[0-9]+x/g) != "" )]
             }
             else{
-                genById[dataNew[key].id].push(Object.keys(dataNew[key]).find((key) => key.match(/G[0-9]+x/g) != null && key.match(/G[0-9]+x/g) != "" ))
+                for(const gen in generationsSelected){
+                    series[0][generationsSelected[gen]].hide();
+                    series[1][generationsSelected[gen]].show();
+                }
             }
         }
-        
-        /* Filter by NB Generation Communs */
-        dataNew = dataNew.filter((dico) => {
-            return Min_gen_inter <= genById[dico.id].length
+
+        // trend series
+        // var trendSeries0 = chart.series.push(am5xy.LineSeries.new(root, {
+        //   xAxis: xAxis,
+        //   yAxis: yAxis,
+        //   valueYField: "y",
+        //   valueXField: "x",
+        //   stroke: series["G11"].get("stroke")
+        // }));
+
+        // trendSeries0.data.setAll([
+        //   { x: 0, y: 0 },
+        //   { x: 0, y: 1 }
+        // ])
+
+        // trendSeries0.strokes.template.setAll({
+        //   strokeWidth: 2,
+        //   strokeDasharray: [10,5]
+        // });
+
+        var trendSeries1 = chart.series.push(am5xy.LineSeries.new(root, {
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueYField: "y",
+            valueXField: "x",
+            stroke: series[0][generations[0]].get("stroke")
+        }));
+
+        trendSeries1.strokes.template.setAll({
+            strokeWidth: 2,
+            strokeDasharray: [10,5]
         });
 
-        for(const gen in generationsSelected){
-            series[generationsSelected[gen]].data.setAll(dataNew);
-            series2[generationsSelected[gen]].data.setAll(dataNew);
-            // if(withClipped)
-            //     series2[generationsSelected[gen]].appear(1000);
-            // else
-            //     series[generationsSelected[gen]].appear(1000);
-        }
-    }
+        trendSeries1.data.setAll([
+            { x: chroms[chromInit], y: 0 },
+            { x: chroms[chromInit], y: 1 }
+        ]);
 
-    /*seriesPi.hide();
-    $(".option-pi").on("click", function () {
-        $(this).toggleClass("active");
-        if($(this).hasClass("active")){
-            seriesPi.show();
-            seriesPi.appear();
-            $(this).text("hide piCluster".toUpperCase());
-        }
-        else{
-            seriesPi.hide();
-            $(this).text("show piCluster".toUpperCase());
-        }
-    })
-*/
+        // trendSeries0.appear(1000);
+        trendSeries1.appear(1000);
 
-    // $(".gen").on("click", function () {
-    //     show($(this).text());
-    //     $(this).toggleClass("active");
+        // Add legend
+        var legend = chart.children.push(am5.Legend.new(root, {
+            nameField: "name",
+            fillField: "color",
+            strokeField: "color",
+            centerX: am5.percent(50),
+            x: am5.percent(50),
+            y: am5.percent(-3.3),
+        }));
+
+        let legendStroke = []
+        for (const index in generations) {
+            let color = dotColors[index % dotColors.length];
+            console.log("order", generations[index], color, dotColors);
+            legendStroke.push({
+                "name": generations[index],
+                "color": color
+            });
+        }
+
+        legend.data.setAll(legendStroke);
+
+
+        // Add series
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/series/
+        /*var seriesPi = chart.series.push(am5xy.ColumnSeries.new(root, {
+            xAxis: xAxis,
+            yAxis: yAxis,
+            openValueYField: "ydeb",
+            valueYField: "yend",
+            openValueXField: "xdeb",
+            valueXField: "xend",
+            name:"name",
+            sequencedInterpolation: true,
+            fill: am5.color("#0082e2"),
+            stroke: am5.color("#0082e2"),
+        }));
+
+        seriesPi.columns.template.setAll({
+            stroke: am5.color("#e71306"),
+            fillOpacity: 0.4,
+            templateField: "columnSettings",
+            strokeOpacity: 0,
+            tooltipText: "piCluster : [bold]{name}[/]\nPosition : [bold]{openValueX}[/] - [bold]{valueX}[/]"
+        });*/
+
+        /*var tmp_pi = dataPi.map((dico) => {
+            var tmp_dico = Object.assign({}, dico);
+            if ( dico["chrom"] == chrom ) {
+                return tmp_dico;
+            }
+            return undefined;
+        })
+
+        var tmp_pi = dataPi.filter((dico) => dico["chrom"] == chrom)
+
+        seriesPi.data.setAll(tmp_pi);*/
+
+        // Add scrollbars
+        // chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
+
+        // Make stuff animate on load
+        // https://www.amcharts.com/docs/v5/concepts/animations/
+        // seriesPi.appear();
+
+        //chart.appear(1000, 100);
+
+        // init ex :  {"G11": true, "G17": true, "G31": true, "G73": true, "G88": true, "G100": true};
+        var generation_active = {};
+        for (const index in generations) {
+            generation_active[generations[index]] = true;
+        }
+        
+        var TE_selected = [];
+        function showUpdate() {
+            for (const index in generations) {
+                generation_active[generations[index]] = generationsSelected.includes(generations[index]);
+            }
+            
+            console.log("generation_active", generation_active);
+
+            let genById = {}
+            for (const key in data) {
+                if(! ( data[key].id in genById ) ){
+                    genById[data[key].id] = [Object.keys(data[key]).find((key) => key.match(/G[0-9]+x/g) != null && key.match(/G[0-9]+x/g) != "" )]
+                }
+                else{
+                    genById[data[key].id].push(Object.keys(data[key]).find((key) => key.match(/G[0-9]+x/g) != null && key.match(/G[0-9]+x/g) != "" ))
+                }
+            }
+
+            for(const i_gen in generations){
+                const gen = generations[i_gen];
+                const indexSerie = withClipped ? 1 : 0;
+                for( const i_s in series[indexSerie][gen].data._values ){
+                    const current_data = series[indexSerie][gen].data._values[i_s];
+                    if( 
+                        ! generation_active[gen] || 
+                        ( TE_selected.length > 0 && ! TE_selected.includes(current_data.name) ) ||
+                        ( Type_selected.length > 0 && ! Type_selected.includes(current_data[`type${withClipped ? 2 : 1}`]) ) ||
+                        ( genById[current_data.id] != undefined && Min_gen_inter > genById[current_data.id].length )
+                    ){
+                        // console.log("index : ", current_data, i_s, current_data.id, genById[current_data.id], Min_gen_inter);
+                        let tmp_dico = Object.assign({}, current_data);
+                        tmp_dico[gen + `y${withClipped ? 2 : 1}`] = -2;
+                        tmp_dico[gen + `y${withClipped ? 2 : 1}`] = -2;
+                        series[indexSerie][gen].data.setIndex(i_s, tmp_dico);
+                        // console.log("index-end : ", current_data, i_s);
+                    }
+                    else {
+                        // console.log("compare", data.slice()[i_s], current_data);
+                        if(current_data[`${gen}y${withClipped ? 2 : 1}`] == -2)
+                            series[indexSerie][gen].data.setIndex(i_s, data.slice()[current_data.index]);
+                    }
+                }
+            }
+        }
+
+        /*seriesPi.hide();
+        $(".option-pi").on("click", function () {
+            $(this).toggleClass("active");
+            if($(this).hasClass("active")){
+                seriesPi.show();
+                seriesPi.appear();
+                $(this).text("hide piCluster".toUpperCase());
+            }
+            else{
+                seriesPi.hide();
+                $(this).text("show piCluster".toUpperCase());
+            }
+        })
+        */
+
+        // $(".gen").on("click", function () {
+        //     show($(this).text());
+        //     $(this).toggleClass("active");
+        // })
+
+
+        
+        // $(".btn.chr").on("click", function () {
+        //     $(".btn.chr[data-chrom='" + chrom + "'").toggleClass("active");
+        //     $(this).toggleClass("active");
+        //     /*trendSeries1.data.setAll([
+        //       { x: chroms[chrom], y: 0 },
+        //       { x: chroms[chrom], y: 1 }
+        //     ]);
+
+        //     trendSeries0.appear(10);
+        //     trendSeries1.appear(10);*/
+        //     chrom = $(this).text().trim();
+        //     data  = all_data[chrom];
+        //     showUpdate();
+        //     for(const gen in generationsSelected){
+        //         series[generationsSelected[gen]].appear(1000);
+        //     }
+
+        //     var tmp_pi = dataPi.filter((dico) => dico["chrom"] == chrom)
+
+        //     seriesPi.data.setAll(tmp_pi);
+
+        //     allDataTE = {};
+        //     //updateTend();
+        // });
+
     // })
-
-
-    
-    // $(".btn.chr").on("click", function () {
-    //     $(".btn.chr[data-chrom='" + chrom + "'").toggleClass("active");
-    //     $(this).toggleClass("active");
-    //     /*trendSeries1.data.setAll([
-    //       { x: chroms[chrom], y: 0 },
-    //       { x: chroms[chrom], y: 1 }
-    //     ]);
-
-    //     trendSeries0.appear(10);
-    //     trendSeries1.appear(10);*/
-    //     chrom = $(this).text().trim();
-    //     data  = all_data[chrom];
-    //     showUpdate();
-    //     for(const gen in generationsSelected){
-    //         series[generationsSelected[gen]].appear(1000);
-    //     }
-
-    //     var tmp_pi = dataPi.filter((dico) => dico["chrom"] == chrom)
-
-    //     seriesPi.data.setAll(tmp_pi);
-
-    //     allDataTE = {};
-    //     //updateTend();
-    // });
 
 </script>
 
@@ -758,199 +854,191 @@
      * ---------------------------------------
      */
 
-    // Create root element
-    // https://www.amcharts.com/docs/v5/getting-started/#Root_element
-    /*var rootTend = am5.Root.new("chartTendence");
+    // $(document).load(function(){
+        // Create root element
+        // https://www.amcharts.com/docs/v5/getting-started/#Root_element
+        var rootTend = am5.Root.new("chartTendence");
 
-    // Set themes
-    // https://www.amcharts.com/docs/v5/concepts/themes/
-    rootTend.setThemes([
-      am5themes_Animated.new(rootTend)
-    ]);
+        // Set themes
+        // https://www.amcharts.com/docs/v5/concepts/themes/
+        rootTend.setThemes([
+        am5themes_Animated.new(rootTend)
+        ]);
 
-    // Create chart
-    // https://www.amcharts.com/docs/v5/charts/xy-chart/
-    var chartTend = rootTend.container.children.push(am5xy.XYChart.new(rootTend, {
-      panX: true,
-      panY: true,
-      wheelY: "zoomXY",
-      pinchZoomX:true,
-      pinchZoomY:true
-    }));
-
-    chartTend.get("colors").set("colors", [
-      am5.color("#e71306"),
-      am5.color("#e5b800"),
-      am5.color("#00e5ad"),
-      am5.color("#002ae5"),
-      am5.color("#c900e5"),
-      am5.color("#000000")
-    ]);
-
-    // Create axes
-    // https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
-    var xAxisTend = chartTend.xAxes.push(am5xy.CategoryAxis.new(rootTend, {
-      categoryField: "generation",
-      renderer: am5xy.AxisRendererX.new(rootTend, {
-        cellStartLocation: 0.1,
-        cellEndLocation: 0.9
-      }),
-      // tooltip: am5.Tooltip.new(rootTend, {})
-    }));
-
-    var xAxisTendVal = chartTend.xAxes.push(am5xy.ValueAxis.new(rootTend, {
-        maxPrecision: 0,
-        extraTooltipPrecision: 1,
-        numberFormat: "G#",
-        tooltipNumberFormat: "G#",
-        renderer: am5xy.AxisRendererX.new(rootTend, {}),
-        // tooltip: am5.Tooltip.new(rootTend, {})
-    }));
-
-    var tmp_dataTend = [
-        {
-            "generation": "G11", 
-            "y":0.5
-        }, {
-            "generation": "G17", 
-            "y":0.2
-        }, {
-            "generation": "G31", 
-            "y":0.4
-        }, {
-            "generation": "G73", 
-            "y":0.1
-        }, {
-            "generation": "G88", 
-            "y":0.1
-        }, {
-            "generation": "G100", 
-            "y":0.5
-        }];
-
-    xAxisTend.data.setAll(tmp_dataTend);
-
-    var yAxisTend = chartTend.yAxes.push(
-        am5xy.ValueAxis.new(rootTend, {
-            extraTooltipPrecision: 1,
-            min: 0,
-            max: 1,
-            numberFormat: "#.00",
-            tooltipNumberFormat: "#.00",
-            renderer: am5xy.AxisRendererY.new(rootTend, {}),
-            tooltip: am5.Tooltip.new(rootTend, {})
-        })
-    );*/
-
-    /*updateTend();
-
-    var modeRegul = true;
-    var keepZero = true;
-    var seriesTend = {};
-    var list_seriesTend = [];
-
-    function updateTend() {
-        list_seriesTend = [];
-        chartTend.series.clear();
-
-        if(Object.keys(allDataTE).length === 0 || allDataTE == undefined){
-            $(".mod-reg").addClass("disabled")
-        }
-        else{
-            $(".mod-reg").removeClass("disabled")
-        }
-
-        for(const id in allDataTE){
-            var dataTend = allDataTE[id];
-
-            if ( ! modeRegul ) {
-                dataTend = dataTend.map((dico) => {
-                    var tmp_dico = Object.assign({}, dico);
-                    number = parseInt(dico["generation"].replace("G", ""));
-                    tmp_dico["generation"] =  number;
-                    return tmp_dico;
-                });
-                xAxisTend.hide(0);
-                xAxisTendVal.show(0)
-            }
-            else {
-                xAxisTendVal.hide(0);
-                xAxisTend.show(0);
-            }
-
-            if( ! keepZero ){
-                dataTend = dataTend.filter((dico) => dico["y1"] != 0);
-            }
-
-            seriesTend[id] = chartTend.series.push(am5xy.LineSeries.new(rootTend, {
-              calculateAggregates: true,
-              xAxis: modeRegul ? xAxisTend : xAxisTendVal,
-              yAxis: yAxisTend,
-              valueYField: `y1`,
-              categoryXField: `generation`,
-              valueXField: "generation",
-              tooltip: am5.Tooltip.new(rootTend, {
-                labelText: `id : ${id}\nGeneration : {generation}\nFrequency : {y1}`
-              })
-            }));
-
-            seriesTend[id].bullets.push(function() {
-              var graphics = am5.Circle.new(rootTend, {
-                radius: 5,
-                fillOpacity: 0.8,
-                strokeOpacity: 0.8,
-                fill: seriesTend[id].get("fill")
-              });
-
-              return am5.Bullet.new(rootTend, {
-                sprite: graphics
-              });
-            });
-
-            seriesTend[id].data.setAll(dataTend);
-
-            seriesTend[id].appear(1000);
-
-            list_seriesTend.push(seriesTend[id]);
-
-        }
-
-        chartTend.set("cursor", am5xy.XYCursor.new(rootTend, {
-            xAxis: modeRegul ? xAxisTend : xAxisTendVal,
-            yAxis: yAxisTend,
-            snapToSeries: list_seriesTend
+        // Create chart
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/
+        var chartTend = rootTend.container.children.push(am5xy.XYChart.new(rootTend, {
+            panX: true,
+            panY: true,
+            wheelY: "zoomXY",
+            pinchZoomX:true,
+            pinchZoomY:true
         }));
-    }
 
-    function regul() {
-        modeRegul = !modeRegul;
+        chartTend.get("colors").set("colors", [
+            am5.color("#e71306"),
+            am5.color("#e5b800"),
+            am5.color("#00e5ad"),
+            am5.color("#002ae5"),
+            am5.color("#c900e5"),
+            am5.color("#000000")
+        ]);
+
+        // Create axes
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
+        var xAxisTend = chartTend.xAxes.push(am5xy.CategoryAxis.new(rootTend, {
+        categoryField: "generation",
+        renderer: am5xy.AxisRendererX.new(rootTend, {
+            cellStartLocation: 0.1,
+            cellEndLocation: 0.9
+        }),
+        // tooltip: am5.Tooltip.new(rootTend, {})
+        }));
+
+        var xAxisTendVal = chartTend.xAxes.push(am5xy.ValueAxis.new(rootTend, {
+            maxPrecision: 0,
+            extraTooltipPrecision: 1,
+            numberFormat: "G#",
+            tooltipNumberFormat: "G#",
+            renderer: am5xy.AxisRendererX.new(rootTend, {}),
+            // tooltip: am5.Tooltip.new(rootTend, {})
+        }));
+
+        var tmp_dataTend = [];
+        for (const index in generations) {
+            tmp_dataTend.push({
+                "generation": generations[index], 
+                "y": 0.5,
+            });
+        }
+
+        xAxisTend.data.setAll(tmp_dataTend);
+
+        var yAxisTend = chartTend.yAxes.push(
+            am5xy.ValueAxis.new(rootTend, {
+                extraTooltipPrecision: 1,
+                min: 0,
+                max: 1,
+                numberFormat: "#.00",
+                tooltipNumberFormat: "#.00",
+                renderer: am5xy.AxisRendererY.new(rootTend, {}),
+                tooltip: am5.Tooltip.new(rootTend, {})
+            })
+        );
+
         updateTend();
-    }
 
-    $(".mod-reg").on("click", function () {
-        $(this).toggleClass("active");
-        $(this).text($(this).hasClass("active") ? "REGULAR DISTANCE" : "REAL DISTANCE"); 
-        regul();
-    });
+        var modeRegul = true;
+        var keepZero = true;
+        var seriesTend = {};
+        var list_seriesTend = [];
 
-    $('.rm-zero').on("click", function () {
-        $(this).toggleClass("active");
-        $(this).text( ! $(this).hasClass("active") ? "REMOVE ZERO" : "KEEP ZERO");
-        keepZero = !keepZero;
-        updateTend();
-    })
+        function updateTend() {
+            list_seriesTend = [];
+            chartTend.series.clear();
 
-    // Add scrollbars
-    // https://www.amcharts.com/docs/v5/charts/xy-chart/scrollbars/
-    // chartTend.set("scrollbarX", am5.Scrollbar.new(rootTend, {
-    //   orientation: "horizontal"
-    // }));
+            if(Object.keys(allDataTE).length === 0 || allDataTE == undefined){
+                $(".mod-reg").addClass("disabled")
+            }
+            else{
+                $(".mod-reg").removeClass("disabled")
+            }
 
-    // chartTend.set("scrollbarY", am5.Scrollbar.new(rootTend, {
-    //   orientation: "vertical"
-    // }));
+            for(const id in allDataTE){
+                var dataTend = allDataTE[id];
 
-    chartTend.appear(1000, 100);*/
+                console.log("dataTend", dataTend, id, allDataTE);
+
+                if ( ! modeRegul ) {
+                    dataTend = dataTend.map((dico) => {
+                        var tmp_dico = Object.assign({}, dico);
+                        number = parseInt(dico["generation"].replace("G", ""));
+                        tmp_dico["generation"] =  number;
+                        return tmp_dico;
+                    });
+                    xAxisTend.hide(0);
+                    xAxisTendVal.show(0)
+                }
+                else {
+                    xAxisTendVal.hide(0);
+                    xAxisTend.show(0);
+                }
+
+                if( ! keepZero ){
+                    dataTend = dataTend.filter((dico) => dico["y"] != 0);
+                    console.log("filtered", dataTend);
+                }
+
+                seriesTend[id] = chartTend.series.push(am5xy.LineSeries.new(rootTend, {
+                    calculateAggregates: true,
+                    xAxis: modeRegul ? xAxisTend : xAxisTendVal,
+                    yAxis: yAxisTend,
+                    valueYField: `y`,
+                    categoryXField: `generation`,
+                    valueXField: "generation",
+                    tooltip: am5.Tooltip.new(rootTend, {
+                        labelText: `id : ${id}\nGeneration : {generation}\nFrequency : {y}`
+                    })
+                }));
+
+                seriesTend[id].bullets.push(function() {
+                    var graphics = am5.Circle.new(rootTend, {
+                        radius: 5,
+                        fillOpacity: 0.8,
+                        strokeOpacity: 0.8,
+                        fill: seriesTend[id].get("fill")
+                    });
+
+                    return am5.Bullet.new(rootTend, {
+                        sprite: graphics
+                    });
+                });
+
+                seriesTend[id].data.setAll(dataTend);
+
+                seriesTend[id].appear(1000);
+
+                list_seriesTend.push(seriesTend[id]);
+
+            }
+
+            chartTend.set("cursor", am5xy.XYCursor.new(rootTend, {
+                xAxis: modeRegul ? xAxisTend : xAxisTendVal,
+                yAxis: yAxisTend,
+                snapToSeries: list_seriesTend
+            }));
+        }
+
+        function regul() {
+            modeRegul = !modeRegul;
+            updateTend();
+        }
+
+        $(".mod-reg").on("click", function () {
+            $(this).toggleClass("active");
+            $(this).text($(this).hasClass("active") ? "REGULAR DISTANCE" : "REAL DISTANCE"); 
+            regul();
+        });
+
+        $('.rm-zero').on("click", function () {
+            $(this).toggleClass("active");
+            $(this).text( ! $(this).hasClass("active") ? "REMOVE ZERO" : "KEEP ZERO");
+            keepZero = !keepZero;
+            updateTend();
+        })
+
+        // Add scrollbars
+        // https://www.amcharts.com/docs/v5/charts/xy-chart/scrollbars/
+        // chartTend.set("scrollbarX", am5.Scrollbar.new(rootTend, {
+        //   orientation: "horizontal"
+        // }));
+
+        // chartTend.set("scrollbarY", am5.Scrollbar.new(rootTend, {
+        //   orientation: "vertical"
+        // }));
+
+        chartTend.appear(1000, 100);
+    //})
 </script>
 
 
@@ -965,7 +1053,7 @@
         component: "#app",
         data: () => ({
             withClipped: false,
-            minGenInterV: 1,
+            minGenInterV: 2,
             maxGen: 2,
             pente: {
                 data: {
@@ -993,6 +1081,8 @@
             this.$nextTick(function(){
                 this.generations.items = generations;
                 this.generations.values = generations;
+                // this.generations.values = ["G31", "G73"];
+                // generationsSelected = ["G31", "G73"];
 
                 this.maxGen = this.generations.items.length;
                 console.log("maxGen", this.maxGen, this.generations.items);
@@ -1023,12 +1113,15 @@
         methods: {
             updateGenerations(){
                 console.log("updateGenerations", this.generations.values);
+                this.generations.values = this.generations.values.sort((a, b) => {
+                    return parseInt(a.replace("G", "")) - parseInt(b.replace("G", ""))
+                })
                 generationsSelected = this.generations.values;
                 showUpdate();
-                for(const gen in generationsSelected){
-                    series[generationsSelected[gen]].appear(1000);
-                    series2[generationsSelected[gen]].appear(1000);
-                }
+                // for(const gen in generationsSelected){
+                //     series[generationsSelected[gen]].appear(1000);
+                //     series2[generationsSelected[gen]].appear(1000);
+                // }
             },
             updatePente(){
                 Type_selected = [];
@@ -1039,6 +1132,7 @@
                     }
                 }
                 showUpdate();
+                updateDataTend();
             },
             update_TE (){
                 TE_selected = this.TE.values;
@@ -1048,6 +1142,15 @@
             updateChrom(){
                 console.log("updateChrom", this.chrom.value);
                 data = all_data[this.chrom.value];
+                for(const index in data){
+                    data[index].index = index;
+                }
+                let tmp_data = data;
+                for(const gen in generations){
+                    putDataSerie(tmp_data, 0, generations[gen]);
+                    putDataSerie(tmp_data, 1, generations[gen]);
+                    series[1][generationsSelected[gen]].hide();
+                }
                 console.log("befor-show", data);
                 showUpdate();
                 const chrom = this.chrom.value
@@ -1058,11 +1161,14 @@
 
                 trendSeries1.appear(10);
                 for(const gen in generationsSelected){
-                    if(!this.withClipped)
-                        series[generationsSelected[gen]].appear(1000);
+                    if( ! this.withClipped )
+                        series[0][generationsSelected[gen]].appear(1000);
                     else
-                        series2[generationsSelected[gen]].appear(1000);
+                        series[1][generationsSelected[gen]].appear(1000);
                 }
+                
+                allDataTE = {};
+                updateTend();
             },
             update_Min_Gen_Inter (){
                 Min_gen_inter = this.minGenInterV;
@@ -1074,7 +1180,9 @@
             withClipped(){
                 console.log("withClipped-changed", this.withClipped);
                 withClipped = this.withClipped;
-                changeSeries(this.withClipped ? 2 : 1)
+                changeSeries(this.withClipped ? 2 : 1);
+                showUpdate();
+                updateDataTend();
             }
         }
     }).use(vuetify).mount('#app');
