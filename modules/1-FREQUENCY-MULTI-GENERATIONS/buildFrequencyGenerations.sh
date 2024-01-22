@@ -3,36 +3,36 @@
 POSITIONAL_ARGS=()
 
 while [[ $# -gt 0 ]]; do
-  case $1 in
-    -o|--output)
-      OUTPUT="$2"
-      shift # past argument
-      shift # past value
-      ;;
-    -i|--input)
-      INPUT="$2"
-      shift # past argument
-      shift # past value
-      ;;
-    -c|--chrom)
-      CHROM="$2"
-      shift # past argument
-      shift # past value
-      ;;
-    -g|--genome)
-      GENOME="$2"
-      shift # past argument
-      shift # past value
-      ;;
-    -*|--*)
-      echo "Unknown option $1"
-      exit 1
-      ;;
-    *)
-      POSITIONAL_ARGS+=("$1") # save positional arg
-      shift # past argument
-      ;;
-  esac
+    case $1 in
+        -o|--output)
+        OUTPUT="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -i|--input)
+        INPUT="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -c|--chrom)
+        CHROM="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -g|--genome)
+        GENOME="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -*|--*)
+        echo "Unknown option $1"
+        exit 1
+        ;;
+        *)
+        POSITIONAL_ARGS+=("$1") # save positional arg
+        shift # past argument
+        ;;
+    esac
 done
 
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
@@ -72,19 +72,19 @@ echo "PREPARE DATA SCATTER..."
 echo -e "chrom\tx\ty1\ty2\tgroup\tname\tID" > "$OUTPUT"/work/SCATTER.csv
 for work in `cat "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt`
 do
-  dir=`echo $work | cut -d ":" -f 1`;
-  name=`echo $work | cut -d ":" -f 2`;
-  echo "   generation : $name; work_directory : $dir"
-  rm -f ${dir}/TE_FREQUENCY_TrEMOLO.bed;
-  ! test -s ${dir}/TE_INFOS.bed && echo "[$0] ERROR : FILE NOT FOUND ${dir}/TE_INFOS.bed"
-  ! test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && \
-    grep -E "${CHROM}" ${dir}/TE_INFOS.bed | grep -v -E "HARD|SOFT" | grep OUTSIDER | awk '$11!="NONE" && $12!="NONE"' | grep -w -v "DEL" > ${dir}/TE_FREQUENCY_TrEMOLO.bed;
+    dir=`echo $work | cut -d ":" -f 1`;
+    name=`echo $work | cut -d ":" -f 2`;
+    echo "   generation : $name; work_directory : $dir"
+    rm -f ${dir}/TE_FREQUENCY_TrEMOLO.bed;
+    ! test -s ${dir}/TE_INFOS.bed && echo "[$0] ERROR : FILE NOT FOUND ${dir}/TE_INFOS.bed" && exit 1
+    ! test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && \
+        grep -E "${CHROM}" ${dir}/TE_INFOS.bed | grep -v -E "HARD|SOFT" | grep OUTSIDER | awk '$11!="NONE" && $12!="NONE"' | grep -w -v "DEL" > ${dir}/TE_FREQUENCY_TrEMOLO.bed;
 
-  mkdir -p "$OUTPUT"/work/${name};
-  test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && \
-    awk 'OFS="\t"{print $1, $2, $3, $4, $11, $12}' ${dir}/TE_FREQUENCY_TrEMOLO.bed > "$OUTPUT"/work/${name}/POS_TE_LIFT.bdg
+    mkdir -p "$OUTPUT"/work/${name};
+    test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && \
+        awk 'substr($0, 1, 1)!="#" && OFS="\t"{print $1, $2, $3, $4, $11, $12}' ${dir}/TE_FREQUENCY_TrEMOLO.bed > "$OUTPUT"/work/${name}/POS_TE_LIFT.bdg
 
-  awk -v name="$name" 'OFS="\t"{split($4, sp, "|"); print $1, $2, $5/100, $6/100, name, $1":"$2":"sp[1], sp[2]}' "$OUTPUT"/work/$name/POS_TE_LIFT.bdg | tr "," "." >> $OUTPUT/work/SCATTER.csv;
+    awk -v name="$name" 'OFS="\t"{split($4, sp, "|"); print $1, $2, $5/100, $6/100, name, $1":"$2":"sp[1], sp[2]}' "$OUTPUT"/work/$name/POS_TE_LIFT.bdg | tr "," "." >> $OUTPUT/work/SCATTER.csv;
 done;
 
 echo -e "chrom\tx\ty1\ty2\tgroup\tname\tIN_OUT\tID\ttype" > "$OUTPUT"/work/FT1_SCATTER.csv

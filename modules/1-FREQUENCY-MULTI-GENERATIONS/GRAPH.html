@@ -282,7 +282,7 @@
 
 
 <!-- trend frequencies -->
-<h5 style="text-align: center;">Evolution <span style="color: gray; font-weight: initial; font-size:0.9em; ">(click on a point on the top graph to see something)</span></h5>
+<h5 style="text-align: center;">Generational Evolution of TE Frequencies <span style="color: gray; font-weight: initial; font-size:0.9em; ">(click on a point on the graph above to see something)</span></h5>
 <div id="chartTendence" class="chart-div"></div>
 <div class="block-btn" style="margin-bottom: 15px;">
     <div class="in-block">
@@ -532,7 +532,7 @@
                             radius: 5.7,
                             fillOpacity: 0.5,
                             strokeOpacity: 0.5,
-                            fill: dotColors[generations.indexOf(gen)]
+                            fill: dotColors[generations.indexOf(gen) % dotColors.length]
                         }, bulletTemplate);
 
                     return am5.Bullet.new(root, {
@@ -549,7 +549,10 @@
         function createSeries(data){
             list_snapToSeries = [];
             for(const gen in generations){
-                createSerie(0, generations[gen]);
+                createSerie(0, generations[gen]);  
+            }
+
+            for(const gen in generations){
                 createSerie(1, generations[gen]);
             }
         }

@@ -1,35 +1,65 @@
 # MODULE SCATTER FREQUENCY TE TrEMOLO
 
-## PREPARE INPUT
 
-pour fonctionné, ce module à besoin d'un fichier qui contient les chemins des différentes analyses effectué avec TrEMOLO (minimum +v2.5.1)
+## Input Preparation
 
-exemple : 
+To function, this module requires a file containing paths to various analyses performed by TrEMOLO (minimum version +v2.5.1).
 
-```
-work_diretory_1
-/path/to/work_diretory_2
-work_diretory_3/
-```
-
-l'ordre des chemins est important elle désigne l'ordre par lequel le module considérera comme ayant des géneration de la plus ancienne à la plus récente.
-
-Une autre solutions vous permet de spécifier vous même le temps des génerations (format work_directory:G[NUMBER]), exemple :
+Example:
 
 ```
-work_diretory_1:G1
-/path/to/work_diretory_2:G10
-work_diretory_3:G3
+work_directory_1
+/path/to/work_directory_2
+work_directory_3/
 ```
 
-ce format vous permet d'indiqué l'ordre et le temps de décalge entre les génerations, dans l'exemple précedent la G1 et la géneration la plus ancienne tandis que la G10 la plus récente.
+The order of paths is important as it designates the sequence in which the module will consider generations from oldest to newest.
 
-***L'ordre des génerations vous permet au module d'indiquée quelles sont les TE qui augmente, diminue, ou varie au cours des génerations.***
+An alternative solution allows you to manually specify the timing of generations (format work_directory:G[NUMBER]), for 
 
-
-## RUN BUILD GRAPH
+example:
 
 ```
-singularity exec TrEMOLO.simg TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/buildFrequencyGenerations.sh -i <input-init-file> [-o OUTPUT_NAME_DIRECTORY]
+/path/to/work_directory_1:G1
+/path/to/work_directory_2:G10
+work_directory_3:G3
 ```
+
+**Recommendation** : Do not exceed 7 paths.
+
+This format indicates the order and the time gap between generations. In the above example, `G1` is the oldest generation, while `G10` is the most recent.
+
+**Info** : The generation numbers (e.g., G2, G10...) enable the module to identify which Transposable Elements (TE) increase, decrease, or vary over generations.
+
+
+## Run Build Graph
+
+```
+singularity exec TrEMOLO.simg TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/buildFrequencyGenerations.sh -i <input-init-file> [-o OUTPUT-NAME-DIRECTORY] [-g GENOME-FASTA-FILE] [-c REGEX-CHROM]
+```
+
+For the module to function:
+    * Each work_directory must contain a `TE_INFOS.bed` file (output of TrEMOLO).
+    * If the genome is not passed with the -g option, `work_directory/OUTSIDER/FREQUENCY/MAPPING_POSITION_TE.bam` files are necessary.
+    * The same genome (GENOME parameter in TrEMOLO) must be used for all `work_directories`.
+
+If you wish to select specific TEs, create a file `work_directory/TE_FREQUENCY_TrEMOLO.bed` in the same format as `TE_INFOS.bed`, including only the `OUTSIDER`.
+
+
+## Graph
+
+### Generational Frequency Graph
+
+Here is what the first graph looks like. You can refine what you see by selecting:
+    * the transposable elements (TE) of interest,
+    * the trajectories of frequency changes over generations, whether increasing, decreasing, constant, or variable,
+    * the minimum number of generations sharing a common position,
+    * specific generations of interest,
+    * the chromosome of interest.
+
+<img src="img/ex1.png">
+
+By clicking on one of the points in the first graph, you can observe in more detail the evolution of the TE frequencies over generations in the second graph.
+
+<img src="img/ex2.png">
 
