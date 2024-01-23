@@ -8,20 +8,20 @@ To function, this module requires a file containing paths to various analyses pe
 Example:
 
 ```
-work_directory_1
+/path/to/work_directory_1
 /path/to/work_directory_2
-work_directory_3/
+/path/to/work_directory_3
 ```
 
 The order of paths is important as it designates the sequence in which the module will consider generations from oldest to newest.
 
 An alternative solution allows you to manually specify the timing of generations (format work_directory:G[NUMBER]), for 
 
-example:
+Example:
 
 ```
-/path/to/work_directory_1:G1
-/path/to/work_directory_2:G10
+work_directory_1:G1
+work_directory_2:G10
 work_directory_3:G3
 ```
 
