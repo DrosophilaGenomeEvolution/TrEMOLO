@@ -1,0 +1,6 @@
+TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/work_directory_G17:G17
+TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/work_directory_G11/:G11
+TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/work_directory_G31:G31
+TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/work_directory_G73:G73
+TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/work_directory_G88:G88
+TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/work_directory_G100:G100

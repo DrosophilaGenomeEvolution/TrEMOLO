@@ -41,8 +41,20 @@ set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 if ! [[ -n "$INPUT" ]] || ! test -s $INPUT;
 then
     echo "[$0] ERROR : need --input"
+    echo
+    echo "[$0] Usage : buildFrequencyGenerations.sh -i <input-init-file> [-o OUTPUT-NAME-DIRECTORY] [-g GENOME-FASTA-FILE] [-c REGEX-CHROM]"
     exit 1;
 fi;
+
+if [[ -n "$GENOME" ]] && ! test -s $GENOME;
+then
+    echo
+    echo "[$0] ERROR : -g|--genome ${GENOME} No sush file or directory"
+    echo
+    echo "[$0] Usage : buildFrequencyGenerations.sh -i <input-init-file> [-o OUTPUT-NAME-DIRECTORY] [-g GENOME-FASTA-FILE] [-c REGEX-CHROM]"
+    exit 1;
+fi;
+
 
 ! test -n "$OUTPUT" && OUTPUT="SCATTER-FREQ-TE-TrEMOLO";
 ! test -n "$CHROM" && CHROM=".";
@@ -52,6 +64,9 @@ echo "---------ARGS--------"
 echo "INPUT PATH GENERATIONS     = ${INPUT}"
 echo "OUTPUT NAME                = ${OUTPUT}"
 echo "REGEX CHROMOSOME           = ${CHROM}"
+test -n "$GENOME" && \
+    echo "GENOME                     = ${GENOME}"
+
 echo
 
 path_to_module=`dirname "$0"`
@@ -65,7 +80,7 @@ mkdir -p "$OUTPUT"/work;
 #or
 #-----------------------
 #work_directory_path
-grep ":" "$INPUT" | tr ":" "\t" | sort -k 2 | tr "\t" ":" > "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt 2>/dev/null || sed 's/\/$//g' $INPUT  | awk '{print $1":G"NR}' \
+grep ":" "$INPUT" | awk -F ":" '{print $0"\t"substr($2, 2, length($2))}' | sort -k 2 -n | cut -f 1 > "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt 2>/dev/null || sed 's/\/$//g' $INPUT  | awk '{print $1":G"NR}' \
     > "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt
 
 echo "PREPARE DATA SCATTER..."
@@ -74,10 +89,9 @@ for work in `cat "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt`
 do
     dir=`echo $work | cut -d ":" -f 1`;
     name=`echo $work | cut -d ":" -f 2`;
-    echo "   generation : $name; work_directory : $dir"
-    rm -f ${dir}/TE_FREQUENCY_TrEMOLO.bed;
+    echo "   generation : $name; WORK_DIRECTORY : $dir"
     ! test -s ${dir}/TE_INFOS.bed && echo "[$0] ERROR : FILE NOT FOUND ${dir}/TE_INFOS.bed" && exit 1
-    ! test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && \
+    ! test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && echo "BUILD FILE TE_FREQUENCY_TrEMOLO..." && \
         grep -E "${CHROM}" ${dir}/TE_INFOS.bed | grep -v -E "HARD|SOFT" | grep OUTSIDER | awk '$11!="NONE" && $12!="NONE"' | grep -w -v "DEL" > ${dir}/TE_FREQUENCY_TrEMOLO.bed;
 
     mkdir -p "$OUTPUT"/work/${name};
@@ -219,6 +233,7 @@ else
     
     echo "   BUILD JS...";
     cat "${GENOME}.fai" | \
+        grep -w -f "$OUTPUT"/work/ID_CHROM.txt | \
         awk '
         BEGIN {
             print "var chroms = {"
@@ -256,7 +271,7 @@ cat  "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt | awk -v OUTPUT="$OUTPUT" -F ":" '
     }
 '
 
-cp $path_to_module/GRAPH.html "$OUTPUT"/web/
-cp $path_to_module/index.html "$OUTPUT"/
+cp -f $path_to_module/GRAPH.html "$OUTPUT"/web/
+cp -f $path_to_module/index.html "$OUTPUT"/
 
 echo "[$0] END"

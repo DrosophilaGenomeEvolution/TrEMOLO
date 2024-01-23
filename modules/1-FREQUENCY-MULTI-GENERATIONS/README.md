@@ -45,6 +45,7 @@ For the module to function:
 
 If you wish to select specific TEs, create a file `work_directory/TE_FREQUENCY_TrEMOLO.bed` in the same format as `TE_INFOS.bed`, including only the `OUTSIDER`.
 
+The [-c REGEX-CHROM] option is useless if you have put `work_directory/TE_FREQUENCY_TrEMOLO.bed` files in your work directories.
 
 ## Graph
 
@@ -58,6 +59,8 @@ Here is what the first graph looks like. You can refine what you see by selectin
     * the chromosome of interest.
 
 <img src="img/ex1.png">
+
+### Generational Evolution of TE Frequencies
 
 By clicking on one of the points in the first graph, you can observe in more detail the evolution of the TE frequencies over generations in the second graph.
 
