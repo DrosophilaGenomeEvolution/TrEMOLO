@@ -47,6 +47,19 @@ If you wish to select specific TEs, create a file `work_directory/TE_FREQUENCY_T
 
 The [-c REGEX-CHROM] option is useless if you have put `work_directory/TE_FREQUENCY_TrEMOLO.bed` files in your work directories.
 
+For running tests
+
+```bash
+singularity exec TrEMOLO.simg TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/buildFrequencyGenerations.sh \
+    -i TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/INIT_FREQ_TE_TrEMOLO.txt \
+    -o TEST-GRAPH-FRQUENCIES \
+    -c "^[23][LR]\s|^[X]\s" \
+    -g TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/ref.fasta
+```
+
+To see the graph, open `TEST-GRAPH-FRQUENCIES/index.html` file
+
+
 ## Graph
 
 ### Generational Frequency Graph
