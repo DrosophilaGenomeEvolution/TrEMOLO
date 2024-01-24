@@ -39,9 +39,9 @@ singularity exec TrEMOLO.simg TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/buil
 ```
 
 For the module to function:
-    * Each work_directory must contain a `TE_INFOS.bed` file (output of TrEMOLO).
-    * If the genome is not passed with the -g option, `work_directory/OUTSIDER/FREQUENCY/MAPPING_POSITION_TE.bam` files are necessary.
-    * The same genome (GENOME parameter in TrEMOLO) must be used for all `work_directories`.
+* Each work_directory must contain a `TE_INFOS.bed` file (output of TrEMOLO).
+* If the genome is not passed with the -g option, `work_directory/OUTSIDER/FREQUENCY/MAPPING_POSITION_TE.bam` files are necessary.
+* The same genome (GENOME parameter in TrEMOLO) must be used for all `work_directories`.
 
 If you wish to select specific TEs, create a file `work_directory/TE_FREQUENCY_TrEMOLO.bed` in the same format as `TE_INFOS.bed`, including only the `OUTSIDER`.
 
@@ -64,18 +64,18 @@ To see the graph, open `TEST-GRAPH-FRQUENCIES/index.html` file
 
 ### Generational Frequency Graph
 
-Here is what the first graph looks like. You can refine what you see by selecting:
-    * the transposable elements (TE) of interest,
-    * the trajectories of frequency changes over generations, whether increasing, decreasing, constant, or variable,
-    * the minimum number of generations sharing a common position,
-    * specific generations of interest,
-    * the chromosome of interest.
+This graph offers a visual representation of TE frequencies across generations. Customize your view by filtering:
+* Transposable elements (TEs) of interest,
+* Trajectories of frequency evolution — increasing, decreasing, stable, or variable,
+* The least number of generations sharing a common position,
+* Specific generations you want to focus on,
+* The chromosome of interest.
 
 <img src="img/ex1.png">
 
-### Generational Evolution of TE Frequencies
+### Detailed TE Frequency Evolution
 
-By clicking on one of the points in the first graph, you can observe in more detail the evolution of the TE frequencies over generations in the second graph.
+By selecting a point on the generational frequency graph, the second graph provides a detailed view of the TE frequency changes across selected generations.
 
 <img src="img/ex2.png">
 
