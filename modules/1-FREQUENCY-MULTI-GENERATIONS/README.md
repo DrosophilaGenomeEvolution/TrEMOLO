@@ -34,9 +34,16 @@ This format indicates the order and the time gap between generations. In the abo
 
 ## Run Build Graph
 
+Execute the module with the following command:
+
 ```
 singularity exec TrEMOLO.simg TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/buildFrequencyGenerations.sh -i <input-init-file> [-o OUTPUT-NAME-DIRECTORY] [-g GENOME-FASTA-FILE] [-c REGEX-CHROM]
 ```
+
+`-i <input-init-file>` (required): This is the file containing the paths to your work directories.
+`[-o OUTPUT-NAME-DIRECTORY]`: Specify the name of the output directory.
+`[-g GENOME-FASTA-FILE]`: The genome (.fasta file) that was used across all work directories.
+`[-c REGEX-CHROM]`: Use this option if you want to filter by chromosome in the TE_INFOS.bed file.
 
 For the module to function:
 * Each work_directory must contain a `TE_INFOS.bed` file (output of TrEMOLO).
@@ -45,7 +52,7 @@ For the module to function:
 
 If you wish to select specific TEs, create a file `work_directory/TE_FREQUENCY_TrEMOLO.bed` in the same format as `TE_INFOS.bed`, including only the `OUTSIDER`.
 
-The [-c REGEX-CHROM] option is useless if you have put `work_directory/TE_FREQUENCY_TrEMOLO.bed` files in your work directories.
+The `[-c REGEX-CHROM]` option is useless if you have put `work_directory/TE_FREQUENCY_TrEMOLO.bed` files in your work directories.
 
 For running tests
 
@@ -79,3 +86,4 @@ By selecting a point on the generational frequency graph, the second graph provi
 
 <img src="img/ex2.png">
 
+**Note**: Zero values typically indicate TEs that were not detected in the respective generation.
