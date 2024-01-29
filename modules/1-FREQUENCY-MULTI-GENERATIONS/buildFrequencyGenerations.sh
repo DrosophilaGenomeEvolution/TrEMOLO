@@ -130,7 +130,7 @@ OFS="\t" {
 echo "BUILD METRIC..."
 python3 "$path_to_module/metric.py" "$OUTPUT/work/SCATTER_MERGE.csv" "$OUTPUT/work/INIT_FREQ_TE_TrEMOLO.txt" > "$OUTPUT/work/METRIC.csv";    
 echo "SORTING..."
-python3 "$path_to_module/sortScatter.py" "$OUTPUT/work/METRIC.csv" "$OUTPUT/work/SCATTER_MERGE.csv" "$OUTPUT/work/SCATTER_SORT.csv"
+python3 "$path_to_module/putMetricScatter.py" "$OUTPUT/work/METRIC.csv" "$OUTPUT/work/SCATTER_MERGE.csv" "$OUTPUT/work/SCATTER_SORT.csv"
 
 echo "BUILD DATA JS SCATTER..."
 ##BUILD JS SCATTER

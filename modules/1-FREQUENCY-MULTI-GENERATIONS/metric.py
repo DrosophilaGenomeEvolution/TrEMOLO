@@ -15,20 +15,13 @@ def count_gen_between(gd, ge):
     return gen_index[ge] - gen_index[gd]
 
 
-# Pré-traitement df
-# df['gen_num'] = df['group'].apply(lambda x: int(x.strip("G")))
-# df.sort_values(by=['name', 'gen_num'], inplace=True)
-
-
 print("chrom\tx\ty1\ty2\tname\ttype1\ttype2\tgen_inter\tnb_gen")
 for i, name in enumerate(df["name"].unique()):
     df_tmp = df[df["name"] == name]
-    #print("name", name, df_tmp)
     tmp_generation = []
     for index, gen in enumerate(generation):
         if gen in df_tmp["group"].unique() :
             tmp_generation.append(gen)
-
 
     type_1 = "NONE"
     type_2 = "NONE"
@@ -47,7 +40,6 @@ for i, name in enumerate(df["name"].unique()):
             sum_1 = df_tmp_gen["y1"].values[0]/num_gen
             sum_2 = df_tmp_gen["y2"].values[0]/num_gen
         
-        #print("init:", sum_1, sum_2)
         if index < len(tmp_generation) - 1 :
             df_tmp_gen_p = df_tmp[df_tmp["group"] == tmp_generation[index+1]]
             value1 = df_tmp_gen["y1"].values[0] if len(df_tmp_gen.values) > 0 else 0
@@ -55,8 +47,6 @@ for i, name in enumerate(df["name"].unique()):
             
             ponderation = int(tmp_generation[index+1].strip("G"))-int(tmp_generation[index].strip("G"))
             sum_1 += (((value_p1*100) - (value1*100))/ponderation)*count_gen_between(tmp_generation[index], tmp_generation[index+1])
-
-            #print("p:", ponderation, sum_1, (value1*100), (value_p1*100), ((value_p1*100) - (value1*100)), count_gen_between(tmp_generation[index], tmp_generation[index+1]))
             
             if ((value_p1*100) - (value1*100))/ponderation > 0:
                 type_val1.append(">")

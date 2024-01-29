@@ -6,12 +6,10 @@ import math
 
 dfM = pd.read_csv(sys.argv[1], sep="\t")
 dfS = pd.read_csv(sys.argv[2], sep="\t")
-#print(dfM.head())
-type_col1 = [];
-type_col2 = [];
+type_col1 = []
+type_col2 = []
 
 for i, name in enumerate(dfS["name"].values):
-    #print(dfM[dfM["name"] == name], name, "name")
     if len(dfM[dfM["name"] == name].values):
         type_col1.append(dfM[dfM["name"] == name]["type1"].values[0])
         type_col2.append(dfM[dfM["name"] == name]["type2"].values[0])

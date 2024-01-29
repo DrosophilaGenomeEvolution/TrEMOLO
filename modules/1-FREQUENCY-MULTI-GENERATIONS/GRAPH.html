@@ -265,10 +265,10 @@
 
         <v-slider
             v-model="minGenInterV"
-            hint="minimum number of common generations"
+            hint="minimum number of generations at each position"
             prepend-icon="mdi-nfc-tap"
             :ticks="tickLabelsSlider"
-            :min="1"
+            :min="2"
             :max="maxGen"
             :step="1"
             show-ticks="always"
@@ -1089,7 +1089,7 @@
 
                 this.maxGen = this.generations.items.length;
                 console.log("maxGen", this.maxGen, this.generations.items);
-                for (let index = 1; index <= this.maxGen; index++) {
+                for (let index = 2; index <= this.maxGen; index++) {
                     this.tickLabelsSlider[index + ""] = index + "";
                 }
 

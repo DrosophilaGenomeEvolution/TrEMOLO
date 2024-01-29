@@ -1,5 +1,6 @@
 # MODULE SCATTER FREQUENCY TE TrEMOLO
 
+This graph is particularly useful for researchers aiming to track the evolution of the frequency of germinal insertions of transposable elements (TEs) across generations. It provides a clear visualization of the dynamics of these elements within the genome and offers valuable knowledge about their behavior and potential for adaptation or evolutionary change within populations over extended periods.
 
 ## Input Preparation
 
