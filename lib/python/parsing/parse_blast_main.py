@@ -139,7 +139,8 @@ if args.db_file_te != None:
 
     for i, l in enumerate(lines):
         if l[0] == ">":
-            size_et[l[1:].strip()] = len(lines[i + 1].strip())
+            size_et[l[1:].strip().split("\t")[0].split(" ")[0]] = len(lines[i + 1].strip())
+            #size_et[l[1:].strip()] = len(lines[i + 1].strip())
 
     file.close()
 

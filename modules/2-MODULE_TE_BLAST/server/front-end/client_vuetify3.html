@@ -1,0 +1,1309 @@
+
+<head>
+    <!-- link -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet"> -->
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@3.1.4/dist/vuetify.min.css" rel="stylesheet">
+        
+
+    
+
+</head> 
+
+<style type="text/css">
+    *, body{
+        font-family: "Effra", Helvetica, sans-serif;
+    }
+
+    body {
+        background-color: #e6e7ee !important;
+    }
+
+    .block{
+        display: block;
+        margin: 0 auto;
+        width: 500px;
+        position: initial;
+    }
+
+
+    .contain-query {
+        border-radius: 5px;
+        padding-top: 1px;
+    }
+    #gQuery{
+        display: flex;
+        z-index: 9999;
+        height: 35px;
+    }
+    #gQuery .seq {
+        width: 500px;
+        font-size: 13px;
+        text-align: center;
+        background-color: lightskyblue;
+        font-weight: bold;
+        padding: 2px 0;
+        border-radius: 5px;
+        /* border: solid 2px black; */
+        -webkit-background-clip: padding-box; /* for Safari */
+        background-clip: padding-box;
+    }
+
+    #gQuery .empty_b, #gQuery .empty_a {
+        width: 0px;
+/*      height: 12px;*/
+        clear: left;
+        padding: 2px 0;
+        border-radius: 5px;
+        border: solid 3px #3c96e6;
+        -webkit-background-clip: padding-box; /* for Safari */
+        background-clip: padding-box;
+    }
+    .id-query {
+        position: absolute;
+        width: 500px;
+        height: 25px;
+        text-align: center;
+        padding-top: 10px;
+        font-weight: bold;
+    }
+
+    .sdg{
+        float: none;
+        font-family: "Effra", Helvetica, sans-serif;
+        height: 13px;
+        margin-bottom: 1em;
+        margin-top: -3px;
+        padding-bottom: 1em;
+        width: 10px;
+        font-size: 15px;
+        font-weight: bold;
+    }
+
+    .scale{
+        width: 2px;
+        height: 10px;
+        background-color: black;
+        border-left: solid 2px;
+        margin-bottom: 5px;
+    }
+
+    .leftGr {
+        display: flex;
+        width: 5px;
+        height: 10px;
+        margin-bottom: 7px;
+    }
+
+    .leftGr div{
+        float: left;
+    }
+
+    .leftGr .red{
+        /*height: 7px;*/
+        background-color: red;
+        border-radius: 20px;
+    }
+
+    .red a {
+        display: inline-block;
+        height: 10px;
+        background-color: red;
+    }
+
+    .red a.TE_infos {
+        border-top: black 3px dotted;
+        border-bottom: black 3px dotted;
+    }
+    .red.darkblue a.TE_infos {
+        border-top: white 3px dotted;
+        border-bottom: white 3px dotted;
+    }
+    
+
+    .red.darkblue a {
+        background-color: darkblue;
+    }
+    .red.lightcoral a {
+        background-color: lightcoral;
+    }
+
+    .leftGr .white{
+        background-color: gainsboro;
+        /*height: 3px;*/
+        opacity: 0.5;
+        border: black 2px dotted;
+    }
+
+    
+    .info, .info-locus{
+        display: none;
+        position: absolute;
+        padding: 2px 12px;
+        color: white;
+        background-color: black;
+        border-radius: 5px;
+        font-weight: bold;
+/*      font-family: "Arial";*/
+        z-index: 999;
+    }
+    .info-locus{
+        padding: 20px;
+        z-index: 998;
+    }
+    .info p, .info-locus p{
+        text-align: left;
+        width: 100%;
+        height: 100%;
+        text-decoration: none;
+        font-weight: normal;
+        font-family: "Effra", Helvetica, sans-serif;
+    }
+    .info p, .info p ins, .info p:link, .info p:link, .info p:hover, .info p:active {
+        padding: 20px 30px;
+        text-decoration: none;
+    }
+
+    /* tmp-row tmp-col  */
+    .info p .tmp-row {
+        display: flex;
+    }
+    .info p .tmp-row .col1 {
+        width: 95px;
+        text-align: right;
+    }
+    .info p .tmp-row .col2 {
+        padding-left: 10px;
+        text-align: left;
+    }
+
+    /*  */
+    .show{
+        display: inherit;
+    }
+
+    .contain-seq {
+        width: 500px;
+        margin: 0;
+        margin-left: -2px;
+        border-left: solid skyblue 1px;
+        border-right: solid skyblue 1px;
+        z-index: 0;
+        margin-bottom: 500px;
+    }
+
+
+    /*.leftGr .red a{
+        width: 500px;
+        height: 12px;
+    }*/
+
+    .te-name {
+        background-color: #e6e7ee;
+        text-align: center;
+        padding: 5px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 3px 3px 6px #b8b9be,-3px -3px 6px #fff;
+        width: 700px;
+        margin-left: -100px;
+        z-index: 999;
+        cursor: default;
+    }
+    .te-name a {
+        line-height: 3;
+    }
+
+    .query-separate {
+        border: dashed 3px #3c96e6;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    .id-separate {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        background: black;
+        height: 5;
+    }
+    .id-separate .dot {
+        position: relative;
+        width: 20px;
+        height: 10px;
+        border-radius: 50px;
+        border: solid 3px;
+        top: -2px;
+        z-index: 999;
+        background: #e6e7ee;
+        padding: 0;
+        margin: 0;
+    }
+
+
+    /* MENU */
+    .menu .mode-btn {
+        position: fixed;
+        top: 0;
+        z-index: 1;
+        padding: 15px;
+    }
+    .menu .mode-btn:hover {
+        padding: 15px;
+    }
+
+
+    .up-btn{
+        position: fixed;
+        bottom: 15px;
+        right: 15px;
+        padding: 15px 20px;
+    }
+    .up-btn:hover{
+        padding: 15px 20px;
+    }
+
+    .menu .mode-btn, .up-btn, #go-btn {
+        background-color: #e6e7ee !important;
+        box-shadow: 3px 3px 6px #b8b9be,-3px -3px 6px #fff;
+        border: none;
+        margin: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-family: "Arial", "Effra", Helvetica, sans-serif;
+    }
+
+    .menu .mode-btn:hover, .up-btn:hover, #go-btn:hover {
+        background-color: #e6e7ee !important;
+        box-shadow: inset 2px 2px 5px #b8b9be,inset -3px -3px 7px #fff;
+        border: none;
+        margin: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    .up-btn i{
+        font-size: 2em;
+    }
+
+    .mask {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        opacity: 0.8;
+        z-index: 9999;
+    }
+
+
+    /* table dialog */
+    .v-card.table{
+        margin: 15px;
+        border-radius: 15px !important;
+    }
+    table, .v-table{
+        width: 100%;
+        border-spacing: 0;
+        background-color: white;
+        border-radius: 5px;
+    }
+
+    th {
+        border-bottom: thin solid rgba(var(--v-border-color),var(--v-border-opacity));
+        color: rgba(var(--v-theme-on-surface),var(--v-medium-emphasis-opacity));
+        transition: height cubic-bezier(.4,0,.2,1);
+        font-weight: 800;
+        font-size: 1.3em;
+        user-select: none;
+        text-align: start;
+        height: calc(var(--v-table-header-height) + 0px);
+        color: black;
+    }
+
+    td {
+        border-bottom: thin solid rgba(var(--v-border-color),var(--v-border-opacity));
+        height: calc(var(--v-table-row-height, 52px) + 0px);
+        padding: 0 16px;
+        font-weight: 700;
+        font-size: 1em;
+        color: gray;
+        transition: height cubic-bezier(.4,0,.2,1);
+    }
+    td.key {
+        color: black;
+    }
+    td.val{
+        color: crimson;
+    }
+
+    td, th {
+        padding: 20px !important;
+        border-bottom: solid 1px rgba(210, 210, 210, 0.8);   
+    }
+</style>
+
+<!-- style vu js -->
+<style type="text/css">
+    #app {
+        margin-top: 100px;
+        margin-bottom: 100px;
+    }
+    .v-application--wrap,
+    .v-application__wrap {
+        min-height: inherit !important
+    }
+    #inspire{
+        height: 350px;
+        background-color: #e6e7ee ;
+    }
+
+    .theme--light.v-chip:not(.v-chip--active),
+    .v-chip.v-chip--size-small {
+      background: crimson !important;
+      color: white !important;
+    }
+    .v-slider-thumb__label{
+        width: max-content;
+        padding: 20px !important;
+        font-weight: bold !important;
+        margin-top: -7px;
+    }
+
+
+    .v-slider.v-input--horizontal{
+        position: initial;
+        height: initial;
+    }
+    
+    .v-slider.v-input--vertical {
+        position: fixed;
+        top: 30%;
+        left: 50;
+        height: 500px;
+        width: 6px;
+    }
+
+    /*  Go btn */
+    .v-btn--variant-tonal .v-btn__underlay{
+        background: inherit !important;
+    }
+
+
+    .v-slider__thumb-container .v-slider__thumb-label-container .v-slider__thumb-label div{
+        color: black;
+        box-shadow: 3px 3px 6px #b8b9be,-3px -3px 6px #fff;
+        padding: 10px;
+    }
+
+    /* Snackbar */
+    .v-overlay__content.v-snackbar__wrapper{
+        transform: inherit !important;
+        left: inherit !important;
+    }
+    .v-snackbar__content {
+        font-weight: 600;
+        font-size: 1.1em;
+        text-align: center;
+    }
+
+
+</style>
+
+
+
+<!-- <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script> -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+<!-- Vue JS and vutify 3 -->
+<!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/vue@3.3.2/dist/vue.global.min.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@3.2.2/dist/vuetify.js"></script>
+
+<script src="https://kit.fontawesome.com/dd7f3ac7c5.js" crossorigin="anonymous"></script>
+
+
+    <div class="mask"><div class="text-mask" style="width: 100%;height: 100px;position: fixed;top: 50%;color: white;font-size: 4em;text-align: center;"> <i class="fa-solid fa-hourglass-half fa-spin"></i> </div></div>
+    <button class="up-btn"><i class="fa-solid fa-angle-up"></i></button>
+    <div class="menu"> 
+        <button class="mode-btn">MODE PROPORTIONAL</button>
+
+        <!-- Vu JS -->
+        <div id="app">
+            <v-app id="inspire">
+
+                <v-overlay
+                    v-model="overlay"
+                    class="align-center justify-center"
+                    persistent
+                >
+                    <v-progress-circular
+                        color="black"
+                        indeterminate
+                        size="75"
+                        width="7"
+                    ></v-progress-circular>
+                </v-overlay>
+
+                <v-container >
+
+                    <v-autocomplete
+                        v-model="values_TE"
+                        :items="items_TE"
+                        @blur="update_TE()"
+                        @update:search="search"
+                        :loading="isLoading"
+                        label="TE"
+                        placeholder="Selecting TEs"
+
+                        chips
+                        clearable
+                        deletable-chips
+                        variant="outlined"
+                        multiple
+                        closable-chips
+                    ></v-autocomplete>
+
+                    <v-autocomplete
+                        
+                        v-model="value_chrom"
+                        :items="items_chrom"
+                        :loading="isLoadingChrom"
+                        @blur="update_Chrom()"
+                        label="Chrom"
+                        placeholder="Selecting Chrom"
+
+                        variant="outlined"
+                        clearable
+
+                    ></v-autocomplete>
+
+                    <v-switch
+                        v-model="switch_bitscore"
+                        @change="update_Chrom()"
+                        color="secondary"
+                        :label="`sort by bitscore : ${switch_bitscore.toString()}`"
+                    ></v-switch>
+
+                    <div style="margin-top: 30px;">
+                        <div class="text-caption">
+                          Chrom position
+                        </div>
+
+                        <v-slider
+                            v-model="slider"
+                            thumb-label="always"
+                            thumb-size="15"
+                            :max="max_chrom"
+                            step="1"
+                            :direction="direction"
+                        >
+                            <template v-slot:thumb-label="{ modelValue }">
+                                {{ items_Slider[Math.floor(modelValue)] }}
+                            </template>
+                        </v-slider>
+
+                        <v-btn 
+                            id="go-btn"
+                            variant="tonal"
+                            @click="goToLandingSite()"
+                        >
+                            Go
+                        </v-btn>
+                    </div>
+
+                    
+
+                </v-container>
+
+                <!-- dialog TE INFOS -->
+                <div class="text-center">
+                    <v-dialog
+                        transition="dialog-top-transition"
+                        v-model="dialog"
+                        scrollable
+                    >
+                        <v-card class="table">
+                            
+                            <table>
+                                <thead>
+                                  <tr>
+                                    <th class="text-left">
+                                      Name
+                                    </th>
+                                    <th class="text-left">
+                                      Value
+                                    </th>
+                                  </tr>
+                                </thead>
+                                
+                                <tbody>
+                                  <!-- <tr
+                                    v-for="(item, index) in desserts"
+                                    :key="item.name"
+                                  >
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.calories }}</td>
+                                  </tr> -->
+
+                                  <tr
+                                    v-for="(val, key) in TE_INFO"
+                                    :key="key"
+                                  >
+                                    <td class="key">{{ key }}</td>
+                                    <td class="val">{{ val }}</td>
+                                  </tr>
+
+                                  <tr
+                                    v-for="(val, key) in DEPTH"
+                                    :key="key"
+                                  >
+                                    <td class="key">{{ key }}</td>
+                                    <td class="val">{{ val }}</td>
+                                  </tr>
+                                </tbody>
+                            </table>
+
+
+                            <v-card-actions>
+                                <v-btn color="primary" block @click="dialog = false">Close</v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-dialog>
+
+                    
+                </div>
+
+                <v-snackbar
+                    v-model="snackbar"
+                    :timeout="2000"
+                    color="red"
+                    elevation="24"
+                >
+                    <span class="mdi mdi-alert-circle-outline" style="font-size: 1.2em; font-weight: 800;"></span>
+                    {{ snackbar_text }}
+                </v-snackbar>
+
+            </v-app>
+        </div>
+        <!-- END APP VUE JS -->
+    </div>
+    
+    <div class="block">
+
+        <!-- query -->
+        <div class="contain-query">
+            <div id="gQuery" >
+                <a class="id-query">QUERY</a>
+                <div class="empty_b"></div>
+                <div class="seq"></div>
+                <div class="empty_a"></div>
+            </div>
+
+            <div>
+                <div class="leftGr grpos">
+                    <div class="scale" style="margin-left: 0px;"></div>
+                    <div class="scale" style="margin-left: 100px;"></div>
+                    <div class="scale" style="margin-left: 100px;"></div>
+                    <div class="scale" style="margin-left: 100px;"></div>
+                    <div class="scale" style="margin-left: 100px;"></div>
+                    <div class="scale" style="margin-left: 94px;"></div>
+                </div>
+
+                <div class="leftGr grpos">
+                    <div class="sdg" style="margin-left: -2px; width: 0px;">0</div>
+                    <div class="sdg" style="margin-left: 100px; width: 1px;">1</div>
+                    <div class="sdg" style="margin-left: 100px; width: 1px;">2</div>
+                    <div class="sdg" style="margin-left: 100px; width: 1px;">3</div>
+                    <div class="sdg" style="margin-left: 100px; width: 1px;">4</div>
+                    <div class="sdg" style="margin-left: 98px; width: 2px;">5</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- subject -->
+        <div class="contain-seq">
+            
+            <!-- <div class="id-separate" data-locus="3R:15.631.152-15.631.154" data-index="0" style="position: relative;">
+                <div class="dot" style="position:absolute; left:-10px"></div> -->
+                <!-- <div class="dot" style="left:100px"></div> -->
+                <!-- <div class="dot" style="position:absolute; left:240px"></div> -->
+                <!-- <div class="dot" style="left:350px"></div> -->
+                <!-- <div class="dot" style="position:absolute; left:490px"></div>
+            </div>
+            <div class="query-separate"></div>
+            <div class="te-name"><a>17.6</a></div>
+            <div class="leftGr grpos">
+                <div class="red lightcoral" style="margin-left: 0px;"> <a href="#" qseqid="3R:<INS>:15631152:15631154:sniffles.INS.66971:34:IMPRECISE:7" sseqid="17.6" strand="-1" sstart="2" send="7439" qstart="6" qend="7392" query_seq_size="7392" subject_seq_size="7439" index="7642" pos="0" gapopen="122" mismatch="80" evalue="0" bitscore="12331" pident="96.73100000000001" style="width: 503px; "></a> 
+                </div>
+            </div> -->
+
+        </div>
+        
+
+        <div class="info"><p>INFO</p></div>
+        <div class="info-locus"><p>INFO</p></div>
+
+                
+
+    </div>
+
+<!-- OJ8fkCJZx3qK@Jvu -->
+
+
+
+<script type="text/javascript">
+    var TE_selected    = [];
+    var MODE_P         = 1;
+    var Chrom_selected = null;
+    var data_chrom     = [];
+    var index_pos      = 0;
+    var fixmeTop       = $('.contain-query').offset().top;
+
+    function TE_in_selected(dico) {
+        if ( TE_selected.length == 0 ) {
+            return true;
+        }
+
+        for(const index in TE_selected){
+            if( dico["sseqid"] == TE_selected[index] ){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function change_query(index, pos) {
+        qstart         = parseInt(data["data"][index]["positions"][pos]["qstart"]);
+        qend           = parseInt(data["data"][index]["positions"][pos]["qend"]);
+        query_seq_size = parseInt(data["data"][index]["positions"][pos]["query_seq_size"]);
+        qpercent_size  = (qend - qstart)/query_seq_size;
+        qsize          = (500 * qpercent_size);
+
+        //empty
+        qpercent_empty_size = ((qstart-1)/query_seq_size);
+        q_empty_size = (500 * qpercent_empty_size);
+
+        qseqid = data["data"][index]["qseqid"];
+        $(".id-query").text(qseqid.split(":")[4]+":"+qseqid.split(":")[7]);
+
+        //
+        $("#gQuery .empty_b").css("width", `${q_empty_size}px`);
+        $("#gQuery .seq").css("width", `${qsize}px`);
+        $("#gQuery .empty_a").css("width", `${500 - (q_empty_size + qsize)}px`);
+
+        for (var i = 2; i <= 5; i++) {
+            $(`.leftGr .sdg:nth-child(${i})`).text(parseInt((query_seq_size/6)*i));
+        }
+        $(`.leftGr .sdg:last-child`).text(query_seq_size);  
+    }
+
+    function change_query_v2(element) {
+        sseqid = element.attr("sseqid");
+        qseqid = element.attr("qseqid").replace("<", "").replace(">", "");
+        sstart = element.attr("sstart");
+        send   = element.attr("send");
+        qstart = element.attr("qstart");
+        qend   = element.attr("qend");
+        subject_seq_size = element.attr("subject_seq_size");
+        query_seq_size   = element.attr("query_seq_size");
+
+        qpercent_size  = (qend - qstart)/query_seq_size;
+        qsize          = (500 * qpercent_size);
+
+
+
+        //empty
+        qpercent_empty_size = ((qstart-1)/query_seq_size);
+        q_empty_size = (500 * qpercent_empty_size);
+
+        $(".id-query").text(qseqid.split(":")[4]+":"+qseqid.split(":")[7]);
+
+        //
+        $("#gQuery .empty_b").css("width", `${q_empty_size}px`);
+        $("#gQuery .seq").css("width", `${qsize}px`);
+        $("#gQuery .empty_a").css("width", `${500 - (q_empty_size + qsize)}px`);
+
+        for (var i = 2; i <= 5; i++) {
+            $(`.leftGr .sdg:nth-child(${i})`).text(parseInt((query_seq_size/6)*i));
+        }
+        $(`.leftGr .sdg:last-child`).text(query_seq_size);  
+
+    }
+
+    async function read_data() {
+        var seqs   = "";
+        var TE     = "";
+        var query  = "";
+        var id     = "";
+        var index_chrom = 0;
+
+        $(".mask").css("display", "initial");
+
+        setTimeout(function(){
+            for (const index in data["data"]) {
+                
+                var dico = data["data"][index];
+                if ( TE_in_selected(dico) && ( Chrom_selected == dico["chrom"] || Chrom_selected == null ) ) {
+
+                    // 2L_RaGOO_RaGOO:<INS>:547321:547321:sniffles.INS.806:3:IMPRECISE:2
+                    if (id != data["data"][index]["qseqid"].split(":")[4]) {
+                        start = new Intl.NumberFormat("de-DE").format(data["data"][index]["qseqid"].split(":")[2]);
+                        end   = new Intl.NumberFormat("de-DE").format(data["data"][index]["qseqid"].split(":")[3]);
+
+                        seqs += `<div class="id-separate" data-locus="${data["data"][index]["qseqid"].split(":")[0] + ":" + start + "-" + end}" data-index="${index_chrom}"></div>`;
+                        id    = data["data"][index]["qseqid"].split(":")[4];
+                        index_chrom += 1;
+                    }
+
+                    if (query != data["data"][index]["qseqid"]) {
+                        seqs += `<div class="query-separate"></div>`;
+                        query = data["data"][index]["qseqid"];
+                    }
+
+
+                    if (TE != data["data"][index]["sseqid"]) {
+                        seqs += `<div class="te-name"><a>${data["data"][index]["sseqid"]}</a></div>`;
+                        TE = data["data"][index]["sseqid"];
+                    }
+
+                    
+                    
+                    //color
+                    for(pos in dico["positions"]){
+                        seqs += `<div class="leftGr grpos">`;
+                        const red = dico["positions"][pos]["strand"] == 1 ? "darkblue" : "lightcoral";
+
+                        if ("no_match_send" in dico["positions"][pos]) {
+                            seqs += `<div style="width: ${dico["positions"][pos]["no_match_size"][MODE_P] - 4}px; padding-left: ${dico["positions"][pos]["no_match_size"][MODE_P] - 4}px; margin-left: ${dico["positions"][pos]["posq"][MODE_P]}px;" class="h4 white"></div>`;
+                            seqs += `<div class="red ${red}"> <a href="#" qseqid="${dico["qseqid"]}" sseqid="${dico["sseqid"]}" strand="${dico["positions"][pos]["strand"]}" sstart="${dico["positions"][pos]["sstart"]}" send="${dico["positions"][pos]["send"]}" qstart="${dico["positions"][pos]["qstart"]}" qend="${dico["positions"][pos]["qend"]}" query_seq_size="${dico["positions"][pos]["query_seq_size"]}" subject_seq_size="${dico["positions"][pos]["subject_seq_size"]}" gapopen="${dico["positions"][pos]["gapopen"]}" mismatch="${dico["positions"][pos]["mismatch"]}" evalue="${dico["positions"][pos]["evalue"]}" bitscore="${dico["positions"][pos]["bitscore"]}" pident="${dico["positions"][pos]["pident"]}" index="${index}" pos="${pos}" style="width: ${dico["positions"][pos]["size"][MODE_P]}px; "></a> </div>`;
+                        }
+                        else{
+                            if("posq" in dico["positions"][pos]){
+                                seqs += `<div class="red ${red}" style="margin-left: ${dico["positions"][pos]["posq"][MODE_P]}px;"> <a href="#" qseqid="${dico["qseqid"]}" sseqid="${dico["sseqid"]}" strand="${dico["positions"][pos]["strand"]}" sstart="${dico["positions"][pos]["sstart"]}" send="${dico["positions"][pos]["send"]}" qstart="${dico["positions"][pos]["qstart"]}" qend="${dico["positions"][pos]["qend"]}" query_seq_size="${dico["positions"][pos]["query_seq_size"]}" subject_seq_size="${dico["positions"][pos]["subject_seq_size"]}" index="${index}" pos="${pos}" gapopen="${dico["positions"][pos]["gapopen"]}" mismatch="${dico["positions"][pos]["mismatch"]}" evalue="${dico["positions"][pos]["evalue"]}" bitscore="${dico["positions"][pos]["bitscore"]}" pident="${dico["positions"][pos]["pident"]}" style="width: ${dico["positions"][pos]["size"][MODE_P]}px; "></a> </div>`
+                            }
+                            else{
+                                seqs += `<div class="red ${red}"> <a href="#" qseqid="${dico["qseqid"]}" sseqid="${dico["sseqid"]}" strand="${dico["positions"][pos]["strand"]}" style="width: ${dico["positions"][pos]["size"][MODE_P]}px;"></a> </div>`
+                            }
+                        }
+
+                        if("rest_size" in dico["positions"][pos] ){
+                            seqs += `<div style="width: ${dico["positions"][pos]["rest_size"][MODE_P] - 4}px; padding-left: ${dico["positions"][pos]["rest_size"][MODE_P] - 4}px;" class="h4 white"></div>`;
+                        }
+                        seqs += `</div>`;
+                    }
+                }
+                
+            }
+
+            // console.log(seqs)
+
+            $(".contain-seq").html(seqs)
+
+            // info
+            $(".red a").on("mouseover", function(e) {
+                // info
+                var x  = e.pageX;
+                var y  = e.pageY;
+                var el = $(".info");
+                el.addClass("show")
+                el.css('position', 'absolute');
+                el.css("left", x);
+                el.css("top", y);
+                sseqid = $(this).attr("sseqid");
+                qseqid = $(this).attr("qseqid").replace("<", "").replace(">", "");
+                sstart = $(this).attr("sstart");
+                send   = $(this).attr("send");
+                qstart = $(this).attr("qstart");
+                qend   = $(this).attr("qend");
+                subject_seq_size = $(this).attr("subject_seq_size");
+                query_seq_size   = $(this).attr("query_seq_size");
+                
+                strand           = $(this).attr("strand") == 1 ? "forward (+)" : "reverse (-)";
+                gapopen          = $(this).attr("gapopen");
+                mismatch         = $(this).attr("mismatch");
+                evalue           = $(this).attr("evalue");
+                bitscore         = $(this).attr("bitscore");
+                pident           = $(this).attr("pident");
+                var p  = $(".info p");
+                p.html(`
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>qseqid</strong> :</div><div class="tmp-col col2"> ${qseqid}</div></div>
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>qstart</strong> :</div><div class="tmp-col col2"> ${qstart}</div></div>
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>qend  </strong> :</div><div class="tmp-col col2"> ${qend}</div></div>
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>qseqsize  </strong> :</div><div class="tmp-col col2"> ${query_seq_size}</div></div><br>
+
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>sseqid</strong> :</div><div class="tmp-col col2"> <strong style="color:gold">${sseqid}</strong></div></div>
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>sstart</strong> :</div><div class="tmp-col col2"> ${sstart}</div></div>
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>send  </strong> :</div><div class="tmp-col col2"> ${send}</div></div>
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>sseqsize</strong> :</div><div class="tmp-col col2"> ${subject_seq_size}</div></div><br>
+
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>strand</strong> :</div><div class="tmp-col col2"> ${strand}</div></div><br>
+
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>pident  </strong> :</div><div class="tmp-col col2"> ${pident}%</div></div>
+                        <div class="tmp-row"><div class="tmp-col col1"><strong>evalue</strong> :</div><div class="tmp-col col2"> ${evalue}</div></div>
+                        `);
+
+
+                index = parseInt($(this).attr("index"));
+                pos   = parseInt($(this).attr("pos"));
+                // change_query(index, pos);
+                change_query_v2($(this));
+            });
+
+            $(".red a").find("*").off();
+            $(".red a").on("mouseout", function(e) {
+                var x = e.pageX;
+                var y = e.pageY;
+                var el = $(".info");
+                el.removeClass("show")
+            });
+
+            $(".red a").on("mousemove", function(e) {
+                var x = e.pageX;
+                var y = e.pageY;
+                var el = $(".info");
+                el.css('position', 'absolute');
+                el.css("left", x+5);
+                el.css("top", y+5);
+            });
+            // end info
+
+            $(".id-separate").find("*").off();
+            $(".id-separate").on("mouseover", function(e) {
+                var x = e.pageX;
+                var y = e.pageY;
+                var el = $(".info-locus");
+
+                el.css('position', 'absolute');
+                el.css("left", $(this).position().left+500+15);
+                el.css("top", $(this).position().top-11);
+
+
+                $(".info-locus p").html(`${$(this).attr("data-locus").split(":")[0]}:<strong style="color:gold;">${$(this).attr("data-locus").split(":")[1].split("-")[0]}</strong>-${$(this).attr("data-locus").split(":")[1].split("-")[1]}`);
+
+                $(".info-locus").css("display", "initial")
+            });
+
+            
+            $(".mask").css("display", "none");
+        }, 1000);
+    }
+
+
+    function update() {
+        $(".red a").on("mouseover", function(e) {
+            // info
+            var x  = e.pageX;
+            var y  = e.pageY;
+            var el = $(".info");
+            el.addClass("show")
+            el.css('position', 'absolute');
+            el.css("left", x);
+            el.css("top", y);
+            sseqid = $(this).attr("sseqid");
+            qseqid = $(this).attr("qseqid").replace("<", "").replace(">", "");
+            sstart = $(this).attr("sstart");
+            send   = $(this).attr("send");
+            qstart = $(this).attr("qstart");
+            qend   = $(this).attr("qend");
+            subject_seq_size = $(this).attr("subject_seq_size");
+            query_seq_size   = $(this).attr("query_seq_size");
+            
+            strand           = $(this).attr("strand") == 1 ? "forward (+)" : "reverse (-)";
+            gapopen          = $(this).attr("gapopen");
+            mismatch         = $(this).attr("mismatch");
+            evalue           = $(this).attr("evalue");
+            bitscore         = $(this).attr("bitscore");
+            pident           = $(this).attr("pident");
+            var p  = $(".info p");
+            p.html(`
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>qseqid</strong> :</div><div class="tmp-col col2"> ${qseqid}</div></div>
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>qstart</strong> :</div><div class="tmp-col col2"> ${qstart}</div></div>
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>qend  </strong> :</div><div class="tmp-col col2"> ${qend}</div></div>
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>qseqsize  </strong> :</div><div class="tmp-col col2"> ${query_seq_size}</div></div><br>
+
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>sseqid</strong> :</div><div class="tmp-col col2"> <strong style="color:gold">${sseqid}</strong></div></div>
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>sstart</strong> :</div><div class="tmp-col col2"> ${sstart}</div></div>
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>send  </strong> :</div><div class="tmp-col col2"> ${send}</div></div>
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>sseqsize</strong> :</div><div class="tmp-col col2"> ${subject_seq_size}</div></div><br>
+
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>strand</strong> :</div><div class="tmp-col col2"> ${strand}</div></div><br>
+
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>pident  </strong> :</div><div class="tmp-col col2"> ${pident}%</div></div>
+                    <div class="tmp-row"><div class="tmp-col col1"><strong>evalue</strong> :</div><div class="tmp-col col2"> ${evalue}</div></div>
+                    `);
+
+
+            index = parseInt($(this).attr("index"));
+            pos   = parseInt($(this).attr("pos"));
+            // change_query(index, pos);
+            change_query_v2($(this));
+        });
+
+        
+        $(".red a").on("mouseout", function(e) {
+            var x = e.pageX;
+            var y = e.pageY;
+            var el = $(".info");
+            el.removeClass("show")
+        });
+
+        $(".red a").on("mousemove", function(e) {
+            var x = e.pageX;
+            var y = e.pageY;
+            var el = $(".info");
+            el.css('position', 'absolute');
+            el.css("left", x+5);
+            el.css("top", y+5);
+        });
+
+        // $(".red a").on("click", function(e) {
+        //     console.log("click")
+        //     var x = e.pageX;
+        //     var y = e.pageY;
+        //     qseqid = $(this).attr("qseqid").replace("<", "").replace(">", "");
+        //     ID = qseqid.split(":")[4];
+        //     let params = { gen: "%%GENERATION%%", 'ID': ID };
+        //     $.get("http://localhost:%%PORT%%/TE_INFOS", params)
+        //         .done(function (data) {
+        //             console.log("date", data);
+        //         })
+
+        // });
+        // end info
+
+
+        $(".id-separate").on("mouseover", function(e) {
+            var x = e.pageX;
+            var y = e.pageY;
+            var el = $(".info-locus");
+
+            el.css('position', 'absolute');
+            el.css("left", $(this).position().left+500+15);
+            el.css("top", $(this).position().top-11);
+
+
+            $(".info-locus p").html(`${$(this).attr("data-locus").split(":")[0]}:<strong style="color:gold;">${$(this).attr("data-locus").split(":")[1].split("-")[0]}</strong>-${$(this).attr("data-locus").split(":")[1].split("-")[1]}`);
+
+            $(".info-locus").css("display", "initial")
+        });
+        
+    }
+
+    $(document).ready(function() {
+        
+        // read_data();
+        $(".mode-btn").on("click", function (e) {
+            MODE_P = MODE_P == 0 ? 1 : 0;
+            $(this).text(MODE_P == 0 ? "MODE EQUAL" : "MODE PROPORTIONAL")
+            // read_data(data);
+
+            let params = { gen: "%%GENERATION%%", 'TE[]': TE_selected, chrom: Chrom_selected, MODE_P:MODE_P };
+            $(".mask").css("display", "initial");
+            $(".red a").find("*").off();
+            $(".id-separate").find("*").off();
+            $(".contain-seq").html("")
+            $.get( "http://localhost:%%PORT%%/data",  params)
+              .done(function( html ) {
+                $(".contain-seq").html(html)
+                update();
+
+                $(".mask").css("display", "none");
+              });
+        });
+
+        $(".up-btn").on("click", function (e) {
+            window.scroll({
+             top: 0, 
+             left: 0, 
+             behavior: 'smooth' 
+            });
+        });
+        
+    })
+</script>
+
+
+<!-- Vue JS 3 -->
+<script type="text/javascript">
+    const { createApp, ref, toRefs, toRef } =  Vue;
+    const { createVuetify } =  Vuetify;
+
+    const vuetify = createVuetify();
+
+    const app = createApp({
+        component: "#app",
+        props: {
+        },
+        setup(props, { expose }) {
+            var items_TE = ref([]);
+            var values_TE = ref([])
+            var isLoading = ref(false);
+
+            const search = (nameTE) => {
+                if (nameTE === null) return;
+
+                // Items have already been requested
+                if (isLoading.value) return;
+
+                isLoading.value = true;
+
+                fetch("http://localhost:%%PORT%%/TE?" + new URLSearchParams({gen: "%%GENERATION%%", MODE_P: MODE_P, name: nameTE}) )
+                    .then((res) => res.json())
+                    .then((res) => {
+                        items_TE.value = res;
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    })
+                    .finally(() => (isLoading.value = false));
+
+            };
+
+            return { search, values_TE, items_TE, isLoading };
+        },
+        data: () => ({
+            dialog: false,
+            overlay: false,
+            snackbar: false,
+            snackbar_text: "NO TEXT",
+            isLoadingChrom: false,
+            items_chrom: [],
+            value_chrom: null,
+            values_type: [],
+            value: null,
+            slider: 45,
+            items_Slider: [],
+            max_chrom:0,
+            direction: "horizontal",
+            switch_bitscore: false,
+            TE_INFO: {},
+            DEPTH: {},
+        }),
+        mounted() {
+            console.log("mounted")
+            this.isLoadingChrom = true;
+            fetch("http://localhost:%%PORT%%/chrom?" + new URLSearchParams({gen: "%%GENERATION%%", MODE_P: MODE_P}) )
+                .then((res) => res.json())
+                .then((res) => {
+                    console.log("chroms", res);
+                    this.items_chrom = res;
+                })
+                .catch((err) => {
+                    console.log(err);
+                })
+                .finally(() => (this.isLoadingChrom = false));
+
+            this.isLoading = true;
+            fetch("http://localhost:%%PORT%%" + "/TE?" + new URLSearchParams({gen: "%%GENERATION%%", MODE_P: MODE_P}) )
+                .then((res) => res.json())
+                .then((res) => {
+                    console.log(res)
+                    this.items_TE = res;
+                })
+                .catch((err) => {
+                  console.log(err);
+                })
+                .finally(() => (this.isLoading = false));
+            
+            window.addEventListener("scroll", this.onScroll);
+            $(window).scroll(this.onScroll);
+        },
+        methods: {
+            update_TE(){
+                
+                TE_selected = this.values_TE;
+                vue = this;
+
+                console.log("update_TE", TE_selected)
+                let params = { gen: "%%GENERATION%%", 'TE[]': TE_selected, chrom: this.value_chrom, sort_bitscore: this.switch_bitscore };
+                if (this.value_chrom != null) {
+                    this.update_Data(params);
+                }
+            },
+            update_Type (){
+                Type_selected = this.values_type;
+            },
+            update_Chrom (){
+
+                vue = this;
+
+                Chrom_selected = this.value_chrom;
+
+                let params = { gen: "%%GENERATION%%", 'TE[]': TE_selected, chrom: this.value_chrom, sort_bitscore: this.switch_bitscore };
+                this.update_Data(params);
+            },
+            update_Data(params){
+                const vue = this;
+
+                // $(".mask").css("display", "initial");
+                this.overlay = true;
+                setTimeout(function () {
+                    $(".contain-seq div").remove();
+                    // $(".id-separate").find("*").off();
+
+                    $(".contain-seq").empty()
+                    $.get( "http://localhost:%%PORT%%/data",  params)
+                        .done(function( html ) {
+                            $(".contain-seq").html(html)
+                            update();
+                            $(".red a").on("click", function(e) {
+                                e.preventDefault();
+                                console.log("click")
+                                qseqid = $(this).attr("qseqid").replace("<", "").replace(">", "");
+                                ID = qseqid.split(":")[4];
+                                let params = { gen: "%%GENERATION%%", 'ID': ID };
+                                $.get("http://localhost:%%PORT%%/TE_INFOS", params)
+                                    .done(function (data) {
+                                        console.log("date", data);
+                                        if(data["TE_INFOS"] != undefined){
+                                            vue.TE_INFO = data["TE_INFOS"];
+                                            const keysKepp = ["#chrom", "TE|ID", "TSD", "strand", "psize_TE", "FREQ", "FREQ", "FREQ_OPTIMIZED"]
+                                            vue.TE_INFO = Object.fromEntries(Object.entries(vue.TE_INFO).filter(([key]) => keysKepp.includes(key)));
+                                        }
+                                        else{
+                                            vue.TE_INFO = {};
+                                        }
+
+                                        if(data["DEPTH"] != undefined){
+                                            vue.DEPTH = data["DEPTH"];
+                                            const keysKepp = ["total_depth", "depth_empty_site", "read_support", "read_support_percent"]
+                                            vue.DEPTH = Object.fromEntries(Object.entries(vue.DEPTH).filter(([key]) => keysKepp.includes(key)));
+                                        }
+                                        else{
+                                            vue.DEPTH = {};
+                                        }
+
+                                        if(Object.keys(vue.DEPTH).length > 0 || Object.keys(vue.TE_INFO).length > 0){
+                                            vue.dialog = true;
+                                            
+                                        }
+                                        else{
+                                            vue.snackbar_text = "NO TE INFOS FOUND";
+                                            vue.snackbar = true;
+                                        }
+                                    })
+
+                            });
+                            vue.overlay = false;
+                            // $(".mask").css("display", "none");
+                        }).fail(function() {
+                            alert('ERREUR: DATA NOT FOUND'); // or whatever
+                        });
+                }, 1000)
+                
+
+                //data_chrom
+                $.get( "http://localhost:%%PORT%%/data_chrom",  params)
+                    .done(function( data_ch ) {
+
+                        vue.slider       = 0;
+                        data_chrom       = data_ch;
+                        vue.items_Slider = data_chrom;
+                        vue.max_chrom    = data_chrom.length - 1;
+                    }).fail(function() {
+                        alert('ERREUR: DATA CHROM NOT FOUND'); // or whatever
+                    });
+            },
+            goToLandingSite(){
+                console.log("Go : ")
+                var top_pos = $(`.id-separate[data-locus="${data_chrom[this.slider]}"]`).offset().top
+                console.log("TOP : ", top_pos, this.slider)
+                window.scroll({
+                    top: top_pos-200, 
+                    left: 0,
+                    behavior: 'smooth' 
+                });
+            },
+            onScroll() {
+                var currentScroll = $(window).scrollTop();
+
+                if ( currentScroll >= fixmeTop ) {           // apply position: fixed if you
+                    $('.contain-query').css({                     
+                        position: 'fixed',
+                        top: '0',
+                        'margin-left': "-3px",
+                        background: "rgba(0, 90, 180, 0.8)",
+                        color: "honeydew",
+                        "z-index": "9999",
+                        "padding-left": "100px", //pour le fond et la taille affiché
+                        width: "700px",
+                        "margin-left": "-100px", 
+                    });
+
+                    $("#gQuery .seq").css({
+                        background: "orangered",
+                    });
+
+                    $("#gQuery .empty_b, #gQuery .empty_a, #gQuery .seq").css({
+                        border: "solid 3px #FFFFFFCC",
+                    });
+
+                    // slider
+                    this.direction = "vertical";
+                    $("#go-btn").css({
+                        position: "fixed",
+                        top: "90%",
+                        left: "10",
+                    })
+                }
+                else {                                   // apply position: static
+                    $('.contain-query').css({
+                        position: 'static',
+                        background: "inherit",
+                        color: "black",
+                        "padding-left": "inherit",
+                        width: "500px",
+                        "margin-left": "0", 
+                    });
+
+                    $("#gQuery .seq").css({
+                        background: "lightskyblue",
+                    })
+
+                    $("#gQuery .empty_b, #gQuery .empty_a, #gQuery .seq").css({
+                        border: "solid 3px #3c96e6CC",
+                    })
+
+                    // slider
+                    this.direction = "horizontal";
+                    $("#go-btn").css({
+                        position: "inherit",
+                    })
+                }
+
+                if( data_chrom.length > 0 && $(`.id-separate[data-locus="${data_chrom[0]}"]`) != undefined && currentScroll > $(`.id-separate[data-locus="${data_chrom[0]}"]`).offset().top ){
+                    found = false;
+                    while ( ! found ) {
+                        if( $(`.id-separate[data-locus="${data_chrom[index_pos]}"]`).offset().top < currentScroll && currentScroll <= $(`.id-separate[data-locus="${data_chrom[index_pos+1]}"]`).offset().top ){
+                            this.slider = index_pos;
+                            found = true;
+                        }
+                        else{
+                            index_pos += currentScroll > $(`.id-separate[data-locus="${data_chrom[index_pos]}"]`).offset().top ? 1 : -1;
+                        }
+                    }
+                }
+                else{
+                    index_pos = 0;
+                }
+            },
+        },
+        watch: {
+            dialog(){
+                console.log("dialog changed", this.slider)
+                if( ! this.dialog ){
+                    setTimeout(function () { this.goToLandingSite() }.bind(this), 1000);
+                    console.log("dialog changed -->>>>", this.slider)
+                }
+            }
+        },
+    }).use(vuetify).mount('#app');
+</script>
+
+

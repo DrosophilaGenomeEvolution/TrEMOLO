@@ -106,7 +106,7 @@ awk 'NR>1 && OFS="\t"{split($7, sp, "." ); print $1, $2, $3, $4, $5, $6, "OUTSID
 
 
 echo "MERGE POSITIONS..."
-awk 'NR>1 && OFS="\t"{print $1, $2, $2+1, $3, $4, $5, $6, $7, $8, $9}' "$OUTPUT"/work/FT1_SCATTER.csv | bedtools sort | bedtools cluster -d 100 | awk '
+awk 'NR>1 && OFS="\t"{print $1, $2, $2+1, $3, $4, $5, $6, $7, $8, $9}' "$OUTPUT"/work/FT1_SCATTER.csv | bedtools sort | bedtools cluster -d 200 | awk '
 BEGIN{
     clust="";
     pos="";
