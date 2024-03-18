@@ -32,6 +32,7 @@ import json
 import yaml
 import os
 import sys
+import re
 
 #Class Color
 class bcolors:
@@ -91,7 +92,7 @@ if creat_pseudo_db :
     list_header_TE.write("original\tpseudo")
     for index, line in enumerate(lines) :
         if line[0] == ">" :
-            list_header_TE.write("\noriginal=" + line.strip() + "\tpseudo=>TrEMOLOTE" + str(index))
+            list_header_TE.write("\noriginal=" + re.split("\s", line.strip())[0] + "\tpseudo=>TrEMOLOTE" + str(index))
             pseudo_DB.write(">TrEMOLOTE" + str(index) + "\n")
         else :
             pseudo_DB.write(line)
@@ -219,6 +220,14 @@ rule TrEMOLO_BUILD :
         mkdir -p {params.work_directory}/rep_tmp_snk/
 
         rm -f ${{path_to_pipline}}/Snakefile*
+
+        pwd=`pwd`;
+        cd "${{path_to_pipline}}";
+        echo " ******************************"
+        echo "    version-app-tag : $(git describe --tags `git rev-list --tags --max-count=1`)"
+        echo " ******************************"
+        echo 
+        cd "$pwd";
         
         printf "%s\\n" "{params.cmess} [SNK] CREATION SNAKEFILE {params.cend}"
         
