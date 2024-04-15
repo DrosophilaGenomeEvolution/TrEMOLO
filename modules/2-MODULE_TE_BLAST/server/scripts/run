@@ -1,0 +1,87 @@
+const blessed = require('blessed');
+const { spawn } = require('child_process');
+
+// Create screen
+const screen = blessed.screen({
+    smartCSR: true,
+    title: 'Server and Client Logs'
+});
+
+// Create box server and client
+const serverBox = blessed.box({
+    label: 'Serveur',
+    top: 'top',
+    left: 'left',
+    width: '50%',
+    height: '100%',
+    content: '',
+    tags: true,
+    border: {
+        type: 'line'
+    },
+    style: {
+        border: {
+        fg: 'blue'
+        }
+    },
+    scrollable: true,
+    alwaysScroll: true,
+    keys: true,
+    mouse: true
+});
+
+const clientBox = blessed.box({
+    label: 'Client',
+    top: 'top',
+    left: '50%',
+    width: '50%',
+    height: '100%',
+    content: '',
+    tags: true,
+    border: {
+        type: 'line'
+    },
+    style: {
+        border: {
+        fg: 'green'
+        }
+    },
+    scrollable: true,
+    alwaysScroll: true,
+    keys: true,
+    mouse: true
+});
+
+// Add box
+screen.append(serverBox);
+screen.append(clientBox);
+
+// Gestion data each procs
+const server = spawn('node', ['server'], { cwd: 'modules/2-MODULE_TE_BLAST/server/back-end' });
+//const server = spawn('node', ['modules/2-MODULE_TE_BLAST/server/back-end/server']);
+server.stdout.on('data', (data) => {
+    serverBox.insertBottom(data.toString());
+    serverBox.scroll(1);
+    screen.render();
+});
+
+const client = spawn('node', ['client'], { cwd: 'modules/2-MODULE_TE_BLAST/server/front-end' });
+//const client = spawn('node', ['modules/2-MODULE_TE_BLAST/server/front-end/client']);
+client.stdout.on('data', (data) => {
+    clientBox.insertBottom(data.toString());
+    clientBox.scroll(1);
+    screen.render();
+});
+
+function stopProcesses() {
+    server.kill();
+    client.kill();
+}
+
+// Exit
+screen.key(['escape', 'q', 'C-c'], (ch, key) => {
+    stopProcesses();
+    return process.exit(0);
+});
+
+screen.render();

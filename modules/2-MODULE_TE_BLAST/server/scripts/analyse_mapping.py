@@ -13,10 +13,10 @@ parser.add_argument("blast_file", metavar='<blast-file>', option_strings=['blast
                     help="Input blast file format 6 (-outfmt 6)")
 
 parser.add_argument("db_file_te", metavar='<db-file-TE>', type=argparse.FileType('r'),
-                    help="Multi fasta file TE for get size")
+                    help="fasta index .fai file TE for get size")
 
 parser.add_argument("query_file_te", metavar='<query-file-TE>', type=argparse.FileType('r'),
-                    help="Multi fasta file TE for get size")
+                    help="fasta index .fai file INS for get size")
 
 parser.add_argument("output_json", metavar='<output-json>', type=argparse.FileType('w'),
                     help="output-json file")
@@ -41,7 +41,7 @@ args = parser.parse_args()
 
 name_file        = args.blast_file.name
 name_querty_file = args.query_file_te.name
-name_output_file = args.output_json.name
+output_json = args.output_json
 
 nb_elements      = args.nb_elements
 min_pident       = args.min_pident
@@ -72,38 +72,25 @@ combine_name     = args.combine_name
 size_et = {}
 
 if args.db_file_te != None:
-    #GET_SIZE TE Database format fasta
-    file  = args.db_file_te
-    lines = file.readlines()
-
-    for i, l in enumerate(lines):
-        if l[0] == ">":
-            size_et[l[1:].strip()] = len(lines[i + 1].strip())
-
-    file.close()
-
+    #GET_SIZE TE Database format fasta.fai 
+    with open(args.db_file_te.name, 'r', encoding='utf-8') as file:
+        for line in file:
+            size_et[line.split("\t")[0]] = int(line.strip().split("\t")[1])
 else :
-    print("[" + str(sys.argv[0]) + "] : ERROR fasta file Database TE Not Found")
+    print("[" + str(sys.argv[0]) + "] : ERROR fasta.fai file Database TE Not Found")
     exit(1)
-
-
 
 
 size_query = {}
 
 if args.query_file_te != None:
-    #GET_SIZE TE Database format fasta
-    file  = args.query_file_te
-    lines = file.readlines()
-
-    for i, l in enumerate(lines):
-        if l[0] == ">":
-            size_query[l[1:].strip()] = len(lines[i + 1].strip())
-
-    file.close()
+    #GET_SIZE TE insertions format fasta 
+    with open(args.query_file_te.name, 'r', encoding='utf-8') as file:
+        for line in file:
+            size_query[line.split("\t")[0]] = int(line.strip().split("\t")[1])
 
 else :
-    print("[" + str(sys.argv[0]) + "] : ERROR fasta file Database TE Not Found")
+    print("[" + str(sys.argv[0]) + "] : ERROR fasta.fai file insertion TE Not Found")
     exit(1)
 
 
@@ -164,6 +151,7 @@ for index, value in enumerate(df.values):
 	query_seq_size   = size_query[qseqid]
 
 	# 
+	#print(subject_seq_size, query_seq_size)
 	size_html        = (subject_seq_size/query_seq_size)*SIZE_HTML
 
 	if "positions" not in dico["data"][len(dico["data"])-1] :
@@ -228,49 +216,23 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
 
-
-
-
 if nb_elements == None :
-	output_file = open(str(name_output_file) + ".json", "w")
+	# output_file = open(str(name_output_file) + ".json", "w")
 
-	print(len(dico["data"]))
+	print("nb elements", len(dico["data"]))
 	##to json
 	json_dico = json.dumps(dico, cls=NpEncoder)
 
-	output_file.write(json_dico)
-	output_file.close()
+	output_json.write(json_dico)
+	output_json.close()
 else :
 	size_data = len(dico["data"])
 	print(size_data, nb_elements, type(size_data), type(nb_elements), int((size_data/nb_elements)-1))
 	limit = int((size_data/nb_elements))
 	for i in range(limit-1) :
-		output_file = open(str(name_output_file) + "_part" + str(i) + ".json", "w")
+		# output_file = open(str(name_output_file) + "_part" + str(i) + ".json", "w")
 
 		json_dico = json.dumps({"data": dico["data"][i*nb_elements:(i+1)*nb_elements]}, cls=NpEncoder)
 
-		output_file.write(json_dico)
-		output_file.close()
-
-#print("var data = " + json_dico)
-#print("var array_TE = " + str(array_TE) )
-#print("var array_Chrom = " + str(array_Chrom) )
-
-##to html
-# for dic in dico["data"] :
-# 	#print(dic, "\n")
-# 	for pos in dic["positions"] :
-# 		#print("pos", pos)
-# 		print('<div class="leftGr grpos">')
-# 		if "no_match_send" in pos :
-# 			print('\t<div style="width: ' + str(pos["no_match_size"]-4) + 'px; padding-left: ' + str(pos["no_match_size"]-4) + 'px; margin-left: ' + str(pos["posq"]) + 'px;" class="h4 white"></div>')
-# 			print('\t<div class="red"> <a href="#" qseqid="' + dic["qseqid"] + '" sseqid="' + dic["sseqid"] + '" strand="' + str(pos["strand"]) + '" style="width: ' + str(pos["size"]) + 'px; "></a> </div>')
-# 		else :
-# 			if "posq" in pos :
-# 				print('\t<div class="red" style="margin-left: ' + str(pos["posq"]) + 'px;"> <a href="#" qseqid="' + dic["qseqid"] + '" sseqid="' + dic["sseqid"] + '" strand="' + str(pos["strand"]) + '" style="width: ' + str(pos["size"]) + 'px; "></a> </div>')
-# 			else :
-# 				print('\t<div class="red"> <a href="#" qseqid="' + dic["qseqid"] + '" sseqid="' + dic["sseqid"] + '" strand="' + str(pos["strand"]) + '" style="width: ' + str(pos["size"]) + 'px;"></a> </div>')
-		
-# 		if "rest_size" in pos :
-# 			print('\t<div style="width: ' + str(pos["rest_size"]-4) + 'px; padding-left: ' + str(pos["rest_size"]-4) + 'px;" class="h4 white"></div>')
-# 		print('</div>')
+		output_json.write(json_dico)
+		output_json.close()

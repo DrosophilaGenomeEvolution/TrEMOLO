@@ -95,8 +95,8 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
 - For report
   - R 3.3+ libs
     - [knitr 1.38](https://www.r-project.org/nosvn/pandoc/knitr.html)
-    - [rmarkdown 2.13](https://rmarkdown.rstudio.com/)
-    - [bookdown 0.25](https://bookdown.org/yihui/bookdown/get-started.html)
+    - [rmarkdown 2.26](https://rmarkdown.rstudio.com/)
+    - [bookdown 0.38](https://bookdown.org/yihui/bookdown/get-started.html)
     - [viridis 0.6.2](https://www.rdocumentation.org/packages/viridis/versions/0.3.4)
     - [viridisLite 0.4.0](https://github.com/sjmgarnier/viridisLite)
     - [rjson 0.2.20](https://rdrr.io/cran/rjson/)
@@ -333,6 +333,18 @@ The output file **your_work_directory/TE_INFOS.bed** gathers all the necessary i
  13.   `SV_SIZE`  : size of the structural variant (may be larger than the size of the TE)
  14.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
  15.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
+
+# Modules
+
+Modules are crucial tools in post-processing for analyses. They enable the extraction and visualization of complex information in an intuitive and accessible manner. With these modules, users can gain a deep understanding of data by directly visualizing outcomes in various graphical formats, thereby facilitating the interpretation and utilization of research results or analyses.
+
+## 1 - Scatter Frequency
+
+The "Scatter Frequency TE Tremolo" module provides a crucial graphical tool for researchers studying the evolution of transposable element (TE) insertion frequencies across generations. It clearly visualizes the dynamics of these genomic elements, offering valuable insights into their behavior and potential for adaptation or evolutionary change within populations over extended periods. For more details, please consult the full documentation at [this link](modules/1-FREQUENCY-MULTI-GENERATIONS/README.md).
+
+## 2 - ANALYSYS TE BLAST
+
+This module enables the visualization of BLAST results concerning the newly detected transposable element insertions. It allows for the visual identification of specific structures such as LTR recombinations, transposable elements (TEs) inserted within other TEs, or more complex structures like clusters of TEs. This tool is crucial for genomic researchers aiming to deeply analyze the dynamics of TE insertions. For more details, please consult the full documentation at [this link](modules/2-MODULE_TE_BLAST/README.md).
 
 
 # How to use TrEMOLO<a name="how_to_use"></a>

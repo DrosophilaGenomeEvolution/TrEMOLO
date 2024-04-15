@@ -364,8 +364,9 @@ rule TrEMOLO_BUILD :
 
             if [ {params.choice_insider_sv} = "True" ] && [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                 printf "%s" "> TE_TOWARD_GENOME " >> {params.work_directory}/OUTSIDER/instructions.txt
-                printf "%s" "> FIND_SV_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
-                printf "%s" "> FIND_TE_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
+                # printf "%s" "> FIND_SV_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
+                # printf "%s" "> FIND_TE_ON_REF " >> {params.work_directory}/OUTSIDER/instructions.txt
+                printf "%s" "> LIFT_OFF " >> {params.work_directory}/OUTSIDER/instructions.txt
             else
                 if [ {params.INTEGRATE_TE_TO_GENOME} = "True" ]; then
                     printf "%s" "> TE_TOWARD_GENOME " >> {params.work_directory}/OUTSIDER/instructions.txt

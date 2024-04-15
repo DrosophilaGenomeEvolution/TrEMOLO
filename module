@@ -1,0 +1,32 @@
+#!/bin/bash
+CMD=$1
+NUM_MODULE=$2
+
+path_to_tremolo=`dirname "$0"`
+echo "   PATH : $path_to_tremolo";
+real_path=`realpath .`;
+echo "rd:$real_path"
+
+if [ "$CMD" = "start" ]
+then
+
+    if [ $NUM_MODULE -eq 2 ]
+    then
+        date
+        echo "Begin module 2...";
+        echo "go to ${path_to_tremolo} ..."
+        cd "${path_to_tremolo}";
+        ln -sf modules/2-MODULE_TE_BLAST/server/scripts/run mod-2
+        node mod-2
+        rm -f mod-2
+        echo "End module 2...";
+        date
+    else
+        echo "Module [$NUM_MODULE] Not found";
+    fi;
+
+else
+    echo "Command $CMD Not found"
+    echo "Usage : $0 start <number-module>"
+    #echo "Usage : $0 stop <number-module>"
+fi;
