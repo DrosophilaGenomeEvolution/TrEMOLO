@@ -113,14 +113,16 @@ _EOF_
     # R --slave -e 'install.packages("RColorBrewer")'
 
     #Good Version
-    #rmarkdown_2.13     knitr_1.36         bookdown_0.25      viridis_0.6.2     
+    #rmarkdown_2.22     knitr_1.36         bookdown_0.25      viridis_0.6.2     
     #viridisLite_0.4.0  rjson_0.2.20       ggthemes_4.2.4     forcats_0.5.1     
     #reshape2_1.4.4     dplyr_1.0.8        kableExtra_1.3.4   extrafont_0.17    
     #ggplot2_3.4.2      RColorBrewer_1.1-2
 
     R --slave -e 'require(devtools); install_version("knitr", version = "1.38")'
-    R --slave -e 'require(devtools); install_version("rmarkdown", version = "2.13")'
-    R --slave -e 'require(devtools); install_version("bookdown", version = "0.25")'
+    R --slave -e 'require(devtools); install_version("rmarkdown", version = "2.26")'
+    #R --slave -e 'require(devtools); install_version("bookdown", version = "0.25")'
+    #R --slave -e 'require(devtools); install.packages("rmarkdown", version = "2.38")'
+    R --slave -e 'require(devtools); install.packages("bookdown", version = "0.38")'
     R --slave -e 'require(devtools); install_version("viridis", version = "0.6.2")'
     R --slave -e 'require(devtools); install_version("viridisLite", version = "0.4.0")'
     R --slave -e 'require(devtools); install_version("rjson", version = "0.2.20")'
@@ -190,6 +192,8 @@ _EOF_
     #Python libs
     python3 -m pip install biopython==1.79 pandas==1.5.3 numpy==1.21.2 matplotlib==3.5.1 svim==1.4.2 intervaltree==2.1.0 scipy==1.10.1 pysam==0.20.0
 
+    python3 -m pip install Liftoff
+
     # build variables
     export TOOLDIR=/opt/tools
 
@@ -223,6 +227,23 @@ _EOF_
     cd $TOOLDIR
     git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
 
+    # Installation de nvm (Node Version Manager)
+    mkdir -p /opt/nvm/
+    export NVM_DIR=/opt/nvm
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+    
+    . "$NVM_DIR/nvm.sh"
+    
+    # Installation Node.js v18.8.0
+    nvm install 18.8.0
+    nvm alias default 18.8.0
+    nvm use default
+
+    # # add nvm and node all usr
+    # echo 'export NVM_DIR="/opt/nvm"' >> /etc/profile.d/nvm.sh
+    # echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> /etc/profile.d/nvm.sh
+    # echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> /etc/profile.d/nvm.sh
+
     #Must be compiling at the end
     R --save -e 'install.packages("stringi")'
     R --save -e 'install.packages("stringr")'
@@ -246,6 +267,8 @@ _EOF_
     # export PATH="$PATH:/usr/bin/samtools-1.15.1"
     # export PATH="$PATH:/usr/bin/htslib-1.15.1"
     export PATH="$PATH:/usr/bin/samtools/bcftools/"
+
+    export PATH="/opt/nvm/versions/node/v18.8.0/bin:$PATH"
     # Fix force R path container
     export R_PROFILE=/opt/init-file/.Rprofile
     export R_LIBS="/usr/local/lib/R/site-library:/usr/lib/R/site-library:/usr/lib/R/library"
