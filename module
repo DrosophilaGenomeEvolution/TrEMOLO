@@ -17,6 +17,7 @@ then
         echo "go to ${path_to_tremolo} ..."
         cd "${path_to_tremolo}";
         ln -sf modules/2-MODULE_TE_BLAST/server/scripts/run mod-2
+        sleep 2
         node mod-2
         rm -f mod-2
         echo "End module 2...";

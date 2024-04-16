@@ -347,11 +347,13 @@ function compare_bitscore(s1, s2) {
 function create_data_sorted_by_bitscore(generation) {
 
     console.log("BEGIN | create_data_sorted_by_bitscore : ", generation);
+    console.log("Get data...");
     rawdata    = fs.readFileSync(`data/data_${generation}.json`);
+    console.log("Parsing data...");
     data       = JSON.parse(rawdata);
 
     data["data"] = data["data"].sort(compare_bitscore);
-    
+    console.log("Write data...");
     //data_sorted_by_bitscore
     fs.writeFileSync(`data/data_${generation}_sorted_by_bitscore.json`, JSON.stringify(data), err => {
       if (err) {
@@ -363,7 +365,7 @@ function create_data_sorted_by_bitscore(generation) {
 
 function create_index_TE_INFOS(generation){
 
-    console.log("BEGIN | create_index_TE_INFOS", generation)
+    console.log("BEGIN | create_index_TE_INFOS...", generation)
 
     data = fs.readFileSync(`TE_INFOS/TE_INFOS_${generation}.json`)
 
@@ -383,7 +385,7 @@ function create_index_TE_INFOS(generation){
 
 function create_index_DEPTH(generation){
 
-    console.log("BEGIN | create_index_DEPTH", generation)
+    console.log("BEGIN | create_index_DEPTH...", generation)
 
     data = fs.readFileSync(`DEPTH/DEPTH_${generation}.json`)
 
@@ -430,6 +432,7 @@ function compare_position(s1, s2) {
 function create_data_sorted_by_position(generation) {
 
     console.log("BEGIN | create_data_sorted_by_position : ", generation);
+    console.log("Wait...");
     rawdata    = fs.readFileSync(`data/data_${generation}.json`);
     data       = JSON.parse(rawdata);
 
@@ -716,11 +719,13 @@ server.listen(port, async () => {
             console.log('Unable to scan directory: ' + err);
             return 
         } 
+
+        console.log(`Server is running on http://${host}:${port}`); 
         //listing all files using forEach
-        files.forEach(function (file) {
-            // Do whatever you want to do with the file
-            console.log(`Server is running on http://${host}:${port_client}?gen=${file.replace("data_", "").replace(".json", "").replace("_sorted_by_bitscore", "")}`); 
-        });
+        // files.forEach(function (file) {
+        //     // Do whatever you want to do with the file
+        //     console.log(`Server is running on http://${host}:${port_client}?gen=${file.replace("data_", "").replace(".json", "").replace("_sorted_by_bitscore", "")}`); 
+        // });
     });
     
     date = new Date().toJSON();

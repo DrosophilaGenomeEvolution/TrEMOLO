@@ -1,4 +1,5 @@
 const blessed = require('blessed');
+const fs = require('fs');
 const { spawn } = require('child_process');
 
 // Create screen
@@ -65,10 +66,31 @@ server.stdout.on('data', (data) => {
     screen.render();
 });
 
+//const logStream = fs.createWriteStream('log-server.txt', { flags: 'a' });
+
+server.stderr.on('data', (data) => {
+    serverBox.insertBottom(`Erreur : check that your YOUR_WORK_DIRECTORY/data.json file is not too large < 500MB or that it has been properly constructed`);
+    //logStream.write(`Erreur: ${data.toString()}`);
+    server.kill('SIGTERM');
+    client.kill('SIGTERM');
+    screen.destroy();
+    console.error('Erreur : check log-server.txt');
+    process.exit(1);
+    // serverBox.scroll(1);
+    // screen.render();
+});
+
+
 const client = spawn('node', ['client'], { cwd: 'modules/2-MODULE_TE_BLAST/server/front-end' });
 //const client = spawn('node', ['modules/2-MODULE_TE_BLAST/server/front-end/client']);
 client.stdout.on('data', (data) => {
     clientBox.insertBottom(data.toString());
+    clientBox.scroll(1);
+    screen.render();
+});
+
+client.stderr.on('data', (data) => {
+    clientBox.insertBottom(`Erreur: ${data.toString()}`);
     clientBox.scroll(1);
     screen.render();
 });

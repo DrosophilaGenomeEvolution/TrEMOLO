@@ -15,6 +15,9 @@
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Output files](#output)
+- [Modules](#modules)
+    - [Scatter Frequency](#module-1)
+    - [ANALYSYS TE BLAST](#module-2)
 - [strategies](#how_to_use)
 - [Citation & Licence](#citation)
 
@@ -334,15 +337,15 @@ The output file **your_work_directory/TE_INFOS.bed** gathers all the necessary i
  14.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
  15.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
 
-# Modules
+# Modules <a name="modules"></a>
 
 Modules are crucial tools in post-processing for analyses. They enable the extraction and visualization of complex information in an intuitive and accessible manner. With these modules, users can gain a deep understanding of data by directly visualizing outcomes in various graphical formats, thereby facilitating the interpretation and utilization of research results or analyses.
 
-## 1 - Scatter Frequency
+## 1 - Scatter Frequency <a name="module-1"></a>
 
 The "Scatter Frequency TE Tremolo" module provides a crucial graphical tool for researchers studying the evolution of transposable element (TE) insertion frequencies across generations. It clearly visualizes the dynamics of these genomic elements, offering valuable insights into their behavior and potential for adaptation or evolutionary change within populations over extended periods. For more details, please consult the full documentation at [this link](modules/1-FREQUENCY-MULTI-GENERATIONS/README.md).
 
-## 2 - ANALYSYS TE BLAST
+## 2 - ANALYSYS TE BLAST <a name="module-2"></a>
 
 This module enables the visualization of BLAST results concerning the newly detected transposable element insertions. It allows for the visual identification of specific structures such as LTR recombinations, transposable elements (TEs) inserted within other TEs, or more complex structures like clusters of TEs. This tool is crucial for genomic researchers aiming to deeply analyze the dynamics of TE insertions. For more details, please consult the full documentation at [this link](modules/2-MODULE_TE_BLAST/README.md).
 

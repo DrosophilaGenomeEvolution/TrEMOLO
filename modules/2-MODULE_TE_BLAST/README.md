@@ -18,7 +18,12 @@ For running tests
 
 # run test
 singularity exec TrEMOLO.simg TrEMOLO/modules/2-MODULE_TE_BLAST/server/scripts/buildData.sh work_test
+# this command will create a file work_test/data.json and a symbolic link to this file in TrEMOLO/modules/2-MODULE_TE_BLAST/server/back-end/data/data_GEN.json
 ```
+
+
+**Limit : the size of the `YOUR_WORK_DIRECTORY/data.json` file must not exceed 500MB**
+
 
 ## RUN SERVER
 
@@ -30,4 +35,15 @@ singularity exec TrEMOLO.simg npm install blessed
 singularity exec TrEMOLO.simg bash TrEMOLO/module start 2
 ```
 
-You can change the PORT numbers in the `config.yaml` file
+You can change the PORT numbers in the `TrEMOLO/modules/2-MODULE_TE_BLAST/server/config.yaml` file
+
+To open the viewer go to the link in the client section.
+
+
+## Viewer
+
+
+<img src="img/ex-1.png">
+
+
+This interface is designed for the vertical visualization of BLAST results, highlighting transposon insertion sequences. Black bars denote genomic locus changes, while blue dotted lines indicate a read support change within the same locus. Red or pink bars mark reverse-oriented insertion sequences, with blue for forward orientation. Translucent dotted segments represent unmatched areas with the TE or insertion sequence. The upper screen portion displays the insertion sequence complete with size indicators, and the lower portion presents the corresponding TE sequences from the database. The black vertical bar on the right allows tracking of the locus on the selected chromosome. Cursor movement and selecting "GO" enable navigation to a specific locus. Hovering over a sequence highlights the corresponding insertion sequence at the top, with its details displayed in a dedicated information block.
