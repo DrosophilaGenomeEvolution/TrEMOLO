@@ -41,5 +41,8 @@ PARAMS:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py  Warning d'ont put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" 
+        MINIMAP2:
+            PRESET_OPTION: 'asm5' # minimap2 preset option is asm5 by default (asm5, asm10, asm20 etc)
+            OPTION: '--split-prefix tmp_TrEMOLO_split-prefix'
         
         
