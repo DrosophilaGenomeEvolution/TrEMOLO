@@ -146,7 +146,15 @@ The *Singularity* file provided in this repo and can be compiled as such:
 ```bash
 sudo singularity build TrEMOLO.simg TrEMOLO/Singularity
 ```
+
 **YOU MUST BE ROOT for compiling**
+
+
+Alternatively, you can download a pre-compiled Singularity container from the following link:
+
+[Download TrEMOLO Singularity Container](https://github.com/DrosophilaGenomeEvolution/TrEMOLO/releases/download/v2.5.4b/TrEMOLO.simg)
+
+
 
 
 Test TrEMOLO with singularity
