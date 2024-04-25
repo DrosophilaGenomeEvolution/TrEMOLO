@@ -40,30 +40,28 @@ Through remapping of reads that have been used to assemble the genome of interes
 In the same way as for insiders, you will obtain a [set of files](#output) with the location of these variable insertions and deletions.
 
 
-## Release notes<a name="release"></a>
+## Release Notes<a name="release"></a>
 
-**Version 2.5.0**
+**Version 2.5.4**
 
-* Improvement (TSD) : Increased calculation speed for TSD (issue#14)
-  * Enhanced detection of TSD
+* **Update : Packages R Updated**
+  * `bookdown` - 0.38
+  * `rmarkdown` - 2.26
 
-* Improvement (FREQUENCY) :
-  * OUTSIDER: Some frequencies are more accurate as they take into account the actual number of TEs in the supporting reads. This prevents calculation bias when we have insertions that combine several different TEs (ex: TE's Cluster).
-  * INSIDER: Faster frequency processing for INSIDERS.
+* **Change : Modifications in `rules.snk` Files**
+  * The `FIND_SV_ON_REF`, `FIND_TE_ON_REF` rules have been replaced by `LIFT_OFF`.
 
-* Removal: In the `config.yaml` and `rules.snk` files:
-  * Removal of the parameters `OPTIMIZE_FREQUENCE`, `MODE_PARALLELING`, `FILE_SIZE_TE_TSD`.
-  * Removal of the `GET_READS_TE` step.
+* **Add : New Parameters in `config.yaml` for INSIDER**
+  * `MINIMAP2`:
+    * `PRESET_OPTION: 'asm5'`
+    * `OPTION: '--cs'`
 
-* Bug Fix: The `REPORT` rule returned an error when no INSIDER or OUTSIDER TE was identified.
+* **Add : New Modules**
+  * [Scatter Frequency](modules/1-FREQUENCY-MULTI-GENERATIONS/README.md) - Provides analysis of frequency variations across multiple generations.
+  * [Analysis TE BLAST](modules/2-MODULE_TE_BLAST/README.md) - Analyzes transposable elements using BLAST.
 
-* Bug Fix: The `HARD` rule failed when a `fastq.gz` file was passed.
-
-* Bug Fix: An error in retrieving chromosome names from the GENOME file was preventing the correct integration of Transposable Elements (TE) into the genome (issue#13).
 
 ## Current limitations
-
-* The pipeline won't directly notify about TE insertions nested within another TE insertion. However, this can be deduced by examining information in columns **9** (SIZE_TE) and **13** (SV_SIZE **new column**) of the `TE_INFOS.bed` file. If, for instance, the SV size is twice the size of the identified TE, you might want to delve into the intermediate files for more details.
 
 * In **INSIDER_VARIANT** mode, TE annotation on the **REFERENCE** (parameter **INTEGRATE_TE_TO_GENOME**) is suboptimal. Some TEs might not be annotated on the reference.
 
@@ -81,6 +79,7 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
   - [Bedtools 2.27.1](https://bedtools.readthedocs.io/en/latest/) v2
   - [Assemblytics](http://assemblytics.com/) or
   - [RaGOO](https://github.com/malonge/RaGOO)
+  - [Liftoff](https://github.com/agshumate/Liftoff)
 - For Populational variation tool
   - [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) 5.5.2+
   - [Minimap2](https://github.com/lh3/minimap2) 2.24+

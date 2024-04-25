@@ -15,6 +15,7 @@ From: ubuntu:20.04
         Sniffles 1.0.12b
         SVIM 1.4.2+
         libfontconfig1-dev
+        Liftoff
         Python libs
             Biopython 1.79
             Pandas 1.5.3
@@ -25,8 +26,8 @@ From: ubuntu:20.04
             scipy 1.10.1
         R libs
             knitr 1.38
-            rmarkdown 2.13
-            bookdown 0.25
+            rmarkdown 2.26
+            bookdown 0.38
             viridis 0.6.2
             viridisLite 0.4.0
             rjson 0.2.20
