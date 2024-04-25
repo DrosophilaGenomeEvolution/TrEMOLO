@@ -1530,7 +1530,7 @@ rule FIND_SV_ON_REF :
 
         path_to_pipline=`dirname {params.path_snk}`
 
-        minimap2 -ax {params.preset} {params.option} -t {params.threads} {input.ref} {input.genome_real} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
+        minimap2 -ax {params.preset} {params.option} {input.ref} {input.genome_real} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
 
         python3 ${{path_to_pipline}}/lib/python/assemblitics/sam2delta.py {output.sam} || fail_msg "ERROR : SAM TO DELTA ✘\\n" | tee -a {log}.err;
         
@@ -4629,7 +4629,7 @@ rule SV_INSIDER:
 
         echo "MAPPING GENOME ON REFERENCE..."
         #COMPARE GENOME
-        minimap2 -ax {params.preset} {params.option} -t {params.threads} {input.ref} {input.genome} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
+        minimap2 -ax {params.preset} {params.option} {input.ref} {input.genome} > {output.sam} 2> {params.work_directory}/log/pm_contigs_against_ref.sam.log
         
         #CHECK MAPPING
         test -s {output.sam} || ( fail_msg "ERROR : MAPPING FAILED\\n" && exit 2 )
