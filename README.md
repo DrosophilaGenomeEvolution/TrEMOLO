@@ -68,6 +68,13 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 * Difficulty in identifying the true positives concerning clipped insertions (SOFT, HARD)
 
 
+## Upcoming Features
+
+**Comprehensive TE Analysis**
+
+In our upcoming release, we will be expanding our analysis capabilities to include a comprehensive examination of Transposable Elements (TEs) within both reads and genomes. This enhancement will go beyond merely identifying INDELs to encompass a full spectrum analysis of TEs.
+
+
 # Requirements<a name="requirements"></a>
 
 Numerous tools are used by TrEMOLO. We recommand to use the [Singularity installation](#singularity) to be sure to have all of them in the good configurations and versions.
@@ -208,6 +215,9 @@ PARAMS:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80 -k 'INS|DEL'" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
+        MINIMAP2:
+            PRESET_OPTION: 'asm5' # minimap2 preset option is asm5 by default (asm5, asm10, asm20 etc)
+            OPTION: '--cs'
 
 
 ```
