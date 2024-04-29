@@ -1637,11 +1637,26 @@ rule LIFT_OFF :
 
         path_to_pipline=`dirname {params.path_snk}`
 
-        awk -v size="100000"  'OFS="\t" {{ 
-                split($4, sp, ":"); 
-                print $1, "Liftoff", "repeat_element", $2-size, $2, ".", "+", ".", "ID="sp[2]"; NAME="sp[1]"; SIDE=L"; 
-                print $1, "Liftoff", "repeat_element", $3, $3+size, ".", "+", ".", "ID="sp[2]"; NAME="sp[1]"; SIDE=R";
-            }}' {input.bed} | grep -E "sniffles.INS.[0-9]+|TrEMOLO.INS.[0-9]+" > {params.work_directory}/OUTSIDER/INSIDER_VR/INOUTSIDER.gff
+        test -s {input.genome}.fai || \
+            samtools faidx {input.genome} && echo "BUILD index fasta" >> {log}.err;
+
+        ( awk -v size="100000"  '
+            NR==FNR {{
+                sizeChrom[$1]=$2;
+                next;
+            }}
+
+            OFS="\t" {{
+                split($4, sp, ":");
+
+                print $1, "Liftoff", "repeat_element", ($2-size < 1 ? 1 : $2-size ), $2, ".", "+", ".", "ID="sp[2]"; NAME="sp[1]"; SIDE=L";
+                print $1, "Liftoff", "repeat_element", $3, ( $3 + size <= sizeChrom[$1] ? $3 + size : sizeChrom[$1] ), ".", "+", ".", "ID="sp[2]"; NAME="sp[1]"; SIDE=R";
+            }}' {input.genome}.fai {input.bed} | grep -E "sniffles.INS.[0-9]+|TrEMOLO.INS.[0-9]+" > {params.work_directory}/OUTSIDER/INSIDER_VR/INOUTSIDER.gff 2>> {log}.err ) || echo "ERROR: bed to gff file" >> {log}.err
+
+        echo "SIZE CHROM : " >> {log}.err
+        ( test -s {input.genome}.fai && head {input.genome}.fai | cut -f -2 >> {log}.err 2>> {log}.err ) || echo $? >> {log}.err
+        echo "--" >> {log}.err
+        echo "COUNT:" `wc -l {params.work_directory}/OUTSIDER/INSIDER_VR/INOUTSIDER.gff` >> {log}.err
 
         echo "repeat_element" > {params.work_directory}/OUTSIDER/INSIDER_VR/feature.txt
 
@@ -1651,61 +1666,73 @@ rule LIFT_OFF :
             {input.ref} \
             {input.genome} 2>> {log}.err
 
+        echo "liftoff - DONE" | tee -a {log}.err
+
         ##Warning sniffles
-        grep "SIDE=R" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep -E "sniffles.INS.[0-9]+|TrEMOLO.INS.[0-9]+" -o | sort -u > {params.work_directory}/OUTSIDER/INSIDER_VR/ID_FK_TE.txt
+        ( test -s {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 && \
+            grep -v "^#" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | cut -f 9 | cut -d ";" -f 1 | sort | uniq -c | sort -k 1 -n -r | awk '$1==2 {{print $2}}' | grep -E "sniffles.INS.[0-9]+|TrEMOLO.INS.[0-9]+" -o > {params.work_directory}/OUTSIDER/INSIDER_VR/ID_FK_TE.txt 2>> {log}.err ) || \
+            echo "ERROR: output_INOUT" >> {log}.err
 
         rm -f {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed {params.work_directory}/OUTSIDER/INSIDER_VR/BAD_POS_TE_LIFT.bed;
-        for id in `cat {params.work_directory}/OUTSIDER/INSIDER_VR/ID_FK_TE.txt`; 
-        do
-            #echo "deb... $id"
-            chrom=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=R" | cut -f 1 || echo ""`
-            pos_end_L=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=L" | cut -f 5 || echo ""`
-            pos_start_R=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=R" | cut -f 4 || echo ""`
-            NAME=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=R" | grep -E "NAME=[^;]+" -o | cut -d "=" -f 2 || echo ""`
-            chromL=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=L" | cut -f 1 || echo ""`
-            
-            #echo "deb : $chrom; $NAME; $chromL;"
-            #echo "$id"
-            
-            coverageL=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=L" | grep -E "coverage=[0-9\.]+" -o | cut -d "=" -f 2 | tr "." "," || echo ""`
-            coverageR=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=R" | grep -E "coverage=[0-9\.]+" -o | cut -d "=" -f 2 | tr "." "," || echo ""`
+        test -s {params.work_directory}/OUTSIDER/INSIDER_VR/ID_FK_TE.txt && \
+            for id in `cat {params.work_directory}/OUTSIDER/INSIDER_VR/ID_FK_TE.txt`; 
+            do
+                #echo "deb... $id"
+                chrom=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=R" | cut -f 1 || echo ""`
+                pos_end_L=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=L" | cut -f 5 || echo ""`
+                pos_start_R=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=R" | cut -f 4 || echo ""`
+                NAME=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=R" | grep -E "NAME=[^;]+" -o | cut -d "=" -f 2 || echo ""`
+                chromL=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=L" | cut -f 1 || echo ""`
+                
+                DIFF_SIZE=$(($pos_start_R-$pos_end_L));
+                
+                coverageL=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=L" | grep -E "coverage=[0-9\.]+" -o | cut -d "=" -f 2 | tr "." "," || echo ""`
+                coverageR=`grep -w "$id" {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 | grep "SIDE=R" | grep -E "coverage=[0-9\.]+" -o | cut -d "=" -f 2 | tr "." "," || echo ""`
 
-            best_coverage=`echo "" | awk -v coverageR="$coverageR" -v coverageL="$coverageL" '{{ if(coverageL >= coverageR){{ print "L" }}else{{ print "R" }} }}' || echo ""`
-            if [ -n "$chromL" ] 
-            then
-                #echo "coverage : $coverageL-$coverageR  ==  $best_coverage"
-                if [ "$chromL" = "$chrom" ]
+                best_coverage=`echo "" | awk -v coverageR="$coverageR" -v coverageL="$coverageL" '{{ if(coverageL >= coverageR){{ print "L" }}else{{ print "R" }} }}' || echo ""`
+                echo "###$chrom||$chromL||$pos_end_L||$pos_start_R||$NAME|$id||$DIFF_SIZE||INSIDER" >> {log}.err 2>> {log}.err || echo "##ERROR:ID:$id" >> {log}.err
+                if [ -n "$chromL" ]
                 then
-                    #echo "c=cl; $pos_start_R; $pos_end_L";
-                    DIFF_SIZE=$(($pos_start_R-$pos_end_L));
-
-                    if [ $DIFF_SIZE -ge 0 ] && [ $DIFF_SIZE -le 20000 ]
+                    #echo "coverage : $coverageL-$coverageR  ==  $best_coverage"
+                    if [ "$chromL" = "$chrom" ]
                     then
-                        #echo "NAME=$NAME; ID=$id; FREQ=$FREQ; chrom=$chrom:$pos_end_L-$pos_start_R";
-                        echo -e "$chrom\t$pos_end_L\t$pos_start_R\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed;
-                    elif [ $DIFF_SIZE -lt 0 ] && [ $DIFF_SIZE -ge -20000 ]; then
-                        #echo "NAME=$NAME; ID=$id; FREQ=$FREQ; chrom=$chrom:$pos_end_L-$pos_start_R";
-                        echo -e "$chrom\t$pos_start_R\t$pos_end_L\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed;
-                    else
-                        #echo "NAME=$NAME; ID=$id; FREQ=$FREQ; chrom=$chrom:$pos_end_L-$pos_start_R";
-                        echo -e "$chrom:$pos_start_R\t$chromL:$pos_end_L\t$pos_end_L\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/BAD_POS_TE_LIFT.bed;
-                    fi;
+                        
+                        if [[ -n "$DIFF_SIZE" ]] && [[ "$DIFF_SIZE" =~ ^[\-0-9]+$ ]];
+                        then
+                            if [ $DIFF_SIZE -ge 0 ] && [ $DIFF_SIZE -le 20000 ]
+                            then
+                                #echo "NAME=$NAME; ID=$id; FREQ=$FREQ; chrom=$chrom:$pos_end_L-$pos_start_R";
+                                echo -e "$chrom\t$pos_end_L\t$pos_start_R\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed;
+                            elif [ $DIFF_SIZE -lt 0 ] && [ $DIFF_SIZE -ge -20000 ]; then
+                                #echo "NAME=$NAME; ID=$id; FREQ=$FREQ; chrom=$chrom:$pos_end_L-$pos_start_R";
+                                echo -e "$chrom\t$pos_start_R\t$pos_end_L\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed;
+                            else
+                                #echo "NAME=$NAME; ID=$id; FREQ=$FREQ; chrom=$chrom:$pos_end_L-$pos_start_R";
+                                echo -e "$chrom:$pos_start_R\t$chromL:$pos_end_L\t$pos_end_L\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/BAD_POS_TE_LIFT.bed;
+                            fi;
+                        fi;
 
-                else
-                    #echo "c!=cl"
-                    if [ "$best_coverage" = "L" ]; then
-                        echo -e "$chrom\t$pos_end_L\t$(($pos_end_L+1))\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed;
                     else
-                        echo -e "$chrom\t$pos_start_R\t$(($pos_start_R+1))\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed;
-                    fi;
+                        if [[ -n "$DIFF_SIZE" ]] && [[ "$DIFF_SIZE" =~ ^[\-0-9]+$ ]];
+                        then
+                            #echo "c!=cl"
+                            if [ "$best_coverage" = "L" ]; then
+                                echo -e "$chrom\t$pos_end_L\t$(($pos_end_L+1))\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed;
+                            else
+                                echo -e "$chrom\t$pos_start_R\t$(($pos_start_R+1))\t$NAME|$id\t$DIFF_SIZE\tINSIDER" >> {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed;
+                            fi;
 
-                    #echo "NAME=$NAME; ID=$id; FREQ=$FREQ; chrom=$chrom:$pos_end_L-$pos_start_R";
-                    echo -e "$chrom:$pos_start_R\t$chromL:$pos_end_L\t$pos_end_L\t$NAME|$id\t$DIFF_SIZE\tINSIDER\t$best_coverage" >> {params.work_directory}/OUTSIDER/INSIDER_VR/BAD_POS_TE_LIFT.bed;
+                            #echo "NAME=$NAME; ID=$id; FREQ=$FREQ; chrom=$chrom:$pos_end_L-$pos_start_R";
+                            echo -e "$chrom:$pos_start_R\t$chromL:$pos_end_L\t$pos_end_L\t$NAME|$id\t$DIFF_SIZE\tINSIDER\t$best_coverage" >> {params.work_directory}/OUTSIDER/INSIDER_VR/BAD_POS_TE_LIFT.bed;
+                        fi;
+                    fi;
                 fi;
-            fi;
 
-            #echo "ID:$id";
-        done;
+                #echo "ID:$id";
+            done;
+
+        echo "TE annotated :"`cat {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed | wc -l` | tee -a {log}.log
+        echo "BAD TE annotated :"`cat {params.work_directory}/OUTSIDER/INSIDER_VR/BAD_POS_TE_LIFT.bed | wc -l` | tee -a {log}.log
 
         test -s {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed && cut -f -4 {params.work_directory}/OUTSIDER/INSIDER_VR/POS_TE_LIFT.bed > {params.work_directory}/POS_TE_OUTSIDER_ON_REF.bed
         test -s {params.work_directory}/POS_TE_OUTSIDER_ON_REF.bed && cat {params.work_directory}/POS_TE_*_ON_REF.bed > {params.work_directory}/POSITION_TE_ON_REF.bed
@@ -2162,12 +2189,13 @@ rule GET_SEQ_TE :
                 echo "GET ID sniffles ✔" | tee -a {log}.out ) || warn_msg "WARNING : FAIL GET ID sniffles ✘\\n" | tee -a {log}.err ; 
 
         ##GET ID TrEMOLO
-        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed && \
-            cut -f 4 {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed | cut -d "|" -f 2 > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt
-
-        ( test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt && \
-            awk '{{print "TrEMOLO.INS."$0}}' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt > {params.work_directory}/.tmp_id_TrEMOLO.txt ) || \
+        ( test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed && \
+            cut -f 4 {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed | cut -d "|" -f 2 > {params.work_directory}/.tmp_id_TrEMOLO.txt ) || \
                 warn_msg "WARNING : GET ID TE OUTSIDER TrEMOLO 1 ✘\\n" | tee -a {log}.err ;
+
+        # ( test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt && \
+        #     awk '{{print "TrEMOLO.INS."$0}}' {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ID_TrEMOLO.txt > {params.work_directory}/.tmp_id_TrEMOLO.txt ) || \
+        #         warn_msg "WARNING : GET ID TE OUTSIDER TrEMOLO 1 ✘\\n" | tee -a {log}.err ;
 
         ( test -s {params.work_directory}/.tmp_id_TrEMOLO.txt && \
             grep -w -f {params.work_directory}/.tmp_id_TrEMOLO.txt {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv | awk 'NR>1{{print $2}}' >> {params.work_directory}/.tmp_id.txt && \
