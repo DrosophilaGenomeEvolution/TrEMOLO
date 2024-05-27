@@ -47,6 +47,8 @@ for line in befile:
     size    = int(line.split("\t")[4])
     bed_seq = line.split("\t")[5]
 
+    read_name = 'unknown'
+
     #print("NAME: ", name)
     number_read_support = 1
     for read in bamfile.fetch(chrom, (start-1), (start+1)):
@@ -86,14 +88,11 @@ for line in befile:
 
     #Put the sequence report by sniffles
     if number_read_support == 1:
-        if rd_num_file != None:
-            rd_num_file.write(f'{name.split(":")[4]}:{read_name}:{number_read_support}:{len(bed_seq)}:snf1\n')
-
-        # print(">" + name + ":" + str(number_read_support))
-        # print(bed_seq)
+        if rd_num_file != None :
+            rd_num_file.write(f'{name.split(":")[4]}:{read_name}:{number_read_support}:{len(bed_seq)}:snf-type1\n')
     else :
         if rd_num_file != None:
-            rd_num_file.write(f'{name.split(":")[4]}:read_name_snffl:{0}:snf2\n')
+            rd_num_file.write(f'{name.split(":")[4]}:read_name_snffles_origin:{0}:snf-type2\n')
 
     print(">" + name + ":" + str(0))
     print(bed_seq)

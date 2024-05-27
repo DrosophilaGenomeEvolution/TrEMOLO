@@ -3805,6 +3805,9 @@ rule sniffles :
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
 
+        threads        = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+
+
         env            = env, #source environnement
 
         cfail          = bcolors.FAIL,
@@ -3842,7 +3845,7 @@ rule sniffles :
 
             begin_load `cat {params.work_directory}/.pid`
             #kill -10 `cat {params.work_directory}/.pid` || echo
-            run_cmd "sniffles --report_seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.10" "False";
+            run_cmd "sniffles -t {params.threads} --report_seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES 1.0.10" "False";
             end_load
             sleep 1
 
@@ -3850,7 +3853,7 @@ rule sniffles :
 
             begin_load `cat {params.work_directory}/.pid`
             #kill -10 `cat {params.work_directory}/.pid` || echo
-            run_cmd "sniffles --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES $version" "False";
+            run_cmd "sniffles -t {params.threads} --report-seq -s 1 -m {input} -v {output} -n -1" "{log}" "SNIFFLES $version" "False";
             end_load
             sleep 1
 
@@ -3880,7 +3883,7 @@ rule samtools :
         
         env            = env, #source environnement
         path_snk       = path_snk,
-        threads        = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
+        threads        = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 3,
         
         #PARAMS
         preset_view    = re.sub("--threads [0-9]+|-@ [0-9]+", "", config["PARAMS"]["OUTSIDER_VARIANT"]["SAMTOOLS_VIEW"]["PRESET_OPTION"])   + " --threads " + str(config["PARAMS"]["THREADS"]),
