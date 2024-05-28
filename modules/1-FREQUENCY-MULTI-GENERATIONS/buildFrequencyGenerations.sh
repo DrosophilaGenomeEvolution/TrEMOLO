@@ -56,7 +56,7 @@ then
 fi;
 
 
-! test -n "$OUTPUT" && OUTPUT="SCATTER-FREQ-TE-TrEMOLO";
+! test -n "${OUTPUT}" && OUTPUT="SCATTER-FREQ-TE-TrEMOLO";
 ! test -n "$CHROM" && CHROM=".";
 
 echo "[$0] BEGIN"
@@ -71,8 +71,8 @@ echo
 
 path_to_module=`dirname "$0"`
 echo "   PATH : $path_to_module";
-mkdir -p "$OUTPUT"/web ;
-mkdir -p "$OUTPUT"/work;
+mkdir -p "${OUTPUT}"/web ;
+mkdir -p "${OUTPUT}"/work;
 
 ##FORMAT INPUT REQUIRED
 #work_directory_path:G4
@@ -80,12 +80,21 @@ mkdir -p "$OUTPUT"/work;
 #or
 #-----------------------
 #work_directory_path
-grep ":" "$INPUT" | awk -F ":" '{print $0"\t"substr($2, 2, length($2))}' | sort -k 2 -n | cut -f 1 > "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt 2>/dev/null || sed 's/\/$//g' $INPUT  | awk '{print $1":G"NR}' \
-    > "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt
+grep ":" "$INPUT" 2> /dev/null
+if [ $? -eq 0 ]; then
+    grep ":" "$INPUT" | awk -F ":" '{print $0"\t"substr($2, 2, length($2))}' | \
+        sort -k 2 -n | cut -f 1 > "${OUTPUT}/work/INIT_FREQ_TE_TrEMOLO.txt" 2>/dev/null 
+else
+    echo "INIT GENERATION" && sed 's/\/$//g' ${INPUT}  | awk '{print $1":G"NR}' \
+        > "${OUTPUT}/work/INIT_FREQ_TE_TrEMOLO.txt"
+fi;
+
+echo "NB GENERATIONS : "$(cat "${OUTPUT}/work/INIT_FREQ_TE_TrEMOLO.txt" | wc -l)
+echo 
 
 echo "PREPARE DATA SCATTER..."
-echo -e "chrom\tx\ty1\ty2\tgroup\tname\tID" > "$OUTPUT"/work/SCATTER.csv
-for work in `cat "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt`
+echo -e "chrom\tx\ty1\ty2\tgroup\tname\tID" > "${OUTPUT}/work/SCATTER.csv"
+for work in `cat "${OUTPUT}/work/INIT_FREQ_TE_TrEMOLO.txt"`
 do
     dir=`echo $work | cut -d ":" -f 1`;
     name=`echo $work | cut -d ":" -f 2`;
@@ -94,19 +103,25 @@ do
     ! test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && echo "BUILD FILE TE_FREQUENCY_TrEMOLO..." && \
         grep -E "${CHROM}" ${dir}/TE_INFOS.bed | grep -v -E "HARD|SOFT" | grep OUTSIDER | awk '$11!="NONE" && $12!="NONE"' | grep -w -v "DEL" > ${dir}/TE_FREQUENCY_TrEMOLO.bed;
 
-    mkdir -p "$OUTPUT"/work/${name};
+    mkdir -p "${OUTPUT}/work/${name}";
+    test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && echo "   INFOS NB TE : "$(wc -l ${dir}/TE_FREQUENCY_TrEMOLO.bed)
     test -s ${dir}/TE_FREQUENCY_TrEMOLO.bed && \
-        awk 'substr($0, 1, 1)!="#" && OFS="\t"{print $1, $2, $3, $4, $11, $12}' ${dir}/TE_FREQUENCY_TrEMOLO.bed > "$OUTPUT"/work/${name}/POS_TE_LIFT.bdg
+        awk 'substr($0, 1, 1)!="#" && OFS="\t"{print $1, $2, $3, $4, $11, $12}' ${dir}/TE_FREQUENCY_TrEMOLO.bed > "${OUTPUT}/work/${name}/POS_TE_LIFT.bdg"
 
-    awk -v name="$name" 'OFS="\t"{split($4, sp, "|"); print $1, $2, $5/100, $6/100, name, $1":"$2":"sp[1], sp[2]}' "$OUTPUT"/work/$name/POS_TE_LIFT.bdg | tr "," "." >> $OUTPUT/work/SCATTER.csv;
+    awk -v name="$name" 'OFS="\t"{split($4, sp, "|"); print $1, $2, $5/100, $6/100, name, $1":"$2":"sp[1], sp[2]}' "${OUTPUT}/work/$name/POS_TE_LIFT.bdg" | tr "," "." >> "${OUTPUT}/work/SCATTER.csv";
 done;
 
-echo -e "chrom\tx\ty1\ty2\tgroup\tname\tIN_OUT\tID\ttype" > "$OUTPUT"/work/FT1_SCATTER.csv
-awk 'NR>1 && OFS="\t"{split($7, sp, "." ); print $1, $2, $3, $4, $5, $6, "OUTSIDER", $7, sp[2]}' "$OUTPUT"/work/SCATTER.csv >> $OUTPUT/work/FT1_SCATTER.csv
+wc -l ${OUTPUT}/work/SCATTER.csv
+echo 
 
+echo -e "chrom\tx\ty1\ty2\tgroup\tname\tIN_OUT\tID\ttype" > "${OUTPUT}/work/FT1_SCATTER.csv"
+awk 'NR>1 && OFS="\t"{split($7, sp, "." ); print $1, $2, $3, $4, $5, $6, "OUTSIDER", $7, sp[2]}' "${OUTPUT}/work/SCATTER.csv" >> "${OUTPUT}/work/FT1_SCATTER.csv"
+
+wc -l ${OUTPUT}/work/FT1_SCATTER.csv
+echo 
 
 echo "MERGE POSITIONS..."
-awk 'NR>1 && OFS="\t"{print $1, $2, $2+1, $3, $4, $5, $6, $7, $8, $9}' "$OUTPUT"/work/FT1_SCATTER.csv | bedtools sort | bedtools cluster -d 200 | awk '
+awk 'NR>1 && OFS="\t"{print $1, $2, $2+1, $3, $4, $5, $6, $7, $8, $9}' "${OUTPUT}"/work/FT1_SCATTER.csv | bedtools sort | bedtools cluster -d 200 | awk '
 BEGIN{
     clust="";
     pos="";
@@ -125,16 +140,19 @@ OFS="\t" {
     else{
         print $1, pos, $4, $5, $6, $1":"pos":"TE, $8, $9, $10;
     }  
-}' > "$OUTPUT"/work/SCATTER_MERGE.csv
+}' > "${OUTPUT}/work/SCATTER_MERGE.csv"
+
+wc -l "${OUTPUT}/work/SCATTER_MERGE.csv"
+echo
 
 echo "BUILD METRIC..."
-python3 "$path_to_module/metric.py" "$OUTPUT/work/SCATTER_MERGE.csv" "$OUTPUT/work/INIT_FREQ_TE_TrEMOLO.txt" > "$OUTPUT/work/METRIC.csv";    
+python3 "$path_to_module/metric.py" "${OUTPUT}/work/SCATTER_MERGE.csv" "${OUTPUT}/work/INIT_FREQ_TE_TrEMOLO.txt" > "${OUTPUT}/work/METRIC.csv";    
 echo "SORTING..."
-python3 "$path_to_module/putMetricScatter.py" "$OUTPUT/work/METRIC.csv" "$OUTPUT/work/SCATTER_MERGE.csv" "$OUTPUT/work/SCATTER_SORT.csv"
+python3 "$path_to_module/putMetricScatter.py" "${OUTPUT}/work/METRIC.csv" "${OUTPUT}/work/SCATTER_MERGE.csv" "${OUTPUT}/work/SCATTER_SORT.csv"
 
 echo "BUILD DATA JS SCATTER..."
 ##BUILD JS SCATTER
-awk 'NR>1' "$OUTPUT/work/SCATTER_SORT.csv" | sort -k 6 | awk 'BEGIN{print "chrom\tx\ty1\ty2\tgroup\tname\ttype1\ttype2\tIN_OUT \tID"} {print $0}' | \
+awk 'NR>1' "${OUTPUT}/work/SCATTER_SORT.csv" | sort -k 6 | awk 'BEGIN{print "chrom\tx\ty1\ty2\tgroup\tname\ttype1\ttype2\tIN_OUT \tID"} {print $0}' | \
   grep -w -v "NONE" | awk '
 BEGIN{
     print "allData = {"
@@ -201,18 +219,18 @@ END{
     print "\"type2\": \""type2"\",";
     print "\"id\": \""id"\",";
     print "\"name\": \""name"\"\n}]};";
-}' > "$OUTPUT/web/data.js"
+}' > "${OUTPUT}/web/data.js"
 
 
-awk 'NR>1 {print $1}' "$OUTPUT/work/SCATTER_SORT.csv" | sort -u > "$OUTPUT/work/ID_CHROM.txt"
+awk 'NR>1 {print $1}' "${OUTPUT}/work/SCATTER_SORT.csv" | sort -u > "${OUTPUT}/work/ID_CHROM.txt"
 
-pathG1=`awk -F ":" 'NR==1 {print $1}'  "$OUTPUT/work/INIT_FREQ_TE_TrEMOLO.txt"`;
+pathG1=`awk -F ":" 'NR==1 {print $1}'  "${OUTPUT}/work/INIT_FREQ_TE_TrEMOLO.txt"`;
 
 echo "GETTING SIZE OF CHROMOSOMES..."
 
 if ! test -s "$GENOME"; then
     samtools view -h `realpath ${pathG1}`/OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam | awk 'substr($0, 1, 1)=="@"{print $0; next;} {exit;}' | grep "^@SQ" | \
-        grep -w -f "$OUTPUT"/work/ID_CHROM.txt | \
+        grep -w -f "${OUTPUT}"/work/ID_CHROM.txt | \
         awk '
         BEGIN {
             print "var chroms = {"
@@ -226,14 +244,14 @@ if ! test -s "$GENOME"; then
 
         END{
             print "}"
-        }' > "$OUTPUT"/web/chrom.js
+        }' > "${OUTPUT}"/web/chrom.js
 else
     echo "   BUILD FAIdx : ${GENOME} ...";
     samtools faidx "$GENOME";
     
     echo "   BUILD JS...";
     cat "${GENOME}.fai" | \
-        grep -w -f "$OUTPUT"/work/ID_CHROM.txt | \
+        grep -w -f "${OUTPUT}"/work/ID_CHROM.txt | \
         awk '
         BEGIN {
             print "var chroms = {"
@@ -245,7 +263,7 @@ else
 
         END{
             print "}"
-        }' > "$OUTPUT"/web/chrom.js
+        }' > "${OUTPUT}"/web/chrom.js
 fi;
 
 
@@ -253,7 +271,7 @@ fi;
 
 echo "GETTING GENERATIONS..."
 ##GENERATIONS
-cat  "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt | awk -v OUTPUT="$OUTPUT" -F ":" '
+cat  "${OUTPUT}"/work/INIT_FREQ_TE_TrEMOLO.txt | awk -v OUTPUT="${OUTPUT}" -F ":" '
     BEGIN{
         print "var generations = [" > OUTPUT"/web/generations.js";
     }
@@ -271,7 +289,7 @@ cat  "$OUTPUT"/work/INIT_FREQ_TE_TrEMOLO.txt | awk -v OUTPUT="$OUTPUT" -F ":" '
     }
 '
 
-cp -f $path_to_module/GRAPH.html "$OUTPUT"/web/
-cp -f $path_to_module/index.html "$OUTPUT"/
+cp -f $path_to_module/GRAPH.html "${OUTPUT}"/web/
+cp -f $path_to_module/index.html "${OUTPUT}"/
 
 echo "[$0] END"
