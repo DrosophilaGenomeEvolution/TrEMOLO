@@ -13,7 +13,7 @@ CHOICE:
         INSIDER_VARIANT: False  # D'ont change it
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
-        CALL_SV: "sniffles" # possibility (sniffles, svim) 
+        CALL_SV: "sniffles" # possibility (sniffles, svim, no_sniffles) 
         INTEGRATE_TE_TO_GENOME: False # (True, False) Re-build the assembly with insiders integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:

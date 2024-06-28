@@ -115,7 +115,7 @@ keep_seq_N  = args.keep
 ID_RS       = args.idrs
 
 print("[" + str(sys.argv[0]) + "] : exclude type : ", type_list)
-print("[" + str(sys.argv[0]) + "] : regex contig liste : ", chrom_list)
+print("[" + str(sys.argv[0]) + "] : regex contig list : ", chrom_list)
 
 
 #check if an element of the array is at least part of the value
@@ -127,153 +127,154 @@ def regex_in_list(value, liste):
     return False
 
 line = file.readline()
-
-version_vcf =  line.split("=")[1].strip()
-print("Version VCF :", version_vcf)
-##fileformat=VCFv4.3
-#Check format vcf file
-if version_vcf != "VCFv4.3" and version_vcf != "VCFv4.2" and version_vcf != "VCFv4.1":
-    print("[" + str(sys.argv[0]) + "] : ERROR format vcf must be VCFv4.3 or VCFv4.2 not " + str(line.split("=")[1].strip()) )
-    print("[" + str(sys.argv[0]) + "] : please change format of vcf file, or use Snifflesv1.0.10 for genrate the good vcf file")
-    exit(1)
-
-
-contig_vcf = []
-contigs_vcf_org = []
-while line and line[:2] == "##":
-    #line.split("=")[2].split(",")[1] == chrom
-    if "contig=" in line:
-        contig = line.split("=")[2].split(",")[0]
-        contigs_vcf_org.append(contig)
-
-        if regex_in_list(contig, chrom_list):
-            contig_vcf.append(contig)
-        
-    line = file.readline()
-
-
-print("[" + str(sys.argv[0]) + "] : contig keeping = " + str(contig_vcf))
-if len(contig_vcf) == 0:
-    print("[" + str(sys.argv[0]) + "] : ERROR your regex chrom d'osnt match with any chromosome in your vcf file")
-    print("[" + str(sys.argv[0]) + "] : ERROR please change your regex (-c option) > regex=" + str(args.chrom) + " :: list=" + str(chrom_list))
-    print("[" + str(sys.argv[0]) + "] : ERROR your regex must match on " + str(contigs_vcf_org))
-    exit(2)
-
 ##Sniffles
 count = 0
-if version_vcf == "VCFv4.3":
+if line :
+    version_vcf = line.split("=")[1].strip()
+    print("Version VCF :", version_vcf)
+    ##fileformat=VCFv4.3
+    #Check format vcf file
+    if version_vcf != "VCFv4.3" and version_vcf != "VCFv4.2" and version_vcf != "VCFv4.1":
+        print("[" + str(sys.argv[0]) + "] : ERROR format vcf must be VCFv4.3 or VCFv4.2 not " + str(line.split("=")[1].strip()) )
+        print("[" + str(sys.argv[0]) + "] : please change format of vcf file, or use Snifflesv1.0.10 for genrate the good vcf file")
+        exit(1)
+
+
+    contig_vcf = []
+    contigs_vcf_org = []
+    while line and line[:2] == "##":
+        #line.split("=")[2].split(",")[1] == chrom
+        if "contig=" in line:
+            contig = line.split("=")[2].split(",")[0]
+            contigs_vcf_org.append(contig)
+
+            if regex_in_list(contig, chrom_list):
+                contig_vcf.append(contig)
+            
+        line = file.readline()
+
+
+    print("[" + str(sys.argv[0]) + "] : contig keeping = " + str(contig_vcf))
+    if len(contig_vcf) == 0:
+        print("[" + str(sys.argv[0]) + "] : ERROR your regex chrom d'osnt match with any chromosome in your vcf file")
+        print("[" + str(sys.argv[0]) + "] : ERROR please change your regex (-c option) > regex=" + str(args.chrom) + " :: list=" + str(chrom_list))
+        print("[" + str(sys.argv[0]) + "] : ERROR your regex must match on " + str(contigs_vcf_org))
+        exit(2)
+
     
-    while line :
+    if version_vcf == "VCFv4.3":
         
-        seq = None
-        if re.search("^[^#]", line) :
-            #FOR HEADER
-            spl     = line.split("\t")
-            chrom   = spl[0]
-            start   = spl[1]
-            ID      = spl[2]
-            type_v  = spl[4]
+        while line :
             
-            if re.search("END=([0-9]+)", spl[7]) != None and re.search("RE=([0-9]+)", spl[7]) != None :
-                end     = re.search("END=([0-9]+)", spl[7]).group(1)
-                precise = spl[7].split(";")[0]
-                read_support = re.search("RE=([0-9]+)", spl[7]).group(1)
+            seq = None
+            if re.search("^[^#]", line) :
+                #FOR HEADER
+                spl     = line.split("\t")
+                chrom   = spl[0]
+                start   = spl[1]
+                ID      = spl[2]
+                type_v  = spl[4]
+                
+                if re.search("END=([0-9]+)", spl[7]) != None and re.search("RE=([0-9]+)", spl[7]) != None :
+                    end     = re.search("END=([0-9]+)", spl[7]).group(1)
+                    precise = spl[7].split(";")[0]
+                    read_support = re.search("RE=([0-9]+)", spl[7]).group(1)
+                
+                    if "SEQ=" in spl[7] :
+                        seq    = re.search("SEQ=([A-Z][A-Z]+);", spl[7]).group(1)
+                        #seq    = spl[7].split(";")[-2].split("=")[1]
+                        seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
+                        seq    = seq.replace("N", "A")#replace
+
+                    condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
+                    if regex_in_list(chrom, chrom_list) and condition :
+                        #EXEMPLE  FORMAT
+                        #2R:<INS>:1:190:sniffles.INS.2:1:PRECISE
+                        ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID
+                        file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID, read_support, precise]) + "\n" + seq + "\n")
+                        count += 1
+
+            line = file.readline()
+
+
+    if version_vcf == "VCFv4.2":
+        while line :
             
-                if "SEQ=" in spl[7] :
-                    seq    = re.search("SEQ=([A-Z][A-Z]+);", spl[7]).group(1)
+            if re.search("^[^#]", line) :
+                #FOR HEADER
+                spl     = line.split("\t")
+                chrom   = spl[0]
+                ID      = spl[2]
+                start   = spl[1]
+                type_v  = spl[4]
+                
+                if re.search("END=([0-9]+)", spl[7]) != None and re.search("SUPPORT=([0-9]+)", spl[7]) != None :
+                    end     = re.search("END=([0-9]+)", spl[7]).group(1)
+                    precise = "PRECISE"
+                    read_support = re.search("SUPPORT=([0-9]+)", spl[7]).group(1)
+                    
+                    if "SEQS=" in spl[7] :
+
+                        seqs   = re.search("SEQS=([A-Z][A-Z,]+);", spl[7]).group(1).split(",")
+
+                        for i, seq in enumerate(seqs) :
+                            
+                            if ID_RS :
+                                ID_VR = ID + "." + str(i)
+                            else:
+                                ID_VR = ID
+
+                            seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
+                            seq    = seq.replace("N", "A")#replace
+                        
+                            condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
+                            if regex_in_list(chrom, chrom_list) and condition :
+                                #EXEMPLE  FORMAT
+                                #2R:<INS>:1:190:svim.INS.2:1:PRECISE
+                                file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID_VR, read_support, precise, str(i)]) + "\n" + seq + "\n")
+                                count += 1
+
+            line = file.readline()
+
+    ##Sniffles
+    if version_vcf == "VCFv4.1":
+        while line :
+            
+            seq = None
+            if re.search("^[^#]", line) :
+                #FOR HEADER
+                spl     = line.split("\t")
+                chrom   = spl[0]
+                start   = spl[1]
+                ID      = spl[2]
+                seq     = "" 
+                
+                if re.search("END=([0-9]+)", spl[7]) != None and re.search("RE=([0-9]+)", spl[7]) != None :
+                    end     = re.search("END=([0-9]+)", spl[7]).group(1)
+                    precise = spl[7].split(";")[0]
+                    read_support = re.search("RE=([0-9]+)", spl[7]).group(1)
+                    
+                    type_v  = re.search("SVTYPE=([A-Z]+)", spl[7]).group(1)
+
+                    if type_v in "INS":
+                        seq     = spl[4]
+                    elif type_v in "DEL":
+                        seq     = spl[3]
+
+                    #seq     = spl[4]
                     #seq    = spl[7].split(";")[-2].split("=")[1]
                     seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
                     seq    = seq.replace("N", "A")#replace
 
-                condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
-                if regex_in_list(chrom, chrom_list) and condition :
-                    #EXEMPLE  FORMAT
-                    #2R:<INS>:1:190:sniffles.INS.2:1:PRECISE
-                    ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID
-                    file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID, read_support, precise]) + "\n" + seq + "\n")
-                    count += 1
+                    condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
+                    if regex_in_list(chrom, chrom_list) and condition :
+                        #EXEMPLE  FORMAT
+                        #2R:<INS>:1:190:sniffles.INS.2:1:PRECISE
+                        ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID
+                        file_fasta.write(">" + ":".join([chrom, "<" + type_v + ">", start, end, ID, read_support, precise]) + "\n" + seq + "\n")
+                        count += 1
 
-        line = file.readline()
-
-
-if version_vcf == "VCFv4.2":
-    while line :
-        
-        if re.search("^[^#]", line) :
-            #FOR HEADER
-            spl     = line.split("\t")
-            chrom   = spl[0]
-            ID      = spl[2]
-            start   = spl[1]
-            type_v  = spl[4]
-            
-            if re.search("END=([0-9]+)", spl[7]) != None and re.search("SUPPORT=([0-9]+)", spl[7]) != None :
-                end     = re.search("END=([0-9]+)", spl[7]).group(1)
-                precise = "PRECISE"
-                read_support = re.search("SUPPORT=([0-9]+)", spl[7]).group(1)
-                
-                if "SEQS=" in spl[7] :
-
-                    seqs   = re.search("SEQS=([A-Z][A-Z,]+);", spl[7]).group(1).split(",")
-
-                    for i, seq in enumerate(seqs) :
-                        
-                        if ID_RS :
-                            ID_VR = ID + "." + str(i)
-                        else:
-                            ID_VR = ID
-
-                        seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
-                        seq    = seq.replace("N", "A")#replace
-                    
-                        condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
-                        if regex_in_list(chrom, chrom_list) and condition :
-                            #EXEMPLE  FORMAT
-                            #2R:<INS>:1:190:svim.INS.2:1:PRECISE
-                            file_fasta.write(">" + ":".join([chrom, type_v, start, end, ID_VR, read_support, precise, str(i)]) + "\n" + seq + "\n")
-                            count += 1
-
-        line = file.readline()
-
-##Sniffles
-if version_vcf == "VCFv4.1":
-    while line :
-        
-        seq = None
-        if re.search("^[^#]", line) :
-            #FOR HEADER
-            spl     = line.split("\t")
-            chrom   = spl[0]
-            start   = spl[1]
-            ID      = spl[2]
-            seq     = "" 
-            
-            if re.search("END=([0-9]+)", spl[7]) != None and re.search("RE=([0-9]+)", spl[7]) != None :
-                end     = re.search("END=([0-9]+)", spl[7]).group(1)
-                precise = spl[7].split(";")[0]
-                read_support = re.search("RE=([0-9]+)", spl[7]).group(1)
-                
-                type_v  = re.search("SVTYPE=([A-Z]+)", spl[7]).group(1)
-
-                if type_v in "INS":
-                    seq     = spl[4]
-                elif type_v in "DEL":
-                    seq     = spl[3]
-
-                #seq     = spl[4]
-                #seq    = spl[7].split(";")[-2].split("=")[1]
-                seq_NN = re.search("^[N]+$", seq)#Not keep sequence contains N (pptional)
-                seq    = seq.replace("N", "A")#replace
-
-                condition = seq != None and (not seq_NN or keep_seq_N) and min_len_seq < len(seq) and type_v not in type_list and ( (max_len_seq != -1 and len(seq) <= max_len_seq) or (max_len_seq == -1) )
-                if regex_in_list(chrom, chrom_list) and condition :
-                    #EXEMPLE  FORMAT
-                    #2R:<INS>:1:190:sniffles.INS.2:1:PRECISE
-                    ID = "sniffles." + type_v.replace("<", "").replace(">", "") + "." + ID
-                    file_fasta.write(">" + ":".join([chrom, "<" + type_v + ">", start, end, ID, read_support, precise]) + "\n" + seq + "\n")
-                    count += 1
-
-        line = file.readline()
+            line = file.readline()
 
 print("[" + str(sys.argv[0]) + "] : Total sequence found=" + str(count))
 file.close()
