@@ -1660,11 +1660,18 @@ rule LIFT_OFF :
 
         echo "repeat_element" > {params.work_directory}/OUTSIDER/INSIDER_VR/feature.txt
 
+        /bin/bash -c "source /opt/conda/bin/activate liftoff_env;
         liftoff -p {params.threads} -g {params.work_directory}/OUTSIDER/INSIDER_VR/INOUTSIDER.gff \
             -f {params.work_directory}/OUTSIDER/INSIDER_VR/feature.txt \
             -o {params.work_directory}/OUTSIDER/INSIDER_VR/output_INOUT.gff3 \
             {input.ref} \
-            {input.genome} 2>> {log}.err
+            {input.genome} 2>> {log}.err;
+        
+        source /opt/conda/bin/deactivate
+        " || warn_msg "old version of singularity\\n";
+        
+
+        #/bin/bash -c "source /opt/conda/bin/deactivate"
 
         echo "liftoff - DONE" | tee -a {log}.err
 

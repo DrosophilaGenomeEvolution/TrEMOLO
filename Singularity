@@ -8,10 +8,10 @@ From: ubuntu:20.04
         Bedtools2
         RaGOO v1.1
         Assemblytics
-        Snakemake 5.5.2+
-        Minimap2 2.24+
+        Snakemake 7.32.4
+        Minimap2 2.28+
         Samtools 1.15.1
-        Samtools 1.9
+        Samtools 1.20
         Sniffles 1.0.12b
         SVIM 1.4.2+
         libfontconfig1-dev
@@ -84,7 +84,6 @@ _EOF_
         python3-pip \
         ncbi-blast+ \
         bedtools \
-        snakemake \
         assemblytics \
         r-base \
         perl \
@@ -120,9 +119,9 @@ _EOF_
     #ggplot2_3.4.2      RColorBrewer_1.1-2
 
     R --slave -e 'require(devtools); install_version("knitr", version = "1.38")'
-    R --slave -e 'require(devtools); install_version("rmarkdown", version = "2.26")'
+    #R --slave -e 'require(devtools); install_version("rmarkdown", version = "2.26")'
     #R --slave -e 'require(devtools); install_version("bookdown", version = "0.25")'
-    #R --slave -e 'require(devtools); install.packages("rmarkdown", version = "2.38")'
+    R --slave -e 'require(devtools); install.packages("rmarkdown", version = "2.38")'
     R --slave -e 'require(devtools); install.packages("bookdown", version = "0.38")'
     R --slave -e 'require(devtools); install_version("viridis", version = "0.6.2")'
     R --slave -e 'require(devtools); install_version("viridisLite", version = "0.4.0")'
@@ -136,12 +135,15 @@ _EOF_
     R --slave -e 'require(devtools); install_version("ggplot2", version = "3.4.2")'
     R --slave -e 'require(devtools); install_version("RColorBrewer", version = "1.1-2")'    
     
-    ##minimap2-2.24
+    pip install pulp==2.6.0
+    pip install snakemake==7.32.4
+
+    ##minimap2-2.28
     cd /usr/bin
     #git clone https://github.com/lh3/minimap2
-    wget https://github.com/lh3/minimap2/releases/download/v2.24/minimap2-2.24.tar.bz2
-    tar -vxjf minimap2-2.24.tar.bz2
-    cd minimap2-2.24 && make
+    wget https://github.com/lh3/minimap2/releases/download/v2.28/minimap2-2.28.tar.bz2
+    tar -vxjf minimap2-2.28.tar.bz2
+    cd minimap2-2.28 && make
 
 
     ##samtools1.15.1
@@ -163,23 +165,23 @@ _EOF_
     cd bcftools-1.15.1
     make
 
-    ##samtools 1.9
+    ##samtools 1.20
     cd /usr/bin
-    wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
-    tar -vxjf htslib-1.9.tar.bz2
-    cd htslib-1.9
+    wget https://github.com/samtools/htslib/releases/download/1.20/htslib-1.20.tar.bz2
+    tar -vxjf htslib-1.20.tar.bz2
+    cd htslib-1.20
     make
 
     cd ..
-    wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
-    tar -vxjf samtools-1.9.tar.bz2
-    cd samtools-1.9
+    wget https://github.com/samtools/samtools/releases/download/1.20/samtools-1.20.tar.bz2
+    tar -vxjf samtools-1.20.tar.bz2
+    cd samtools-1.20
     make
 
     cd ..
-    wget https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2
-    tar -vxjf bcftools-1.9.tar.bz2
-    cd bcftools-1.9
+    wget https://github.com/samtools/bcftools/releases/download/1.20/bcftools-1.20.tar.bz2
+    tar -vxjf bcftools-1.20.tar.bz2
+    cd bcftools-1.20
     make
 
     #Get vcfutils.pl
@@ -189,17 +191,44 @@ _EOF_
     make
 
     cd
-    
+
     #Python libs
-    python3 -m pip install biopython==1.79 pandas==1.5.3 numpy==1.21.2 matplotlib==3.5.1 svim==1.4.2 intervaltree==2.1.0 scipy==1.10.1 pysam==0.20.0
+    python3 -m pip install  biopython==1.79 pandas==1.5.3 matplotlib==3.5.1 svim==1.4.2 intervaltree==2.1.0 scipy==1.10.1 numpy==1.24.1 pysam==0.22.0
 
-    python3 -m pip install Liftoff
+    
+    
 
+
+    
     # build variables
     export TOOLDIR=/opt/tools
 
     #Preparing Directories
     mkdir -p $TOOLDIR
+
+    #liftoff
+    # mkdir -p env/python
+    # python3 -m venv env/python/liftoff_env
+    # source env/python/liftoff_env/bin/activate
+
+    # python3 -m pip install Liftoff
+    # source env/python/liftoff_env/bin/deactivate
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
+
+    # Ajouter conda au PATH
+    /opt/conda/bin/conda init bash
+
+    # Créer un environnement conda pour Liftoff
+    /opt/conda/bin/conda create --name liftoff_env python=3.8.10 numpy=1.20 -y
+
+    # Activer l'environnement et installer Liftoff
+    /bin/bash -c "source /opt/conda/bin/activate liftoff_env"
+    /opt/conda/envs/liftoff_env/bin/pip install liftoff
+    /opt/conda/envs/liftoff_env/bin/pip install numpy==1.21 pysam==0.16.0.1 biopython==1.76 requests==2.20.1
+
+    /bin/bash -c "source /opt/conda/bin/deactivate"
+
 
 
     #installing Sniffles 1.0.12b
@@ -257,17 +286,19 @@ _EOF_
     export LC_ALL=C
     export TOOLDIR=/opt/tools
     export PATH=$TOOLDIR/RaGOO/:$TOOLDIR/TrEMOLO/:$PATH
-    export PATH="$PATH:/usr/bin/bcftools-1.9"
-    export PATH="$PATH:/usr/bin/samtools-1.9"
-    export PATH="$PATH:/usr/bin/htslib-1.9"
-    export PATH="$PATH:/usr/bin/minimap2-2.24"
+    export PATH="$PATH:/usr/bin/bcftools-1.20"
+    export PATH="$PATH:/usr/bin/samtools-1.20"
+    export PATH="$PATH:/usr/bin/htslib-1.20"
+    export PATH="$PATH:/usr/bin/minimap2-2.28"
 
-    export SAMTOOLS_1_9="/usr/bin/samtools-1.9"
+    export SAMTOOLS_1_9="/usr/bin/samtools-1.20"
     export SAMTOOLS_1_15_1="/usr/bin/samtools-1.15.1"
     # export PATH="$PATH:/usr/bin/bcftools-1.15.1"
     # export PATH="$PATH:/usr/bin/samtools-1.15.1"
     # export PATH="$PATH:/usr/bin/htslib-1.15.1"
     export PATH="$PATH:/usr/bin/samtools/bcftools/"
+
+    export PATH=/opt/conda/bin:$PATH
 
     export PATH="/opt/nvm/versions/node/v18.8.0/bin:$PATH"
     # Fix force R path container
