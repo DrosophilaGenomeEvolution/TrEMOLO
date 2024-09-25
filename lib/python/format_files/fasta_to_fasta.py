@@ -8,18 +8,16 @@ fasta = open(sys.argv[1], "r")
 
 line = fasta.readline()
 while line :
-    if len(line) and  line[0] == ">":
+    if len(line) and  line.startswith(">"):
         head = line.strip()
         line = fasta.readline()
         sequence = ""
-        while len(line) and line[0] != ">" :
+        while len(line) and not line.startswith(">") :
             sequence += line.strip()
             line = fasta.readline()
         print(head)
         print(sequence.upper())
-    if len(line) and line[0] != ">":
-        line = fasta.readline()
-    elif len(line) == 0:
+    else:
         line = fasta.readline()
 
 fasta.close()
