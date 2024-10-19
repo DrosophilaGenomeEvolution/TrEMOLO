@@ -3590,6 +3590,7 @@ rule TrEMOLO_SV_TE :
 
         CLIPPED_READS   = config["CHOICE"]["OUTSIDER_VARIANT"]["CLIPPED_READS"],
         SIZE_FLANK      = config["PARAMS"]["OUTSIDER_VARIANT"]["TSD"]["SIZE_FLANK"],
+        TIME_LIMIT      = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["TIME_LIMIT"],
 
         pars_bln_option = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
         threads         = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
@@ -3623,14 +3624,23 @@ rule TrEMOLO_SV_TE :
 
         samtools index {input.bam} 2> {log}.err
 
+        
+
         echo "GET INSERTION..."
+        option_sup="";
+        if [ {params.CLIPPED_READS} = "False" ]; then
+            option_sup="--no-clipped";
+        fi;
+
         ###python3 ${{path_to_pipline}}/lib/python/parsing/find_all_ins.py {input.bam} > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed 2>> {log}.err
         python3 ${{path_to_pipline}}/lib/python/parsing/find_all_type_ins.py {input.bam} \
             --output-seq-tsd {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_FOR_TSD.txt \
             -f {params.SIZE_FLANK} \
+            -t {params.threads} \
+            --time-limit {params.TIME_LIMIT} \
             --output-soft {output.soft_vcf} \
             --output-hard {output.hard_vcf} \
-            --output-ins {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed 2>> {log}.err
+            --output-ins {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed $option_sup 2>> {log}.err
 
         ! test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed && fail_msg "[{rule}] ERROR : NO INSERTION FOUND\\n" && exit 5;
 
@@ -3740,6 +3750,8 @@ rule TrEMOLO_SV_TE :
             touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.bed
             touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv
             touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.bed
+            touch {output.hard_vcf}
+            touch {output.soft_vcf}
         fi;
             
 

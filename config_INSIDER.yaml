@@ -38,6 +38,7 @@ PARAMS:
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "[23][RL],4,X" ; Put "." for keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 30" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
+            TIME_LIMIT: 0 # time limit for processing SV detection (rule TrEMOLO_SV_TE); put value >= 0 (hours); 0 means no time limit
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py  Warning d'ont put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" 
