@@ -322,11 +322,11 @@ rule REPORT :
             while read line;
         do
             read -r chrom start end TE ID strand <<< $(echo $line | awk 'OFS="\t"{{split($4, TE, "|"); print $1, $2, $3, TE[1], TE[2], $6}}')
-            pident=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COMBINE_INS_TREMOLO.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv) | cut -f 3 || echo "NONE"`;
-            size_per=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COMBINE_INS_TREMOLO.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv) | cut -f 4 || echo "NONE"`
+            pident=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv 2> /dev/null || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COMBINE_INS_TREMOLO.csv 2> /dev/null || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv 2> /dev/null || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv) 2> /dev/null | cut -f 3 || echo "NONE"`;
+            size_per=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv 2> /dev/null || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COMBINE_INS_TREMOLO.csv 2> /dev/null || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv 2> /dev/null || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv) 2> /dev/null | cut -f 4 || echo "NONE"`
 
             test -s {params.work_directory}/ID_OUTSIDER_INTERSECT_TO_DEL.txt && \
-                intersect_to_del=`grep -w "$ID" {params.work_directory}/ID_OUTSIDER_INTERSECT_TO_DEL.txt || echo ""` || intersect_to_del="";
+                intersect_to_del=`grep -w "$ID" {params.work_directory}/ID_OUTSIDER_INTERSECT_TO_DEL.txt 2> /dev/null || echo ""` || intersect_to_del="";
 
             TYPE_TrEMOLO=`echo "$ID" | grep -E -o "SOFT|HARD|DEL|INS" || echo "UNDEFINED"`;
             if [ -n "$intersect_to_del" ]; then
@@ -335,12 +335,12 @@ rule REPORT :
 
             #TSD
             SIZE_TE="";
-            TSD_OK=`grep -w "$ID" {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv | cut -f 2 || echo ""`
+            TSD_OK=`grep -w "$ID" {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 2 || echo ""`
             if [ ! -n "$TSD_OK" ]; then
                 TSD_OK="NONE"
-                SIZE_TE=`grep ":$ID:[0-9]*:[IP]" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv | cut -f 7 || echo "NONE"`
+                SIZE_TE=`grep ":$ID:[0-9]*:[IP]" {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv 2> /dev/null | cut -f 7 || echo "NONE"`
             else
-                SIZE_TE=`grep -w "$ID" {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv | cut -f 4 | cut -d ":" -f 1 || echo "NONE"`
+                SIZE_TE=`grep -w "$ID" {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 4 | cut -d ":" -f 1 || echo "NONE"`
             fi;
             #echo "TSD_OK : $TSD_OK";
 
@@ -349,25 +349,25 @@ rule REPORT :
             fi;
 
             #TSD NEW POS
-            NEW_POS=`(test -s {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv && grep -w $ID {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv | cut -f 3) || echo "$start"`
+            NEW_POS=`(test -s {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv && grep -w $ID {params.work_directory}/OUTSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 3) || echo "$start"`
 
             FREQ_BEFOR="";
             FREQ_AFTER="";
 
             test -s {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv && \
-                FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv | awk '$9<=100{{ print $9; }} $9>100{{ print "NONE"; }}' || echo "NONE"` && \
-                FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv | awk '$10<=100{{ print $10; }} $10>100{{ print "NONE"; }}' || echo "NONE"`;
+                FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv 2> /dev/null | awk '$9<=100{{ print $9; }} $9>100{{ print "NONE"; }}' || echo "NONE"` && \
+                FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv 2> /dev/null | awk '$10<=100{{ print $10; }} $10>100{{ print "NONE"; }}' || echo "NONE"`;
             
             if [ "$FREQ_BEFOR" == "" ] || [ "$FREQ_BEFOR" == "NONE" ] || [ "$FREQ_AFTER" == "" ] || [ "$FREQ_AFTER" == "NONE" ]; then
-                FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 9 || echo "NONE"`;
-                FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 10 || echo "NONE"`;
+                FREQ_BEFOR=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv 2> /dev/null | cut -f 9 || echo "NONE"`;
+                FREQ_AFTER=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv 2> /dev/null | cut -f 10 || echo "NONE"`;
             fi;
 
             ! test -n "$FREQ_BEFOR" && FREQ_BEFOR="NONE-FREQB" && echo "NONE-FREQB";
             ! test -n "$FREQ_AFTER" && FREQ_AFTER="NONE-FREQA" && echo "NONE-FREQA";
 
             ##SIZE SV
-            SV_SIZE=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv | awk 'max<$2{{ max=$2; }} END{{ if(max!=""){{ print max }} }}' || echo "NONE"`;
+            SV_SIZE=`grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/SV_SIZE.tsv 2> /dev/null | awk 'max<$2{{ max=$2; }} END{{ if(max!=""){{ print max }} }}' || echo "NONE"`;
             ! test -n "$SV_SIZE" && SV_SIZE="NONE";
 
             ##ID TrEMOLO
@@ -376,8 +376,8 @@ rule REPORT :
             if ! test -n "$IS_CLIPPED"; then
                 #GET ID_TrEMOLO
                 ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id 2>/dev/null || echo "0"`
-                TYPE=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv ) | cut -f 2  | cut -d ":" -f 2 | sed 's/[<>]//g'`
-                RS=`(test -s {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv && grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv | cut -f 4 | ${{path_to_pipline}}/lib/C++/bin/chain_to_id 2>/dev/null) || echo "ERROR_RS_$ID" >{log}.err`
+                TYPE=`(grep -w "$ID" {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv 2> /dev/null || grep -w "$ID" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv 2> /dev/null ) | cut -f 2  | cut -d ":" -f 2 | sed 's/[<>]//g'`
+                RS=`(test -s {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv && grep -w "$ID" {params.work_directory}/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv 2> /dev/null | cut -f 4 | ${{path_to_pipline}}/lib/C++/bin/chain_to_id 2>/dev/null) || echo "ERROR_RS_$ID" >{log}.err`
                 ! test -n "$RS" && RS=0;
                 ID_TrEMOLO="TE_ID_OUTSIDER.$ID_POS.$TYPE.$RS";
             else
@@ -439,17 +439,17 @@ rule REPORT :
             end=`echo "$line" | cut -f 3`
 
             strand=`echo "$line" | cut -f 6`
-            pident=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 3 || echo "NONE"`;
-            size_per=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 4 || echo "NONE"`
+            pident=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv 2> /dev/null | cut -f 3 || echo "NONE"`;
+            size_per=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv 2> /dev/null | cut -f 4 || echo "NONE"`
 
             #TSD
             SIZE_TE="";
-            TSD_OK=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv | cut -f 2 || echo ""`
+            TSD_OK=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 2 || echo ""`
             if [ ! -n "$TSD_OK" ]; then
                 TSD_OK="NONE"
-                SIZE_TE=`grep "$ID:[+-]:" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 5 || echo "NONE"`
+                SIZE_TE=`grep "$ID:[+-]:" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv 2> /dev/null | cut -f 5 || echo "NONE"`
             else
-                SIZE_TE=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv | cut -f 4 || echo ""`
+                SIZE_TE=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 4 || echo ""`
             fi;
 
             if [ ! -n "$SIZE_TE" ]; then
@@ -457,7 +457,7 @@ rule REPORT :
             fi;
 
             #TSD NEW POS
-            NEW_POS=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv | cut -f 3 || echo "$start"`
+            NEW_POS=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 3 || echo "$start"`
 
             #FREQUENCE
             FREQ_BEFOR=`grep -w "$TE|$ID" {params.work_directory}/INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv 2>/dev/null | cut -f 6 || echo "NONE"`
@@ -465,9 +465,9 @@ rule REPORT :
 
             #GET ID_TrEMOLO
             ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id 2>/dev/null || echo "0"`
-            TYPE=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv | cut -f 2 | cut -d ":" -f 3 || echo "UNKNOWN"`
+            TYPE=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv 2> /dev/null | cut -f 2 | cut -d ":" -f 3 || echo "UNKNOWN"`
 
-            SV_SIZE=`grep -w "$ID" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | awk '
+            SV_SIZE=`grep -w "$ID" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed 2> /dev/null | awk '
                 $7=="Deletion" || $7=="Repeat_contraction" || $7=="Tandem_contraction" {{ print $5 }} 
                 $7=="Insertion" || $7=="Repeat_expansion" || $7=="Tandem_expansion" {{ print $9 }}
                 ' || echo "NONE"`;
@@ -585,22 +585,22 @@ rule REPORT :
 
             echo "  BUILD chroms for scatter FREQUENCY js ..."
             cut -f 1 {params.work_directory}/TE_INFOS.bed | sort -u > {params.work_directory}/tmp_chrom_with_TE.txt
-            grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt | awk 'BEGIN{{print "var chroms = {{"}} {{print "   \\""$1"\\" : "$2","}} END{{print "}}"}}'  > {params.work_directory}/js/chroms.js || fail_msg "ERROR : NO CHROM IN REPORT\\n"
-            # grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt | awk 'BEGIN{{print "const all_data = {{"}} {{print "   \\""$1"\\" : data"$1","}} END{{print "}}"}}'   > {params.work_directory}/js/data_ALL_FREQ_CHROM.js || fail_msg "ERROR : NO TE FOR FREQUENCY IN REPORT\\n"
+            grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt 2> /dev/null | awk 'BEGIN{{print "var chroms = {{"}} {{print "   \\""$1"\\" : "$2","}} END{{print "}}"}}'  > {params.work_directory}/js/chroms.js || fail_msg "ERROR : NO CHROM IN REPORT\\n"
+            # grep -E `echo "{params.CHROM_KEEP}" | tr "," "|"` {input.genome}.fai | grep -w -f {params.work_directory}/tmp_chrom_with_TE.txt 2> /dev/null | awk 'BEGIN{{print "const all_data = {{"}} {{print "   \\""$1"\\" : data"$1","}} END{{print "}}"}}'   > {params.work_directory}/js/data_ALL_FREQ_CHROM.js || fail_msg "ERROR : NO TE FOR FREQUENCY IN REPORT\\n"
             path_fai=`realpath {input.genome}.fai`;
 
             echo "  BUILD group for scatter FREQUENCY js ..."
 
             ###GET SV TYPE
-            grep OUTSIDER {params.work_directory}/TE_INFOS.bed | awk ' {{print $15}}' | sort -u | awk 'BEGIN{{chain="var typesSV = [";}} {{ if(NR==1){{chain=chain"\\""$1"\\""}}else{{chain=chain", \\""$1"\\""}} }} END{{chain=chain"]"; print chain; }}' > {params.work_directory}/js/groups_OUTSIDER.js || warn_msg "Warning : NO OUTSIDER IN REPORT\\n"
-            grep INSIDER {params.work_directory}/TE_INFOS.bed | awk ' {{print $15}}' | sort -u | awk 'BEGIN{{chain="var typesSV = [";}} {{ if(NR==1){{chain=chain"\\""$1"\\""}}else{{chain=chain", \\""$1"\\""}} }} END{{chain=chain"]"; print chain; }}' > {params.work_directory}/js/groups_INSIDER.js || warn_msg "Warning : NO INSIDER IN REPORT\\n"
+            grep OUTSIDER {params.work_directory}/TE_INFOS.bed 2> /dev/null | awk ' {{print $15}}' | sort -u | awk 'BEGIN{{chain="var typesSV = [";}} {{ if(NR==1){{chain=chain"\\""$1"\\""}}else{{chain=chain", \\""$1"\\""}} }} END{{chain=chain"]"; print chain; }}' > {params.work_directory}/js/groups_OUTSIDER.js || warn_msg "Warning : NO OUTSIDER IN REPORT\\n"
+            grep INSIDER {params.work_directory}/TE_INFOS.bed 2> /dev/null | awk ' {{print $15}}' | sort -u | awk 'BEGIN{{chain="var typesSV = [";}} {{ if(NR==1){{chain=chain"\\""$1"\\""}}else{{chain=chain", \\""$1"\\""}} }} END{{chain=chain"]"; print chain; }}' > {params.work_directory}/js/groups_INSIDER.js || warn_msg "Warning : NO INSIDER IN REPORT\\n"
             #####INOUTSIDER
             awk 'NR>1 {{print $15}}' {params.work_directory}/TE_INFOS.bed | sort -u | awk 'BEGIN{{chain="var typesSV = [";}} {{ if(NR==1){{chain=chain"\\""$1"\\""}}else{{chain=chain", \\""$1"\\""}} }} END{{chain=chain"]"; print chain; }}' > {params.work_directory}/js/groups_INOUTSIDER.js || warn_msg "Warning : NO TE IN REPORT\\n"
             
             echo "  STRAND OUTSIDER"
             ## forward reverse OUTSIDER
             test -s {params.work_directory}/TE_INFOS.bed && test -s {params.work_directory}/POSITION_TE_OUTSIDER.bed && \
-                grep OUTSIDER {params.work_directory}/TE_INFOS.bed | awk '{{
+                grep OUTSIDER {params.work_directory}/TE_INFOS.bed 2> /dev/null | awk '{{
                     split($4, sp, "|"); 
                     
                     if($5 == "-"){{
@@ -632,7 +632,7 @@ rule REPORT :
             echo "  STRAND INSIDER"
             ## STRAND INSIDER
             test -s {params.work_directory}/TE_INFOS.bed && test -s {params.work_directory}/POSITION_TE_INSIDER.bed && \
-                grep INSIDER {params.work_directory}/TE_INFOS.bed | awk '{{
+                grep INSIDER {params.work_directory}/TE_INFOS.bed 2> /dev/null | awk '{{
                     split($4, sp, "|"); 
                     
                     if($5 == "-"){{
@@ -1096,7 +1096,7 @@ rule REPORT :
                     }}' tmp_scatter.csv > js/FREQ_TE_INOUTSIDER_CHROM.js
 
                 cut -f 1 tmp_scatter.csv | sort -u > tmp_chrom.txt
-                grep -v -f tmp_chrom.txt ${{path_fai}} | cut -f 1 | awk '{{print "var data"$1" = []"}}' >> js/FREQ_TE_INOUTSIDER_CHROM.js || echo ""
+                grep -v -f tmp_chrom.txt ${{path_fai}} 2> /dev/null | cut -f 1 | awk '{{print "var data"$1" = []"}}' >> js/FREQ_TE_INOUTSIDER_CHROM.js || echo ""
                 test -s js/FREQ_TE_INOUTSIDER_CHROM.js && \
                     sed 's/%%VAR_JS%%/FREQ_TE_INOUTSIDER_CHROM.js/g' lib/template_FREQ_CHROM.html > lib/template_FREQ_CHROM_INOUTSIDER.html
 
@@ -1269,7 +1269,7 @@ rule FIND_TE_ON_REF :
         for type in "${{array_type[@]}}"
         do
             echo "type=${{type}}";
-            grep -i ${{type}} {input.bed} | awk '{{print $10":"$4}}' | awk -v type="${{type}}" -F ":" 'OFS="\t"{{split($2, a, "-"); print $1 , a[1], a[2], $4":"$3":"type}}' > {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed || echo "[SNK  INFO]: ${{type}} NOT FOUND in bed file."
+            grep -i ${{type}} {input.bed} 2> /dev/null | awk '{{print $10":"$4}}' | awk -v type="${{type}}" -F ":" 'OFS="\t"{{split($2, a, "-"); print $1 , a[1], a[2], $4":"$3":"type}}' > {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed || echo "[SNK  INFO]: ${{type}} NOT FOUND in bed file."
             test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed || echo "[SNK  INFO]: ${{type}}.bed IS EMPTY"
             
             test -s {params.work_directory}/INSIDER/TE_INSIDER_VR/${{type}}.bed && \
@@ -1387,7 +1387,7 @@ rule FIND_TE_ON_REF :
             awk '{{print $2}}' INSERTION.csv | cut -d ":" -f 1 > ID_asm.txt
             grep -w -f ID_asm.txt ../../OUTSIDER/INSIDER_VR/assemblytics_out.Assemblytics_structural_variants.bed | awk 'OFS="\t"{{print $1, $2, $3, $4"|"$7}}' > TE_FOUND.bed
 
-            grep -v "INSERTION" INSERTION.csv | awk -v size="4000" 'NR>1 && OFS="\t"{{split($2, a, ":"); 
+            grep -v "INSERTION" INSERTION.csv 2> /dev/null | awk -v size="4000" 'NR>1 && OFS="\t"{{split($2, a, ":"); 
                 split(a[6], b, "-"); 
                 if(b[1]-size > 0){{ print a[5] , b[1]-size, b[1], a[1]":LEFT\\n" a[5], b[2], b[2]+size, a[1]":RIGTH" }} else{{ print a[5] , b[1], b[1]+1, a[1]":LEFT\\n" a[5], b[2], b[2]+size, a[1]":RIGTH" }}
             }}' > tmp_Repeat_expension.bed
@@ -1859,9 +1859,9 @@ rule TE_TOWARD_GENOME :
                         ID_CSV=`( grep -w "$ID_TE" {input.all_te} || grep -w "$ID_TE" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.csv ) | cut -f 2`
 
                         if [[ $strand = "+" ]]; then
-                            seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | tr "atgcn" "ATGCN"`
+                            seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | tr "[:lower:]" "[:upper:]"`
                         else
-                            seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | tr "ATGCatgcn" "TACGTACGN" | rev`
+                            seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | | tr "[:lower:]" "[:upper:]" | tr "ATGCRYSWKMBDHVN" "TACGYRSWMKVHDBN" | rev`
                         fi
                         
                         #echo "ID_TE:$ID_TE; TE:$TE; ID_CSV:$ID_CSV";
@@ -2055,7 +2055,7 @@ rule TE_TOWARD_GENOME :
             -bed {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE_PSEUDO.bed \
             -name+ > {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE.fasta
 
-        TOTAL_TE=`grep -w -v -E "SOFT.[0-9]+|HARD.[0-9]+" {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed -c`
+        TOTAL_TE=`grep -w -v -E "SOFT.[0-9]+_[0-9]+|HARD.[0-9]+_[0-9]+" {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed -c`
 
         ! test -s {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE.fasta || ! test -s  {params.work_directory}/OUTSIDER/TE_TOWARD_GENOME/SEQUENCE_INDEL_as_TE.fasta && fail_msg "ERROR : MISSING FASTA PSEUDO FOUND ✘\\n" | tee -a {log}.err;
         
@@ -3218,7 +3218,8 @@ rule HARD_TE :
 
         ## Warning : WINDOW cluster fixed 100
         ## Warning : tab_head[1] for take start end first detected
-        bedtools sort -i {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed | bedtools cluster -d 100 | awk 'BEGIN{{count=0; id="";}}  OFS=":"{{if(id != $8){{ if(NR>1){{ for(i=1; i<count+1; i++){{print tab_head[1], count, "IMPRECISE", (i-1); print tab_seq[i]}} }}; id=$8; count=0; delete tab_head; delete tab_seq;}}else{{tab_head[count+1] = ">"$1":<HARD>:"$2":"$3":HARD."id"."$6; tab_seq[count+1] = $5; count+=1}} }}' > {output.seqs}
+        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed && \
+            bedtools sort -i {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD.bed | bedtools cluster -d 100 | awk 'BEGIN{{count=0; id="";}}  OFS=":"{{if(id != $8){{ if(NR>1){{ for(i=1; i<count+1; i++){{print tab_head[1], count, "IMPRECISE", (i-1); print tab_seq[i]}} }}; id=$8; count=0; delete tab_head; delete tab_seq;}}else{{tab_head[count+1] = ">"$1":<HARD>:"$2":"$3":HARD."id"."$6; tab_seq[count+1] = $5; count+=1}} }}' > {output.seqs}
 
         ## BLAST TE
         echo "BLAST TE HARD..."
@@ -3226,11 +3227,13 @@ rule HARD_TE :
         test -s {output.seqs} && \
             blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log}.err;
 
+        samtools faidx {input.fasta_TE}
+
         ## PARSING
         test -s {output.bln} && \
             python3 ${{path_to_pipline}}/lib/python/parsing/parse_blast_main.py \
                 {output.bln} \
-                {input.fasta_TE} \
+                {input.fasta_TE}.fai \
                 {output.all_te} \
                 {params.pars_bln_option} --combine_name {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/COMBINE_SV_HARD.csv -c -k "HARD"
 
@@ -3247,6 +3250,7 @@ rule HARD_TE :
             touch {output.all_te}
             touch {output.bln}
             touch {output.seqs}
+            touch {output.bed}
         fi;
 
         ##PATH=`echo $PATH | sed "s|${{SAMTOOLS_1_15_1}}|${{SAMTOOLS_1_9}}|g"`
@@ -3330,46 +3334,48 @@ rule SOFT_TE :
         ### GET SOFT SEQUENCE AND CUT SIZE
         ##cut size for less false (+)
         rm -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.bed
-        awk -v max_size="$TrEMOLO_SIZE_MAX_TE" -v out_bed="{params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.bed" '{{
-            split($4, spL, ";"); 
-            split($5, spR, ";"); 
-            split(spL[3], spLSEQ, "=");
-            split(spR[3], spRSEQ, "=");
-            
+        test -s {input.vcf} && \
+            awk -v max_size="$TrEMOLO_SIZE_MAX_TE" -v out_bed="{params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SV_SOFT.bed" '{{
+                split($4, spL, ";"); 
+                split($5, spR, ";"); 
+                split(spL[3], spLSEQ, "=");
+                split(spR[3], spRSEQ, "=");
+                
 
-            split($6, spL_RS, "=");
-            split($7, spR_RS, "=");
+                split($6, spL_RS, "=");
+                split($7, spR_RS, "=");
 
-            NB_RS_LEFT  = split(spL_RS[2], spL_RS_READ, ",");
-            NB_RS_RIGHT = split(spR_RS[2], spR_RS_READ, ",");
+                NB_RS_LEFT  = split(spL_RS[2], spL_RS_READ, ",");
+                NB_RS_RIGHT = split(spR_RS[2], spR_RS_READ, ",");
 
-            if(spLSEQ[2] != "NONE"){{ 
-                if(length(spLSEQ[2]) <= max_size){{
-                    print ">"$1":<SOFT>:"$2":"$2+1":"$3".L:"NB_RS_LEFT":PRECISE:0\\n"spLSEQ[2];
+                if(spLSEQ[2] != "NONE"){{ 
+                    if(length(spLSEQ[2]) <= max_size){{
+                        print ">"$1":<SOFT>:"$2":"$2+1":"$3".L:"NB_RS_LEFT":PRECISE:0\\n"spLSEQ[2];
+                    }}
+                    else{{
+                        print ">"$1":<SOFT>:"$2":"$2+1":"$3".L:"NB_RS_LEFT":PRECISE:0\\n"substr(spLSEQ[2], length(spLSEQ[2])-max_size+1, max_size);
+                    }}
+                }} 
+
+                if(spRSEQ[2] != "NONE"){{
+                    if(length(spRSEQ[2]) <= max_size){{
+                        print ">"$1":<SOFT>:"$2":"$2+1":"$3".R:"NB_RS_RIGHT":PRECISE:0\\n"spRSEQ[2];
+                    }}
+                    else {{
+                        print ">"$1":<SOFT>:"$2":"$2+1":"$3".R:"NB_RS_RIGHT":PRECISE:0\\n"substr(spRSEQ[2], 1, max_size);
+                    }}
                 }}
-                else{{
-                    print ">"$1":<SOFT>:"$2":"$2+1":"$3".L:"NB_RS_LEFT":PRECISE:0\\n"substr(spLSEQ[2], length(spLSEQ[2])-max_size+1, max_size);
-                }}
-            }} 
 
-            if(spRSEQ[2] != "NONE"){{
-                if(length(spRSEQ[2]) <= max_size){{
-                    print ">"$1":<SOFT>:"$2":"$2+1":"$3".R:"NB_RS_RIGHT":PRECISE:0\\n"spRSEQ[2];
-                }}
-                else {{
-                    print ">"$1":<SOFT>:"$2":"$2+1":"$3".R:"NB_RS_RIGHT":PRECISE:0\\n"substr(spRSEQ[2], 1, max_size);
-                }}
-            }}
+                print $1"\\t"$2"\\t"$2+1"\\t"$3":"(NB_RS_LEFT + NB_RS_RIGHT) >> out_bed
 
-            print $1"\\t"$2"\\t"$2+1"\\t"$3":"(NB_RS_LEFT + NB_RS_RIGHT) >> out_bed
-
-        }}' {input.vcf} | grep -v "^--" > {output.seqs};
+            }}' {input.vcf} | grep -v "^--" > {output.seqs};
 
         ## BLAST TE
         echo "BLAST TE SOFT BEST..."
         makeblastdb -in {input.fasta_TE} -dbtype nucl 2> {log.soft}.err;
         test -s {output.seqs} && \
-            blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log.soft}.err || (echo "FAILDED" && exit 1);
+            blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.seqs} -outfmt 6 -out {output.bln} 2>> {log.soft}.err \
+            # || (echo "FAILDED" && exit 1);
 
 
         ## BIS FOR FREQUENCY
@@ -3394,12 +3400,15 @@ rule SOFT_TE :
 
         ## GET CANDIDATE TE
         echo "GET CANDIDATE TE SOFT..."
+        test -s {output.bln} && \
         number_lines_bln=`cat {output.bln} | wc -l`
+
+        samtools faidx {input.fasta_TE}
 
         test -s {output.bln} && \
             python3 ${{path_to_pipline}}/lib/python/parsing/parse_blast_main.py \
                 {output.bln} \
-                {input.fasta_TE} \
+                {input.fasta_TE}.fai \
                 {output.all_te} \
                 {params.pars_bln_option} --combine_name {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/COMBINE_SV_SOFT.csv -c -k "SOFT"
 
@@ -3419,6 +3428,8 @@ rule SOFT_TE :
             touch {output.all_te}
             touch {output.bln}
             touch {output.seqs}
+            touch {output.bed}
+            touch {output.sv_bed}
         fi;
 
         #** REMOVE **#
@@ -3533,8 +3544,11 @@ rule DETECTION_TE :
             #** FILTER TE BLAST **#
             echo "   FILTER TE BLAST..." | tee {log}.err {log}.log
 
-            python3 ${{path_to_pipline}}/lib/python/parsing/parse_blast_main.py {output.bln} \
-                {input.fasta_TE} \
+            samtools faidx {input.fasta_TE}
+
+            python3 ${{path_to_pipline}}/lib/python/parsing/parse_blast_main.py \
+                {output.bln} \
+                {input.fasta_TE}.fai \
                 {output.all_te} -c \
                 --combine_name {params.work_directory}/OUTSIDER/TE_DETECTION/COMBINE_TE.csv {params.pars_bln_option} 2>> {log.DETECTION}.err;
             
@@ -3590,7 +3604,7 @@ rule TrEMOLO_SV_TE :
 
         CLIPPED_READS   = config["CHOICE"]["OUTSIDER_VARIANT"]["CLIPPED_READS"],
         SIZE_FLANK      = config["PARAMS"]["OUTSIDER_VARIANT"]["TSD"]["SIZE_FLANK"],
-        TIME_LIMIT      = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["TIME_LIMIT"],
+        TIME_LIMIT      = config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["TIME_LIMIT"] if "TIME_LIMIT" in config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"] and type(config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["TIME_LIMIT"]) == int and config["PARAMS"]["OUTSIDER_VARIANT"]["TE_DETECTION"]["TIME_LIMIT"] > 0 else 0,
 
         pars_bln_option = config["PARAMS"]["OUTSIDER_VARIANT"]["PARS_BLN_OPTION"],
         threads         = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
@@ -3624,7 +3638,7 @@ rule TrEMOLO_SV_TE :
 
         samtools index {input.bam} 2> {log}.err
 
-        
+        ## echo "TIME_LIMIT:" {params.TIME_LIMIT}
 
         echo "GET INSERTION..."
         option_sup="";
@@ -3646,7 +3660,7 @@ rule TrEMOLO_SV_TE :
 
         bedtools sort -i {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed | bedtools cluster -d 50 > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed 2>> {log}.err;
 
-        echo "   NB INSERTION FOUND : `tail -n 1 {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed | cut -f 6`"
+        echo "   NB INSERTION IN READS FOUND : `cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed | wc -l`"
 
         rm -f {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/RD_NUMBER.txt;
         touch {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/RD_NUMBER.txt;
@@ -3721,11 +3735,13 @@ rule TrEMOLO_SV_TE :
         makeblastdb -in {input.fasta_TE} -dbtype nucl
         echo
         blastn -num_threads {params.threads} -db {input.fasta_TE} -query {output.SV_CLUST_seq} -outfmt 6 -out {output.SV_INS_CLUST_bln}
-         
+        
+        samtools faidx {input.fasta_TE}
+
         echo "GETTING TRUE TE INTO INSERTION..."
         python3 ${{path_to_pipline}}/lib/python/parsing/parse_blast_main.py \
               {output.SV_INS_CLUST_bln} \
-              {input.fasta_TE} \
+              {input.fasta_TE}.fai \
               {output.INS_TREMOLO_csv} \
               --combine_name {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COMBINE_INS_TREMOLO.csv -c {params.pars_bln_option} 2>> {log}.err 
 

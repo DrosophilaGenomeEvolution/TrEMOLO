@@ -34,13 +34,11 @@ dico   = {"chrom":[], "start":[], "end":[], "name":[]}
 def find_seq_in_fa(motif, file, options=""):
     proc = subprocess.Popen(["grep " + options + " " + motif + " " + file], stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    #print(str(out))
     return out.decode('ascii').split("\n")
 
 #True bed
 for chrom in df_bed["chrom"].unique():
-    df_tmp_chrom = df_bed[df_bed["chrom"] == chrom]
-    df_tmp_chrom = df_tmp_chrom.sort_values(by=["start"])
+    df_tmp_chrom = df_bed[df_bed["chrom"] == chrom].sort_values(by=["start"])
     decalage = 0
     for i, v in enumerate(df_tmp_chrom.values):
         start = df_tmp_chrom["start"].values[i]
@@ -48,7 +46,6 @@ for chrom in df_bed["chrom"].unique():
         name  = df_tmp_chrom["name"].values[i]
         size  = abs(int(end) - int(start))
         
-        #reposition start, end
         start += decalage
         end   += decalage
 
@@ -57,7 +54,6 @@ for chrom in df_bed["chrom"].unique():
         dico["end"].append(end)
         dico["name"].append(name)
 
-        #new decalage
         decalage += size
 
 

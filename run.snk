@@ -48,6 +48,23 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+# Get path snakefile
+path_snk = ""
+
+i = 0
+while i < len(sys.argv) and path_snk == "" :
+    if sys.argv[i] == "--snakefile" :
+        if "/" in sys.argv[i + 1] :
+            path_snk = sys.argv[i + 1]
+        else :
+            path_snk = "./" + sys.argv[i + 1]
+
+    i += 1
+#
+
+#REFORMAT
+os.system(f'python3 {os.path.dirname(path_snk)}/lib/python/format_files/fasta_to_fasta.py {config["DATA"]["TE_DB"]} > {config["DATA"]["TE_DB"]}.rft')
+config["DATA"]["TE_DB"] = f'{config["DATA"]["TE_DB"]}.rft'
 
 if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
     config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
@@ -115,19 +132,6 @@ else :
     config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"])
 
 
-# Get path snakefile
-path_snk = ""
-
-i = 0
-while i < len(sys.argv) and path_snk == "" :
-    if sys.argv[i] == "--snakefile" :
-        if "/" in sys.argv[i + 1] :
-            path_snk = sys.argv[i + 1]
-        else :
-            path_snk = "./" + sys.argv[i + 1]
-
-    i += 1
-#
 
 
 ## CHECK PARAMETER IN CONFIG FILE
@@ -242,6 +246,8 @@ rule TrEMOLO_BUILD :
         echo $! > {params.work_directory}/.pid
 
         PARALLELING="_MULTI_THREADS"
+
+        
 
         mkdir -p {params.work_directory}/1-UTILS
 

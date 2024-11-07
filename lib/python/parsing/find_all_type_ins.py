@@ -4,7 +4,18 @@ import numpy
 import os
 from multiprocessing import Pool, Event, Manager
 import time
+import logging
+import sys
 
+
+def config_logging(mode_debug=False):
+    level = logging.DEBUG if mode_debug else logging.INFO
+
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[logging.StreamHandler(sys.stdout)]
+    )
 
 parser = argparse.ArgumentParser(description="parse bam file to get sequence of insertion, at specific position in bed file", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -45,11 +56,11 @@ def process_chrom(args):
     pid = os.getpid()
     try:
         i_chrom, chrom, stop_event = args
-        print(f"Process PID {pid} : {chrom.ljust(31, ' ')} : {i_chrom} : begining...", flush=True)
-        parse_chrom_get_sv(chrom, i_chrom, stop_event)
-        print(f"Process PID {pid} : {chrom.ljust(31, ' ')} : {i_chrom} : STOP", flush=True)
+        logging.info(f"Process PID {pid} : {chrom.ljust(31, ' ')} : {i_chrom} : begining...")
+        nb_insertions, ID_SOFT, ID_HARD = parse_chrom_get_sv(chrom, i_chrom, stop_event)
+        logging.info(f"Process PID {pid} : {chrom.ljust(31, ' ')} : {i_chrom} : STOP : NB INSERTIONS:{nb_insertions}; NB SOFT: {ID_SOFT}; NB HARD: {ID_HARD}")
     except Exception as e:
-        print(f"Raise with process PID {pid} : {e}", flush=True)
+        logging.error(f"Raise with process PID {pid} : {e}")
         raise
 
 def parse_chrom_get_sv(chrom, i_chrom, stop_event):
@@ -66,11 +77,13 @@ def parse_chrom_get_sv(chrom, i_chrom, stop_event):
     ID_HARD         = 0
     ID_SOFT         = 0
 
+    nb_insertions = 0
+
     bamfile = pysam.AlignmentFile(args.bam_file.name, "rb")
     for e, read in enumerate(bamfile.fetch(chrom)):
 
         if stop_event.is_set():
-            print("STOP:", i_chrom)
+            logging.info(f"EVENT STOP : {i_chrom}, {chrom}")
             break
 
         reference_start = read.reference_start
@@ -112,7 +125,8 @@ def parse_chrom_get_sv(chrom, i_chrom, stop_event):
                         output_ins.write("\t".join([str(REF), str(reference_start + count_ref), str(reference_start + count_ref + 1), str(read_name), str(seq_vr), str(count_read), str(count_read_real), str(tupl[1])]) + "\n")
                         if args.output_seq_tsd != None:
                             args.output_seq_tsd.write("\t".join([str(REF), str(reference_start + count_ref), str(read_name), str(f'{fk_L}|{seq_vr}|{fk_R}'), str(seq_full), str(count_read), str(count_read_real), str(tupl[1])]) + "\n")
-
+                        
+                        nb_insertions += 1
                 #if we have found HARD to a good position
                 if not args.no_clipped and tupl[0] == 5 and tupl[1] >= args.min_size :
 
@@ -223,15 +237,18 @@ def parse_chrom_get_sv(chrom, i_chrom, stop_event):
     for indice, dic in enumerate(soft_line) :
         output_soft.write("\t".join([dic["REF"], str(dic["POS"]), "SOFT." + str(dic["ID"]), ";".join(["BEST_L_RS=" + dic["BEST_LEFT"][0], "BEST_L_SIZE=" + dic["BEST_LEFT"][1], "BEST_L_SEQ=" + dic["BEST_LEFT"][2]]), ";".join(["BEST_R_RS=" + dic["BEST_RIGHT"][0], "BEST_R_SIZE=" + dic["BEST_RIGHT"][1], "BEST_R_SEQ=" + dic["BEST_RIGHT"][2]]), "RS_LEFT=" + ",".join(dic["RS_LEFT"]), "RS_RIGHT=" + ",".join(dic["RS_RIGHT"]), "NB_RS=" + str(dic["NB_RS"])]) + "\n")
 
+    return [nb_insertions, ID_SOFT, ID_HARD]
 
 
 if __name__ == '__main__':
     import multiprocessing
 
+    config_logging()
+
     bamfile = pysam.AlignmentFile(args.bam_file.name, "rb")
     chromosomes = bamfile.references
-    print("chromosomes:", chromosomes)
-    print("--no-clipped", args.no_clipped)
+    logging.info(f"chromosomes:  {chromosomes}")
+    logging.info(f"--no-clipped  {args.no_clipped}")
     # bamfile.close()
 
     # event for send signal
@@ -239,7 +256,7 @@ if __name__ == '__main__':
     stop_event = manager.Event()
 
     time_limit = args.time_limit * 3600
-    print("Time limit:", time_limit)
+    logging.info(f"Time limit:{(time_limit / 3600)} hour(s)")
     start_time = time.time()
 
     args_list = [(i_chr, chrom, stop_event) for i_chr, chrom in enumerate(chromosomes)]
@@ -250,7 +267,7 @@ if __name__ == '__main__':
         while not results.ready():
             elapsed_time = time.time() - start_time
             if time_limit > 0 and elapsed_time >= time_limit:
-                print("Time limit collapsed, stop processus...")
+                logging.info("Time limit collapsed, stop processus...")
                 stop_event.set()  # send sign
                 break
         pool.close()
