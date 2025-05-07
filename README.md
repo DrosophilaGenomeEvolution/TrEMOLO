@@ -27,7 +27,7 @@
 
 TrEMOLO uses long reads, either directly or through their assembly, to detect:
 - Global TE variations between two assembled genomes
-- Populational/somatic variation in TE insertion/deletion
+- Populational/somatic variations in TE insertions/deletions
 
 ## Global variations, the insiders<a name="in"></a>
 
@@ -36,7 +36,7 @@ You will obtain a [set of files](#output) with the location of these variable in
 
 ## Populational variations, the outsiders<a name="out"></a>
 
-Through remapping of reads that have been used to assemble the genome of interest, TrEMOLO will identify the populational variations (and even somatic ones) within the initial dataset of reads, and thus of DNA/individuals sampled. These variant TEs are the **outsiders**, present only in a part of the population or cells.
+Through remapping of reads that have been used to assemble the genome of interest, TrEMOLO will identify the populational variations (and even somatic ones) within the initial dataset of reads, and thus of DNA/individuals sampled. These TE variants are the **outsiders**, present only in a part of the population or cells.
 In the same way as for insiders, you will obtain a [set of files](#output) with the location of these variable insertions and deletions.
 
 
