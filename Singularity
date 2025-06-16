@@ -63,9 +63,18 @@ _EOF_
         cat mirror.txt /etc/apt/sources.list.bak > /etc/apt/sources.list
     )
 
+    set -e
     # apt dependencies
     apt update
     apt install -y ca-certificates
+
+    apt-get install -y \
+        r-base r-base-dev \
+        libcurl4-openssl-dev libssl-dev libxml2-dev \
+        libfontconfig1-dev libcairo2-dev libpango1.0-dev \
+        libpng-dev libjpeg-dev libtiff5-dev libicu-dev \
+        libfreetype6-dev libharfbuzz-dev libfribidi-dev 
+    
     apt install -y \
     	apt-utils \
         autoconf \
@@ -85,15 +94,58 @@ _EOF_
         ncbi-blast+ \
         bedtools \
         assemblytics \
-        r-base \
         perl \
         pandoc-citeproc \
-        libfontconfig1-dev \
-        libxml2-dev \
-        libcurl4-openssl-dev \
-        libssl-dev \
         curl \
-        bc
+        bc \
+        texlive-full \
+        snakemake
+    
+    mkdir -p /usr/local/lib/R/site-library && chmod 775 /usr/local/lib/R/site-library
+
+    R -e "install.packages('remotes', repos='https://cloud.r-project.org')"
+
+    R -e "remotes::install_version('knitr', version='1.38', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('rmarkdown', version='2.26', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('bookdown', version='0.38', repos='https://cloud.r-project.org')"
+    
+    R -e "remotes::install_version('gtable',    version='0.3.0', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('gridExtra', version='2.3',   repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('scales',    version='1.1.1', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('purrr',     version='0.3.4', repos='https://cloud.r-project.org')"
+
+    R -e "remotes::install_version('ggplot2', version='3.3.6', repos='https://cloud.r-project.org')"
+    
+    R -e "remotes::install_version('viridis',    version='0.6.2', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('viridisLite',version='0.4.0', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('rjson',      version='0.2.20',repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('ggthemes',   version='4.2.4', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('forcats',    version='0.5.1', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('reshape2',   version='1.4.4', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('dplyr',      version='1.0.8', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('extrafont',  version='0.17',  repos='https://cloud.r-project.org')"
+    # R -e "remotes::install_version('ggplot2',    version='3.4.2', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('RColorBrewer', version='1.1-2', repos='https://cloud.r-project.org')"
+
+    R -e "remotes::install_version('scales', version='1.1.1', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('systemfonts', version='1.0.4', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('textshaping', version='0.3.6', repos='https://cloud.r-project.org')"
+    # R -e "remotes::install_version('svglite', version='2.1.0', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('cpp11', version='0.4.6', repos='https://cloud.r-project.org')"
+
+    # Installer les dépendances nécessaires en précisant les versions compatibles
+    R -e "remotes::install_version('systemfonts', version='1.0.4', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('textshaping', version='0.3.6', repos='https://cloud.r-project.org')"
+    R -e "remotes::install_version('svglite', version='2.1.0', repos='https://cloud.r-project.org')"
+
+    # Installer finalement kableExtra
+    R -e "remotes::install_version('kableExtra', version='1.3.4', repos='https://cloud.r-project.org', dependencies=NA)"
+
+    R -e "remotes::install_version('kableExtra', version='1.3.4', repos='https://cloud.r-project.org', dependencies=NA)" 2>&1 | tee -a /tmp/kableExtra_install.log
+
+    # Test de vérification : doit retourner TRUE, sinon échec
+    R -e "if (!('kableExtra' %in% rownames(installed.packages()))) { cat('kableExtra non installé\n') }"
+    
 
 
     # R dependencies
@@ -118,25 +170,9 @@ _EOF_
     #reshape2_1.4.4     dplyr_1.0.8        kableExtra_1.3.4   extrafont_0.17    
     #ggplot2_3.4.2      RColorBrewer_1.1-2
 
-    R --slave -e 'require(devtools); install_version("knitr", version = "1.38")'
-    #R --slave -e 'require(devtools); install_version("rmarkdown", version = "2.26")'
-    #R --slave -e 'require(devtools); install_version("bookdown", version = "0.25")'
-    R --slave -e 'require(devtools); install.packages("rmarkdown", version = "2.38")'
-    R --slave -e 'require(devtools); install.packages("bookdown", version = "0.38")'
-    R --slave -e 'require(devtools); install_version("viridis", version = "0.6.2")'
-    R --slave -e 'require(devtools); install_version("viridisLite", version = "0.4.0")'
-    R --slave -e 'require(devtools); install_version("rjson", version = "0.2.20")'
-    R --slave -e 'require(devtools); install_version("ggthemes", version = "4.2.4")'
-    R --slave -e 'require(devtools); install_version("forcats", version = "0.5.1")'
-    R --slave -e 'require(devtools); install_version("reshape2", version = "1.4.4")'
-    R --slave -e 'require(devtools); install_version("dplyr", version = "1.0.8")'
-    R --slave -e 'require(devtools); install_version("kableExtra", version = "1.3.4")'
-    R --slave -e 'require(devtools); install_version("extrafont", version = "0.17")'
-    R --slave -e 'require(devtools); install_version("ggplot2", version = "3.4.2")'
-    R --slave -e 'require(devtools); install_version("RColorBrewer", version = "1.1-2")'    
-    
+
     pip install pulp==2.6.0
-    pip install snakemake==7.32.4
+    # # pip install snakemake==7.32.4
 
     ##minimap2-2.28
     cd /usr/bin
@@ -193,13 +229,9 @@ _EOF_
     cd
 
     #Python libs
-    python3 -m pip install  biopython==1.79 pandas==1.5.3 matplotlib==3.5.1 svim==1.4.2 intervaltree==2.1.0 scipy==1.10.1 numpy==1.24.1 pysam==0.22.0
+    python3 -m pip install biopython==1.79 pandas==1.5.3 matplotlib==3.5.1 svim==1.4.2 intervaltree==2.1.0 scipy==1.10.1 numpy==1.24.1 pysam==0.23.3
 
-    
-    
-
-
-    
+    # python3 -m pip install Liftoff
     # build variables
     export TOOLDIR=/opt/tools
 
@@ -212,6 +244,8 @@ _EOF_
     # source env/python/liftoff_env/bin/activate
 
     # python3 -m pip install Liftoff
+    # python3 -m pip install numpy==1.21 pysam==0.16.0.1 biopython==1.76 requests==2.20.1
+
     # source env/python/liftoff_env/bin/deactivate
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
@@ -228,7 +262,6 @@ _EOF_
     /opt/conda/envs/liftoff_env/bin/pip install numpy==1.21 pysam==0.16.0.1 biopython==1.76 requests==2.20.1
 
     /bin/bash -c "source /opt/conda/bin/deactivate"
-
 
 
     #installing Sniffles 1.0.12b
@@ -269,10 +302,10 @@ _EOF_
     nvm alias default 18.8.0
     nvm use default
 
-    # # add nvm and node all usr
-    # echo 'export NVM_DIR="/opt/nvm"' >> /etc/profile.d/nvm.sh
-    # echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> /etc/profile.d/nvm.sh
-    # echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> /etc/profile.d/nvm.sh
+    # add nvm and node all usr
+    echo 'export NVM_DIR="/opt/nvm"' >> /etc/profile.d/nvm.sh
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> /etc/profile.d/nvm.sh
+    echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> /etc/profile.d/nvm.sh
 
     #Must be compiling at the end
     R --save -e 'install.packages("stringi")'
@@ -299,11 +332,13 @@ _EOF_
     export PATH="$PATH:/usr/bin/samtools/bcftools/"
 
     export PATH=/opt/conda/bin:$PATH
+    export PATH=/usr/bin:$PATH
 
     export PATH="/opt/nvm/versions/node/v18.8.0/bin:$PATH"
     # Fix force R path container
     export R_PROFILE=/opt/init-file/.Rprofile
     export R_LIBS="/usr/local/lib/R/site-library:/usr/lib/R/site-library:/usr/lib/R/library"
+    export R_LIBS_SITE="/usr/local/lib/R/site-library:/usr/lib/R/site-library:/usr/lib/R/library"
 
 %runscript
     exec "$@"
