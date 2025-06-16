@@ -76,9 +76,9 @@ def create_symlink(target, link_name):
         if os.path.islink(link_name) or os.path.exists(link_name):
             os.remove(link_name)
         os.symlink(target, link_name)
-        print(f"Lien symbolique créé : {link_name} -> {target}")
+        print(f"Symbolic link created : {link_name} -> {target}")
     except Exception as e:
-        print(f"Erreur lors de la création du lien symbolique {link_name} -> {target}: {e}")
+        print(f"Error : symbolic link {link_name} -> {target}: {e}")
 
 # Create output folder
 os.makedirs(config['DATA']['WORK_DIRECTORY'], exist_ok=True)
@@ -128,7 +128,8 @@ if creat_pseudo_db :
             pseudo_DB.write(line)
 
     #PSEUDO DB 
-    os.system("test -s `realpath " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta` && ln -s  `realpath "  + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta ` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"]))
+    ###os.system("test -s `realpath " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta` && ln -s  `realpath "  + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta ` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"]))
+    create_symlink(os.path.realpath(f"{config['DATA']['WORK_DIRECTORY'].rstrip('/')}/PSEUDO_DB.fasta"), f"{config['DATA']['WORK_DIRECTORY'].rstrip('/')}/INPUT/PSEUDO_{os.path.basename(config['DATA']['TE_DB'])}")
 
     list_header_TE.close()
     pseudo_DB.close()
@@ -188,7 +189,7 @@ env="source `dirname " + path_snk + "`/env.sh"
 os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 onerror:
-    print("AN ERROR OCCURRED !!")
+    print("AN ERROR OCCURRED in PRINCIPAL SNK!")
     shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> /dev/null; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
 
 onsuccess:

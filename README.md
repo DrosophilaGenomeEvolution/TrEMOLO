@@ -42,23 +42,17 @@ In the same way as for insiders, you will obtain a [set of files](#output) with 
 
 ## Release Notes<a name="release"></a>
 
-**Version 2.5.4**
+**Version 2.5.6**
 
-* **Update : Packages R Updated**
-  * `bookdown` - 0.38
-  * `rmarkdown` - 2.26
+* **Change : Output files**
+  * Add deletion `INSIDER` to `TE_INFOS.bed`
+  * Add new output file : `MULTIPLE_TE_BY_ID.txt` Sometimes loci contain several different TE families (for example, when working with a population).
+    This can be shown in the file listing the insertion ID, the TE name, and the count.
 
-* **Change : Modifications in `rules.snk` Files**
-  * The `FIND_SV_ON_REF`, `FIND_TE_ON_REF` rules have been replaced by `LIFT_OFF`.
+* **Add : New Parameters in config.yaml**
+  * TIME_LIMIT : time limit for processing SV detection (rule TrEMOLO_SV_TE); put value >= 0 (hours); 0 means no time limit
 
-* **Add : New Parameters in `config.yaml` for INSIDER**
-  * `MINIMAP2`:
-    * `PRESET_OPTION: 'asm5'`
-    * `OPTION: '--cs'`
-
-* **Add : New Modules**
-  * [Scatter Frequency](modules/1-FREQUENCY-MULTI-GENERATIONS/README.md) - Provides analysis of frequency variations across multiple generations.
-  * [Analysis TE BLAST](modules/2-MODULE_TE_BLAST/README.md) - Analyzes transposable elements using BLAST.
+**Warning:** : *The Singularity definition file is currently unreliable and may fail to build the environment. Please use the pre-compiled image (e.g., [TrEmOLO.simg](https://github.com/DrosophilaGenomeEvolution/TrEMOLO/releases/download/v2.5.4b/TrEMOLO.simg)) instead.*
 
 
 ## Current limitations
@@ -195,7 +189,7 @@ CHOICE:
         INSIDER_VARIANT: True   # insiders, TE in the assembly
         REPORT: True            # for getting a report.html file with graphics
     OUTSIDER_VARIANT:
-        CALL_SV: "sniffles"     # possibilities for SV tools: sniffles
+        CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, no_sniffles
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the OUTSIDER integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:
@@ -220,6 +214,7 @@ PARAMS:
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 30" #sequence recovery file in the vcf
+            TIME_LIMIT: 0 # time limit for processing SV detection (rule TrEMOLO_SV_TE); put value >= 0 (hours); 0 means no time limit
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80 -k 'INS|DEL'" # option for TrEMOLO/lib/python/parse_blast_main.py - don't put -c option
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # parameters for validation of insiders
@@ -276,6 +271,7 @@ WORK_DIRECTORY
 ├── VALUES_TSD_ALL_GROUP.csv
 ├── VALUES_TSD_GROUP_OUTSIDER.csv
 ├── VALUES_TSD_INSIDER_GROUP.csv
+├── MULTIPLE_TE_BY_ID.txt
 ├── TE_INFOS.bed ##**FILE CONTENING ALL INFO OF TE INSERTION
 ├── DELETION_TE.bed -> INSIDER/TE_DETECTION/DELETION_TE.bed ##**TE DELETION POSTION ON GENOME
 ├── DELETION_TE_ON_REF.bed -> INSIDER/TE_DETECTION/DELETION_TE_ON_REF.bed ##**TE DELETION POSITION ON REFERENCE

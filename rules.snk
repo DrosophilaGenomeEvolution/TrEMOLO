@@ -284,6 +284,31 @@ rule REPORT :
         
         path_to_pipline=`dirname {params.path_snk}`
 
+        ### MULTUPLE TE BY ID
+        (test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COUNT_TE_IN_RS.txt || test -s {params.work_directory}/OUTSIDER/TE_DETECTION/COUNT_TE_IN_RS.txt t.txt) && \
+            cat {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/COUNT_TE_IN_RS.txt {params.work_directory}/OUTSIDER/TE_DETECTION/COUNT_TE_IN_RS.txt 2>/dev/null | tr ":" "\t" | \
+            awk '
+                BEGIN{{
+                    count=1;
+                }} 
+                
+                {{
+                    if( id != $1 ){{
+                        if( count > 2 ){{
+                            for(i=1; i<count; i++){{
+                                print tab[i];
+                            }};
+                        }}; 
+                        count=2;
+                        tab[1]=$0;
+                    }}
+                    else{{
+                        tab[count]=$0; 
+                        count++;
+                    }} 
+                    id=$1
+                }}' > {params.work_directory}/MULTIPLE_TE_BY_ID.txt || warn_msg "NO MULTIPLE_TE_BY_ID.txt \\n";
+
         
         ###BUILD BED ALL INFOS
         echo "BUILD BED ALL INFOS..."
@@ -489,6 +514,62 @@ rule REPORT :
             num_TE_INSIDER=$(($num_TE_INSIDER+1));
         done < {params.work_directory}/POSITION_TE_INSIDER.bed;
         rm -f {params.work_directory}/ID_INSIDER_INTERSECT_TO_DEL.txt
+
+        #DEL 
+        num_TE_INSIDER=0;
+        test -s {params.work_directory}/DELETION_TE.bed && while read line;
+        do
+            IFS=$'\t' read -r chrom start end rest strand <<< "$line"
+            IFS='|' read -r TE ID <<< "$rest"
+
+            pident=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/DELETION_COMBINE_TE.csv 2> /dev/null | cut -f 3 || echo "NONE"`;
+            size_per=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/DELETION_COMBINE_TE.csv 2> /dev/null | cut -f 4 || echo "NONE"`
+
+            #TSD
+            SIZE_TE="";
+            TSD_OK=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 2 || echo ""`
+            if [ ! -n "$TSD_OK" ]; then
+                TSD_OK="NONE"
+                SIZE_TE=`grep "$ID:[+-]:" {params.work_directory}/INSIDER/TE_DETECTION/DELETION_COMBINE_TE.csv 2> /dev/null | cut -f 5 || echo "NONE"`
+            else
+                SIZE_TE=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 4 || echo ""`
+            fi;
+
+            if [ ! -n "$SIZE_TE" ]; then
+                SIZE_TE="NONE";
+            fi;
+
+            #TSD NEW POS
+            NEW_POS=`grep -w "$ID" {params.work_directory}/INSIDER/TSD/TSD_TE.tsv 2> /dev/null | cut -f 3 || echo "$start"`
+
+            #FREQUENCE
+            FREQ_BEFOR=`grep -w "$TE|$ID" {params.work_directory}/INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv 2>/dev/null | cut -f 6 || echo "NONE"`
+            FREQ_AFTER="INSIDER";
+
+            #GET ID_TrEMOLO
+            ID_POS=`echo $line | awk '{{print $1":"$2}}' | ${{path_to_pipline}}/lib/C++/bin/chain_to_id 2>/dev/null || echo "0"`
+            TYPE=`grep -w "$ID" {params.work_directory}/INSIDER/TE_DETECTION/DELETION_COMBINE_TE.csv 2> /dev/null | cut -f 2 | cut -d ":" -f 3 || echo "UNKNOWN"`
+
+            SV_SIZE=`grep -w "$ID" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed 2> /dev/null | awk '
+                $7=="Deletion" || $7=="Repeat_contraction" || $7=="Tandem_contraction" {{ print $5 }} 
+                $7=="Insertion" || $7=="Repeat_expansion" || $7=="Tandem_expansion" {{ print $9 }}
+                ' || echo "NONE"`;
+            ! test -n "$SV_SIZE" && SV_SIZE="NONE";
+
+            ID_TrEMOLO="TE_ID_INSIDER.$ID_POS.$TYPE";
+
+            echo -e "$chrom\t$start\t$end\t$TE|$ID\t$strand\t$TSD_OK\t$pident\t$size_per\t$SIZE_TE\t$NEW_POS\t$FREQ_BEFOR\t$FREQ_AFTER\t$SV_SIZE\t$ID_TrEMOLO\t$TYPE" >> {params.work_directory}/TE_INFOS.bed
+
+            i=$(($i + 1));
+
+            show_step="$i/$NB_TE TE"
+            number_of_char=`echo "$show_step" | wc -c`
+            number_of_char=$(($number_of_char-1));
+            printf "\b%.0s" `seq 1 $number_of_char`
+            printf "$show_step";
+
+            num_TE_INSIDER=$(($num_TE_INSIDER+1));
+        done < {params.work_directory}/DELETION_TE.bed;
 
         echo
 
@@ -1163,6 +1244,7 @@ rule REPORT :
             echo "CHECKING R PACKAGES..."
             R --save -e 'if(!require(stringi)) install.packages("stringi")' >&2
             R --save -e 'if(!require(stringr)) install.packages("stringr")' >&2
+            # R --save -e 'if(!require(kableExtra)) install.packages("kableExtra")' >&2
 
             echo "MAKE REPORT"
             make
@@ -2456,6 +2538,8 @@ rule FREQUENCEv2 :
 
         path_to_pipline=`dirname {params.path_snk}`
 
+        # export PATH="/usr/bin:$PATH"
+
         mkdir -p {params.work_directory}/OUTSIDER/FREQUENCY
 
         rm -f {log}.out {log}.err
@@ -3184,6 +3268,7 @@ rule HARD_TE :
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
+        # export PATH="/usr/bin:$PATH"
         ## CREATE VCF HARD
         echo "CREATE VCF HARD..."
         awk 'NR>1 {{print $5}}' {input.tr_vcf} | sort -u > {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ID.txt
@@ -3498,7 +3583,8 @@ rule DETECTION_TE :
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
 
-
+        # export PATH="/usr/bin:$PATH"
+        
         #** GET SEQUENCE REPORT **#
         echo "   GET SEQUENCE REPORT..." | tee {log}.err {log}.log
         printf "%s\\n" "{params.cmess} [SNK]--[`date`] GET SEQUENCE VARIANT [^-^] {params.cend}"
@@ -3635,6 +3721,8 @@ rule TrEMOLO_SV_TE :
 
         rm -f {log}.out {log}.err
         echo "[`date`] LOG TASK {log}.out, {log}.err"
+
+        # export PATH="/usr/bin:$PATH"
 
         samtools index {input.bam} 2> {log}.err
 
@@ -4228,11 +4316,12 @@ rule TE_ALL_IN_ASSEMBLY:
 rule TSD_INSIDER :
     input:
         query   = config["DATA"]["GENOME"],
-        bed     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION_TE.bed",
+        ins_bed     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION_TE.bed",
+        del_bed     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/DELETION_TE.bed",
 
     output:
         config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TSD/TSD_TE.tsv",
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TSD/FK_INS_FT.bed",
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TSD/FK_TE_FT.bed",
         tmp = output_link=[],
 
     params:
@@ -4270,14 +4359,16 @@ rule TSD_INSIDER :
         mkdir -p {params.work_directory}/INSIDER/TSD ;
 
         echo "GET FK SEQ TE..."
+        cat {input.ins_bed} {input.del_bed} | cut -f -4 > {params.work_directory}/INSIDER/TSD/tmp_merge_ins_del.bed
+        # TODO : min max
         awk -v sizeFlank="{params.SIZE_FLANK}" '
             OFS="\t" {{
                 print $1, $2-sizeFlank, $2, ($3-$2)":"$4":FK_L"; 
                 print $1, $3, $3+sizeFlank, ($3-$2)":"$4":FK_R";
-            }}' {input.bed} > {params.work_directory}/INSIDER/TSD/FK_INS.bed
+            }}' {params.work_directory}/INSIDER/TSD/tmp_merge_ins_del.bed > {params.work_directory}/INSIDER/TSD/FK_TE.bed
 
         echo "FORMAT FK SEQ TE.."
-        bedtools getfasta -tab -fi {input.query} -bed {params.work_directory}/INSIDER/TSD/FK_INS.bed -name+ | \
+        bedtools getfasta -tab -fi {input.query} -bed {params.work_directory}/INSIDER/TSD/FK_TE.bed -name+ | \
             awk -v size_flank="{params.SIZE_FLANK}" '
                 NR%2==1 {{
                     split($1, sp, ":"); 
@@ -4296,11 +4387,11 @@ rule TSD_INSIDER :
                     print infos, TE, ID, substr(seqL, length(seqL)-size_flank, length(seqL)), substr($2, 1, size_flank), ".", ".";
                 }}
 
-                ' > {params.work_directory}/INSIDER/TSD/FK_INS_FT.bed;
+                ' > {params.work_directory}/INSIDER/TSD/FK_TE_FT.bed;
 
         echo "GET TSD INSIDER..."
         python3 ${{path_to_pipline}}/lib/python/TSD/getTSDgenome.py -t {params.threads} \
-            {params.work_directory}/INSIDER/TSD/FK_INS_FT.bed \
+            {params.work_directory}/INSIDER/TSD/FK_TE_FT.bed \
             {params.work_directory}/INSIDER/TSD/TSD_TE.tsv \
                 1>> {log}.out 2>> {log}.err | tee -a {log}.out \
                 || warn_msg "WARNING : FAIL GET TSD OUTSIDER ✘\\n" | tee -a {log}.err ; 
@@ -4325,7 +4416,7 @@ rule TE_INSIDER:
     output:
         csv = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION.csv",
         bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION_TE.bed",
-
+        del_bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/DELETION_TE.bed",
     params:
         path_snk       = path_snk,
         work_directory = config["DATA"]["WORK_DIRECTORY"].rstrip("/"),
@@ -4480,9 +4571,9 @@ rule TE_INSIDER:
         rm -f {params.work_directory}/INSIDER/TE_DETECTION/DELETION_TE.bed
         test -s {params.work_directory}/tmp_ID.txt && \
             for id in `cat {params.work_directory}/tmp_ID.txt`; do 
-                read -r chrom start end <<< $(grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 10 | awk -F ":" 'OFS="\t"{{split($2, pos, "-"); print $1, pos[1], pos[2]}}')
+                read -r chrom start end strand <<< $(grep -w "$id" {params.work_directory}/INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed | cut -f 10 | awk -F ":" 'OFS="\t"{{split($2, pos, "-"); print $1, pos[1], pos[2], $3}}')
                 TE=`grep -w "$id" {params.work_directory}/INSIDER/TE_DETECTION/DELETION.csv | cut -f 1`;
-                echo -e "$chrom\t$start\t$end\t$TE|$id" >> {params.work_directory}/INSIDER/TE_DETECTION/DELETION_TE.bed
+                echo -e "$chrom\t$start\t$end\t$TE|$id\t$strand" >> {params.work_directory}/INSIDER/TE_DETECTION/DELETION_TE.bed
             done;
         rm -f {params.work_directory}/tmp_ID.txt
 
