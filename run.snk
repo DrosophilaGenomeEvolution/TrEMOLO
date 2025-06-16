@@ -48,27 +48,57 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+# Get path snakefile
+path_snk = ""
+
+i = 0
+while i < len(sys.argv) and path_snk == "" :
+    if sys.argv[i] == "--snakefile" :
+        if "/" in sys.argv[i + 1] :
+            path_snk = sys.argv[i + 1]
+        else :
+            path_snk = "./" + sys.argv[i + 1]
+
+    i += 1
+#
+
+#REFORMAT
+os.system(f'python3 {os.path.dirname(path_snk)}/lib/python/format_files/fasta_to_fasta.py {config["DATA"]["TE_DB"]} > {config["DATA"]["TE_DB"]}.rft')
+config["DATA"]["TE_DB"] = f'{config["DATA"]["TE_DB"]}.rft'
 
 if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
     config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
 
-# Create ouput folder
-os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"])
+##
+def create_symlink(target, link_name):
+    """Create a symbolic link, replacing it if it already exists."""
+    try:
+        if os.path.islink(link_name) or os.path.exists(link_name):
+            os.remove(link_name)
+        os.symlink(target, link_name)
+        print(f"Symbolic link created : {link_name} -> {target}")
+    except Exception as e:
+        print(f"Error : symbolic link {link_name} -> {target}: {e}")
+
+# Create output folder
+os.makedirs(config['DATA']['WORK_DIRECTORY'], exist_ok=True)
 
 # Remember the parameters associated with the output folder
-with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as file:
+with open(f"{config['DATA']['WORK_DIRECTORY'].rstrip('/')}/params.log", "w") as file:
     file.write(json.dumps(config))
 
-#Create input folder
-os.system("mkdir -p " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT")
+# Create input folder
+input_dir = f"{config['DATA']['WORK_DIRECTORY'].rstrip('/')}/INPUT"
+os.makedirs(input_dir, exist_ok=True)
 
-#create symbolic link input data
-if "REFERENCE" in config["DATA"] :
-    os.system("test -s `realpath " + config["DATA"]["REFERENCE"] + "` && ln -s  `realpath " + config["DATA"]["REFERENCE"] + "` " +  config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"]))
-os.system("test -s `realpath " + config["DATA"]["GENOME"] + "` && ln -s  `realpath " + config["DATA"]["GENOME"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"]))
-if "SAMPLE" in config["DATA"] :
-    os.system("test -s `realpath " + config["DATA"]["SAMPLE"] + "` && ln -s  `realpath " + config["DATA"]["SAMPLE"] + "` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"]))
+# Create symbolic link for input data
+if "REFERENCE" in config["DATA"]:
+    create_symlink(os.path.realpath(config["DATA"]["REFERENCE"]), f"{input_dir}/{os.path.basename(config['DATA']['REFERENCE'])}")
 
+create_symlink(os.path.realpath(config["DATA"]["GENOME"]), f"{input_dir}/{os.path.basename(config['DATA']['GENOME'])}")
+
+if "SAMPLE" in config["DATA"]:
+    create_symlink(os.path.realpath(config["DATA"]["SAMPLE"]), f"{input_dir}/{os.path.basename(config['DATA']['SAMPLE'])}")
 
 
 print("CHECKING OF DB TE....\n\n")
@@ -98,7 +128,8 @@ if creat_pseudo_db :
             pseudo_DB.write(line)
 
     #PSEUDO DB 
-    os.system("test -s `realpath " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta` && ln -s  `realpath "  + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta ` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"]))
+    ###os.system("test -s `realpath " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta` && ln -s  `realpath "  + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/PSEUDO_DB.fasta ` " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"]))
+    create_symlink(os.path.realpath(f"{config['DATA']['WORK_DIRECTORY'].rstrip('/')}/PSEUDO_DB.fasta"), f"{config['DATA']['WORK_DIRECTORY'].rstrip('/')}/INPUT/PSEUDO_{os.path.basename(config['DATA']['TE_DB'])}")
 
     list_header_TE.close()
     pseudo_DB.close()
@@ -115,19 +146,6 @@ else :
     config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"])
 
 
-# Get path snakefile
-path_snk = ""
-
-i = 0
-while i < len(sys.argv) and path_snk == "" :
-    if sys.argv[i] == "--snakefile" :
-        if "/" in sys.argv[i + 1] :
-            path_snk = sys.argv[i + 1]
-        else :
-            path_snk = "./" + sys.argv[i + 1]
-
-    i += 1
-#
 
 
 ## CHECK PARAMETER IN CONFIG FILE
@@ -153,16 +171,16 @@ check_dict(config_TrEMOLO_default, config)
 print("")
 
 
-name_configfil = ""
+name_config_file = ""
 
 i = 0
-while i < len(sys.argv) and name_configfil == "" :
+while i < len(sys.argv) and name_config_file == "" :
     if sys.argv[i] == "--configfile" :
-        name_configfil = sys.argv[i + 1]
+        name_config_file = sys.argv[i + 1]
 
     i += 1
 #
-os.system("cp " + name_configfil + " " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.yaml")
+os.system("cp " + name_config_file + " " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.yaml")
 
 #ENVIRONEMENT
 env="source `dirname " + path_snk + "`/env.sh" 
@@ -171,7 +189,7 @@ env="source `dirname " + path_snk + "`/env.sh"
 os.system("cat `dirname " + path_snk + "`/TrEMOLO.txt")
 
 onerror:
-    print("AN ERROR OCCURRED !!")
+    print("AN ERROR OCCURRED in PRINCIPAL SNK!")
     shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" | awk '$8==\"node\" {{print $2}}'` 2> /dev/null; cd " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/ && rm -f `ls | grep -v \"\.\" && rm -fr " + config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT`")
 
 onsuccess:
@@ -182,7 +200,6 @@ rule TrEMOLO_BUILD :
     input:  
         TE_DB = config["DATA"]["TE_DB"],
     output:
-        #temp("/".join(str(path_snk).split("/")[:-1]) + "/Snakefile"),
         temp(directory(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/rep_tmp_snk")),
     
     params:
@@ -190,9 +207,11 @@ rule TrEMOLO_BUILD :
         config         = json.dumps(config),
 
         path_snk       = path_snk,
-        name_configfil = name_configfil,
+        name_config_file = name_config_file,
 
         env            = env, #source environnement
+
+        threads        = config["PARAMS"]["THREADS"] if type(config["PARAMS"]["THREADS"]) == int and config["PARAMS"]["THREADS"] > 0 else 1,
 
         #CHOICE
         call_sv             = config["CHOICE"]["OUTSIDER_VARIANT"]["CALL_SV"],
@@ -215,11 +234,11 @@ rule TrEMOLO_BUILD :
         path_to_pipline=`dirname {params.path_snk}`
         path_to_work=`dirname {params.work_directory}`
 
+        MY_PID=$$
+
         mkdir -p {params.work_directory}/SNAKE_USED/
         mkdir -p {params.work_directory}/log/
         mkdir -p {params.work_directory}/rep_tmp_snk/
-
-        rm -f ${{path_to_pipline}}/Snakefile*
 
         pwd=`pwd`;
         cd "${{path_to_pipline}}";
@@ -240,6 +259,8 @@ rule TrEMOLO_BUILD :
         echo $! > {params.work_directory}/.pid
 
         PARALLELING="_MULTI_THREADS"
+
+        
 
         mkdir -p {params.work_directory}/1-UTILS
 
@@ -290,22 +311,24 @@ rule TrEMOLO_BUILD :
             
             echo "" >> {params.work_directory}/INSIDER/instructions.txt
 
+            time=`date +%s%N`
+
             ## BUILD SNAKEFILE en fonctions des instructions
             python3 ${{path_to_pipline}}/lib/python/build_rules.py \
                 {params.work_directory}/INSIDER/instructions.txt \
                 ${{path_to_pipline}}/rules.snk \
-                ${{path_to_pipline}}/Snakefile \
+                ${{path_to_pipline}}/Snakefile_$time \
                 -t ${{path_to_pipline}}/template.snk \
                 -n {params.work_directory}
 
-            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
+            cp ${{path_to_pipline}}/Snakefile_$time {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
 
             printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE INSIDER DONE ! {params.cend}"
 
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
 
             rm -f dryrun_validate
-            snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --dryrun && touch dryrun_validate \
+            snakemake --snakefile ${{path_to_pipline}}/Snakefile_$time --configfile {params.name_config_file} --dryrun && touch dryrun_validate \
                 || (fail_msg "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && exit 0)
 
 
@@ -318,11 +341,11 @@ rule TrEMOLO_BUILD :
                 rm -f dryrun_validate;
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
                 
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --keep-incomplete 2>> {params.work_directory}/log/Snakefile_insider.err | tee -p {params.work_directory}/log/Snakefile_insider.log \
+                snakemake --cores {params.threads} --snakefile ${{path_to_pipline}}/Snakefile_$time --configfile {params.name_config_file} --keep-incomplete 2>> {params.work_directory}/log/Snakefile_insider.err | tee -p {params.work_directory}/log/Snakefile_insider.log \
                     || (fail_msg "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_insider.snk\\n\\n" && \
                     echo "snake log file : {params.work_directory}/log/Snakefile_insider.log" && \
                     echo " Error file : {params.work_directory}/log/Snakefile_insider.err" | tee -a {params.work_directory}/log/Snakefile_insider.log && \
-                        rm -f ${{path_to_pipline}}/Snakefile);
+                        rm -f ${{path_to_pipline}}/Snakefile_$time);
                 
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_insider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_insider.log
@@ -386,19 +409,19 @@ rule TrEMOLO_BUILD :
             python3 ${{path_to_pipline}}/lib/python/build_rules.py \
                 {params.work_directory}/OUTSIDER/instructions.txt \
                 ${{path_to_pipline}}/rules.snk \
-                ${{path_to_pipline}}/Snakefile \
+                ${{path_to_pipline}}/Snakefile_$time \
                 -t ${{path_to_pipline}}/template.snk \
                 -n {params.work_directory}
 
-            cp ${{path_to_pipline}}/Snakefile {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
+            cp ${{path_to_pipline}}/Snakefile_$time {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
 
             printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE OUTSIDER DONE ! {params.cend}"
 
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
 
             rm -f dryrun_validate
-            snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --dryrun && touch dryrun_validate \
-                || (fail_msg "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && rm -f ${{path_to_pipline}}/Snakefile)
+            snakemake --snakefile ${{path_to_pipline}}/Snakefile_$time --configfile {params.name_config_file} --dryrun && touch dryrun_validate \
+                || (fail_msg "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && rm -f ${{path_to_pipline}}/Snakefile_$time)
 
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN DONE [ ✔ ] {params.cend}"
 
@@ -408,11 +431,11 @@ rule TrEMOLO_BUILD :
             if test -e dryrun_validate; then
                 rm -f dryrun_validate;
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --snakefile ${{path_to_pipline}}/Snakefile --configfile {params.name_configfil} --keep-incomplete 2>> {params.work_directory}/log/Snakefile_outsider.err | tee -p {params.work_directory}/log/Snakefile_outsider.log  \
+                snakemake --cores {params.threads} --snakefile ${{path_to_pipline}}/Snakefile_$time --configfile {params.name_config_file} --keep-incomplete 2>> {params.work_directory}/log/Snakefile_outsider.err | tee -p {params.work_directory}/log/Snakefile_outsider.log  \
                      || (fail_msg "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\\n    Check LOG   : {params.work_directory}/log/Snakefile_outsider.log\\n    Check ERROR : {params.work_directory}/log/Snakefile_outsider.err\\n" && \
                     echo "    Check LOG   : {params.work_directory}/log/Snakefile_outsider.log" >> {params.work_directory}/log/Snakefile_outsider.log && \
                     echo "    Check ERROR : {params.work_directory}/log/Snakefile_outsider.err" >> {params.work_directory}/log/Snakefile_outsider.log && \
-                        rm -f ${{path_to_pipline}}/Snakefile);
+                       rm -f ${{path_to_pipline}}/Snakefile_$time);
 
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_outsider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_outsider.log
@@ -427,11 +450,27 @@ rule TrEMOLO_BUILD :
             printf "%s\\n" "{params.cfail} [SNK] NO WORKFLOW SELECTED PLEASE CHECK YOUR CONFIG FILE {params.cend}"
             printf "%s\\n" "{params.cmess} [SNK] OR TAKE A COFFEE {params.cend}"
             printf "%s\\n" "{params.cfail}    [SNK] PUT OPTION : OUTSIDER_VARIANT or INSIDER_VARIANT at True {params.cend}"
-            #touch ${{path_to_pipline}}/Snakefile
+            #touch ${{path_to_pipline}}/Snakefile_$time
         fi;
 
         touch {params.work_directory}/rep_tmp_snk/tmp_end_pipeline.end
-        rm -f ${{path_to_pipline}}/Snakefile*
+        
+        # remove Snakefiles
+        PIDS=($(pgrep -f "\--snakefile *TrEMOLO/run.snk"))
+
+        OTHER_PIDS=()
+        for PID in "${{PIDS[@]}}"; do
+            P_PID=`pgrep -P $PID`
+            if [ "$P_PID" -ne "$MY_PID" ]; then
+                OTHER_PIDS+=("$P_PID")
+            fi
+        done
+
+        if [ ${{#OTHER_PIDS[@]}} -eq 0 ]; then
+            rm -f ${{path_to_pipline}}/Snakefile*
+        else
+            echo "TrEMOLO is running on an other instance : ${{OTHER_PIDS[@]}}"
+        fi;
 
         """
 

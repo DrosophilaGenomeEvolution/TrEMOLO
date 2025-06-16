@@ -51,15 +51,33 @@ class bcolors:
 def message_color(color, text):
     return color + text + bcolors.END
 
+
+# Get path snakefile
+path_snk = ""
+
+i = 0
+while i < len(sys.argv) and path_snk == "" :
+    if sys.argv[i] == "--snakefile" :
+        path_snk = os.path.realpath(sys.argv[i + 1])
+
+    i += 1
+#
+
 if config["DATA"]["WORK_DIRECTORY"].strip(" ") == "" :
     config["DATA"]["WORK_DIRECTORY"] = "TrEMOLO_OUTPUT"
 
 # Attach new data
 if "REFERENCE" in config["DATA"] :
     config["DATA"]["REFERENCE"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["REFERENCE"])
-config["DATA"]["GENOME"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"])
+
+config["DATA"]["GENOME"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["GENOME"])
 if "SAMPLE" in config["DATA"] :
-    config["DATA"]["SAMPLE"]    = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"])
+    config["DATA"]["SAMPLE"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["SAMPLE"])
+
+
+# #REFORMAT
+# os.system(f'python3 {path_snk}/lib/python/format_files/fasta_to_fasta.py {config["DATA"]["TE_DB"]} > {config["DATA"]["TE_DB"]}.rft')
+config["DATA"]["TE_DB"] = f'{config["DATA"]["TE_DB"]}.rft'
 
 #CHECKING CARACTERE OF TE DB 
 file  = open(config["DATA"]["TE_DB"], "r")
@@ -73,9 +91,9 @@ for line in lines :
 
 #GET PATH TO PSEUDO DB OR TE DB
 if creat_pseudo_db :
-    config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"])
+    config["DATA"]["TE_DB"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/PSEUDO_" + os.path.basename(config["DATA"]["TE_DB"])
 else :
-    config["DATA"]["TE_DB"]     = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"])
+    config["DATA"]["TE_DB"] = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INPUT/" + os.path.basename(config["DATA"]["TE_DB"])
 
 
 # Create ouput folder
@@ -90,16 +108,6 @@ else :
 with open(config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/params.log", "w") as file:
     file.write(json.dumps(config))
 
-# Get path snakefile
-path_snk = ""
-
-i = 0
-while i < len(sys.argv) and path_snk == "" :
-    if sys.argv[i] == "--snakefile" :
-        path_snk = os.path.realpath(sys.argv[i + 1])
-
-    i += 1
-#
 
 file_config_TrEMOLO_default = open(os.path.dirname(path_snk) + "/config.yaml", "r")
 config_TrEMOLO_default = yaml.safe_load(file_config_TrEMOLO_default)

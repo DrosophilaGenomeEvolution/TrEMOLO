@@ -31,7 +31,7 @@ if args.name_ID == None:
     ID = randrange(200)
 else:
     ID = os.path.basename(args.name_ID.rstrip("/"))
-    work = args.name_ID.rstrip("/").replace("/", "\/") + "\/"
+    work = args.name_ID.rstrip("/") + "/"
 
 instruction_file = open(args.name_instruction, "r")
 instructions     = instruction_file.readline().replace(" ", "").strip().split(">")
@@ -55,39 +55,85 @@ def cmd(cmd):
 nb_line_file_rules = cmd("wc -l " + name_file_rules + " | cut -d \" \" -f 1")[0]
 
 
+import re
+import os
+
+final_content = ""
 
 for i, instruct in enumerate(instructions[::-1]):
-    #os.system("rm -f tmpo_TrEMOLO"+str(i)+".snk")
     name_rule = instruct.split(":")[0]
 
-    os.system("grep -w \"rule " + str(name_rule) + "\" " + name_file_rules + " -A " + str(int(nb_line_file_rules)) + " | grep \"^#END " + name_rule + "$\" -B " + str(int(nb_line_file_rules)) + " | grep -v \"^#END\" > tmpo_TrEMOLO"+str(i)+".snk")
-    
-    if len(instruct.split(":")) == 1  :
-        if i == len(instructions) - 1 :
-            os.system("sed -i '/input_link=\[\],/d' tmpo_TrEMOLO" + str(i) + ".snk")
-            os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo_TrEMOLO" + str(i) + ".snk")
-        else  :
-            os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo_TrEMOLO" + str(i) + ".snk")
-            os.system("sed -i 's/input_link=\[\],/cout=[\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + list_name_rule[::-1][i+1] + "_" + str(ID) + "\"],/g' tmpo_TrEMOLO"+ str(i) + ".snk")
-    #suppression des input et output improviser
-    elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "N":
-        os.system("sed -i '/input_link=\[.*\],/d' tmpo_TrEMOLO"+str(i)+".snk")
-        os.system("sed -i '/output_link=\[.*\],/d' tmpo_TrEMOLO" + str(i) + ".snk")
-    elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "NI":
-        os.system("sed -i '/input_link=\[.*\],/d' tmpo_TrEMOLO"+str(i)+".snk")
-        os.system("sed -i 's/output_link=\[\],/temp(touch(\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + name_rule + "_" + str(ID) + "\")),/g' tmpo_TrEMOLO" + str(i) + ".snk")
-    elif len(instruct.split(":")) > 1 and instruct.split(":")[1] == "NO":
-        os.system("sed -i '/output_link=\[.*\],/d' tmpo_TrEMOLO" + str(i) + ".snk")
-        os.system("sed -i 's/input_link=\[\],/cout=[\"" + work + "tmp_TrEMOLO_output_rule\/rule_tmp_" + list_name_rule[::-1][i+1] + "_" + str(ID) + "\"],/g' tmpo_TrEMOLO"+ str(i) + ".snk")
+    try:
+        # Load rules from the source file
+        with open(name_file_rules) as file:
+            content = file.readlines()
 
-    os.system("sed -i 's/step=0,/step=" + str(len(instructions)-i) + ",/g' tmpo_TrEMOLO"+ str(i) + ".snk")
+        # Extract the corresponding rule
+        start_pattern = rf"rule {re.escape(name_rule)}"
+        end_pattern = rf"^#END {re.escape(name_rule)}$"
+        inside_rule = False
+        rule_content = []
 
-    #print("grep \"rule " + str(name_rule) +"\" " + name_file_rules + " -A " + str(nb_line_file_rules) + " | grep \"^#END " + name_rule + "$\" -B 100000000 | grep -v \"^#END\" >> " + name_out)
-    #os.system("grep \"rule "+ str(name_rule) +"\" list_rules.txt -A " + str(nb_line_file_rules) + " | grep \"^#END " + name_rule + "$\" -B 10000000 | grep -v \"^#END\" >> tmp.snk")
-    os.system("cat tmpo_TrEMOLO"+str(i)+".snk >> " + name_out)
-    os.system("rm -f tmpo_TrEMOLO*.snk")
+        # Get rule
+        for line in content:
+            if re.match(start_pattern, line):
+                inside_rule = True
+            if inside_rule:
+                rule_content.append(line)
+            if re.match(end_pattern, line):
+                inside_rule = False
+                break
 
+        if not rule_content:
+            print(f"No rule found for {name_rule}")
+            continue
 
+        # Process the extracted content
+        updated_content = []
+        for line in rule_content:
+            # Handle instructions with no additional flag
+            if len(instruct.split(":")) == 1:
+                if i == len(instructions) - 1:
+                    # Remove lines containing `input_link=[]`
+                    if re.search(r"input_link=\[\],", line):
+                        continue
+                    # Replace lines containing `output_link=[]`
+                    line = re.sub(r'output_link=\[\],', f'temp(touch("{work}tmp_TrEMOLO_output_rule/rule_tmp_{name_rule}_{ID}")),', line)
+                else:
+                    # Replace lines containing `output_link=[]`
+                    line = re.sub(r'output_link=\[\],', f'temp(touch("{work}tmp_TrEMOLO_output_rule/rule_tmp_{name_rule}_{ID}")),', line)
+                    # Replace lines containing `input_link=[]`
+                    line = re.sub(r'input_link=\[\],', f'cout=["{work}tmp_TrEMOLO_output_rule/rule_tmp_{list_name_rule[::-1][i+1]}_{ID}"],', line)
 
+            elif len(instruct.split(":")) > 1:
+                flag = instruct.split(":")[1]
+                if flag == "N":
+                    # Remove lines containing `input_link=[]` or `output_link=[]`
+                    if re.search(r"input_link=\[.*\],", line) or re.search(r"output_link=\[.*\],", line):
+                        continue
+                elif flag == "NI":
+                    # Remove lines containing `input_link=[]`
+                    if re.search(r"input_link=\[.*\],", line):
+                        continue
+                    # Replace lines containing `output_link=[]`
+                    line = re.sub(r'output_link=\[\],', f'temp(touch("{work}tmp_TrEMOLO_output_rule/rule_tmp_{name_rule}_{ID}")),', line)
+                elif flag == "NO":
+                    # Remove lines containing `output_link=[]`
+                    if re.search(r"output_link=\[.*\],", line):
+                        continue
+                    # Replace lines containing `input_link=[]`
+                    line = re.sub(r'input_link=\[\],', f'cout=["{work}tmp_TrEMOLO_output_rule/rule_tmp_{list_name_rule[::-1][i+1]}_{ID}"],', line)
 
+            # Add the processed line
+            updated_content.append(line)
 
+        # Update the `step` field in the lines
+        updated_content = [re.sub(r'step=0,', f'step={len(instructions) - i},', line) for line in updated_content]
+
+        final_content += ''.join(updated_content) + "\n"
+
+    except Exception as e:
+        print(f"Error processing instruction {instruct}: {e}")
+
+with open(name_out, "a") as output_file:
+    output_file.write(final_content)

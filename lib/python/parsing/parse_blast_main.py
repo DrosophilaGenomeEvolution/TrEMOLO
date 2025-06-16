@@ -87,7 +87,7 @@ parser.add_argument("blast_file", metavar='<blast-file>', option_strings=['blast
                     help="Input blast file format 6 (-outfmt 6)")
 
 parser.add_argument("db_file_te", metavar='<db-file-TE>', type=argparse.FileType('r'),
-                    help="Multi fasta file TE for get size")
+                    help="index (.fai) of multi fasta file TE for get size")
 
 parser.add_argument("output_file", metavar='<output>', type=argparse.FileType('w'),
                     help="Name of tabular output file ")
@@ -121,7 +121,7 @@ output           = args.output_file.name
 name_out         = output.split("/")[-1].split(".")[0]
 dir_out          = "/".join(output.split("/")[:-1])
 
-print("[" + str(sys.argv[0]) + "] : PREFIX OUTPUT :", name_out)
+print(f"[{str(sys.argv[0])}] : PREFIX OUTPUT : {name_out}")
 
 
 if dir_out != "":
@@ -137,15 +137,14 @@ if args.db_file_te != None:
     file  = args.db_file_te
     lines = file.readlines()
 
-    for i, l in enumerate(lines):
-        if l[0] == ">":
-            size_et[l[1:].strip().split("\t")[0].split(" ")[0]] = len(lines[i + 1].strip())
-            #size_et[l[1:].strip()] = len(lines[i + 1].strip())
+    for i, line in enumerate(lines):
+        TE, size = line.split("\t")[:2]
+        size_et[TE] = int(size)
 
     file.close()
 
 else :
-    print("[" + str(sys.argv[0]) + "] : ERROR fasta file Database TE Not Found")
+    print(f"[{str(sys.argv[0])}] : ERROR fasta file Database TE Not Found")
     exit(1)
 
 #GET BLAST OUTFMT 
@@ -182,7 +181,7 @@ for index, row in enumerate(dfs.values):
     qseqid = dfs["qseqid"].values[index]
     ID     = qseqid.split(":")[4]
 
-    #ex 2R:<INS>:12536774:12536775:TrEMOLO.INS.2785:57:IMPRECISE:25:+ to 2R:<INS>:12536774:12536775:TrEMOLO.INS.2785:57:IMPRECISE:25
+    #ex 2R:<INS>:12536774:12536775:TrEMOLO.INS.2785:57:IMPRECISE:25:+ to 2R:<INS>:12536774:12536775:TrEMOLO.INS.2785:57:IMPRECISE
     chaine          = str(":".join(qseqid.split(":")[:7]))
     
     if chaine not in best_score_match :

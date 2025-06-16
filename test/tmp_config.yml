@@ -16,7 +16,7 @@ CHOICE:
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" #Posibiliti (sniffles, svim)
         INTEGRATE_TE_TO_GENOME: True
-        CLIPPED_READS: False
+        CLIPPED_READS: True
     INSIDER_VARIANT:
         DETECT_ALL_TE: True
     INTERMEDIATE_FILE: True
@@ -39,6 +39,7 @@ PARAMS:
         TE_DETECTION:
             CHROM_KEEP: "^[23][RL]_,^[X4Y]_"  #regular expresion of chromosome; exemple  for Drosophila  "2L,2R,3R,3L,X" ; put "." for keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 1000" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf
+            TIME_LIMIT: 0
         PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 90 -k 'INS|DEL' "
     INSIDER_VARIANT:
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
