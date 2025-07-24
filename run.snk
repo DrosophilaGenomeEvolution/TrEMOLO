@@ -311,24 +311,24 @@ rule TrEMOLO_BUILD :
             
             echo "" >> {params.work_directory}/INSIDER/instructions.txt
 
-            time=`date +%s%N`
+            timestamp=`date +%s%N`
 
             ## BUILD SNAKEFILE en fonctions des instructions
             python3 ${{path_to_pipline}}/lib/python/build_rules.py \
                 {params.work_directory}/INSIDER/instructions.txt \
                 ${{path_to_pipline}}/rules.snk \
-                ${{path_to_pipline}}/Snakefile_$time \
+                ${{path_to_pipline}}/Snakefile_$timestamp \
                 -t ${{path_to_pipline}}/template.snk \
                 -n {params.work_directory}
 
-            cp ${{path_to_pipline}}/Snakefile_$time {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
+            cp ${{path_to_pipline}}/Snakefile_$timestamp {params.work_directory}/SNAKE_USED/Snakefile_insider.snk
 
             printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE INSIDER DONE ! {params.cend}"
 
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
 
             rm -f dryrun_validate
-            snakemake --snakefile ${{path_to_pipline}}/Snakefile_$time --configfile {params.name_config_file} --dryrun && touch dryrun_validate \
+            snakemake --snakefile ${{path_to_pipline}}/Snakefile_$timestamp --configfile {params.name_config_file} --dryrun && touch dryrun_validate \
                 || (fail_msg "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && exit 0)
 
 
@@ -341,11 +341,11 @@ rule TrEMOLO_BUILD :
                 rm -f dryrun_validate;
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
                 
-                snakemake --cores {params.threads} --snakefile ${{path_to_pipline}}/Snakefile_$time --configfile {params.name_config_file} --keep-incomplete 2>> {params.work_directory}/log/Snakefile_insider.err | tee -p {params.work_directory}/log/Snakefile_insider.log \
+                snakemake --cores {params.threads} --snakefile ${{path_to_pipline}}/Snakefile_$timestamp --configfile {params.name_config_file} --keep-incomplete 2>> {params.work_directory}/log/Snakefile_insider.err | tee -p {params.work_directory}/log/Snakefile_insider.log \
                     || (fail_msg "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_insider.snk\\n\\n" && \
                     echo "snake log file : {params.work_directory}/log/Snakefile_insider.log" && \
                     echo " Error file : {params.work_directory}/log/Snakefile_insider.err" | tee -a {params.work_directory}/log/Snakefile_insider.log && \
-                        rm -f ${{path_to_pipline}}/Snakefile_$time);
+                        rm -f ${{path_to_pipline}}/Snakefile_$timestamp);
                 
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_insider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_insider.log
@@ -409,19 +409,19 @@ rule TrEMOLO_BUILD :
             python3 ${{path_to_pipline}}/lib/python/build_rules.py \
                 {params.work_directory}/OUTSIDER/instructions.txt \
                 ${{path_to_pipline}}/rules.snk \
-                ${{path_to_pipline}}/Snakefile_$time \
+                ${{path_to_pipline}}/Snakefile_$timestamp \
                 -t ${{path_to_pipline}}/template.snk \
                 -n {params.work_directory}
 
-            cp ${{path_to_pipline}}/Snakefile_$time {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
+            cp ${{path_to_pipline}}/Snakefile_$timestamp {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk
 
             printf "%b\\n" "{params.cmess} [SNK] CREATION SNAKEFILE OUTSIDER DONE ! {params.cend}"
 
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN SNAKEFILE {params.cend}"
 
             rm -f dryrun_validate
-            snakemake --snakefile ${{path_to_pipline}}/Snakefile_$time --configfile {params.name_config_file} --dryrun && touch dryrun_validate \
-                || (fail_msg "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && rm -f ${{path_to_pipline}}/Snakefile_$time)
+            snakemake --snakefile ${{path_to_pipline}}/Snakefile_$timestamp --configfile {params.name_config_file} --dryrun && touch dryrun_validate \
+                || (fail_msg "\\n[SNK INFO] DRY RUN ERROR PIPELINE : please check your config file\\n\\n" && rm -f ${{path_to_pipline}}/Snakefile_$timestamp)
 
             printf "%b\\n\\n" "{params.cmess} [SNK] DRY RUN DONE [ ✔ ] {params.cend}"
 
@@ -431,11 +431,11 @@ rule TrEMOLO_BUILD :
             if test -e dryrun_validate; then
                 rm -f dryrun_validate;
                 printf "%b\\n\\n" "{params.cmess} [SNK] RUNNING SNAKEFILE {params.cend}"
-                snakemake --cores {params.threads} --snakefile ${{path_to_pipline}}/Snakefile_$time --configfile {params.name_config_file} --keep-incomplete 2>> {params.work_directory}/log/Snakefile_outsider.err | tee -p {params.work_directory}/log/Snakefile_outsider.log  \
+                snakemake --cores {params.threads} --snakefile ${{path_to_pipline}}/Snakefile_$timestamp --configfile {params.name_config_file} --keep-incomplete 2>> {params.work_directory}/log/Snakefile_outsider.err | tee -p {params.work_directory}/log/Snakefile_outsider.log  \
                      || (fail_msg "\\n[SNK INFO] ERROR PIPELINE; snakefile used : {params.work_directory}/SNAKE_USED/Snakefile_outsider.snk\\n    Check LOG   : {params.work_directory}/log/Snakefile_outsider.log\\n    Check ERROR : {params.work_directory}/log/Snakefile_outsider.err\\n" && \
                     echo "    Check LOG   : {params.work_directory}/log/Snakefile_outsider.log" >> {params.work_directory}/log/Snakefile_outsider.log && \
                     echo "    Check ERROR : {params.work_directory}/log/Snakefile_outsider.err" >> {params.work_directory}/log/Snakefile_outsider.log && \
-                       rm -f ${{path_to_pipline}}/Snakefile_$time);
+                       rm -f ${{path_to_pipline}}/Snakefile_$timestamp);
 
                 sed -i '/LOADING/d' {params.work_directory}/log/Snakefile_outsider.log
                 sed -i '/\\x8/d' {params.work_directory}/log/Snakefile_outsider.log
@@ -450,7 +450,7 @@ rule TrEMOLO_BUILD :
             printf "%s\\n" "{params.cfail} [SNK] NO WORKFLOW SELECTED PLEASE CHECK YOUR CONFIG FILE {params.cend}"
             printf "%s\\n" "{params.cmess} [SNK] OR TAKE A COFFEE {params.cend}"
             printf "%s\\n" "{params.cfail}    [SNK] PUT OPTION : OUTSIDER_VARIANT or INSIDER_VARIANT at True {params.cend}"
-            #touch ${{path_to_pipline}}/Snakefile_$time
+            #touch ${{path_to_pipline}}/Snakefile_$timestamp
         fi;
 
         touch {params.work_directory}/rep_tmp_snk/tmp_end_pipeline.end
