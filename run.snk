@@ -403,7 +403,8 @@ rule TrEMOLO_BUILD :
             if test -s {params.work_directory}/LIST_HEADER_DB_TE.csv; then
                 printf "%s" "> RENAME_PSEUDO_TE " >> {params.work_directory}/OUTSIDER/instructions.txt
             fi;
-            
+
+            timestamp=`date +%s%N`
 
             ## Creation du snake file en fonction des instruction
             python3 ${{path_to_pipline}}/lib/python/build_rules.py \
