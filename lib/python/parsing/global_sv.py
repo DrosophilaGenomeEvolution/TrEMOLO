@@ -47,14 +47,25 @@ df = pd.read_csv(input_file_bln, sep="\t", header=None)
 df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
 
 size_et = {}
-file    = open(db_te, "r")
-lines   = file.readlines()
+with open(db_te, "r") as file:
+    first_non_empty = ""
+    for line in file:
+        if line.strip():
+            first_non_empty = line[0]
+            break
+    file.seek(0)
 
-for i, l in enumerate(lines):
-    if l[0] == ">":
-        size_et[l[1:].strip()] = len(lines[i + 1].strip())
-
-file.close()
+    if db_te.endswith(".fai") or first_non_empty != ">":
+        for line in file:
+            if not line.strip():
+                continue
+            te, size = line.split("\t")[:2]
+            size_et[te] = int(size)
+    else:
+        lines = file.readlines()
+        for i, l in enumerate(lines):
+            if l and l[0] == ">" and i + 1 < len(lines):
+                size_et[l[1:].strip()] = len(lines[i + 1].strip())
 
 df = df[df["sseqid"].isin(size_et.keys())]
 print("[" + sys.argv[0] + "]", "keep only TE on list :", str(len(df.values)))
@@ -234,5 +245,4 @@ df = df[["sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapop
 print("[" + sys.argv[0] + "]", "TE with min_size_percent>=" + str(min_size_percent) + ", min_pident>=" + str(min_pident), " :" + str(len(df.values)))
 
 df.to_csv(output_file_csv, sep="\t", index=None)
-
 

@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+
+set -E
+
+trap 'status=$?; printf "%s\n" "[ERROR][load] line=$LINENO cmd=$BASH_COMMAND" >&2; exit $status' ERR
+
 #trap 'printf "\b%.0s" `seq 1 46` >&1; echo -e "\nEND LOAD\n" >&1; exit 1' SIGTERM SIGINT;
 trap 'printf "\b%.0s" `seq 1 46` >&1; exit 1' SIGTERM SIGINT;
 sleep 1;

@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -E
+
+trap 'status=$?; printf "%s\n" "[ERROR][correction_genome_transloc_diff_chrom] line=$LINENO cmd=$BASH_COMMAND" >&2; exit $status' ERR
 
 #REQUIRE 
 #bedtools v2.30.0

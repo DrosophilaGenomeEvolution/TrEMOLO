@@ -134,11 +134,28 @@ check_dict(config_TrEMOLO_default, config)
 #CMD DEFINE ENV
 env="source `dirname " + path_snk + "`/env.sh" 
 
+shell.executable("/bin/bash")
+shell.prefix(
+    "set -E; "
+    "trap 'status=$?; printf \"%s\\n\" \"[ERROR][snakemake-shell] line=$LINENO cmd=$BASH_COMMAND\" >&2; exit $status' ERR; "
+)
+
+transient_fai_to_cleanup = [
+    config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/tmp_genome_format.fasta.fai",
+    config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_TOWARD_GENOME/PSEUDO_GENOME_TE_DB_ID.fasta.fai",
+    config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_TOWARD_GENOME/NEO_GENOME.fasta.fai",
+]
+
+for fai_path in transient_fai_to_cleanup:
+    try:
+        if os.path.exists(fai_path):
+            os.remove(fai_path)
+    except OSError:
+        pass
+
 onsuccess:
     print("\nDONE NO ERROR DETECTED ✔ \n")
 
 onerror:
     print("AN ERROR OCCURRED!")
-    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" 2>/dev/null | awk '$8==\"node\" {{print $2}}'` 2>/dev/null")
-
-
+    shell("kill -s 15 `ps -f | grep \"TrEMOLO/lib/nodejs/load.js\" 2>/dev/null | awk '$8==\"node\" {{print $2}}'` 2>/dev/null || true")

@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+
+set -E
+
+trap 'status=$?; printf "%s\n" "[ERROR][get_seq_with_id] line=$LINENO cmd=$BASH_COMMAND" >&2; exit $status' ERR
+
 #TODO CHANGE FOR NEW ID Snifffles
 get_seq_with_id () {
     grep "^[^>][A-Za-z\.]*[0-9]*[0-9]" $1 -B 1 | grep -v "\-\-" | grep -E ".INS.[0-9]+|[0-9]+" | awk 'BEGIN{head=""}
@@ -65,7 +71,7 @@ get_seq_with_id () {
             head=$0
         }
 
-    }' | grep "[\.INS]*[0-9]" > $2
+    }' | grep "[\.INS]*[0-9]" > $2 || :
 }
 
 get_seq_with_id $1 $2

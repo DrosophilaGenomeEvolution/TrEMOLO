@@ -1,4 +1,10 @@
+#!/usr/bin/env bash
+
+set -E
+
+trap 'status=$?; printf "%s\n" "[ERROR][begin_load] line=$LINENO cmd=$BASH_COMMAND" >&2; exit $status' ERR
+
 pid=`ps -f | grep "TrEMOLO/lib/nodejs/load.js" | awk '$8=="node" {print $2}'`
 if [ -n "${pid}" ]; then
-    kill -s 10 ${pid} 2>/dev/null 
+    kill -s 10 ${pid} 2>/dev/null || true
 fi;

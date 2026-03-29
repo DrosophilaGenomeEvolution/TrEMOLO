@@ -52,11 +52,11 @@ init_load (){
 
 begin_load (){
     #(bash ${path_to_pipline}/lib/bash/load.sh &) || echo
-    sh ${path_to_pipline}/lib/bash/begin_load.sh;
+    bash ${path_to_pipline}/lib/bash/begin_load.sh;
 }
 
 end_load (){
-    sh ${path_to_pipline}/lib/bash/end_load.sh;
+    bash ${path_to_pipline}/lib/bash/end_load.sh;
 }
 
 
@@ -68,7 +68,9 @@ run_cmd () {
 
     #printf "\n%s\n\n" "${CYAN} [SNK]--[`date`] $title ${END}"
     printf "%s\n" "$cmd";
-    ( eval "$cmd" 2>> ${log}.err 1>> ${log}.out && \
+    ( set -E; \
+        trap 'status=$?; printf "%s\n" "[ERROR][run_cmd] line=$LINENO title='"$title"' cmd=$BASH_COMMAND" >> "'"${log}.err"'"; exit $status' ERR; \
+        eval "$cmd" 2>> ${log}.err 1>> ${log}.out && \
         end_load && \
         echo -e "${GREEN} TASK $title is DONE ${END} check ${log}.out AND ${log}.err" ) \
             || echo -e "${RED} TASK ERROR ${END} :  $cmd  \n PLEASE CHECK : ${log}.err";

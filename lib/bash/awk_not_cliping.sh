@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+
+set -E
+
+trap 'status=$?; printf "%s\n" "[ERROR][awk_not_cliping] line=$LINENO cmd=$BASH_COMMAND" >&2; exit $status' ERR
+
 TE_POS_SIZE=$1
 SAM_IN=$2
 SAM_OUT=$3
@@ -242,4 +248,3 @@ END{
     ##print "FINISH" >> "number_clipped.txt"
 }' ${TE_POS_SIZE} ${SAM_IN} \
 > ${SAM_OUT}
-
