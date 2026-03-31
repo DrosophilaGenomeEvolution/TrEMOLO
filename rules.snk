@@ -1493,7 +1493,7 @@ rule TE_TOWARD_GENOME :
                         if [[ $strand = "+" ]]; then
                             seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | tr "[:lower:]" "[:upper:]"`
                         else
-                            seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | | tr "[:lower:]" "[:upper:]" | tr "ATGCRYSWKMBDHVN" "TACGYRSWMKVHDBN" | rev`
+                            seq_TE_cannonical=`grep -w "${{TE}}$" {input.fasta_TE} -A 1 | grep -v ">" | tr "[:lower:]" "[:upper:]" | tr "ATGCRYSWKMBDHVN" "TACGYRSWMKVHDBN" | rev`
                         fi
                         
                         #echo "ID_TE:$ID_TE; TE:$TE; ID_CSV:$ID_CSV";
@@ -2804,7 +2804,7 @@ rule MERGE_TE :
         touch {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TE_HARD_NOT_FOUND_IN_SOFT_sniffles_and_TrEMOLO.bed
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed && \
             run_step_eval "exclude_hard_found_in_soft_sniffles_tremolo" \
-                "grep -w -v -f {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed | grep -E \"$chrom_keep\" > {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TE_HARD_NOT_FOUND_IN_SOFT_sniffles_and_TrEMOLO.bed"
+                "grep -w -v -f {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed | grep -E \'$chrom_keep\' > {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TE_HARD_NOT_FOUND_IN_SOFT_sniffles_and_TrEMOLO.bed"
 
         echo "   MERGE..." | tee -a {log}.out;
 
