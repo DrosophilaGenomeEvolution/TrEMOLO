@@ -2623,6 +2623,33 @@ rule MERGE_TE :
             fi
         }}
 
+        collect_tremolo_intersect_ids () {{
+            src_a="$1"
+            src_b="$2"
+            dst="$3"
+
+            bedtools window -a "$src_a" -b "$src_b" -w 100 | \
+                awk '{{split($4, sp1, "|"); split($10, sp2, "|"); if(sp1[1] == sp2[1]){{ print $4 }} }}' | \
+                sort -u > "$dst"
+        }}
+
+        collect_cluster_intersect_ids () {{
+            src_a="$1"
+            src_b="$2"
+            dst="$3"
+            mode="${{4:-overwrite}}"
+
+            if [ "$mode" = "append" ]; then
+                bedtools window -a "$src_a" -b "$src_b" -w 100 | \
+                    awk '{{split($4, sp1, "|"); split($10, sp2, "|"); if(sp1[1] == sp2[1]){{ print $0 }} }}' | \
+                    cut -f 4 | sort -u >> "$dst"
+            else
+                bedtools window -a "$src_a" -b "$src_b" -w 100 | \
+                    awk '{{split($4, sp1, "|"); split($10, sp2, "|"); if(sp1[1] == sp2[1]){{ print $0 }} }}' | \
+                    cut -f 4 | sort -u > "$dst"
+            fi
+        }}
+
         printf "\\n\\n•••\\n%s\\n•••\\n\\n" "{params.cmess} [SNK]--[`date`] MERGE TE [^-^] {params.cend}"
 
         mkdir -p {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE
@@ -2660,13 +2687,13 @@ rule MERGE_TE :
 
         ## MERGE TE sniffles and TrEMOLO window 100pb
         ##clusterise window 100nt
-        run_step_eval "cluster_sniffles" \
-            "cluster_te_bed {input.sniffles_TE_bed} {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed"
+        run_step "cluster_sniffles" \
+            cluster_te_bed {input.sniffles_TE_bed} {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed
         
         echo "CLUSTERING sniffles passing ✔" >> {log}.out
 
-        run_step_eval "cluster_tremolo" \
-            "cluster_te_bed {input.TrEMOLO_TE_bed} {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed"
+        run_step "cluster_tremolo" \
+            cluster_te_bed {input.TrEMOLO_TE_bed} {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed
 
         
         echo "CLUSTERING TrEMOLO passing ✔" >> {log}.out
@@ -2676,8 +2703,8 @@ rule MERGE_TE :
         touch {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_TrEMOLO.txt;
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed && \
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed && \
-            run_step_eval "intersect_tremolo_vs_sniffles" \
-                "bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed -w 100 | awk '{{split(\\$4, sp1, \"|\"); split(\\$10, sp2, \"|\"); if(sp1[1] == sp2[1]){{ print \\$4 }} }}' | sort -u > {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_TrEMOLO.txt"
+            run_step "intersect_tremolo_vs_sniffles" \
+                collect_tremolo_intersect_ids {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_TrEMOLO.txt
 
         echo "INTERSECT TrEMOLO vs sniffles passing ✔" >> {log}.out
 
@@ -2707,8 +2734,8 @@ rule MERGE_TE :
 
         #SOFT
         echo "   SOFT..." | tee -a {log}.out;
-        run_step_eval "cluster_soft" \
-            "cluster_te_bed {input.soft_te} {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed"
+        run_step "cluster_soft" \
+            cluster_te_bed {input.soft_te} {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed
 
         echo "      NB TE SOFT : `grep -E "$chrom_keep" {input.soft_te} | wc -l`" | tee -a {log}.out;
         echo "      NB TE SOFT CLUSTERED (-w 100) : `cat {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed | wc -l`" | tee -a {log}.out;
@@ -2717,16 +2744,16 @@ rule MERGE_TE :
         touch {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_SOFT_commun.txt
         test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.bed && \
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed && \
-            run_step_eval "intersect_soft_vs_sniffles" \
-                "bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed -w 100 | awk '{{split(\\$4, sp1, \"|\"); split(\\$10, sp2, \"|\"); if(sp1[1] == sp2[1]){{ print \\$0 }} }}' | cut -f 4 | sort -u > {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_SOFT_commun.txt"
+            run_step "intersect_soft_vs_sniffles" \
+                collect_cluster_intersect_ids {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_SOFT_commun.txt
         
         echo "Commun SOFT vs sniffles passing ✔" >> {log}.out
 
         ##Commun SOFT vs TrEMOLO
         test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.bed && \
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed && \
-            run_step_eval "intersect_soft_vs_tremolo" \
-                "bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed -w 100 | awk '{{split(\\$4, sp1, \"|\"); split(\\$10, sp2, \"|\"); if(sp1[1] == sp2[1]){{ print \\$0 }} }}' | cut -f 4 | sort -u >> {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_SOFT_commun.txt"
+            run_step "intersect_soft_vs_tremolo" \
+                collect_cluster_intersect_ids {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_SOFT_commun.txt append
 
         echo "Commun SOFT vs TrEMOLO passing ✔" >> {log}.out
 
@@ -2740,8 +2767,8 @@ rule MERGE_TE :
 
         ##HARD
         ###CLUSTERING
-        run_step_eval "cluster_hard" \
-            "cluster_te_bed {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed"
+        run_step "cluster_hard" \
+            cluster_te_bed {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed
 
         echo "   HARD..." | tee -a {log}.out;
         echo "      NB TE HARD ; `grep -E "$chrom_keep" {input.hard_te} -c`" | tee -a {log}.out
@@ -2752,24 +2779,24 @@ rule MERGE_TE :
         touch {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed && \
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed && \
-            run_step_eval "intersect_hard_vs_sniffles" \
-                "bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed -w 100 | awk '{{split(\\$4, sp1, \"|\"); split(\\$10, sp2, \"|\"); if(sp1[1] == sp2[1]){{ print \\$0 }} }}' | cut -f 4 | sort -u > {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt"
+            run_step "intersect_hard_vs_sniffles" \
+                collect_cluster_intersect_ids {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_POSITION_TE_OUTSIDER_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt
         
         echo "Commun HARD vs sniffles passing ✔" >> {log}.out
 
         ##HARD vs TrEMOLO
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed && \
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed && \
-            run_step_eval "intersect_hard_vs_tremolo" \
-                "bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed -w 100 | awk '{{split(\\$4, sp1, \"|\"); split(\\$10, sp2, \"|\"); if(sp1[1] == sp2[1]){{ print \\$0 }} }}' | cut -f 4 | sort -u >> {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt"
+            run_step "intersect_hard_vs_tremolo" \
+                collect_cluster_intersect_ids {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_TrEMOLO_TE_OUTSIDER_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt append
         
         echo "Commun HARD vs TrEMOLO passing ✔" >> {log}.out
 
         ##HARD vs SOFT
         test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed && \
             test -s {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed && \
-            run_step_eval "intersect_hard_vs_soft" \
-                "bedtools window -a {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed -b {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed -w 100 | awk '{{split(\\$4, sp1, \"|\"); split(\\$10, sp2, \"|\"); if(sp1[1] == sp2[1]){{ print \\$0 }} }}' | cut -f 4 | sort -u >> {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt"
+            run_step "intersect_hard_vs_soft" \
+                collect_cluster_intersect_ids {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_HARD_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_SOFT_CLUSTER_100.bed {params.work_directory}/OUTSIDER/TE_DETECTION/MERGE_TE/tmp_ID_HARD_commun.txt append
 
         echo "Commun HARD vs SOFT passing ✔" >> {log}.out
 
