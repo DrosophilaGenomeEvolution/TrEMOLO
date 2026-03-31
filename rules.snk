@@ -52,177 +52,167 @@ rule RENAME_PSEUDO_TE:
 
         
         path_to_pipline=`dirname {params.path_snk}`
+        replace_many_script="${{path_to_pipline}}/lib/python/others/replace_many.py"
+        mapping_file="{params.work_directory}/LIST_HEADER_DB_TE.csv"
+        ids_to_change="{params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt"
+        ids_js_del="{params.work_directory}/tmp_LIST_TE_TO_CHANGE_DEL_JS.txt"
+
+        run_step() {{
+            step_name="$1"
+            shift
+            printf "%s\\n" "[STEP][{rule}] $step_name" | tee -a {log}.out
+            "$@" >> {log}.out 2>> {log}.err
+        }}
+
+        rename_file() {{
+            target_file="$1"
+            ids_file="${{2:-}}"
+
+            if [ ! -s "$target_file" ]; then
+                return 0
+            fi
+
+            if [ -n "$ids_file" ] && [ -s "$ids_file" ]; then
+                run_step "rename $(basename "$target_file")" \
+                    python3 "$replace_many_script" "$mapping_file" "$target_file" --ids-file "$ids_file"
+            else
+                run_step "rename $(basename "$target_file")" \
+                    python3 "$replace_many_script" "$mapping_file" "$target_file"
+            fi
+        }}
+
+        rename_file_column() {{
+            target_file="$1"
+            column="$2"
+
+            if [ ! -s "$target_file" ]; then
+                return 0
+            fi
+
+            run_step "rename $(basename "$target_file") column $column" \
+                python3 "$replace_many_script" "$mapping_file" "$target_file" --column "$column"
+        }}
 
         ## TODO DELETE THIS
-        sed -i 's/original=>//g' {params.work_directory}/LIST_HEADER_DB_TE.csv
-        sed -i 's/pseudo=>//g' {params.work_directory}/LIST_HEADER_DB_TE.csv
+        run_step "normalize pseudo mapping" sed -i 's/original=>//g' "$mapping_file"
+        run_step "normalize pseudo mapping" sed -i 's/pseudo=>//g' "$mapping_file"
 
         ## CHANGE DIRECTORY
         old_path=`pwd`
         _realpath=`realpath {params.work_directory}`
-        basename=`basename {params.work_directory}`
+        shopt -s nullglob
         cd {params.work_directory}/REPORT/mini_report/web/js/
 
-        awk  'NR>1 {{ split($4, sp, "|"); print sp[1] }}' ${{_realpath}}/TE_INFOS.bed | sort -u > ${{_realpath}}/tmp_LIST_TE_TO_CHANGE.txt
+        run_step "collect renamed TE ids" \
+            bash -lc "awk 'NR>1 {{ split(\\$4, sp, \"|\"); print sp[1] }}' '${{_realpath}}/TE_INFOS.bed' | sort -u > '${{ids_to_change}}'"
 
         ## RENAME TE IN REPORT JS
         echo "RENAME TE IN REPORT JS...";
         
-        for file in `ls | grep ".js$" | grep -e  "SIDER" | grep -v "TRUE_NAME_" | grep -v "TE_INSIDER_DEL"`; do
+        for file in *.js; do
+            case "$file" in
+                *SIDER*.js) ;;
+                *) continue ;;
+            esac
+            case "$file" in
+                TRUE_NAME_*|*TE_INSIDER_DEL*) continue ;;
+            esac
             echo "FILE : $file";
-            #rm -f TRUE_NAME_$file && cat $file > TRUE_NAME_$file;
-            for ID in `cat ${{_realpath}}/tmp_LIST_TE_TO_CHANGE.txt`; do 
-                new=`grep -w $ID ../../../../LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
-                #echo "ID: $ID; new : $new;"
-                #sed -i "s/$ID\\"/$new\\"/g" TRUE_NAME_$file;
-                if [ -n "$new" ] && [ "$ID" != "$new" ]; then
-                    #sed -i "s/$ID\\"/$new\\"/g" $file;
-                    python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" $file
-                fi;
-            done;
-            #template_file=`grep -rnw "$file" ../lib/ | cut -d ":" -f 1`
-            #echo "change data on template_file : $template_file --"
-            # if [ -n "$template_file" ]; then
-            #     echo "REPLACE";
-            #     sed -i "s/${{file}}/TRUE_NAME_${{file}}/g" ${{template_file}};
-            # fi;
+            rename_file "$PWD/$file" "$ids_to_change"
         done;
-        #rm -f ${{_realpath}}/tmp_LIST_TE_TO_CHANGE.txt
 
-        #rm -f TRUE_NAME_COUNT_TE_INSIDER_DEL.js && cat COUNT_TE_INSIDER_DEL.js > TRUE_NAME_COUNT_TE_INSIDER_DEL.js;
-        for ID in `grep -w "TrEMOLOTE[0-9]*" COUNT_TE_INSIDER_DEL.js -o | sort -u`; do 
-            new=`grep -w $ID ../../../../LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
-            
-            if [ -n "$new" ] && [ "$ID" != "$new" ]; then
-                #sed -i "s/$ID\\"/$new\\"/g" COUNT_TE_INSIDER_DEL.js;
-                python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" COUNT_TE_INSIDER_DEL.js
-            fi;
-        done;
-        sed -i "s/COUNT_TE_INSIDER_DEL.js/TRUE_NAME_COUNT_TE_INSIDER_DEL.js/g" ../lib/template_COUNT_TE_INSIDER_DEL.html;
+        if [ -s COUNT_TE_INSIDER_DEL.js ]; then
+            run_step "collect renamed deletion js ids" \
+                bash -lc "grep -wo 'TrEMOLOTE[0-9]*' '$PWD/COUNT_TE_INSIDER_DEL.js' | sort -u > '${{ids_js_del}}' || true"
+            rename_file "$PWD/COUNT_TE_INSIDER_DEL.js" "$ids_js_del"
+            run_step "rename deletion js template" \
+                sed -i "s/COUNT_TE_INSIDER_DEL.js/TRUE_NAME_COUNT_TE_INSIDER_DEL.js/g" ../lib/template_COUNT_TE_INSIDER_DEL.html
+        fi
 
         cd ${{old_path}};
 
         #RENAME BED
         echo "RENAME TE BED..."
 
-        NB_TE=`ls {params.work_directory} | grep ".bed$" -c`;
+        bed_files=("{params.work_directory}"/*.bed)
+        NB_TE=${{#bed_files[@]}}
 
-        i=0;
-        show_step="$i/$NB_TE FILE"
-        number_of_char=`echo "$show_step" | wc -c`
-        number_of_char=$(($number_of_char-1));
-        printf "\b%.0s" `seq 1 $number_of_char`
-        printf "$show_step";
-
-        for file in `ls {params.work_directory} | grep ".bed$"`; do
-            for ID in `awk  '{{ split($4, sp, "|"); print sp[1] }}' {params.work_directory}/$file | sort -u`; do 
-                new=`grep -w "$ID" {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1 || echo ""`
-
-                if [ -n "$new" ] && [ "$ID" != "$new" ]; then
-                    #sed -i "s/${{ID}}/${{new}}/g" {params.work_directory}/$file;
-                    python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" {params.work_directory}/$file;
-                fi;
-            done;
-
-            i=$(($i+1));
-            show_step="$i/$NB_TE FILE"
-            number_of_char=`echo "$show_step" | wc -c`
-            number_of_char=$(($number_of_char-1));
-            printf "\b%.0s" `seq 1 $number_of_char`
-            printf "$show_step";
+        i=0
+        for file in "${{bed_files[@]}}"; do
+            [ -e "$file" ] || continue
+            rename_file "$file"
+            i=$(($i+1))
+            printf "\\r%s" "$i/$NB_TE FILE"
         done;
+        printf "\\n"
 
         ## RENAME CSV
         echo -e "\\nRENAME TE CSV..."
-        for file in `ls {params.work_directory} | grep ".csv$" | grep -v "LIST_HEADER_DB_TE.csv"`; do
-            for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
-                new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
-
-                #sed -i "s/$ID/$new/g" {params.work_directory}/$file
-                python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" {params.work_directory}/$file;
-            done;
+        for file in "{params.work_directory}"/*.csv; do
+            [ -e "$file" ] || continue
+            [ "$(basename "$file")" = "LIST_HEADER_DB_TE.csv" ] && continue
+            rename_file "$file" "$ids_to_change"
         done;
 
 
         #OUTSIDER sniffles
-        test -s {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv && \
-            for file in `ls {params.work_directory}/OUTSIDER/TE_DETECTION | grep ".csv$" `; do
-                for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
-                    new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
-                    # echo "new : $new; ID : $ID";
-                    #sed -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TE_DETECTION/$file;
-                    python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" {params.work_directory}/OUTSIDER/TE_DETECTION/$file;
-                done;
-            done;
+        if [ -s {params.work_directory}/OUTSIDER/TE_DETECTION/FILTER_BLAST_SEQUENCE_INDEL_vs_DBTE.csv ]; then
+            for file in "{params.work_directory}"/OUTSIDER/TE_DETECTION/*.csv; do
+                [ -e "$file" ] || continue
+                rename_file "$file" "$ids_to_change"
+            done
+        fi
 
 
         #OUTSIDER TrEMOLO
-        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.bed && \
-            for file in `ls {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/ | grep ".csv$" `; do
-                for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
-                    new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
-
-                    #sed -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/$file;
-                    python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/$file;
-                done;
-            done;
+        if [ -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/INS/INS_TREMOLO.bed ]; then
+            for file in "{params.work_directory}"/OUTSIDER/TrEMOLO_SV_TE/INS/*.csv; do
+                [ -e "$file" ] || continue
+                rename_file "$file" "$ids_to_change"
+            done
+        fi
 
 
         #OUTSIDER SOFT
-        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv && \
-            for file in `ls {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/ | grep -E ".csv$" `; do
-                for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
-                    new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
-
-                    #sed -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/$file;
-                    python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/$file;
-                done;
-            done;
+        if [ -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/SOFT/SOFT_TE.csv ]; then
+            for file in "{params.work_directory}"/OUTSIDER/TrEMOLO_SV_TE/SOFT/*.csv; do
+                [ -e "$file" ] || continue
+                rename_file "$file" "$ids_to_change"
+            done
+        fi
 
 
         #OUTSIDER HARD
-        test -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv && \
-            for file in `ls {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/ | grep -E ".csv$" `; do
-                for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
-                    new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
-
-                    #sed -i "s/$ID/$new/g" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/$file;
-                    python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/$file;
-                done;
-            done;
+        if [ -s {params.work_directory}/OUTSIDER/TrEMOLO_SV_TE/HARD/HARD_TE.csv ]; then
+            for file in "{params.work_directory}"/OUTSIDER/TrEMOLO_SV_TE/HARD/*.csv; do
+                [ -e "$file" ] || continue
+                rename_file "$file" "$ids_to_change"
+            done
+        fi
 
 
         #INSIDER
-        test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv && \
-            for file in ` ls {params.work_directory}/INSIDER/TE_DETECTION | grep ".csv$" `; do
-                for ID in `cat {params.work_directory}/tmp_LIST_TE_TO_CHANGE.txt`; do
-                    new=`grep -w $ID {params.work_directory}/LIST_HEADER_DB_TE.csv | cut -f 1`
-
-                    #sed -i "s/$ID/$new/g" {params.work_directory}/INSIDER/TE_DETECTION/$file;
-                    python3 ${{path_to_pipline}}/lib/python/others/replace.py "$ID" "$new" {params.work_directory}/INSIDER/TE_DETECTION/$file;
-                done;
-            done;
+        if [ -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.csv ]; then
+            for file in "{params.work_directory}"/INSIDER/TE_DETECTION/*.csv; do
+                [ -e "$file" ] || continue
+                rename_file "$file" "$ids_to_change"
+            done
+        fi
 
 
-        test -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.bln && \
-            python3 ${{path_to_pipline}}/lib/python/others/replace_2.py {params.work_directory}/LIST_HEADER_DB_TE.csv \
-                {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.bln \
-                2 > {params.work_directory}/tmp.bln && \
-                    cat {params.work_directory}/tmp.bln > {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.bln && \
-                    rm -f {params.work_directory}/tmp.bln
+        if [ -s {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.bln ]; then
+            rename_file_column {params.work_directory}/INSIDER/TE_DETECTION/INSERTION.bln 2
+        fi
 
 
-        test -s {params.work_directory}/INSIDER/TE_DETECTION/DELETION.bln && \
-            python3 ${{path_to_pipline}}/lib/python/others/replace_2.py {params.work_directory}/LIST_HEADER_DB_TE.csv \
-                {params.work_directory}/INSIDER/TE_DETECTION/DELETION.bln \
-                2 > {params.work_directory}/tmp.bln && \
-                    cat {params.work_directory}/tmp.bln > {params.work_directory}/INSIDER/TE_DETECTION/DELETION.bln && \
-                    rm -f {params.work_directory}/tmp.bln
+        if [ -s {params.work_directory}/INSIDER/TE_DETECTION/DELETION.bln ]; then
+            rename_file_column {params.work_directory}/INSIDER/TE_DETECTION/DELETION.bln 2
+        fi
 
         ## REMAKE FOR TRUE NAME REPORT
         cd {params.work_directory}/REPORT/mini_report/
 
-        make
+        run_step "rebuild report" make
 
         cd ${{old_path}};
 
@@ -2057,7 +2047,7 @@ rule GET_SEQ_TE :
 #END GET_SEQ_TE
 
 
-rule FREQUENCEv2 :
+rule FREQUENCE :
     input:
         vcf           = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/VARIANT_CALLING/SV.vcf",
         fasta_TE      = config["DATA"]["TE_DB"],
@@ -2099,7 +2089,7 @@ rule FREQUENCEv2 :
 
         step=0,
     log:
-        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FREQUENCEv2"
+        config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/log/FREQUENCE"
 
     shell:
         """
@@ -2117,6 +2107,16 @@ rule FREQUENCEv2 :
         echo "[`date`] LOG TASK {log}.out, {log}.err"
 
         echo "[`date`] STEP OUTSIDER {params.step} : {rule}" >> {params.work_directory}/resume_task.txt
+
+        base_view="{params.preset_view}"
+        existing_flag=`printf "%s\n" "$base_view" | sed -n 's/.*-F \([0-9][0-9]*\).*/\1/p' | tail -n 1`
+        view_without_flag=`printf "%s\n" "$base_view" | sed -E 's/(^| )-F [0-9]+//g; s/  +/ /g; s/^ //; s/ $//'`
+        [ -z "$view_without_flag" ] && view_without_flag="$base_view"
+        if [ -n "$existing_flag" ]; then
+            FLAG_EXLUDE=$((existing_flag | 4 | 256 | 2048))
+        else
+            FLAG_EXLUDE=$((4 | 256 | 2048))
+        fi
 
         ##FILTER_BLAST
         ###no header
@@ -2188,7 +2188,7 @@ rule FREQUENCEv2 :
             | bedtools merge -d 1 \
             > {params.work_directory}/OUTSIDER/FREQUENCY/tmp_POSITION_START_TE.bed
 
-        samtools view {params.preset_view} -q 10 -F 4 -h -b {input.bam} -L {params.work_directory}/OUTSIDER/FREQUENCY/tmp_POSITION_START_TE.bed > {params.work_directory}/OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam
+        samtools view $view_without_flag -q 10 -F $FLAG_EXLUDE -h -b -L {params.work_directory}/OUTSIDER/FREQUENCY/tmp_POSITION_START_TE.bed {input.bam} > {params.work_directory}/OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam
         samtools index {params.work_directory}/OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam
         
         echo "GET BAM TE OUTSIDER ✔" | tee -a {log}.out 
@@ -2373,10 +2373,10 @@ rule FREQUENCEv2 :
 
 
 
-#END FREQUENCEv2
+#END FREQUENCE
 
 
-rule FREQ_INSIDERv2:
+rule FREQ_INSIDER:
     input:
         merge_TE_bed = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed",
         TE_INS       = config["DATA"]["WORK_DIRECTORY"].rstrip("/") + "/INSIDER/TE_DETECTION/INSERTION.csv",
@@ -2442,16 +2442,25 @@ rule FREQ_INSIDERv2:
 
         echo "DROP CLIPPED ✔" | tee -a {log}.out
 
-        FLAG_EXLUDE=`(echo {params.preset_view} | grep -E "\-F [0-9]+" > /dev/null && echo "") || echo "-F 2048"`
+        base_view="{params.preset_view}"
+        existing_flag=`printf "%s\n" "$base_view" | sed -n 's/.*-F \([0-9][0-9]*\).*/\1/p' | tail -n 1`
+        view_without_flag=`printf "%s\n" "$base_view" | sed -E 's/(^| )-F [0-9]+//g; s/  +/ /g; s/^ //; s/ $//'`
+        [ -z "$view_without_flag" ] && view_without_flag="$base_view"
+        if [ -n "$existing_flag" ]; then
+            FLAG_EXLUDE=$((existing_flag | 256 | 2048))
+        else
+            FLAG_EXLUDE=$((256 | 2048))
+        fi
+        depth_margin=70
 
-        samtools view {params.preset_view} -h -b {input.bam} $FLAG_EXLUDE -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
+        samtools view $view_without_flag -h -b -F $FLAG_EXLUDE -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE.bed {input.bam} > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
         samtools index {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam
 
         echo "BAM GET FLANK TE ✔" | tee -a {log}.out
 
         #BAM DROP CLIPPED
-        samtools view {params.preset_view} -h -b {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam \
-            $FLAG_EXLUDE -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE_IN.bed > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp2_flank_TE_OUT.bam
+        samtools view $view_without_flag -h -b -F $FLAG_EXLUDE -L {params.work_directory}/OUTSIDER/MAPPING_TO_REF/FLANK_TE_IN.bed \
+            {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp_flank_TE_OUT.bam > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/tmp2_flank_TE_OUT.bam
 
         echo "BAM DROP CLIPPED ✔" | tee -a {log}.out
         
@@ -2474,7 +2483,7 @@ rule FREQ_INSIDERv2:
                     > {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEL_NB.bed
 
         echo "BUILD BED FK...";
-        awk -v size="30" 'OFS="\t"{{
+        awk -v size="$depth_margin" 'OFS="\t"{{
             print $1, $2-size, $2-size+1; 
             print $1, $3+size-1, $3+size;
         }}' {params.work_directory}/OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed \
@@ -2507,8 +2516,8 @@ rule FREQ_INSIDERv2:
 
                 NB_DEL=`grep -w "$info" {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEL_NB.bed | cut -f 5 || echo "0"`;
 
-                depth_fk_left=`grep -w "$chrom:$(($start-30+1))" {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt | cut -f 2 || echo 0`;
-                depth_fk_right=`grep -w "$chrom:$(($end+30))" {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt | cut -f 2 || echo 0`;
+                depth_fk_left=`grep -w "$chrom:$(($start-depth_margin+1))" {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt | cut -f 2 || echo 0`;
+                depth_fk_right=`grep -w "$chrom:$(($end+depth_margin))" {params.work_directory}/OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt | cut -f 2 || echo 0`;
 
                 if [ -n "$depth_fk_left" ] && [ -n "$depth_fk_right" ] ; then
 
@@ -2548,7 +2557,7 @@ rule FREQ_INSIDERv2:
         """
 
 
-#END FREQ_INSIDERv2
+#END FREQ_INSIDER
 
 
 rule MERGE_TE :
