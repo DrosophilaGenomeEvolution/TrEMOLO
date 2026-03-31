@@ -11,3 +11,4 @@ modules/2-MODULE_TE_BLAST/server/back-end/data/data_GEN_*
 modules/2-MODULE_TE_BLAST/server/back-end/index/index_*
 mod-*
 *.DS_Store
+*__pycache__*
