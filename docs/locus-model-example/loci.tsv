@@ -1,0 +1,2 @@
+locus_id	chrom	start	end	anchor_left	anchor_right	status	confidence	method
+L0001	2L	999	1002	1000	1001	resolved	0.98	TrEMOLO-locus-v0.1

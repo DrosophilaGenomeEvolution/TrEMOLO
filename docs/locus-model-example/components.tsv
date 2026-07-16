@@ -1,0 +1,5 @@
+component_id	allele_id	rank	parent_component_id	te_name	te_family	te_class	start_on_allele	end_on_allele	strand	identity	coverage
+C1	A1	1	.	roo	roo	LTR	0	9000	+	98.2	99.1
+C2	A2	1	.	copia	copia	LTR	0	5100	-	97.4	98.7
+C3	A3	1	.	roo	roo	LTR	0	14100	+	98.0	99.0
+C4	A3	2	C3	copia	copia	LTR	4300	9400	-	97.1	98.4

@@ -1,0 +1,5 @@
+call_id	sample_id	locus_id	allele_id	component_id	source	source_file	assignment	reason
+call_roo_1	population_A	L0001	A1	C1	OUTSIDER	TE_INFOS.bed	exact	breakpoints_tsd_sequence
+call_copia_1	population_A	L0001	A2	C2	OUTSIDER	TE_INFOS.bed	exact	breakpoints_tsd_sequence
+call_nested_1	population_A	L0001	A3	C3	INSIDER	TE_INFOS.bed	compatible	assembly_spans_components
+call_nested_1	population_A	L0001	A3	C4	INSIDER	TE_INFOS.bed	compatible	assembly_spans_components

@@ -1,0 +1,5 @@
+sample_id	locus_id	allele_id	frequency	support_reads	total_reads	genotype	quality	filter
+population_A	L0001	A0	0.40	40	100	.	60	PASS
+population_A	L0001	A1	0.35	35	100	.	55	PASS
+population_A	L0001	A2	0.20	20	100	.	51	PASS
+population_A	L0001	A3	0.05	5	100	.	32	PASS

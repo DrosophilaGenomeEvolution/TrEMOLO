@@ -1,0 +1,5 @@
+allele_id	locus_id	allele_type	structure	length	sequence_id	confidence
+A0	L0001	reference	absence	0	.	1.0
+A1	L0001	insertion	single	9000	allele_A1	0.97
+A2	L0001	insertion	single	5100	allele_A2	0.95
+A3	L0001	complex	nested	14100	allele_A3	0.91

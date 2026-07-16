@@ -10,3 +10,5 @@ modules/1-FREQUENCY-MULTI-GENERATIONS/test/work_directory_G*/TE_FREQUENCY_TrEMOL
 modules/2-MODULE_TE_BLAST/server/back-end/data/data_GEN_*
 modules/2-MODULE_TE_BLAST/server/back-end/index/index_*
 mod-*
+__pycache__/
+*.py[cod]
