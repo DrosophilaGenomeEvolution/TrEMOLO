@@ -1,0 +1,29 @@
+DATA:
+  REFERENCE: TrEMOLO/test/tmp_ref.fasta
+  GENOME: TrEMOLO/test/tmp_genome.fasta
+  SAMPLE: TrEMOLO/test/tmp_sample.fastq
+  WORK_DIRECTORY: work_refactor_test
+  TE_DB: TrEMOLO/test/canonical_TE.fa
+
+CHOICE:
+  PIPELINE:
+    OUTSIDER_VARIANT: true
+    INSIDER_VARIANT: true
+    REPORT: false
+  OUTSIDER_VARIANT:
+    CALL_SV: sniffles
+    INTEGRATE_TE_TO_GENOME: false
+    CLIPPED_READS: false
+
+PARAMS:
+  THREADS: 8
+  OUTSIDER_VARIANT:
+    MINIMAP2:
+      PRESET_OPTION: map-ont
+      OPTION: ''
+    SAMTOOLS_VIEW:
+      PRESET_OPTION: ''
+    SAMTOOLS_SORT:
+      PRESET_OPTION: ''
+    SAMTOOLS_CALLMD:
+      PRESET_OPTION: ''
