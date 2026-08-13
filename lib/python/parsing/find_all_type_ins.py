@@ -31,7 +31,7 @@ parser.add_argument("--output-ins", dest="output_ins", type=str, default="INS.tx
                     help="output ins")
 parser.add_argument("--output-hard", dest="output_hard", type=str, default="HARD.txt",
                     help="output hard")
-parser.add_argument("--output-seq-tsd", dest="output_seq_tsd", type=argparse.FileType('w'), default=None,
+parser.add_argument("--output-seq-tsd", dest="output_seq_tsd", type=str, default=None,
                     help="output seq for found TSD")
 
 parser.add_argument("--no-clipped", dest="no_clipped", action='store_true',
@@ -69,6 +69,11 @@ def parse_chrom_get_sv(chrom, i_chrom, stop_event):
     output_soft     = open(f"{args.output_soft}.tmp.{i_chrom}", "w") 
     output_hard     = open(f"{args.output_hard}.tmp.{i_chrom}", "w") 
     output_ins      = open(f"{args.output_ins}.tmp.{i_chrom}", "w")
+    output_seq_tsd  = (
+        open(f"{args.output_seq_tsd}.tmp.{i_chrom}", "w")
+        if args.output_seq_tsd is not None
+        else None
+    )
 
     soft_line = []
     soft_bis_line = []
@@ -123,8 +128,8 @@ def parse_chrom_get_sv(chrom, i_chrom, stop_event):
                         #seq_vr = seq[count_read-tupl[1]:count_read]
                         seq_vr = seq_full
                         output_ins.write("\t".join([str(REF), str(reference_start + count_ref), str(reference_start + count_ref + 1), str(read_name), str(seq_vr), str(count_read), str(count_read_real), str(tupl[1])]) + "\n")
-                        if args.output_seq_tsd != None:
-                            args.output_seq_tsd.write("\t".join([str(REF), str(reference_start + count_ref), str(read_name), str(f'{fk_L}|{seq_vr}|{fk_R}'), str(seq_full), str(count_read), str(count_read_real), str(tupl[1])]) + "\n")
+                        if output_seq_tsd is not None:
+                            output_seq_tsd.write("\t".join([str(REF), str(reference_start + count_ref), str(read_name), str(f'{fk_L}|{seq_vr}|{fk_R}'), str(seq_full), str(count_read), str(count_read_real), str(tupl[1])]) + "\n")
                         
                         nb_insertions += 1
                 #if we have found HARD to a good position
@@ -237,6 +242,14 @@ def parse_chrom_get_sv(chrom, i_chrom, stop_event):
     for indice, dic in enumerate(soft_line) :
         output_soft.write("\t".join([dic["REF"], str(dic["POS"]), "SOFT." + str(dic["ID"]), ";".join(["BEST_L_RS=" + dic["BEST_LEFT"][0], "BEST_L_SIZE=" + dic["BEST_LEFT"][1], "BEST_L_SEQ=" + dic["BEST_LEFT"][2]]), ";".join(["BEST_R_RS=" + dic["BEST_RIGHT"][0], "BEST_R_SIZE=" + dic["BEST_RIGHT"][1], "BEST_R_SEQ=" + dic["BEST_RIGHT"][2]]), "RS_LEFT=" + ",".join(dic["RS_LEFT"]), "RS_RIGHT=" + ",".join(dic["RS_RIGHT"]), "NB_RS=" + str(dic["NB_RS"])]) + "\n")
 
+    output_soft_bis.close()
+    output_soft.close()
+    output_hard.close()
+    output_ins.close()
+    if output_seq_tsd is not None:
+        output_seq_tsd.close()
+    bamfile.close()
+
     return [nb_insertions, ID_SOFT, ID_HARD]
 
 
@@ -282,6 +295,18 @@ if __name__ == '__main__':
                         out.write(read)
             except FileNotFoundError:
                 continue
+
+    if args.output_seq_tsd is not None:
+        with open(args.output_seq_tsd, "w") as out:
+            for i_chrom, chrom in enumerate(chromosomes):
+                temporary = f"{args.output_seq_tsd}.tmp.{i_chrom}"
+                try:
+                    with open(temporary, "r") as infile:
+                        for read in infile:
+                            out.write(read)
+                    os.remove(temporary)
+                except FileNotFoundError:
+                    continue
 
     if not args.no_clipped:
         with open(f"{args.output_soft}.bis", "w") as out:

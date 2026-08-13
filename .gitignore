@@ -1,4 +1,6 @@
 Snakefile*
+!workflow/Snakefile
+work_refactor_test/
 test/*.*.*
 test/tmp_config-*.yml
 lib/C++/bin/*

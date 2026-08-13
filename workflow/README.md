@@ -2,7 +2,8 @@
 
 This directory contains the incremental replacement for the legacy `run.snk`.
 It currently prepares immutable inputs and contains migrated OUTSIDER variant
-calling plus INSIDER structural-variant calling and TE detection rules.
+calling and TE detection, plus INSIDER structural-variant calling and TE
+detection rules.
 
 When Snakemake is available, run the preparation DAG with:
 
@@ -50,6 +51,30 @@ snakemake --snakefile workflow/Snakefile \
   --configfile tests/workflow/refactor_config.yml \
   --cores 8 insider_te_detection
 ```
+
+OUTSIDER TE detection is split into four explicit evidence sources: CIGAR
+insertions, Sniffles calls, soft-clipped reads, and hard-clipped reads. To stop
+after the two primary sources, run:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 outsider_primary_te_detection
+```
+
+To include clipped-read evidence and reproduce the historical 100 bp merge:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 outsider_te_detection
+```
+
+All four branches reuse the single normalized TE FASTA and its shared indexes.
+Unlike the legacy rules, they declare their intermediate outputs, do not append
+concurrently to `SV_SIZE.tsv`, and do not delete unrelated FASTA indexes. TSD
+candidate sequences are also written per chromosome before deterministic
+merging, avoiding the data loss caused by concurrent writes to one file.
 
 Migration equivalence against a completed legacy work directory is checked by:
 

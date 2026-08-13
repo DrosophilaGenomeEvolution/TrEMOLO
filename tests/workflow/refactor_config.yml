@@ -13,7 +13,7 @@ CHOICE:
   OUTSIDER_VARIANT:
     CALL_SV: sniffles
     INTEGRATE_TE_TO_GENOME: false
-    CLIPPED_READS: false
+    CLIPPED_READS: true
 
 PARAMS:
   THREADS: 8
@@ -27,3 +27,10 @@ PARAMS:
       PRESET_OPTION: ''
     SAMTOOLS_CALLMD:
       PRESET_OPTION: ''
+    TSD:
+      SIZE_FLANK: 10
+    TE_DETECTION:
+      CHROM_KEEP: "^[23][RL]_,^[X4Y]_"
+      GET_SEQ_REPORT_OPTION: "-m 1000"
+      TIME_LIMIT: 0
+    PARS_BLN_OPTION: "--min-size-percent 90 --min-pident 90 -k 'INS|DEL'"

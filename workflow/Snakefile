@@ -1,0 +1,58 @@
+"""TrEMOLO refactored workflow (incremental migration)."""
+
+from pathlib import Path
+import re
+
+
+DATA = config.get("DATA", {})
+CHOICES = config.get("CHOICE", {}).get("PIPELINE", {})
+WORKDIR = DATA.get("WORK_DIRECTORY", "").strip() or "TrEMOLO_OUTPUT"
+PIPELINE_ROOT = Path(workflow.basedir).resolve().parent
+PREPARE_INPUTS_SCRIPT = PIPELINE_ROOT / "lib/python/workflow/prepare_inputs.py"
+THREADS = config.get("PARAMS", {}).get("THREADS", 1)
+THREADS = THREADS if isinstance(THREADS, int) and THREADS > 0 else 1
+OUTSIDER_PARAMS = config.get("PARAMS", {}).get("OUTSIDER_VARIANT", {})
+INSIDER_PARAMS = config.get("PARAMS", {}).get("INSIDER_VARIANT", {})
+INSIDER_SV_CALLER = INSIDER_PARAMS.get("SV_CALLER", "assemblytics")
+OUTSIDER_CHOICES = config.get("CHOICE", {}).get("OUTSIDER_VARIANT", {})
+PREPARED_GENOME = f"{WORKDIR}/INPUT/genome.fasta"
+PREPARED_REFERENCE = f"{WORKDIR}/INPUT/reference.fasta"
+PREPARED_SAMPLE = f"{WORKDIR}/INPUT/reads.fastq"
+
+
+def require(name):
+    value = DATA.get(name)
+    if not value:
+        raise ValueError(f"Missing required configuration value: DATA.{name}")
+    return value
+
+
+GENOME = require("GENOME")
+TE_DATABASE = require("TE_DB")
+REFERENCE = DATA.get("REFERENCE")
+SAMPLE = DATA.get("SAMPLE")
+
+if CHOICES.get("INSIDER_VARIANT") and not REFERENCE:
+    raise ValueError("DATA.REFERENCE is required when INSIDER_VARIANT is enabled")
+if CHOICES.get("OUTSIDER_VARIANT") and not SAMPLE:
+    raise ValueError("DATA.SAMPLE is required when OUTSIDER_VARIANT is enabled")
+if INSIDER_SV_CALLER != "assemblytics":
+    raise ValueError(
+        f"INSIDER SV caller '{INSIDER_SV_CALLER}' is not implemented; "
+        "available: assemblytics"
+    )
+
+
+include: "rules/common.smk"
+include: "rules/outsider.smk"
+include: "rules/te_database.smk"
+include: "rules/outsider_te.smk"
+include: "rules/insider.smk"
+
+
+rule all:
+    input:
+        f"{WORKDIR}/.inputs.prepared",
+        f"{WORKDIR}/input_manifest.json",
+        f"{WORKDIR}/INPUT/te_database.fasta",
+        f"{WORKDIR}/INPUT/te_headers.tsv",
