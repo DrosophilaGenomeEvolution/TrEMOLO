@@ -47,6 +47,7 @@ include: "rules/common.smk"
 include: "rules/outsider.smk"
 include: "rules/te_database.smk"
 include: "rules/outsider_te.smk"
+include: "rules/outsider_tsd.smk"
 include: "rules/insider.smk"
 
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import tempfile
 import unittest
@@ -30,7 +31,8 @@ class PrepareInputsTests(unittest.TestCase):
                 ">roo\nACGT\n>copia\nTTAA\n",
             )
             self.assertTrue((output / "INPUT/genome.fasta").is_symlink())
-            self.assertFalse((output / "INPUT/genome.fasta").readlink().is_absolute())
+            link_target = os.readlink(str(output / "INPUT/genome.fasta"))
+            self.assertFalse(Path(link_target).is_absolute())
 
     def test_renames_all_headers_when_one_is_unsafe(self):
         with tempfile.TemporaryDirectory() as directory:

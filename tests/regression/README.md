@@ -31,8 +31,15 @@ python3 tests/regression/check_variant_calling.py \
 
 This comparison requires exact hashes for stable variant-calling and TE
 detection outputs. For `INS_FOR_TSD.txt`, every legacy record must remain
-present and every CIGAR insertion must have one matching TSD candidate. The
-legacy multiprocessing code lost 20 such records in the current oracle.
+present and every CIGAR insertion must have one matching raw flank candidate.
+The legacy multiprocessing code lost 20 such records in the current oracle.
+This file was not consumed by the historical `TSD_OUTSIDER` rule; its recovery
+therefore does not change `TSD_TE.tsv` during compatibility migration.
+
+The migrated OUTSIDER flank/TSD chain additionally requires byte-identical
+`SIZE_SEQ.tsv`, `ALL_FK_REPORT_FT*.bed`, and `TSD_TE.tsv` files. Its explicit
+`TSD_FLANK_ELIGIBILITY.tsv` report must contain the expected 18 accepted and
+8 rejected candidates with explicit reasons.
 
 ## Current oracle status
 

@@ -72,9 +72,24 @@ snakemake --snakefile workflow/Snakefile \
 
 All four branches reuse the single normalized TE FASTA and its shared indexes.
 Unlike the legacy rules, they declare their intermediate outputs, do not append
-concurrently to `SV_SIZE.tsv`, and do not delete unrelated FASTA indexes. TSD
-candidate sequences are also written per chromosome before deterministic
+concurrently to `SV_SIZE.tsv`, and do not delete unrelated FASTA indexes. Raw
+CIGAR flank candidates are also written per chromosome before deterministic
 merging, avoiding the data loss caused by concurrent writes to one file.
+
+OUTSIDER read/genome flanks and legacy-compatible TSD calls are available as a
+separate target:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 outsider_tsd
+```
+
+This target replaces the monolithic `GET_SEQ_TE` and `TSD_OUTSIDER` rules. It
+declares every sequence, table, and merged-call dependency; preserves the
+historical `ALL_FK_REPORT_FT*.bed` and `TSD_TE.tsv` bytes; and writes
+`OUTSIDER/FK/TSD_FLANK_ELIGIBILITY.tsv` with one acceptance or rejection reason
+per candidate. It does not delete shared `.fai` files.
 
 Migration equivalence against a completed legacy work directory is checked by:
 
