@@ -93,6 +93,39 @@ OUTSIDER_TE_EXACT_FILES = (
     "POSITION_TE_OUTSIDER.bed",
 )
 
+OUTSIDER_FREQUENCY_EXACT_FILES = (
+    "1-UTILS/TE_SIZE.tsv",
+    "OUTSIDER/FREQUENCY/FILTER_BLAST_INS.csv",
+    "OUTSIDER/FREQUENCY/FILTER_BLAST_INS.sorted.csv",
+    "OUTSIDER/FREQUENCY/SV_SIZE.tsv",
+    "OUTSIDER/FREQUENCY/COUNT_READS.txt",
+    "OUTSIDER/FREQUENCY/COUNT_TE_IN_RS.txt",
+    "OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv",
+    "OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv",
+)
+
+OUTSIDER_FREQUENCY_EXPECTED_COUNTS = {
+    "1-UTILS/TE_SIZE.tsv": 179,
+    "OUTSIDER/FREQUENCY/FILTER_BLAST_INS.csv": 70,
+    "OUTSIDER/FREQUENCY/FILTER_BLAST_INS.sorted.csv": 70,
+    "OUTSIDER/FREQUENCY/SV_SIZE.tsv": 1213,
+    "OUTSIDER/FREQUENCY/COUNT_READS.txt": 4295,
+    "OUTSIDER/FREQUENCY/COUNT_TE_IN_RS.txt": 60,
+    "OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv": 34,
+    "OUTSIDER/FREQUENCY/FREQUENCY_TE_INS_PRECISE.tsv": 29,
+}
+
+OUTSIDER_FREQUENCY_EXPECTED_CANDIDATE_SOURCES = Counter(
+    {"TrEMOLO": 19, "sniffles": 15, "HARD": 35}
+)
+
+OUTSIDER_FREQUENCY_EXPECTED_TYPES = Counter({"INS": 29, "DEL": 5})
+
+OUTSIDER_FREQUENCY_REQUIRED_ARTIFACTS = (
+    "OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam",
+    "OUTSIDER/FREQUENCY/MAPPING_POSTION_TE.bam.bai",
+)
+
 OUTSIDER_CIGAR_CANDIDATE_RECOVERY_FILES = (
     "OUTSIDER/TrEMOLO_SV_TE/INS/INS_FOR_TSD.txt",
 )
@@ -217,6 +250,150 @@ def main() -> int:
         elif digest(old) != digest(new):
             errors.append(f"OUTSIDER TE output differs: {relative}")
 
+    for relative in OUTSIDER_FREQUENCY_EXACT_FILES:
+        old = args.legacy / relative
+        new = args.migrated / relative
+        if not old.is_file() or not new.is_file():
+            errors.append(f"missing OUTSIDER frequency output: {relative}")
+        elif digest(old) != digest(new):
+            errors.append(f"OUTSIDER frequency output differs: {relative}")
+
+    for relative, expected_count in OUTSIDER_FREQUENCY_EXPECTED_COUNTS.items():
+        path = args.migrated / relative
+        if path.is_file():
+            actual_count = sum(1 for _ in path.open("rb"))
+            if actual_count != expected_count:
+                errors.append(
+                    f"OUTSIDER frequency line count differs: {relative} "
+                    f"({actual_count} != {expected_count})"
+                )
+
+    frequency_regions = (
+        args.migrated / "OUTSIDER/FREQUENCY/POSITION_START_TE.bed"
+    )
+    if not frequency_regions.is_file():
+        errors.append("missing OUTSIDER frequency region table")
+    elif sum(1 for _ in frequency_regions.open("rb")) != 51:
+        errors.append("OUTSIDER frequency region count differs from 51")
+
+    for relative in OUTSIDER_FREQUENCY_REQUIRED_ARTIFACTS:
+        artifact = args.migrated / relative
+        if not artifact.is_file() or artifact.stat().st_size == 0:
+            errors.append(f"missing or empty OUTSIDER frequency artifact: {relative}")
+
+    frequency_directory = args.migrated / "OUTSIDER/FREQUENCY"
+    candidates = frequency_directory / "FILTER_BLAST_INS.csv"
+    frequency = frequency_directory / "FREQUENCY_TE_INS.tsv"
+    precise_frequency = frequency_directory / "FREQUENCY_TE_INS_PRECISE.tsv"
+    merged_calls = (
+        args.migrated
+        / "OUTSIDER/TE_DETECTION/MERGE_TE/MERGE_TE_ALL.bed"
+    )
+
+    candidate_ids = []
+    if candidates.is_file():
+        candidate_rows = candidates.read_text().splitlines()[1:]
+        candidate_sources = Counter()
+        for row in candidate_rows:
+            fields = row.split("\t")
+            query_parts = fields[1].split(":") if len(fields) > 1 else []
+            if len(query_parts) <= 4:
+                errors.append("malformed OUTSIDER frequency candidate row")
+                continue
+            event_id = query_parts[4]
+            candidate_ids.append(event_id)
+            candidate_sources[event_id.split(".", 1)[0]] += 1
+        if candidate_sources != OUTSIDER_FREQUENCY_EXPECTED_CANDIDATE_SOURCES:
+            errors.append(
+                "OUTSIDER frequency candidate sources differ: "
+                f"{dict(candidate_sources)} != "
+                f"{dict(OUTSIDER_FREQUENCY_EXPECTED_CANDIDATE_SOURCES)}"
+            )
+        if len(candidate_ids) != 69 or len(set(candidate_ids)) != 69:
+            errors.append(
+                "OUTSIDER frequency candidates are not 69 unique events"
+            )
+
+    frequency_ids = []
+    frequency_types = Counter()
+    frequency_sources = Counter()
+    if frequency.is_file():
+        for row in frequency.read_text().splitlines():
+            fields = row.split("\t")
+            if len(fields) < 11:
+                errors.append("malformed OUTSIDER frequency row")
+                continue
+            event_id = fields[1]
+            frequency_ids.append(event_id)
+            frequency_sources[event_id.split(".", 1)[0]] += 1
+            frequency_types[fields[10]] += 1
+        if frequency_types != OUTSIDER_FREQUENCY_EXPECTED_TYPES:
+            errors.append(
+                "OUTSIDER frequency event types differ: "
+                f"{dict(frequency_types)} != "
+                f"{dict(OUTSIDER_FREQUENCY_EXPECTED_TYPES)}"
+            )
+        expected_sources = Counter({"TrEMOLO": 19, "sniffles": 15})
+        if frequency_sources != expected_sources:
+            errors.append(
+                "OUTSIDER frequency event sources differ: "
+                f"{dict(frequency_sources)} != {dict(expected_sources)}"
+            )
+        if len(frequency_ids) != 34 or len(set(frequency_ids)) != 34:
+            errors.append("OUTSIDER frequencies are not 34 unique events")
+        retained_candidate_ids = {
+            event_id
+            for event_id in candidate_ids
+            if not event_id.startswith(("HARD.", "SOFT."))
+        }
+        if candidate_ids and set(frequency_ids) != retained_candidate_ids:
+            errors.append(
+                "OUTSIDER frequency output does not retain exactly the "
+                "non-HARD/SOFT compatibility candidates"
+            )
+
+    precise_ids = []
+    precise_types = Counter()
+    if precise_frequency.is_file():
+        for row in precise_frequency.read_text().splitlines():
+            fields = row.split("\t")
+            if len(fields) < 11:
+                errors.append("malformed OUTSIDER precise-frequency row")
+                continue
+            precise_ids.append(fields[1])
+            precise_types[fields[10]] += 1
+        if precise_types != Counter({"INS": 29}):
+            errors.append(
+                "OUTSIDER precise-frequency event types differ: "
+                f"{dict(precise_types)} != {{'INS': 29}}"
+            )
+        frequency_ins_ids = {
+            row.split("\t")[1]
+            for row in frequency.read_text().splitlines()
+            if len(row.split("\t")) >= 11 and row.split("\t")[10] == "INS"
+        } if frequency.is_file() else set()
+        if frequency_ins_ids and set(precise_ids) != frequency_ins_ids:
+            errors.append(
+                "OUTSIDER precise frequencies do not cover all frequency INS events"
+            )
+
+    if frequency_ids and merged_calls.is_file():
+        merged_ids = set()
+        for row in merged_calls.read_text().splitlines():
+            fields = row.split("\t")
+            if len(fields) < 4 or "|" not in fields[3]:
+                errors.append("malformed merged OUTSIDER TE row")
+                continue
+            merged_ids.add(fields[3].split("|", 1)[1])
+        in_merged_calls = len(set(frequency_ids) & merged_ids)
+        outside_merged_calls = len(set(frequency_ids) - merged_ids)
+        if (in_merged_calls, outside_merged_calls) != (25, 9):
+            errors.append(
+                "OUTSIDER frequency merged-call membership differs: "
+                f"{in_merged_calls} merged and {outside_merged_calls} extra "
+                "events != 25 and 9"
+            )
+
     recovered_cigar_candidates = 0
     for relative in OUTSIDER_CIGAR_CANDIDATE_RECOVERY_FILES:
         old = args.legacy / relative
@@ -333,6 +510,15 @@ def main() -> int:
     print(f"Exact INSIDER TE files: {len(INSIDER_TE_FILES) + 1}")
     print("OUTSIDER VCF: identical after volatile header normalization")
     print(f"Exact OUTSIDER TE files: {len(OUTSIDER_TE_EXACT_FILES)}")
+    print(
+        "Exact OUTSIDER frequency files: "
+        f"{len(OUTSIDER_FREQUENCY_EXACT_FILES)}"
+    )
+    print(
+        "OUTSIDER frequency semantics: 69 candidates, 34 frequencies "
+        "(25 merged + 9 extra), 29 precise INS"
+    )
+    print("OUTSIDER frequency regional BAM/index: present and non-empty")
     print(f"Recovered OUTSIDER CIGAR candidates: {recovered_cigar_candidates}")
     print(f"Exact OUTSIDER flank/TSD files: {len(OUTSIDER_TSD_EXACT_FILES)}")
     print(

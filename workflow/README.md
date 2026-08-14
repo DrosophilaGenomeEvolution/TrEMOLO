@@ -76,6 +76,21 @@ concurrently to `SV_SIZE.tsv`, and do not delete unrelated FASTA indexes. Raw
 CIGAR flank candidates are also written per chromosome before deterministic
 merging, avoiding the data loss caused by concurrent writes to one file.
 
+Legacy-compatible OUTSIDER read frequencies are available with:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 outsider_frequency
+```
+
+This target replaces the background chunk processes from `FREQUENCEv2` with a
+declared, deterministic DAG and propagates worker failures. It preserves the
+historical `FREQUENCY_TE_INS.tsv` and `FREQUENCY_TE_INS_PRECISE.tsv` bytes,
+including the current candidate-selection semantics; the known compatibility
+limits are recorded in
+`docs/decisions/0004-outsider-frequency-compatibility.md`.
+
 OUTSIDER read/genome flanks and legacy-compatible TSD calls are available as a
 separate target:
 
@@ -100,3 +115,5 @@ python3 tests/regression/check_variant_calling.py \
 
 The INSIDER caller architecture decision is recorded in
 `docs/decisions/0001-insider-sv-backends.md`.
+The OUTSIDER frequency compatibility decision is recorded in
+`docs/decisions/0004-outsider-frequency-compatibility.md`.

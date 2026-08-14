@@ -41,6 +41,14 @@ The migrated OUTSIDER flank/TSD chain additionally requires byte-identical
 `TSD_FLANK_ELIGIBILITY.tsv` report must contain the expected 18 accepted and
 8 rejected candidates with explicit reasons.
 
+The migrated OUTSIDER frequency chain is checked byte for byte from
+`TE_SIZE.tsv` and its combined 69-candidate table through `COUNT_READS.txt`,
+`FREQUENCY_TE_INS.tsv`, and `FREQUENCY_TE_INS_PRECISE.tsv`. Semantic checks
+also pin the 34 legacy frequency calls (29 INS and 5 DEL), including the 25
+merged calls and 9 compatibility-only extras. Known scientific limitations of
+that compatibility result are documented in
+`docs/decisions/0004-outsider-frequency-compatibility.md`.
+
 ## Current oracle status
 
 Both pipelines completed in this reference run: 377 calls are labelled INSIDER

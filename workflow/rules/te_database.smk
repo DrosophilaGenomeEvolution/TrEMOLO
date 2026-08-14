@@ -3,6 +3,7 @@ TE_FASTA_INDEX = PREPARED_TE_DATABASE + ".fai"
 TE_BLAST_NHR = PREPARED_TE_DATABASE + ".nhr"
 TE_BLAST_NIN = PREPARED_TE_DATABASE + ".nin"
 TE_BLAST_NSQ = PREPARED_TE_DATABASE + ".nsq"
+TE_SIZE_TABLE = f"{WORKDIR}/1-UTILS/TE_SIZE.tsv"
 
 
 rule te_database_indexes:
@@ -11,6 +12,28 @@ rule te_database_indexes:
         TE_BLAST_NHR,
         TE_BLAST_NIN,
         TE_BLAST_NSQ,
+        TE_SIZE_TABLE,
+
+
+rule measure_te_sequences:
+    input:
+        fasta=PREPARED_TE_DATABASE,
+    output:
+        sizes=TE_SIZE_TABLE,
+    threads: 1
+    resources:
+        mem_mb=512,
+    log:
+        f"{WORKDIR}/log/te_sequence_sizes.log",
+    benchmark:
+        f"{WORKDIR}/benchmarks/te_sequence_sizes.tsv",
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p {WORKDIR}/1-UTILS {WORKDIR}/log {WORKDIR}/benchmarks
+        awk '/^>/ {{header=substr($1,2)}} /^[^>]/ && OFS="\t" {{print header,length($0)}}' \
+            {input.fasta:q} > {output.sizes:q} 2> {log:q}
+        """
 
 
 rule index_te_fasta:
