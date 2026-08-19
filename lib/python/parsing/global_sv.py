@@ -1,4 +1,3 @@
-import pandas as pd
 import os
 import sys
 import re
@@ -43,8 +42,25 @@ output_file_csv  = args.output_file.name
 name_out         = args.output_file.name.split("/")[-1].split(".")[0]
 dir_out          = "/".join(args.output_file.name.split("/")[:-1])
 
+blast_columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
+output_columns = ["sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
+combine_columns = ["sseqid", "qseqid", "grain_pident", "size_per", "size_el", "qstart", "qend", "sstart", "send"]
+
+if os.path.getsize(input_file_bln) == 0:
+    # No BLAST alignment is a normal biological result.  Emit the same schemas
+    # as the populated pandas path without requiring pandas merely to represent
+    # an empty table.  Non-empty malformed inputs still fail in read_csv below.
+    args.output_file.write("\t".join(output_columns) + "\n")
+    args.output_file.flush()
+    with open(combine_name, "w") as combine_file:
+        combine_file.write("\t".join(combine_columns) + "\n")
+    print("[" + sys.argv[0] + "]", "empty BLAST input: 0 TE")
+    raise SystemExit(0)
+
+import pandas as pd
+
 df = pd.read_csv(input_file_bln, sep="\t", header=None)
-df.columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
+df.columns = blast_columns
 
 size_et = {}
 file    = open(db_te, "r")
@@ -234,5 +250,3 @@ df = df[["sseqid", "qseqid", "pident", "size_per", "size_el", "mismatch", "gapop
 print("[" + sys.argv[0] + "]", "TE with min_size_percent>=" + str(min_size_percent) + ", min_pident>=" + str(min_pident), " :" + str(len(df.values)))
 
 df.to_csv(output_file_csv, sep="\t", index=None)
-
-

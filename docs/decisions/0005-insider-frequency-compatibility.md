@@ -71,11 +71,12 @@ quality state. Several TE-family calls at the same locus remain separate rows,
 but their spanning and empty-site reads are not assigned to competing alleles;
 the same evidence can consequently support more than one row.
 
-The frequency sub-DAG accepts a previously generated header-only
-`INSERTION.csv`, but the current upstream INSIDER TE-detection rules still
-require non-empty insertion and deletion FASTA/BLAST results. A completely
-TE-free sample therefore needs a separate upstream empty-result hardening step
-before it can reach this target naturally.
+The upstream INSIDER caller and TE-detection rules now propagate an absence of
+SVs, sequences, or BLAST alignments through explicit empty/header-only files.
+That contract is defined in
+[ADR 0006](0006-insider-empty-result-contract.md). The frequency target still
+requires the OUTSIDER read-mapping BAM because it remains the historical
+combined INSIDER/OUTSIDER mode, even when the candidate table has no data rows.
 
 A future strict population mode must use the
 [locus data model](../locus-data-model.md), preserve all TE alleles per locus

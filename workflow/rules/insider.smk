@@ -155,6 +155,7 @@ rule assemblytics_within_alignment_insider:
 
 rule merge_and_annotate_insider_variants:
     input:
+        script=str(PIPELINE_ROOT / "lib/python/assemblitics/filter_gap_SVs.py"),
         between=INSIDER_BETWEEN,
         within=INSIDER_WITHIN,
         reference=PREPARED_REFERENCE,
@@ -164,7 +165,6 @@ rule merge_and_annotate_insider_variants:
         bed=INSIDER_BED,
         stats=touch(f"{INSIDER_VARIANT_DIR}/.stats_renamed"),
     params:
-        script=str(PIPELINE_ROOT / "lib/python/assemblitics/filter_gap_SVs.py"),
         variant_dir=INSIDER_VARIANT_DIR,
         reference_name=Path(REFERENCE).name,
         genome_name=Path(GENOME).name,
@@ -178,15 +178,20 @@ rule merge_and_annotate_insider_variants:
     shell:
         """
         set -euo pipefail
+        mkdir -p {INSIDER_VARIANT_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
         cat {input.between:q} {input.within:q} > {output.bed:q}
-        test -s {output.bed:q}
-        old_directory=$PWD
-        log_path=$(readlink -m {log:q})
-        reference=$(readlink -f {input.reference:q})
-        genome=$(readlink -f {input.genome:q})
-        cd {params.variant_dir:q}
-        python3 {params.script:q} "$reference" "$genome" > "$log_path" 2>&1
-        cd "$old_directory"
+        if test -s {output.bed:q}; then
+            old_directory=$PWD
+            log_path=$(readlink -m {log:q})
+            reference=$(readlink -f {input.reference:q})
+            genome=$(readlink -f {input.genome:q})
+            cd {params.variant_dir:q}
+            python3 {input.script:q} "$reference" "$genome" > "$log_path" 2>&1
+            cd "$old_directory"
+        else
+            printf 'No INSIDER structural variant; gap annotation skipped.\n' \
+                > {log:q}
+        fi
         sed -i "s/^Reference: file1$/Reference: {params.reference_name}/" {input.stats:q}
         sed -i "s/^Query: file2$/Query: {params.genome_name}/" {input.stats:q}
         """
@@ -196,7 +201,9 @@ rule extract_insider_sv_sequences:
     input:
         variants=INSIDER_BED,
         reference=PREPARED_REFERENCE,
+        reference_index=PREPARED_REFERENCE_INDEX,
         genome=PREPARED_GENOME,
+        genome_index=PREPARED_GENOME_INDEX,
     output:
         insertion=INSIDER_INSERTION_FASTA,
         deletion=INSIDER_DELETION_FASTA,
@@ -212,36 +219,120 @@ rule extract_insider_sv_sequences:
     shell:
         """
         set -euo pipefail
-        mkdir -p {params.directory:q}
+        mkdir -p {params.directory:q} {WORKDIR}/log {WORKDIR}/benchmarks
+        : > {log:q}
         : > {output.insertion:q}
         : > {output.deletion:q}
+        awk 'BEGIN {{
+                allowed["insertion"]=1
+                allowed["deletion"]=1
+                allowed["repeat_expansion"]=1
+                allowed["repeat_contraction"]=1
+                allowed["tandem_expansion"]=1
+                allowed["tandem_contraction"]=1
+            }}
+            NF == 0 {{next}}
+            {{
+                if (NF < 10 || !(tolower($7) in allowed)) {{
+                    print "Malformed INSIDER structural-variant row: " $0 \
+                        > "/dev/stderr"
+                    exit 2
+                }}
+            }}' {input.variants:q}
+
+        validate_extracted_fasta() {{
+            bed_path="$1"
+            fasta_path="$2"
+            expected_records=$(awk 'END {{print NR+0}}' "$bed_path")
+            observed_records=$(awk '/^>/ {{count++}} END {{print count+0}}' \
+                "$fasta_path")
+            valid_records=$(awk '
+                /^>/ {{
+                    if (seen_header && !seen_sequence) bad=1
+                    seen_header=1
+                    seen_sequence=0
+                    next
+                }}
+                /^[^[:space:]]/ {{seen_sequence=1}}
+                END {{
+                    if (seen_header && !seen_sequence) bad=1
+                    print bad ? 0 : 1
+                }}' "$fasta_path")
+            if test "$observed_records" -ne "$expected_records" \
+                || test "$valid_records" -ne 1; then
+                printf 'Incomplete FASTA extraction for %s: expected %s records, got %s.\n' \
+                    "$bed_path" "$expected_records" "$observed_records" >> {log:q}
+                exit 1
+            fi
+        }}
+
         for type in INSERTION Repeat_expansion Tandem_expansion; do
             bed={params.directory:q}/$type.bed
             fasta={params.directory:q}/$type.seq.fasta
-            grep -i "$type" {input.variants:q} \
-                | awk '{{print $10":"$4}}' \
-                | awk -F ':' -v type="$type" 'BEGIN {{OFS="\t"}} {{split($2,a,"-"); print $1,a[1],a[2],$4":"$3":"type}}' \
-                > "$bed" || true
+            : > "$fasta"
+            awk -v type="$type" -v log_path={log:q} 'BEGIN {{OFS="\t"}}
+                tolower($7) == tolower(type) {{
+                    query_fields=split($10,query,":")
+                    coordinate_fields=split(query[2],coordinates,"-")
+                    if (query_fields != 3 || query[1] == "" ||
+                        query[3] !~ /^[+-]$/ || coordinate_fields != 2 ||
+                        coordinates[1] !~ /^[0-9]+$/ ||
+                        coordinates[2] !~ /^[0-9]+$/) {{
+                        print "Malformed INSIDER query interval for " $4 ": " $10 \
+                            > "/dev/stderr"
+                        exit 2
+                    }}
+                    if (coordinates[2] < coordinates[1]) {{
+                        print "Reversed INSIDER query interval for " $4 ": " $10 \
+                            > "/dev/stderr"
+                        exit 2
+                    }}
+                    if (coordinates[2] == coordinates[1]) {{
+                        print "Skipping ineligible INSIDER interval for " $4 \
+                            ": non-positive query interval " query[2] >> log_path
+                        next
+                    }}
+                    print query[1],coordinates[1],coordinates[2],$4":"query[3]":"type
+                }}' {input.variants:q} > "$bed"
             if test -s "$bed"; then
                 bedtools getfasta -fi {input.genome:q} -bed "$bed" -name+ \
                     > "$fasta" 2>> {log:q}
+                validate_extracted_fasta "$bed" "$fasta"
                 cat "$fasta" >> {output.insertion:q}
             fi
         done
         for type in DELETION Repeat_contraction Tandem_contraction; do
             bed={params.directory:q}/$type.bed
             fasta={params.directory:q}/$type.seq.fasta
-            grep -i "$type" {input.variants:q} \
-                | awk -v type="$type" 'BEGIN {{OFS="\t"}} {{print $1,$2,$3,$4":"$6":"type}}' \
-                > "$bed" || true
+            : > "$fasta"
+            awk -v type="$type" -v log_path={log:q} 'BEGIN {{OFS="\t"}}
+                tolower($7) == tolower(type) {{
+                    if ($1 == "" || $2 !~ /^[0-9]+$/ ||
+                        $3 !~ /^[0-9]+$/ || $6 !~ /^[+-]$/) {{
+                        print "Malformed INSIDER reference interval for " $4 \
+                            ": " $1 ":" $2 "-" $3 > "/dev/stderr"
+                        exit 2
+                    }}
+                    if ($3 < $2) {{
+                        print "Reversed INSIDER reference interval for " $4 \
+                            ": " $1 ":" $2 "-" $3 > "/dev/stderr"
+                        exit 2
+                    }}
+                    if ($3 == $2) {{
+                        print "Skipping ineligible INSIDER interval for " $4 \
+                            ": non-positive reference interval " $1 ":" $2 "-" $3 \
+                            >> log_path
+                        next
+                    }}
+                    print $1,$2,$3,$4":"$6":"type
+                }}' {input.variants:q} > "$bed"
             if test -s "$bed"; then
                 bedtools getfasta -fi {input.reference:q} -bed "$bed" -name+ \
                     > "$fasta" 2>> {log:q}
+                validate_extracted_fasta "$bed" "$fasta"
                 cat "$fasta" >> {output.deletion:q}
             fi
         done
-        test -s {output.insertion:q}
-        test -s {output.deletion:q}
         """
 
 
@@ -266,17 +357,30 @@ rule blast_insider_sv_against_te:
     shell:
         """
         set -euo pipefail
-        blastn -num_threads {threads} -db {input.database:q} \
-            -query {input.insertion:q} -outfmt 6 -out {output.insertion:q} \
-            2> {log:q}
-        blastn -num_threads {threads} -db {input.database:q} \
-            -query {input.deletion:q} -outfmt 6 -out {output.deletion:q} \
-            2>> {log:q}
+        mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
+        : > {log:q}
+        : > {output.insertion:q}
+        : > {output.deletion:q}
+        if test -s {input.insertion:q}; then
+            blastn -num_threads {threads} -db {input.database:q} \
+                -query {input.insertion:q} -outfmt 6 -out {output.insertion:q} \
+                2>> {log:q}
+        else
+            printf 'No INSIDER insertion sequence; BLAST skipped.\n' >> {log:q}
+        fi
+        if test -s {input.deletion:q}; then
+            blastn -num_threads {threads} -db {input.database:q} \
+                -query {input.deletion:q} -outfmt 6 -out {output.deletion:q} \
+                2>> {log:q}
+        else
+            printf 'No INSIDER deletion sequence; BLAST skipped.\n' >> {log:q}
+        fi
         """
 
 
 rule classify_insider_te:
     input:
+        script=str(PIPELINE_ROOT / "lib/python/parsing/global_sv.py"),
         insertion=INSIDER_INSERTION_BLAST,
         deletion=INSIDER_DELETION_BLAST,
         database=PREPARED_TE_DATABASE,
@@ -286,7 +390,6 @@ rule classify_insider_te:
         insertion_combine=INSIDER_INSERTION_COMBINE,
         deletion_combine=INSIDER_DELETION_COMBINE,
     params:
-        script=str(PIPELINE_ROOT / "lib/python/parsing/global_sv.py"),
         options=INSIDER_BLAST_FILTER,
     threads: 1
     resources:
@@ -298,11 +401,11 @@ rule classify_insider_te:
     shell:
         """
         set -euo pipefail
-        python3 {params.script:q} {params.options} \
+        python3 {input.script:q} {params.options} \
             --combine_name {output.insertion_combine:q} \
             {input.insertion:q} {input.database:q} {output.insertion:q} \
             > {log:q} 2>&1
-        python3 {params.script:q} {params.options} \
+        python3 {input.script:q} {params.options} \
             --combine_name {output.deletion_combine:q} \
             {input.deletion:q} {input.database:q} {output.deletion:q} \
             >> {log:q} 2>&1

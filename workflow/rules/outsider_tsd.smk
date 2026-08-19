@@ -7,7 +7,6 @@ and the complete flank directories as Snakemake outputs.
 """
 
 OUTSIDER_ET_FASTA_DIR = f"{WORKDIR}/OUTSIDER/ET_FIND_FA"
-OUTSIDER_GENOME_INDEX = PREPARED_GENOME + ".fai"
 OUTSIDER_FK_DIR = f"{WORKDIR}/OUTSIDER/FK"
 OUTSIDER_FK_READS_DIR = f"{OUTSIDER_FK_DIR}/READS"
 OUTSIDER_FK_GENOME_DIR = f"{OUTSIDER_FK_DIR}/GENOME"
@@ -33,27 +32,11 @@ rule outsider_tsd_flanks:
         OUTSIDER_TSD_FLANK_ELIGIBILITY,
 
 
-rule index_outsider_tsd_genome:
-    input:
-        fasta=PREPARED_GENOME,
-    output:
-        fai=OUTSIDER_GENOME_INDEX,
-    threads: 1
-    resources:
-        mem_mb=512,
-    log:
-        f"{WORKDIR}/log/outsider_genome_fasta_index.log",
-    benchmark:
-        f"{WORKDIR}/benchmarks/outsider_genome_fasta_index.tsv",
-    shell:
-        "samtools faidx {input.fasta:q} > {log:q} 2>&1"
-
-
 rule prepare_outsider_tsd_flanks:
     input:
         script=str(PIPELINE_ROOT / "lib/python/workflow/prepare_outsider_tsd.py"),
         genome=PREPARED_GENOME,
-        genome_index=OUTSIDER_GENOME_INDEX,
+        genome_index=PREPARED_GENOME_INDEX,
         sniffles_calls=OUTSIDER_SNIFFLES_CSV,
         sniffles_combined=OUTSIDER_SNIFFLES_COMBINE,
         sniffles_fasta=OUTSIDER_SNIFFLES_FASTA,

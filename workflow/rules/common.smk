@@ -29,3 +29,43 @@ rule prepare_inputs:
             {params.sample} \
             --output {params.output:q} > {log:q} 2>&1
         """
+
+
+rule index_prepared_genome_fasta:
+    input:
+        fasta=PREPARED_GENOME,
+    output:
+        fai=PREPARED_GENOME_INDEX,
+    threads: 1
+    resources:
+        mem_mb=512,
+    log:
+        f"{WORKDIR}/log/genome_fasta_index.log",
+    benchmark:
+        f"{WORKDIR}/benchmarks/genome_fasta_index.tsv",
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
+        samtools faidx {input.fasta:q} > {log:q} 2>&1
+        """
+
+
+rule index_prepared_reference_fasta:
+    input:
+        fasta=PREPARED_REFERENCE,
+    output:
+        fai=PREPARED_REFERENCE_INDEX,
+    threads: 1
+    resources:
+        mem_mb=512,
+    log:
+        f"{WORKDIR}/log/reference_fasta_index.log",
+    benchmark:
+        f"{WORKDIR}/benchmarks/reference_fasta_index.tsv",
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
+        samtools faidx {input.fasta:q} > {log:q} 2>&1
+        """

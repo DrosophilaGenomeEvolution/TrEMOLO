@@ -52,6 +52,12 @@ snakemake --snakefile workflow/Snakefile \
   --cores 8 insider_te_detection
 ```
 
+Insertion and deletion branches are independent. A sample with no qualifying
+SV, no sequence in one category, or no BLAST hit now produces canonical empty
+or header-only outputs instead of failing or reusing stale artifacts. The
+empty-result contract is recorded in
+`docs/decisions/0006-insider-empty-result-contract.md`.
+
 When both INSIDER calls and OUTSIDER read mappings are available, the
 legacy-compatible INSIDER empty-site frequency table can be generated with:
 
@@ -134,3 +140,5 @@ The OUTSIDER frequency compatibility decision is recorded in
 `docs/decisions/0004-outsider-frequency-compatibility.md`.
 The INSIDER frequency compatibility decision is recorded in
 `docs/decisions/0005-insider-frequency-compatibility.md`.
+The INSIDER empty-result contract is recorded in
+`docs/decisions/0006-insider-empty-result-contract.md`.
