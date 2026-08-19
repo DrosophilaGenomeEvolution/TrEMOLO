@@ -115,9 +115,9 @@ rule prepare_bam_outsider:
 rule call_sniffles_outsider:
     input:
         bam=MAPPING_BAM,
+        bai=MAPPING_BAM + ".bai",
     output:
         vcf=SV_VCF,
-        bai=MAPPING_BAM + ".bai",
     threads: THREADS
     resources:
         mem_mb=4096,
@@ -129,7 +129,7 @@ rule call_sniffles_outsider:
         """
         set -euo pipefail
         mkdir -p {OUTSIDER_VARIANT_DIR}
-        samtools index -@ {threads} {input.bam:q} {output.bai:q} 2> {log:q}
+        : > {log:q}
         version=$(sniffles -h 2>&1 | awk '/Version/ {{print $2; exit}}')
         case "$version" in
             1.0.10)
@@ -146,4 +146,24 @@ rule call_sniffles_outsider:
                 ;;
         esac
         test -s {output.vcf:q}
+        """
+
+
+rule index_outsider_mapping_bam:
+    input:
+        bam=MAPPING_BAM,
+    output:
+        bai=MAPPING_BAM + ".bai",
+    threads: THREADS
+    resources:
+        mem_mb=1024,
+    log:
+        f"{WORKDIR}/log/outsider_index_mapping.log",
+    benchmark:
+        f"{WORKDIR}/benchmarks/outsider_index_mapping.tsv",
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
+        samtools index -@ {threads} {input.bam:q} {output.bai:q} 2> {log:q}
         """

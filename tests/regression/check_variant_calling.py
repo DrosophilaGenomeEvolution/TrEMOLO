@@ -35,6 +35,22 @@ INSIDER_TE_FILES = (
     "DELETION_TE_ON_REF.bed",
 )
 
+INSIDER_FREQUENCY_EXACT_FILES = (
+    "OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed",
+    "OUTSIDER/MAPPING_TO_REF/DEL_NB.bed",
+    "OUTSIDER/MAPPING_TO_REF/DEPTH_FK.bed",
+    "OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt",
+    "INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv",
+)
+
+INSIDER_FREQUENCY_EXPECTED_COUNTS = {
+    "OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed": 201,
+    "OUTSIDER/MAPPING_TO_REF/DEL_NB.bed": 201,
+    "OUTSIDER/MAPPING_TO_REF/DEPTH_FK.bed": 402,
+    "OUTSIDER/MAPPING_TO_REF/DEPTH_FK.txt": 22,
+    "INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv": 202,
+}
+
 OUTSIDER_TE_EXACT_FILES = (
     "OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed",
     "OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed",
@@ -234,6 +250,110 @@ def main() -> int:
         errors.append(f"missing INSIDER TE output: {position_file}")
     elif digest(old_position) != digest(new_position):
         errors.append(f"INSIDER TE output differs: {position_file}")
+
+    for relative in INSIDER_FREQUENCY_EXACT_FILES:
+        old = args.legacy / relative
+        new = args.migrated / relative
+        if not old.is_file() or not new.is_file():
+            errors.append(f"missing INSIDER frequency output: {relative}")
+        elif digest(old) != digest(new):
+            errors.append(f"INSIDER frequency output differs: {relative}")
+
+    for relative, expected_count in INSIDER_FREQUENCY_EXPECTED_COUNTS.items():
+        path = args.migrated / relative
+        if path.is_file():
+            actual_count = sum(1 for _ in path.open("rb"))
+            if actual_count != expected_count:
+                errors.append(
+                    f"INSIDER frequency line count differs: {relative} "
+                    f"({actual_count} != {expected_count})"
+                )
+
+    insider_candidates = args.migrated / "INSIDER/TE_DETECTION/INSERTION.csv"
+    insider_frequency = (
+        args.migrated / "INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv"
+    )
+    if insider_candidates.is_file() and insider_frequency.is_file():
+        expected_rows = []
+        for row in insider_candidates.read_text().splitlines()[1:]:
+            fields = row.split("\t")
+            if len(fields) < 2:
+                errors.append("malformed INSIDER insertion candidate row")
+                continue
+            query = fields[1].split(":")
+            if len(query) < 6 or "-" not in query[5]:
+                errors.append("malformed INSIDER insertion qseqid")
+                continue
+            expected_rows.append(
+                (
+                    query[4],
+                    query[5].split("-", 1)[0],
+                    fields[0],
+                    f"{fields[0]}|{query[0]}",
+                )
+            )
+
+        frequency_lines = insider_frequency.read_text().splitlines()
+        expected_header = (
+            "chrom\tposition\ttotal_depth\tdepth_empty_site\tread_support\t"
+            "read_support_percent\tTE\tinfo_TE"
+        )
+        if not frequency_lines or frequency_lines[0] != expected_header:
+            errors.append("invalid INSIDER frequency header")
+        observed_rows = []
+        depth_distribution = Counter()
+        percent_distribution = Counter()
+        frequency_by_event = {}
+        for row in frequency_lines[1:]:
+            fields = row.split("\t")
+            if len(fields) != 8:
+                errors.append("malformed INSIDER frequency row")
+                continue
+            observed_rows.append((fields[0], fields[1], fields[6], fields[7]))
+            try:
+                total, empty, support = map(int, fields[2:5])
+                percent = float(fields[5])
+            except ValueError:
+                errors.append("non-numeric INSIDER frequency value")
+                continue
+            if total != empty + support:
+                errors.append(
+                    f"inconsistent INSIDER frequency depth: {fields[7]}"
+                )
+            expected_percent = 100.0 * support / total if total else 0.0
+            if abs(percent - expected_percent) > 0.0001:
+                errors.append(
+                    f"inconsistent INSIDER frequency percentage: {fields[7]}"
+                )
+            depth_distribution[total] += 1
+            percent_distribution[fields[5]] += 1
+            frequency_by_event[fields[7]] = tuple(fields[2:6])
+
+        if observed_rows != expected_rows:
+            errors.append(
+                "INSIDER frequency rows do not preserve insertion candidate order"
+            )
+        if depth_distribution != Counter({0: 190, 1: 10, 2: 1}):
+            errors.append(
+                "INSIDER frequency depth distribution differs: "
+                f"{dict(depth_distribution)}"
+            )
+        if percent_distribution != Counter({"0.0000": 191, "100.0000": 10}):
+            errors.append(
+                "INSIDER frequency percentage distribution differs: "
+                f"{dict(percent_distribution)}"
+            )
+        sentinels = {
+            "412|Assemblytics_w_552": ("1", "0", "1", "100.0000"),
+            "I-element|Assemblytics_w_60": ("0", "0", "0", "0.0000"),
+            "roo|Assemblytics_w_1003": ("1", "1", "0", "0.0000"),
+        }
+        for event, expected in sentinels.items():
+            if frequency_by_event.get(event) != expected:
+                errors.append(
+                    f"INSIDER frequency sentinel differs: {event} "
+                    f"({frequency_by_event.get(event)} != {expected})"
+                )
 
     old_vcf = args.legacy / "OUTSIDER/VARIANT_CALLING/SV.vcf"
     new_vcf = args.migrated / "OUTSIDER/VARIANT_CALLING/SV.vcf"
@@ -508,6 +628,14 @@ def main() -> int:
     print("INSIDER/OUTSIDER migration check: PASSED")
     print(f"Exact INSIDER files: {len(INSIDER_FILES)}")
     print(f"Exact INSIDER TE files: {len(INSIDER_TE_FILES) + 1}")
+    print(
+        "Exact INSIDER frequency files: "
+        f"{len(INSIDER_FREQUENCY_EXACT_FILES)}"
+    )
+    print(
+        "INSIDER frequency semantics: 201 candidates, 11 covered, "
+        "10 at 100%, one empty-site event"
+    )
     print("OUTSIDER VCF: identical after volatile header normalization")
     print(f"Exact OUTSIDER TE files: {len(OUTSIDER_TE_EXACT_FILES)}")
     print(

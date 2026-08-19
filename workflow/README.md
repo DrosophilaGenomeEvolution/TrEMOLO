@@ -2,8 +2,8 @@
 
 This directory contains the incremental replacement for the legacy `run.snk`.
 It currently prepares immutable inputs and contains migrated OUTSIDER variant
-calling and TE detection, plus INSIDER structural-variant calling and TE
-detection rules.
+calling, TE detection, frequency, and TSD rules, plus INSIDER structural-
+variant calling, TE detection, and empty-site frequency rules.
 
 When Snakemake is available, run the preparation DAG with:
 
@@ -51,6 +51,21 @@ snakemake --snakefile workflow/Snakefile \
   --configfile tests/workflow/refactor_config.yml \
   --cores 8 insider_te_detection
 ```
+
+When both INSIDER calls and OUTSIDER read mappings are available, the
+legacy-compatible INSIDER empty-site frequency table can be generated with:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 insider_frequency
+```
+
+This target replaces `FREQ_INSIDERv2` with declared interval, BAM, deletion,
+depth, and aggregation steps. It preserves `DEPTH_TE_INSIDER.csv` while
+propagating command failures and retaining shared FASTA indexes. Its
+single-sample and multi-allele limitations are documented in
+`docs/decisions/0005-insider-frequency-compatibility.md`.
 
 OUTSIDER TE detection is split into four explicit evidence sources: CIGAR
 insertions, Sniffles calls, soft-clipped reads, and hard-clipped reads. To stop
@@ -117,3 +132,5 @@ The INSIDER caller architecture decision is recorded in
 `docs/decisions/0001-insider-sv-backends.md`.
 The OUTSIDER frequency compatibility decision is recorded in
 `docs/decisions/0004-outsider-frequency-compatibility.md`.
+The INSIDER frequency compatibility decision is recorded in
+`docs/decisions/0005-insider-frequency-compatibility.md`.

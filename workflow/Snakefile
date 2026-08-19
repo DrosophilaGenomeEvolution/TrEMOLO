@@ -50,6 +50,7 @@ include: "rules/outsider_te.smk"
 include: "rules/outsider_frequency.smk"
 include: "rules/outsider_tsd.smk"
 include: "rules/insider.smk"
+include: "rules/insider_frequency.smk"
 
 
 rule all:
