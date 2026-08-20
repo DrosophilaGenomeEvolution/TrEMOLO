@@ -197,7 +197,7 @@ CHOICE:
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the OUTSIDER integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INSIDER_VARIANT:
-        DETECT_ALL_TE: False    # detect ALL TE on genome (parameter GENOME) assembly not only new insertion. Warning! it may be take several hours on big genomes
+        DETECT_ALL_TE: False    # annotate TE-like regions across the complete GENOME assembly, separately from variant calls and TE_INFOS; may take hours on large genomes
     INTERMEDIATE_FILE: True     # Conserve the intermediate analyses files to process them latter.
 
 

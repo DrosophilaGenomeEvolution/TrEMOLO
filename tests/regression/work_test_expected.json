@@ -89,6 +89,9 @@
     "INSIDER/VARIANT_CALLING/assemblytics_out.Assemblytics_structural_variants.bed": 1453,
     "INSIDER/TE_DETECTION/INSERTION_TE.bed": 201,
     "INSIDER/TE_DETECTION/INSERTION_COMBINE_TE.csv": 202,
+    "INSIDER/TE_DETECTION/ALL_TE.csv": 328,
+    "INSIDER/TE_DETECTION/ALL_TE_COMBINE_TE.csv": 332,
+    "INSIDER/TE_DETECTION/POSITION_ALL_TE.bed": 327,
     "INSIDER/TSD/TSD_TE.tsv": 210
   },
   "known_limitations": [

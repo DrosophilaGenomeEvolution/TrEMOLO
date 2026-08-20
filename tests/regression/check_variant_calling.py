@@ -35,6 +35,18 @@ INSIDER_TE_FILES = (
     "DELETION_TE_ON_REF.bed",
 )
 
+INSIDER_ALL_TE_EXACT_FILES = (
+    "INSIDER/TE_DETECTION/ALL_TE.csv",
+    "INSIDER/TE_DETECTION/ALL_TE_COMBINE_TE.csv",
+    "INSIDER/TE_DETECTION/POSITION_ALL_TE.bed",
+)
+
+INSIDER_ALL_TE_EXPECTED_COUNTS = {
+    "INSIDER/TE_DETECTION/ALL_TE.csv": 328,
+    "INSIDER/TE_DETECTION/ALL_TE_COMBINE_TE.csv": 332,
+    "INSIDER/TE_DETECTION/POSITION_ALL_TE.bed": 327,
+}
+
 INSIDER_FREQUENCY_EXACT_FILES = (
     "OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed",
     "OUTSIDER/MAPPING_TO_REF/DEL_NB.bed",
@@ -268,6 +280,33 @@ def main() -> int:
         errors.append(f"missing INSIDER TE output: {position_file}")
     elif digest(old_position) != digest(new_position):
         errors.append(f"INSIDER TE output differs: {position_file}")
+
+    for relative in INSIDER_ALL_TE_EXACT_FILES:
+        old = args.legacy / relative
+        new = args.migrated / relative
+        if not old.is_file() or not new.is_file():
+            errors.append(f"missing INSIDER whole-assembly TE output: {relative}")
+        elif digest(old) != digest(new):
+            errors.append(f"INSIDER whole-assembly TE output differs: {relative}")
+
+    for relative, expected_count in INSIDER_ALL_TE_EXPECTED_COUNTS.items():
+        path = args.migrated / relative
+        if path.is_file():
+            actual_count = sum(1 for _ in path.open("rb"))
+            if actual_count != expected_count:
+                errors.append(
+                    f"INSIDER whole-assembly TE line count differs: {relative} "
+                    f"({actual_count} != {expected_count})"
+                )
+
+    public_all_te = args.migrated / "POSITION_ALL_TE.bed"
+    internal_all_te = (
+        args.migrated / "INSIDER/TE_DETECTION/POSITION_ALL_TE.bed"
+    )
+    if not public_all_te.is_symlink():
+        errors.append("missing public INSIDER whole-assembly TE symlink")
+    elif public_all_te.resolve() != internal_all_te.resolve():
+        errors.append("public INSIDER whole-assembly TE symlink has wrong target")
 
     for relative in INSIDER_FREQUENCY_EXACT_FILES:
         old = args.legacy / relative
@@ -682,6 +721,10 @@ def main() -> int:
     print("INSIDER/OUTSIDER migration check: PASSED")
     print(f"Exact INSIDER files: {len(INSIDER_FILES)}")
     print(f"Exact INSIDER TE files: {len(INSIDER_TE_FILES) + 1}")
+    print(
+        "Exact INSIDER whole-assembly TE files: "
+        f"{len(INSIDER_ALL_TE_EXACT_FILES)}"
+    )
     print(
         "Exact INSIDER frequency files: "
         f"{len(INSIDER_FREQUENCY_EXACT_FILES)}"

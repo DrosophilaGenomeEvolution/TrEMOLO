@@ -55,6 +55,23 @@ snakemake --snakefile workflow/Snakefile \
   --cores 8 insider_te_detection
 ```
 
+Whole-assembly TE annotation is an independent optional target:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 insider_all_te
+```
+
+It is included in the default target when
+`CHOICE.INSIDER_VARIANT.DETECT_ALL_TE` is true. The migrated two-pass BLAST
+procedure reproduces `ALL_TE.csv`, `ALL_TE_COMBINE_TE.csv` and
+`POSITION_ALL_TE.bed` byte for byte on the test fixture, while declaring its
+intermediates and accepting a valid zero-hit result. This resident-TE
+annotation is deliberately not merged into the variant-associated
+`TE_INFOS.bed` or Quarto report. Its compatibility limits are recorded in
+`docs/decisions/0009-insider-all-te-compatibility.md`.
+
 Insertion and deletion branches are independent. A sample with no qualifying
 SV, no sequence in one category, or no BLAST hit now produces canonical empty
 or header-only outputs instead of failing or reusing stale artifacts. The
@@ -195,3 +212,5 @@ The INSIDER TSD and final call-table compatibility decision is recorded in
 `docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.
 The direct Quarto report migration is recorded in
 `docs/decisions/0008-quarto-report.md`.
+The whole-assembly INSIDER TE annotation decision is recorded in
+`docs/decisions/0009-insider-all-te-compatibility.md`.

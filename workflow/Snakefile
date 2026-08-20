@@ -15,6 +15,8 @@ OUTSIDER_PARAMS = config.get("PARAMS", {}).get("OUTSIDER_VARIANT", {})
 INSIDER_PARAMS = config.get("PARAMS", {}).get("INSIDER_VARIANT", {})
 INSIDER_SV_CALLER = INSIDER_PARAMS.get("SV_CALLER", "assemblytics")
 OUTSIDER_CHOICES = config.get("CHOICE", {}).get("OUTSIDER_VARIANT", {})
+INSIDER_CHOICES = config.get("CHOICE", {}).get("INSIDER_VARIANT", {})
+DETECT_ALL_TE = INSIDER_CHOICES.get("DETECT_ALL_TE", False)
 PREPARED_GENOME = f"{WORKDIR}/INPUT/genome.fasta"
 PREPARED_REFERENCE = f"{WORKDIR}/INPUT/reference.fasta"
 PREPARED_SAMPLE = f"{WORKDIR}/INPUT/reads.fastq"
@@ -43,6 +45,13 @@ if INSIDER_SV_CALLER != "assemblytics":
         f"INSIDER SV caller '{INSIDER_SV_CALLER}' is not implemented; "
         "available: assemblytics"
     )
+if type(DETECT_ALL_TE) is not bool:
+    raise ValueError("CHOICE.INSIDER_VARIANT.DETECT_ALL_TE must be a boolean")
+if DETECT_ALL_TE and not CHOICES.get("INSIDER_VARIANT"):
+    raise ValueError(
+        "CHOICE.INSIDER_VARIANT.DETECT_ALL_TE requires "
+        "CHOICE.PIPELINE.INSIDER_VARIANT"
+    )
 
 
 include: "rules/common.smk"
@@ -52,6 +61,7 @@ include: "rules/outsider_te.smk"
 include: "rules/outsider_frequency.smk"
 include: "rules/outsider_tsd.smk"
 include: "rules/insider.smk"
+include: "rules/insider_all_te.smk"
 include: "rules/insider_frequency.smk"
 include: "rules/insider_tsd.smk"
 include: "rules/te_infos.smk"
@@ -66,6 +76,8 @@ DEFAULT_TARGETS = [
 ]
 if CHOICES.get("INSIDER_VARIANT") or CHOICES.get("OUTSIDER_VARIANT"):
     DEFAULT_TARGETS.append(TE_INFOS)
+if DETECT_ALL_TE:
+    DEFAULT_TARGETS.append(INSIDER_ALL_TE_PUBLIC_BED)
 if CHOICES.get("REPORT"):
     DEFAULT_TARGETS.append(REPORT_HTML)
 
