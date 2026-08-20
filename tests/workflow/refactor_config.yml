@@ -15,6 +15,14 @@ CHOICE:
     INTEGRATE_TE_TO_GENOME: false
     CLIPPED_READS: true
 
+TOOLS:
+  QUARTO: /opt/quarto/bin/quarto
+
+REPORT:
+  TITLE: TrEMOLO test report
+  AUTHOR: TrEMOLO regression suite
+  LOCUS_WINDOW: 100
+
 PARAMS:
   THREADS: 8
   OUTSIDER_VARIANT:

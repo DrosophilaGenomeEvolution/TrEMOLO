@@ -4,6 +4,9 @@ TE_INFOS = f"{WORKDIR}/TE_INFOS.bed"
 TE_INFOS_EMPTY_INPUT = "/dev/null"
 TE_INFOS_WITH_OUTSIDER = bool(CHOICES.get("OUTSIDER_VARIANT"))
 TE_INFOS_WITH_INSIDER = bool(CHOICES.get("INSIDER_VARIANT"))
+TE_INFOS_WITH_INSIDER_FREQUENCY = (
+    TE_INFOS_WITH_INSIDER and TE_INFOS_WITH_OUTSIDER
+)
 
 
 def te_infos_input(path, enabled):
@@ -63,7 +66,7 @@ rule build_te_infos:
         ),
         insider_tsd=te_infos_input(INSIDER_TSD, TE_INFOS_WITH_INSIDER),
         insider_frequency=te_infos_input(
-            INSIDER_FREQUENCY, TE_INFOS_WITH_INSIDER
+            INSIDER_FREQUENCY, TE_INFOS_WITH_INSIDER_FREQUENCY
         ),
         insider_variants=te_infos_input(INSIDER_BED, TE_INFOS_WITH_INSIDER),
     output:

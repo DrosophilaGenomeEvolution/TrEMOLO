@@ -47,6 +47,17 @@ TSD calls. The final `TE_INFOS.bed` is also required byte for byte, including
 its 434 records, 15-column schema, source order, TSD shifts, frequencies, and
 legacy TrEMOLO identifiers.
 
+The Quarto report is checked as a lossless presentation of that final table:
+
+```bash
+python3 tests/regression/check_quarto_report.py ../work_refactor_test
+```
+
+This verifies every summary against `TE_INFOS.bed`, the embedded input checksum,
+the interactive call and nearby-candidate views, and the absence of external
+script or stylesheet dependencies. The HTML is intentionally not compared byte
+for byte with the old R Markdown report because the interface has been replaced.
+
 The migrated OUTSIDER frequency chain is checked byte for byte from
 `TE_SIZE.tsv` and its combined 69-candidate table through `COUNT_READS.txt`,
 `FREQUENCY_TE_INS.tsv`, and `FREQUENCY_TE_INS_PRECISE.tsv`. Semantic checks
@@ -58,6 +69,5 @@ that compatibility result are documented in
 ## Current oracle status
 
 Both pipelines completed in this reference run: 377 calls are labelled INSIDER
-and 57 are labelled OUTSIDER. The generated report currently attempts an
-external `curl`; its network failure did not prevent completion and is recorded
-as a known reporting limitation.
+and 57 are labelled OUTSIDER. The historical R Markdown report attempts an
+external `curl`; the refactored Quarto report does not perform network access.

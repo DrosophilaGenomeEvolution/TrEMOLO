@@ -96,6 +96,10 @@ Numerous tools are used by TrEMOLO. We recommand to use the [Singularity install
     - [pysam](https://pypi.org/project/pysam/)
   - Perl v5.26.2+
 - For report
+  - The refactored `workflow/Snakefile` uses [Quarto](https://quarto.org/) 1.9.36
+    and embedded browser JavaScript; it does not require R or network access at
+    render time. The R packages below remain requirements of the legacy
+    `run.snk`/Bookdown report only.
   - R 3.3+ libs
     - [knitr 1.38](https://www.r-project.org/nosvn/pandoc/knitr.html)
     - [rmarkdown 2.26](https://rmarkdown.rstudio.com/)

@@ -55,11 +55,21 @@ include: "rules/insider.smk"
 include: "rules/insider_frequency.smk"
 include: "rules/insider_tsd.smk"
 include: "rules/te_infos.smk"
+include: "rules/report.smk"
+
+
+DEFAULT_TARGETS = [
+    f"{WORKDIR}/.inputs.prepared",
+    f"{WORKDIR}/input_manifest.json",
+    f"{WORKDIR}/INPUT/te_database.fasta",
+    f"{WORKDIR}/INPUT/te_headers.tsv",
+]
+if CHOICES.get("INSIDER_VARIANT") or CHOICES.get("OUTSIDER_VARIANT"):
+    DEFAULT_TARGETS.append(TE_INFOS)
+if CHOICES.get("REPORT"):
+    DEFAULT_TARGETS.append(REPORT_HTML)
 
 
 rule all:
     input:
-        f"{WORKDIR}/.inputs.prepared",
-        f"{WORKDIR}/input_manifest.json",
-        f"{WORKDIR}/INPUT/te_database.fasta",
-        f"{WORKDIR}/INPUT/te_headers.tsv",
+        DEFAULT_TARGETS,

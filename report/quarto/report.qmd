@@ -1,0 +1,171 @@
+---
+title: %%TREMOLO_REPORT_TITLE%%
+author: %%TREMOLO_REPORT_AUTHOR%%
+subtitle: "Transposable-element calls, evidence and frequencies"
+format:
+  html:
+    theme: default
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    page-layout: full
+    embed-resources: true
+    smooth-scroll: true
+    code-fold: true
+    link-external-newwindow: true
+execute:
+  enabled: false
+lang: en
+---
+
+<!-- TREMOLO_REPORT_STYLE -->
+
+```{=html}
+<div class="trm-hero">
+  <div>
+    <p class="trm-eyebrow">TrEMOLO · reproducible report</p>
+    <h2 id="trm-report-title">Transposable-element landscape</h2>
+    <p id="trm-report-subtitle" class="trm-muted"></p>
+  </div>
+  <div class="trm-legend" aria-label="Evidence source legend">
+    <span><i class="trm-dot trm-insider"></i>INSIDER</span>
+    <span><i class="trm-dot trm-outsider"></i>OUTSIDER</span>
+  </div>
+</div>
+
+<noscript><p class="trm-warning">This report needs JavaScript to display its interactive figures and call table.</p></noscript>
+```
+
+# Overview
+
+```{=html}
+<div id="trm-summary-cards" class="trm-card-grid" aria-live="polite"></div>
+```
+
+```{=html}
+<div class="trm-grid trm-grid-2">
+  <section class="trm-panel">
+    <div class="trm-panel-heading">
+      <div><p class="trm-kicker">Abundance</p><h3>Most represented TE families</h3></div>
+      <span class="trm-caption">top 25 in the current selection</span>
+    </div>
+    <div id="trm-family-chart" class="trm-chart"></div>
+  </section>
+  <section class="trm-panel">
+    <div class="trm-panel-heading">
+      <div><p class="trm-kicker">Allele evidence</p><h3>Estimated frequency</h3></div>
+      <span class="trm-caption">preferred clipped-read estimate when present</span>
+    </div>
+    <div id="trm-frequency-chart" class="trm-chart"></div>
+  </section>
+</div>
+```
+
+```{=html}
+<section class="trm-panel">
+  <div class="trm-panel-heading">
+    <div><p class="trm-kicker">Genome</p><h3>Call positions by chromosome</h3></div>
+    <span class="trm-caption">positions are normalized to chromosome length</span>
+  </div>
+  <div id="trm-genome-chart" class="trm-chart trm-genome-chart"></div>
+</section>
+```
+
+# Explore calls
+
+The filters below update every chart and the table. Downloading exports the current selection as a TSV file without modifying the pipeline outputs.
+
+```{=html}
+<section class="trm-panel trm-filter-panel">
+  <div class="trm-filter-grid">
+    <label>Source<select id="trm-filter-source"></select></label>
+    <label>Event type<select id="trm-filter-type"></select></label>
+    <label>Chromosome<select id="trm-filter-chrom"></select></label>
+    <label>TE family<select id="trm-filter-family"></select></label>
+    <label>TSD<select id="trm-filter-tsd"><option value="">All</option><option value="present">Confirmed</option><option value="missing">Not found</option></select></label>
+    <label>Frequency<select id="trm-filter-frequency"><option value="">All</option><option value="present">Available</option><option value="missing">Unavailable</option></select></label>
+    <label class="trm-search-label">Search<input id="trm-filter-search" type="search" placeholder="family, event ID, TrEMOLO ID…"></label>
+  </div>
+  <div class="trm-toolbar">
+    <strong id="trm-filter-count">0 calls</strong>
+    <span class="trm-spacer"></span>
+    <button id="trm-reset-filters" type="button" class="trm-button trm-button-secondary">Reset</button>
+    <button id="trm-download-calls" type="button" class="trm-button">Download filtered TSV</button>
+  </div>
+</section>
+```
+
+```{=html}
+<div class="trm-table-wrap">
+  <table class="trm-table">
+    <thead><tr>
+      <th>Source</th><th>Chromosome</th><th>Position</th><th>TE family</th>
+      <th>Event ID</th><th>Type</th><th>Strand</th><th>TSD</th>
+      <th>Identity</th><th>Coverage</th><th>TE size</th><th>Frequency</th><th>SV size</th>
+    </tr></thead>
+    <tbody id="trm-call-table-body"></tbody>
+  </table>
+</div>
+```
+<div class="trm-pagination">
+  <button id="trm-page-previous" type="button" class="trm-button trm-button-secondary">Previous</button>
+  <span id="trm-page-status"></span>
+  <button id="trm-page-next" type="button" class="trm-button trm-button-secondary">Next</button>
+</div>
+
+# Evidence summaries
+
+```{=html}
+<div class="trm-grid trm-grid-2">
+  <section class="trm-panel">
+    <div class="trm-panel-heading"><div><p class="trm-kicker">Breakpoints</p><h3>TSD evidence</h3></div></div>
+    <div id="trm-tsd-summary" class="trm-chart"></div>
+  </section>
+  <section class="trm-panel">
+    <div class="trm-panel-heading"><div><p class="trm-kicker">Orientation</p><h3>Sense and antisense calls</h3></div></div>
+    <div id="trm-strand-summary" class="trm-chart"></div>
+  </section>
+</div>
+```
+
+## Nearby-call candidates
+
+This view exposes calls whose breakpoint anchors fall within the configured window. It is deliberately labelled **candidate proximity**, not a resolved biological locus: TE family is never used as locus identity, and proximity alone cannot prove alternative, nested or composite alleles.
+
+```{=html}
+<div id="trm-proximity-note" class="trm-note"></div>
+<div class="trm-table-wrap">
+  <table class="trm-table">
+    <thead><tr><th>Candidate</th><th>Chromosome</th><th>Anchor interval</th><th>Calls</th><th>Families</th><th>Sources</th><th>Event IDs</th></tr></thead>
+    <tbody id="trm-proximity-table-body"></tbody>
+  </table>
+</div>
+```
+
+# Pipeline context
+
+```{=html}
+<div class="trm-grid trm-grid-2">
+  <section class="trm-panel">
+    <div class="trm-panel-heading"><div><p class="trm-kicker">Long reads</p><h3>Mapping summary</h3></div></div>
+    <div id="trm-mapping-stats"></div>
+  </section>
+  <section class="trm-panel">
+    <div class="trm-panel-heading"><div><p class="trm-kicker">Structural variants</p><h3>OUTSIDER caller output</h3></div></div>
+    <div id="trm-sv-summary"></div>
+  </section>
+</div>
+```
+
+## Inputs and provenance
+
+```{=html}
+<div id="trm-provenance"></div>
+```
+
+## Interpretation boundary
+
+This report visualizes the legacy-compatible `TE_INFOS.bed` table without changing its scientific values. Frequencies retain the compatibility algorithms of the migrated workflow. Nearby-call groups are exploratory candidates only. Cohort-level multi-allelic inference must use the normalized locus model and explicit cross-sample evidence.
+
+<!-- TREMOLO_REPORT_DATA -->
+<!-- TREMOLO_REPORT_SCRIPT -->

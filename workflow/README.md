@@ -4,7 +4,8 @@ This directory contains the incremental replacement for the legacy `run.snk`.
 It currently prepares immutable inputs and contains migrated OUTSIDER variant
 calling, TE detection, frequency, and TSD rules, plus INSIDER structural-
 variant calling, TE detection, empty-site frequency, and TSD rules. It also
-builds the final legacy-compatible `TE_INFOS.bed` call table.
+builds the final legacy-compatible `TE_INFOS.bed` call table and a standalone
+interactive Quarto report.
 
 When Snakemake is available, run the preparation DAG with:
 
@@ -26,8 +27,9 @@ snakemake --snakefile workflow/Snakefile \
 ```
 
 It covers Minimap2 indexing and mapping, BAM preparation, mapping statistics,
-and Sniffles 1 variant calling. The default `all` target remains input
-preparation only during the incremental migration.
+and Sniffles 1 variant calling. The default `all` target now completes every
+enabled scientific branch through `TE_INFOS.bed`; it additionally renders the
+report when `CHOICE.PIPELINE.REPORT` is true.
 
 The migrated INSIDER structural-variant segment is available with:
 
@@ -154,6 +156,26 @@ the same locus—and reproduces the historical 15-column table exactly. The
 compatibility choices and population-model boundary are documented in
 `docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.
 
+The new report is generated directly with Quarto:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 report
+```
+
+It produces `REPORT/report-data.json`, the generated `REPORT/report.qmd`, and a
+single self-contained `REPORT/report.html`. The report has interactive source,
+type, chromosome, family, TSD and frequency filters; genome and family views;
+the complete call table; and an explicitly provisional nearby-call view. It
+does not use R, `curl`, a web server, or external JavaScript/CDN assets.
+
+The refactored container definition pins Quarto 1.9.36. The previously built
+Snakemake 5.10 image does not contain it: that image can generate the QMD/data,
+but the source must be rendered by a host Quarto installation or by a rebuilt
+container. Configure a non-default executable with `TOOLS.QUARTO`; customize
+the report with `REPORT.TITLE`, `REPORT.AUTHOR`, and `REPORT.LOCUS_WINDOW`.
+
 Migration equivalence against a completed legacy work directory is checked by:
 
 ```bash
@@ -171,3 +193,5 @@ The INSIDER empty-result contract is recorded in
 `docs/decisions/0006-insider-empty-result-contract.md`.
 The INSIDER TSD and final call-table compatibility decision is recorded in
 `docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.
+The direct Quarto report migration is recorded in
+`docs/decisions/0008-quarto-report.md`.

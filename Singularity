@@ -39,6 +39,7 @@ From: ubuntu:20.04
             extrafont 0.17
             ggplot2 3.4.2
             RColorBrewer 1.1-2
+        Quarto 1.9.36
         Perl v5.26.2
 
 %labels
@@ -100,6 +101,17 @@ _EOF_
         bc \
         texlive-full \
         snakemake
+
+    # Quarto renders the refactored, self-contained HTML report.  The version
+    # is pinned so report structure does not change between container builds.
+    mkdir -p /opt/quarto
+    wget -q \
+        https://github.com/quarto-dev/quarto-cli/releases/download/v1.9.36/quarto-1.9.36-linux-amd64.tar.gz \
+        -O /tmp/quarto.tar.gz
+    tar -xzf /tmp/quarto.tar.gz -C /opt/quarto --strip-components=1
+    rm -f /tmp/quarto.tar.gz
+    ln -sf /opt/quarto/bin/quarto /usr/local/bin/quarto
+    quarto --version
     
     mkdir -p /usr/local/lib/R/site-library && chmod 775 /usr/local/lib/R/site-library
 
