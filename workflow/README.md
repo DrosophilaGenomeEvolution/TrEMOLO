@@ -3,7 +3,8 @@
 This directory contains the incremental replacement for the legacy `run.snk`.
 It currently prepares immutable inputs and contains migrated OUTSIDER variant
 calling, TE detection, frequency, and TSD rules, plus INSIDER structural-
-variant calling, TE detection, and empty-site frequency rules.
+variant calling, TE detection, empty-site frequency, and TSD rules. It also
+builds the final legacy-compatible `TE_INFOS.bed` call table.
 
 When Snakemake is available, run the preparation DAG with:
 
@@ -73,6 +74,17 @@ propagating command failures and retaining shared FASTA indexes. Its
 single-sample and multi-allele limitations are documented in
 `docs/decisions/0005-insider-frequency-compatibility.md`.
 
+INSIDER genome flanks and legacy-compatible TSD calls are available with:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 insider_tsd
+```
+
+This target replaces `TSD_INSIDER`, declares the normalized genome index, and
+preserves byte for byte the 377 candidate pairs and 210 historical TSD calls.
+
 OUTSIDER TE detection is split into four explicit evidence sources: CIGAR
 insertions, Sniffles calls, soft-clipped reads, and hard-clipped reads. To stop
 after the two primary sources, run:
@@ -127,6 +139,21 @@ historical `ALL_FK_REPORT_FT*.bed` and `TSD_TE.tsv` bytes; and writes
 `OUTSIDER/FK/TSD_FLANK_ELIGIBILITY.tsv` with one acceptance or rejection reason
 per candidate. It does not delete shared `.fai` files.
 
+The public call table for the enabled INSIDER/OUTSIDER pipelines can then be
+generated without invoking the legacy R Markdown report or its network
+requests:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 8 te_infos
+```
+
+`TE_INFOS.bed` keeps one row per detected event—including distinct TE calls at
+the same locus—and reproduces the historical 15-column table exactly. The
+compatibility choices and population-model boundary are documented in
+`docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.
+
 Migration equivalence against a completed legacy work directory is checked by:
 
 ```bash
@@ -142,3 +169,5 @@ The INSIDER frequency compatibility decision is recorded in
 `docs/decisions/0005-insider-frequency-compatibility.md`.
 The INSIDER empty-result contract is recorded in
 `docs/decisions/0006-insider-empty-result-contract.md`.
+The INSIDER TSD and final call-table compatibility decision is recorded in
+`docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.

@@ -51,6 +51,24 @@ INSIDER_FREQUENCY_EXPECTED_COUNTS = {
     "INSIDER/FREQ_INSIDER/DEPTH_TE_INSIDER.csv": 202,
 }
 
+INSIDER_TSD_EXACT_FILES = (
+    "INSIDER/TSD/tmp_merge_ins_del.bed",
+    "INSIDER/TSD/FK_TE.bed",
+    "INSIDER/TSD/FK_TE_FT.bed",
+    "INSIDER/TSD/TSD_TE.tsv",
+)
+
+INSIDER_TSD_EXPECTED_COUNTS = {
+    "INSIDER/TSD/tmp_merge_ins_del.bed": 377,
+    "INSIDER/TSD/FK_TE.bed": 754,
+    "INSIDER/TSD/FK_TE_FT.bed": 377,
+    "INSIDER/TSD/TSD_TE.tsv": 210,
+}
+
+TE_INFOS_EXACT_FILES = ("TE_INFOS.bed",)
+
+TE_INFOS_EXPECTED_COUNTS = {"TE_INFOS.bed": 435}
+
 OUTSIDER_TE_EXACT_FILES = (
     "OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS.bed",
     "OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bed",
@@ -266,6 +284,24 @@ def main() -> int:
             if actual_count != expected_count:
                 errors.append(
                     f"INSIDER frequency line count differs: {relative} "
+                    f"({actual_count} != {expected_count})"
+                )
+
+    for relative in INSIDER_TSD_EXACT_FILES:
+        old = args.legacy / relative
+        new = args.migrated / relative
+        if not old.is_file() or not new.is_file():
+            errors.append(f"missing INSIDER flank/TSD output: {relative}")
+        elif digest(old) != digest(new):
+            errors.append(f"INSIDER flank/TSD output differs: {relative}")
+
+    for relative, expected_count in INSIDER_TSD_EXPECTED_COUNTS.items():
+        path = args.migrated / relative
+        if path.is_file():
+            actual_count = sum(1 for _ in path.open("rb"))
+            if actual_count != expected_count:
+                errors.append(
+                    f"INSIDER flank/TSD line count differs: {relative} "
                     f"({actual_count} != {expected_count})"
                 )
 
@@ -620,6 +656,24 @@ def main() -> int:
                             "accepted OUTSIDER candidates do not match combined flanks"
                         )
 
+    for relative in TE_INFOS_EXACT_FILES:
+        old = args.legacy / relative
+        new = args.migrated / relative
+        if not old.is_file() or not new.is_file():
+            errors.append(f"missing final TE table: {relative}")
+        elif digest(old) != digest(new):
+            errors.append(f"final TE table differs: {relative}")
+
+    for relative, expected_count in TE_INFOS_EXPECTED_COUNTS.items():
+        path = args.migrated / relative
+        if path.is_file():
+            actual_count = sum(1 for _ in path.open("rb"))
+            if actual_count != expected_count:
+                errors.append(
+                    f"final TE table line count differs: {relative} "
+                    f"({actual_count} != {expected_count})"
+                )
+
     if errors:
         print("INSIDER/OUTSIDER migration check: FAILED")
         for error in errors:
@@ -636,6 +690,7 @@ def main() -> int:
         "INSIDER frequency semantics: 201 candidates, 11 covered, "
         "10 at 100%, one empty-site event"
     )
+    print(f"Exact INSIDER flank/TSD files: {len(INSIDER_TSD_EXACT_FILES)}")
     print("OUTSIDER VCF: identical after volatile header normalization")
     print(f"Exact OUTSIDER TE files: {len(OUTSIDER_TE_EXACT_FILES)}")
     print(
@@ -653,6 +708,7 @@ def main() -> int:
         "Exact OUTSIDER flank artifact directories: "
         f"{len(OUTSIDER_TSD_EXACT_DIRECTORIES)}"
     )
+    print(f"Exact final TE tables: {len(TE_INFOS_EXACT_FILES)}")
     return 0
 
 

@@ -53,6 +53,8 @@ include: "rules/outsider_frequency.smk"
 include: "rules/outsider_tsd.smk"
 include: "rules/insider.smk"
 include: "rules/insider_frequency.smk"
+include: "rules/insider_tsd.smk"
+include: "rules/te_infos.smk"
 
 
 rule all:

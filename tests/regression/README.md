@@ -41,6 +41,12 @@ The migrated OUTSIDER flank/TSD chain additionally requires byte-identical
 `TSD_FLANK_ELIGIBILITY.tsv` report must contain the expected 18 accepted and
 8 rejected candidates with explicit reasons.
 
+The migrated INSIDER flank/TSD chain pins all four historical text artifacts:
+377 merged candidates, 754 flank intervals, 377 formatted flank pairs, and 210
+TSD calls. The final `TE_INFOS.bed` is also required byte for byte, including
+its 434 records, 15-column schema, source order, TSD shifts, frequencies, and
+legacy TrEMOLO identifiers.
+
 The migrated OUTSIDER frequency chain is checked byte for byte from
 `TE_SIZE.tsv` and its combined 69-candidate table through `COUNT_READS.txt`,
 `FREQUENCY_TE_INS.tsv`, and `FREQUENCY_TE_INS_PRECISE.tsv`. Semantic checks

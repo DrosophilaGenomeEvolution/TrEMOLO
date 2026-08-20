@@ -20,6 +20,7 @@ INSIDER_INSERTION_COMBINE = f"{INSIDER_TE_DIR}/INSERTION_COMBINE_TE.csv"
 INSIDER_DELETION_COMBINE = f"{INSIDER_TE_DIR}/DELETION_COMBINE_TE.csv"
 INSIDER_INSERTION_TE_BED = f"{INSIDER_TE_DIR}/INSERTION_TE.bed"
 INSIDER_DELETION_TE_BED = f"{INSIDER_TE_DIR}/DELETION_TE.bed"
+INSIDER_POSITION_BED = f"{WORKDIR}/POSITION_TE_INSIDER.bed"
 
 INSIDER_MINIMAP2_PRESET = (
     INSIDER_PARAMS.get("MINIMAP2", {}).get("PRESET_OPTION") or "asm5"
@@ -166,7 +167,7 @@ rule merge_and_annotate_insider_variants:
         stats=touch(f"{INSIDER_VARIANT_DIR}/.stats_renamed"),
     params:
         variant_dir=INSIDER_VARIANT_DIR,
-        reference_name=Path(REFERENCE).name,
+        reference_name=Path(REFERENCE).name if REFERENCE else "",
         genome_name=Path(GENOME).name,
     threads: 1
     resources:
@@ -423,7 +424,7 @@ rule format_insider_te_calls:
         deletion_bed=INSIDER_DELETION_TE_BED,
         insertion_ref=f"{INSIDER_TE_DIR}/INSERTION_TE_ON_REF.bed",
         deletion_ref=f"{INSIDER_TE_DIR}/DELETION_TE_ON_REF.bed",
-        positions=f"{WORKDIR}/POSITION_TE_INSIDER.bed",
+        positions=INSIDER_POSITION_BED,
     resources:
         mem_mb=1024,
     log:
