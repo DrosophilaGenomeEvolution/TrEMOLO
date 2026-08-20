@@ -1,6 +1,7 @@
 """TrEMOLO refactored workflow (incremental migration)."""
 
 from pathlib import Path
+import math
 import re
 
 
@@ -13,10 +14,14 @@ THREADS = config.get("PARAMS", {}).get("THREADS", 1)
 THREADS = THREADS if isinstance(THREADS, int) and THREADS > 0 else 1
 OUTSIDER_PARAMS = config.get("PARAMS", {}).get("OUTSIDER_VARIANT", {})
 INSIDER_PARAMS = config.get("PARAMS", {}).get("INSIDER_VARIANT", {})
+TE_GENOME_PARAMS = config.get("PARAMS", {}).get("TE_GENOME", {})
+if not isinstance(TE_GENOME_PARAMS, dict):
+    raise ValueError("PARAMS.TE_GENOME must be a mapping")
 INSIDER_SV_CALLER = INSIDER_PARAMS.get("SV_CALLER", "assemblytics")
 OUTSIDER_CHOICES = config.get("CHOICE", {}).get("OUTSIDER_VARIANT", {})
 INSIDER_CHOICES = config.get("CHOICE", {}).get("INSIDER_VARIANT", {})
-DETECT_ALL_TE = INSIDER_CHOICES.get("DETECT_ALL_TE", False)
+TE_GENOME_CHOICE = CHOICES.get("TE_GENOME")
+LEGACY_DETECT_ALL_TE = INSIDER_CHOICES.get("DETECT_ALL_TE")
 PREPARED_GENOME = f"{WORKDIR}/INPUT/genome.fasta"
 PREPARED_REFERENCE = f"{WORKDIR}/INPUT/reference.fasta"
 PREPARED_SAMPLE = f"{WORKDIR}/INPUT/reads.fastq"
@@ -45,13 +50,34 @@ if INSIDER_SV_CALLER != "assemblytics":
         f"INSIDER SV caller '{INSIDER_SV_CALLER}' is not implemented; "
         "available: assemblytics"
     )
-if type(DETECT_ALL_TE) is not bool:
+if TE_GENOME_CHOICE is not None and type(TE_GENOME_CHOICE) is not bool:
+    raise ValueError("CHOICE.PIPELINE.TE_GENOME must be a boolean")
+if LEGACY_DETECT_ALL_TE is not None and type(LEGACY_DETECT_ALL_TE) is not bool:
     raise ValueError("CHOICE.INSIDER_VARIANT.DETECT_ALL_TE must be a boolean")
-if DETECT_ALL_TE and not CHOICES.get("INSIDER_VARIANT"):
+if (
+    TE_GENOME_CHOICE is not None
+    and LEGACY_DETECT_ALL_TE is not None
+    and TE_GENOME_CHOICE != LEGACY_DETECT_ALL_TE
+):
     raise ValueError(
-        "CHOICE.INSIDER_VARIANT.DETECT_ALL_TE requires "
-        "CHOICE.PIPELINE.INSIDER_VARIANT"
+        "CHOICE.PIPELINE.TE_GENOME and legacy "
+        "CHOICE.INSIDER_VARIANT.DETECT_ALL_TE disagree"
     )
+TE_GENOME_ENABLED = (
+    TE_GENOME_CHOICE
+    if TE_GENOME_CHOICE is not None
+    else bool(LEGACY_DETECT_ALL_TE)
+)
+TE_GENOME_TARGETS = TE_GENOME_PARAMS.get("TARGETS", ["GENOME"])
+if not isinstance(TE_GENOME_TARGETS, list) or not TE_GENOME_TARGETS:
+    raise ValueError("PARAMS.TE_GENOME.TARGETS must be a non-empty list")
+if any(type(target) is not str for target in TE_GENOME_TARGETS):
+    raise ValueError("PARAMS.TE_GENOME.TARGETS entries must be strings")
+TE_GENOME_TARGETS = list(dict.fromkeys(target.upper() for target in TE_GENOME_TARGETS))
+if set(TE_GENOME_TARGETS) - {"GENOME", "REFERENCE"}:
+    raise ValueError("PARAMS.TE_GENOME.TARGETS supports only GENOME and REFERENCE")
+if "REFERENCE" in TE_GENOME_TARGETS and not REFERENCE:
+    raise ValueError("DATA.REFERENCE is required for TE_GENOME target REFERENCE")
 
 
 include: "rules/common.smk"
@@ -61,7 +87,7 @@ include: "rules/outsider_te.smk"
 include: "rules/outsider_frequency.smk"
 include: "rules/outsider_tsd.smk"
 include: "rules/insider.smk"
-include: "rules/insider_all_te.smk"
+include: "rules/te_genome.smk"
 include: "rules/insider_frequency.smk"
 include: "rules/insider_tsd.smk"
 include: "rules/te_infos.smk"
@@ -76,8 +102,10 @@ DEFAULT_TARGETS = [
 ]
 if CHOICES.get("INSIDER_VARIANT") or CHOICES.get("OUTSIDER_VARIANT"):
     DEFAULT_TARGETS.append(TE_INFOS)
-if DETECT_ALL_TE:
-    DEFAULT_TARGETS.append(INSIDER_ALL_TE_PUBLIC_BED)
+if TE_GENOME_ENABLED:
+    DEFAULT_TARGETS.extend(TE_GENOME_FINAL_OUTPUTS)
+    if "GENOME" in TE_GENOME_TARGETS:
+        DEFAULT_TARGETS.append(TE_GENOME_PUBLIC_BED)
 if CHOICES.get("REPORT"):
     DEFAULT_TARGETS.append(REPORT_HTML)
 

@@ -12,18 +12,30 @@ CHOICE:
     PIPELINE:
         OUTSIDER_VARIANT: True  # TE no assembled (out of genome)
         INSIDER_VARIANT: True   # TE assembled (in genome)
+        TE_GENOME: False        # annotate resident TE copies across complete assemblies
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" # possibility (sniffles, no_sniffles) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with outsiders integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
-    INSIDER_VARIANT:
-        DETECT_ALL_TE: False    # annotate TE-like regions across the complete GENOME assembly, separately from variant calls and TE_INFOS; may take hours on large genomes
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
 
 
 PARAMS:
     THREADS: 8 #number of threads for some task
+    TE_GENOME:
+        TARGETS: ["GENOME"]     # optionally add REFERENCE when DATA.REFERENCE is available
+        CHROM_KEEP: "."          # regular expression applied to target sequence names
+        MIN_PIDENT: 65           # permissive resident-TE discovery threshold
+        MIN_ALIGNED_BP: 80       # minimum significant aligned fragment length
+        MAX_EVALUE: 1e-10
+        MIN_CHAIN_GAP: 200       # minimum gap tolerance for collinear fragments
+        MAX_GAP_FRACTION: 0.2    # additional tolerance relative to consensus length
+        MAX_OVERLAP: 100         # tolerated overlap between chained fragments
+        FULL_LENGTH_COVERAGE: 80 # classification threshold, never a discovery filter
+        HIGH_CONFIDENCE_PIDENT: 80
+        PARTIAL_COVERAGE: 20
+        AMBIGUITY_OVERLAP: 0.8   # reciprocal overlap for alternative family matches
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 preset option is map-ont by default (map-pb, map-ont etc)

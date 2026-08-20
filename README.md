@@ -191,18 +191,25 @@ CHOICE:
     PIPELINE:
         OUTSIDER_VARIANT: True  # outsiders, TE not in the assembly - population variation
         INSIDER_VARIANT: True   # insiders, TE in the assembly
+        TE_GENOME: False        # resident TE annotation across complete assemblies
         REPORT: True            # for getting a report.html file with graphics
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, no_sniffles
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the OUTSIDER integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
-    INSIDER_VARIANT:
-        DETECT_ALL_TE: False    # annotate TE-like regions across the complete GENOME assembly, separately from variant calls and TE_INFOS; may take hours on large genomes
     INTERMEDIATE_FILE: True     # Conserve the intermediate analyses files to process them latter.
 
 
 PARAMS:
     THREADS: 8 #number of threads for some task
+    TE_GENOME:
+        TARGETS: ["GENOME"] # optionally add REFERENCE
+        CHROM_KEEP: "."
+        MIN_PIDENT: 65
+        MIN_ALIGNED_BP: 80
+        MAX_EVALUE: 1e-10
+        FULL_LENGTH_COVERAGE: 80 # classification only; partial copies are retained
+        PARTIAL_COVERAGE: 20
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 option is map-ont by default (map-pb, map-ont)
@@ -264,7 +271,7 @@ Here is the structure of the output files obtained after running the pipeline.
 WORK_DIRECTORY
 ├── params.yaml  ##**Your config file
 ├── LIST_HEADER_DB_TE.csv ##** list of names assigned to TE in the TE database (Only if you have charactere "& ; / \ | ' : ! ? " in your TE database)
-├── POSITION_ALL_TE.bed -> INSIDER/TE_DETECTION/POSITION_ALL_TE.bed ##**ALL TE ON GENOME NOT ONLY INSERTION (ONLY IF PARAMETER "DETECT_ALL_TE" is True),
+├── POSITION_ALL_TE.bed -> TE_GENOME/GENOME/POSITION_ALL_TE.bed ## resident TE components when TE_GENOME is enabled
 ├── POSITION_TE_INOUTSIDER.bed
 ├── POSITION_TE_INSIDER.bed
 ├── POSITION_TE_OUTSIDER.bed
@@ -277,6 +284,15 @@ WORK_DIRECTORY
 ├── VALUES_TSD_INSIDER_GROUP.csv
 ├── MULTIPLE_TE_BY_ID.txt
 ├── TE_INFOS.bed ##**FILE CONTENING ALL INFO OF TE INSERTION
+├── TE_GENOME
+│   ├── GENOME
+│   │   ├── ALL_TE_FRAGMENTS.tsv
+│   │   ├── ALL_TE_MATCHES.tsv
+│   │   ├── ALL_TE_COPIES.tsv
+│   │   ├── ALL_TE_RELATIONS.tsv
+│   │   ├── POSITION_ALL_TE.bed
+│   │   └── ALL_TE.gff3
+│   └── REFERENCE ## optional second target
 ├── DELETION_TE.bed -> INSIDER/TE_DETECTION/DELETION_TE.bed ##**TE DELETION POSTION ON GENOME
 ├── DELETION_TE_ON_REF.bed -> INSIDER/TE_DETECTION/DELETION_TE_ON_REF.bed ##**TE DELETION POSITION ON REFERENCE
 ├── SOFT_TE.bed -> OUTSIDER/TE_DETECTION/SOFT/SOFT_TE.bed ##**TE INSERTION FOUND IN SOFT READS

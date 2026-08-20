@@ -55,22 +55,25 @@ snakemake --snakefile workflow/Snakefile \
   --cores 8 insider_te_detection
 ```
 
-Whole-assembly TE annotation is an independent optional target:
+Resident whole-assembly TE annotation is an independent optional target:
 
 ```bash
 snakemake --snakefile workflow/Snakefile \
   --configfile tests/workflow/refactor_config.yml \
-  --cores 8 insider_all_te
+  --cores 8 te_genome
 ```
 
-It is included in the default target when
-`CHOICE.INSIDER_VARIANT.DETECT_ALL_TE` is true. The migrated two-pass BLAST
-procedure reproduces `ALL_TE.csv`, `ALL_TE_COMBINE_TE.csv` and
-`POSITION_ALL_TE.bed` byte for byte on the test fixture, while declaring its
-intermediates and accepting a valid zero-hit result. This resident-TE
-annotation is deliberately not merged into the variant-associated
-`TE_INFOS.bed` or Quarto report. Its compatibility limits are recorded in
-`docs/decisions/0009-insider-all-te-compatibility.md`.
+It is included in the default target when `CHOICE.PIPELINE.TE_GENOME` is true;
+the old `insider_all_te` target and `DETECT_ALL_TE` choice remain temporary
+aliases. `PARAMS.TE_GENOME.TARGETS` selects `GENOME` and optionally `REFERENCE`.
+One TE-versus-assembly BLAST is converted into audited fragments, collinear
+matches, physical copies, alternative family assignments, provisional
+relations, BED and GFF3. The permissive discovery thresholds are independent
+from full-length classification. See
+`docs/decisions/0010-te-genome-resident-annotation.md`.
+
+This resident annotation is deliberately not merged into the
+variant-associated `TE_INFOS.bed` or Quarto report.
 
 Insertion and deletion branches are independent. A sample with no qualifying
 SV, no sequence in one category, or no BLAST hit now produces canonical empty

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import csv
 import hashlib
 from pathlib import Path
 
@@ -35,17 +36,25 @@ INSIDER_TE_FILES = (
     "DELETION_TE_ON_REF.bed",
 )
 
-INSIDER_ALL_TE_EXACT_FILES = (
-    "INSIDER/TE_DETECTION/ALL_TE.csv",
-    "INSIDER/TE_DETECTION/ALL_TE_COMBINE_TE.csv",
-    "INSIDER/TE_DETECTION/POSITION_ALL_TE.bed",
+TE_GENOME_TABLES = (
+    "ALL_TE_FRAGMENTS.tsv",
+    "ALL_TE_MATCHES.tsv",
+    "ALL_TE_COPIES.tsv",
+    "ALL_TE_RELATIONS.tsv",
 )
 
-INSIDER_ALL_TE_EXPECTED_COUNTS = {
-    "INSIDER/TE_DETECTION/ALL_TE.csv": 328,
-    "INSIDER/TE_DETECTION/ALL_TE_COMBINE_TE.csv": 332,
-    "INSIDER/TE_DETECTION/POSITION_ALL_TE.bed": 327,
+TE_GENOME_EXPECTED_COUNTS = {
+    "ALL_TE_FRAGMENTS.tsv": 11589,
+    "ALL_TE_MATCHES.tsv": 8336,
+    "ALL_TE_COPIES.tsv": 6224,
+    "ALL_TE_RELATIONS.tsv": 7301,
+    "POSITION_ALL_TE.bed": 6224,
+    "ALL_TE.gff3": 14560,
 }
+
+TE_GENOME_EXPECTED_TIERS = Counter(
+    {"full_length": 364, "partial": 1818, "degraded_relic": 4042}
+)
 
 INSIDER_FREQUENCY_EXACT_FILES = (
     "OUTSIDER/MAPPING_TO_REF/INSERTION_TE.bed",
@@ -251,6 +260,11 @@ def directory_files(path: Path) -> dict[Path, str]:
     }
 
 
+def read_table(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="") as handle:
+        return list(csv.DictReader(handle, delimiter="\t"))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("legacy", type=Path)
@@ -281,32 +295,60 @@ def main() -> int:
     elif digest(old_position) != digest(new_position):
         errors.append(f"INSIDER TE output differs: {position_file}")
 
-    for relative in INSIDER_ALL_TE_EXACT_FILES:
-        old = args.legacy / relative
-        new = args.migrated / relative
-        if not old.is_file() or not new.is_file():
-            errors.append(f"missing INSIDER whole-assembly TE output: {relative}")
-        elif digest(old) != digest(new):
-            errors.append(f"INSIDER whole-assembly TE output differs: {relative}")
+    te_genome = args.migrated / "TE_GENOME/GENOME"
+    for relative, expected_count in TE_GENOME_EXPECTED_COUNTS.items():
+        path = te_genome / relative
+        if not path.is_file():
+            errors.append(f"missing TE_GENOME output: {relative}")
+            continue
+        actual_count = sum(1 for _ in path.open("rb"))
+        if relative in TE_GENOME_TABLES:
+            actual_count -= 1
+        elif relative == "ALL_TE.gff3":
+            actual_count -= 1
+        if actual_count != expected_count:
+            errors.append(
+                f"TE_GENOME line count differs: {relative} "
+                f"({actual_count} != {expected_count})"
+            )
 
-    for relative, expected_count in INSIDER_ALL_TE_EXPECTED_COUNTS.items():
-        path = args.migrated / relative
-        if path.is_file():
-            actual_count = sum(1 for _ in path.open("rb"))
-            if actual_count != expected_count:
-                errors.append(
-                    f"INSIDER whole-assembly TE line count differs: {relative} "
-                    f"({actual_count} != {expected_count})"
-                )
+    if all((te_genome / relative).is_file() for relative in TE_GENOME_TABLES):
+        fragments = read_table(te_genome / "ALL_TE_FRAGMENTS.tsv")
+        matches = read_table(te_genome / "ALL_TE_MATCHES.tsv")
+        copies = read_table(te_genome / "ALL_TE_COPIES.tsv")
+        relations = read_table(te_genome / "ALL_TE_RELATIONS.tsv")
+        statuses = Counter(row["filter_status"] for row in fragments)
+        if statuses != Counter({"accepted": 10746, "rejected": 843}):
+            errors.append(f"TE_GENOME fragment filters differ: {dict(statuses)}")
+        tiers = Counter(row["status"] for row in copies)
+        if tiers != TE_GENOME_EXPECTED_TIERS:
+            errors.append(f"TE_GENOME completeness tiers differ: {dict(tiers)}")
+        ambiguous = sum(int(row["candidate_count"]) > 1 for row in copies)
+        if ambiguous != 1335:
+            errors.append(f"TE_GENOME ambiguous-copy count differs: {ambiguous}")
+        copy_ids = {row["copy_id"] for row in copies}
+        if len(copy_ids) != len(copies):
+            errors.append("TE_GENOME copy identifiers are not unique")
+        if any(row["copy_id"] not in copy_ids for row in matches):
+            errors.append("TE_GENOME match references an unknown copy")
+        primary = Counter(
+            row["copy_id"] for row in matches if row["assignment"] == "primary"
+        )
+        if set(primary) != copy_ids or any(count != 1 for count in primary.values()):
+            errors.append("TE_GENOME copies do not have exactly one primary match")
+        if any(
+            row["source_copy_id"] not in copy_ids
+            or row["target_copy_id"] not in copy_ids
+            for row in relations
+        ):
+            errors.append("TE_GENOME relation references an unknown copy")
 
     public_all_te = args.migrated / "POSITION_ALL_TE.bed"
-    internal_all_te = (
-        args.migrated / "INSIDER/TE_DETECTION/POSITION_ALL_TE.bed"
-    )
+    internal_all_te = te_genome / "POSITION_ALL_TE.bed"
     if not public_all_te.is_symlink():
-        errors.append("missing public INSIDER whole-assembly TE symlink")
+        errors.append("missing public TE_GENOME symlink")
     elif public_all_te.resolve() != internal_all_te.resolve():
-        errors.append("public INSIDER whole-assembly TE symlink has wrong target")
+        errors.append("public TE_GENOME symlink has wrong target")
 
     for relative in INSIDER_FREQUENCY_EXACT_FILES:
         old = args.legacy / relative
@@ -722,8 +764,8 @@ def main() -> int:
     print(f"Exact INSIDER files: {len(INSIDER_FILES)}")
     print(f"Exact INSIDER TE files: {len(INSIDER_TE_FILES) + 1}")
     print(
-        "Exact INSIDER whole-assembly TE files: "
-        f"{len(INSIDER_ALL_TE_EXACT_FILES)}"
+        "TE_GENOME semantics: 11,589 HSPs, 6,224 copies, 364 full-length, "
+        "1,335 ambiguous-family components"
     )
     print(
         "Exact INSIDER frequency files: "

@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted during the Snakemake 5.10 compatibility migration.
+Superseded by ADR 0010. The byte-compatible implementation remains available
+in Git history, but it is no longer part of the active workflow.
 
 ## Context
 

@@ -11,18 +11,30 @@ CHOICE:
     PIPELINE:
         OUTSIDER_VARIANT: False # D'ont change it
         INSIDER_VARIANT: True   # TE assembled (in genome)
+        TE_GENOME: False        # annotate resident TE copies across complete assemblies
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" # possibility (sniffles, no_sniffles) 
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with insiders integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
-    INSIDER_VARIANT:
-        DETECT_ALL_TE: False    # Warning can take long time
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
 
 
 PARAMS:
     THREADS: 8 #number of threads for some task
+    TE_GENOME:
+        TARGETS: ["GENOME"]
+        CHROM_KEEP: "."
+        MIN_PIDENT: 65
+        MIN_ALIGNED_BP: 80
+        MAX_EVALUE: 1e-10
+        MIN_CHAIN_GAP: 200
+        MAX_GAP_FRACTION: 0.2
+        MAX_OVERLAP: 100
+        FULL_LENGTH_COVERAGE: 80
+        HIGH_CONFIDENCE_PIDENT: 80
+        PARTIAL_COVERAGE: 20
+        AMBIGUITY_OVERLAP: 0.8
     OUTSIDER_VARIANT:
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 preset option is map-ont by default (map-pb, map-ont etc)
@@ -41,9 +53,7 @@ PARAMS:
             TIME_LIMIT: 0 # time limit for processing SV detection (rule TrEMOLO_SV_TE); put value >= 0 (hours); 0 means no time limit
         PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" # option of TrEMOLO/pipeline/lib/python/parse_blast_main.py  Warning d'ont put -c option
     INSIDER_VARIANT:
-        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80" 
+        PARS_BLN_OPTION: "--min-size-percent 80 --min-pident 80"
         MINIMAP2:
             PRESET_OPTION: 'asm5' # minimap2 preset option is asm5 by default (asm5, asm10, asm20 etc)
             OPTION: '--split-prefix tmp_TrEMOLO_split-prefix'
-        
-        
