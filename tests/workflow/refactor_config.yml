@@ -9,10 +9,10 @@ CHOICE:
   PIPELINE:
     OUTSIDER_VARIANT: true
     INSIDER_VARIANT: true
-    REPORT: false
+    REPORT: true
   OUTSIDER_VARIANT:
     CALL_SV: sniffles
-    INTEGRATE_TE_TO_GENOME: false
+    INTEGRATE_TE_TO_GENOME: true
     CLIPPED_READS: true
 
 TOOLS:
