@@ -6,7 +6,16 @@
   const data = JSON.parse(node.textContent);
   const calls = data.calls || [];
   const PAGE_SIZE = 50;
-  const state = { filtered: calls.slice(), page: 0 };
+  const EVENT_TYPE_COLORS = [
+    "#087f78", "#6f5bd3", "#ed8a3b", "#c44f70", "#3d7db7",
+    "#a06b20", "#6b8e23", "#8b5e83", "#4f737b", "#b24b3e",
+  ];
+  const state = {
+    filtered: calls.slice(),
+    page: 0,
+    frequencyPositionChrom: null,
+    hiddenFrequencyPositionTypes: new Set(),
+  };
   const $ = (id) => document.getElementById(id);
   const formatInteger = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
   const formatDecimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 });
@@ -53,6 +62,11 @@
     $("trm-download-calls").addEventListener("click", downloadCalls);
     $("trm-page-previous").addEventListener("click", () => changePage(-1));
     $("trm-page-next").addEventListener("click", () => changePage(1));
+    $("trm-frequency-position-chrom").addEventListener("change", (event) => {
+      state.frequencyPositionChrom = event.target.value;
+      state.hiddenFrequencyPositionTypes.clear();
+      renderFrequencyPositionChart();
+    });
   }
 
   function applyFilters() {
@@ -80,6 +94,7 @@
       return true;
     });
     state.page = 0;
+    state.hiddenFrequencyPositionTypes.clear();
     renderSelection();
   }
 
@@ -206,6 +221,171 @@
     const element = document.createElementNS("http://www.w3.org/2000/svg", name);
     Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
     return element;
+  }
+
+  function eventTypeColorMap() {
+    const types = [...new Set(calls.map((call) => call.event_type))]
+      .sort((a, b) => String(a).localeCompare(String(b)));
+    return new Map(types.map((eventType, index) => [
+      eventType,
+      EVENT_TYPE_COLORS[index % EVENT_TYPE_COLORS.length],
+    ]));
+  }
+
+  function compactPosition(value) {
+    if (Math.abs(value) >= 1e9) return `${formatDecimal.format(value / 1e9)}G`;
+    if (Math.abs(value) >= 1e6) return `${formatDecimal.format(value / 1e6)}M`;
+    if (Math.abs(value) >= 1e3) return `${formatDecimal.format(value / 1e3)}k`;
+    return formatInteger.format(value);
+  }
+
+  function renderFrequencyPositionLegend(types, colors) {
+    const target = $("trm-frequency-position-legend");
+    target.replaceChildren();
+    types.forEach((eventType) => {
+      const button = document.createElement("button");
+      const hidden = state.hiddenFrequencyPositionTypes.has(eventType);
+      button.type = "button";
+      button.className = `trm-legend-button${hidden ? " trm-legend-button-hidden" : ""}`;
+      button.setAttribute("aria-pressed", hidden ? "false" : "true");
+      button.title = `${hidden ? "Show" : "Hide"} ${eventType}`;
+      const marker = document.createElement("i");
+      marker.style.background = colors.get(eventType);
+      const label = document.createElement("span");
+      label.textContent = eventType;
+      button.append(marker, label);
+      button.addEventListener("click", () => {
+        if (state.hiddenFrequencyPositionTypes.has(eventType)) {
+          state.hiddenFrequencyPositionTypes.delete(eventType);
+        } else {
+          state.hiddenFrequencyPositionTypes.add(eventType);
+        }
+        renderFrequencyPositionChart();
+      });
+      target.appendChild(button);
+    });
+  }
+
+  function renderFrequencyPositionChart() {
+    const target = $("trm-frequency-position-chart");
+    const selector = $("trm-frequency-position-chrom");
+    const frequencyCalls = state.filtered.filter((call) => call.display_frequency !== null);
+    const chromosomes = [...new Set(frequencyCalls.map((call) => call.chrom))]
+      .sort((a, b) => String(a).localeCompare(String(b)));
+
+    if (!chromosomes.length) {
+      selector.replaceChildren();
+      selector.disabled = true;
+      $("trm-frequency-position-legend").replaceChildren();
+      state.frequencyPositionChrom = null;
+      return emptyChart(target, "No frequency estimate in the current selection");
+    }
+
+    selector.disabled = false;
+    if (!chromosomes.includes(state.frequencyPositionChrom)) {
+      const globallySelectedChromosome = $("trm-filter-chrom").value;
+      state.frequencyPositionChrom = chromosomes.includes(globallySelectedChromosome)
+        ? globallySelectedChromosome
+        : chromosomes[0];
+      state.hiddenFrequencyPositionTypes.clear();
+    }
+    selectOptions(selector, chromosomes, "");
+    selector.removeChild(selector.firstElementChild);
+    selector.value = state.frequencyPositionChrom;
+
+    const chromosomeCalls = frequencyCalls.filter(
+      (call) => call.chrom === state.frequencyPositionChrom
+    );
+    const types = [...new Set(chromosomeCalls.map((call) => call.event_type))]
+      .sort((a, b) => String(a).localeCompare(String(b)));
+    const colors = eventTypeColorMap();
+    renderFrequencyPositionLegend(types, colors);
+    const visibleCalls = chromosomeCalls.filter(
+      (call) => !state.hiddenFrequencyPositionTypes.has(call.event_type)
+    );
+    if (!visibleCalls.length) {
+      return emptyChart(target, "All event types are hidden for this chromosome");
+    }
+
+    const width = 1100;
+    const height = 420;
+    const margin = { top: 22, right: 25, bottom: 54, left: 72 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const chromosomeInfo = (data.chromosome_summary || []).find(
+      (item) => item.chrom === state.frequencyPositionChrom
+    );
+    const observedMaximum = Math.max(...chromosomeCalls.map((call) => call.start), 1);
+    const xMaximum = Math.max(chromosomeInfo && chromosomeInfo.length || 0, observedMaximum, 1);
+    const x = (value) => margin.left + plotWidth * Math.min(1, Math.max(0, value / xMaximum));
+    const y = (value) => margin.top + plotHeight * (1 - Math.min(100, Math.max(0, value)) / 100);
+    const svg = svgElement("svg", {
+      viewBox: `0 0 ${width} ${height}`,
+      role: "img",
+      "aria-label": `TE frequency by position on ${state.frequencyPositionChrom}`,
+    });
+
+    [0, 25, 50, 75, 100].forEach((value) => {
+      const gridY = y(value);
+      svg.appendChild(svgElement("line", {
+        x1: margin.left, y1: gridY, x2: width - margin.right, y2: gridY,
+        class: "trm-scatter-grid",
+      }));
+      const label = svgElement("text", {
+        x: margin.left - 12, y: gridY + 4,
+        class: "trm-scatter-axis-label", "text-anchor": "end",
+      });
+      label.textContent = `${value}%`;
+      svg.appendChild(label);
+    });
+    for (let index = 0; index <= 5; index += 1) {
+      const value = xMaximum * index / 5;
+      const tickX = x(value);
+      svg.appendChild(svgElement("line", {
+        x1: tickX, y1: margin.top, x2: tickX, y2: height - margin.bottom,
+        class: "trm-scatter-grid trm-scatter-grid-vertical",
+      }));
+      const label = svgElement("text", {
+        x: tickX, y: height - margin.bottom + 22,
+        class: "trm-scatter-axis-label", "text-anchor": "middle",
+      });
+      label.textContent = compactPosition(value);
+      svg.appendChild(label);
+    }
+
+    const xTitle = svgElement("text", {
+      x: margin.left + plotWidth / 2, y: height - 8,
+      class: "trm-scatter-axis-title", "text-anchor": "middle",
+    });
+    xTitle.textContent = `Position on ${state.frequencyPositionChrom} (bp)`;
+    const yTitle = svgElement("text", {
+      x: 17, y: margin.top + plotHeight / 2,
+      class: "trm-scatter-axis-title", "text-anchor": "middle",
+      transform: `rotate(-90 17 ${margin.top + plotHeight / 2})`,
+    });
+    yTitle.textContent = "Frequency (%)";
+    svg.append(xTitle, yTitle);
+
+    visibleCalls.forEach((call) => {
+      const point = svgElement("circle", {
+        cx: x(call.start),
+        cy: y(call.display_frequency),
+        r: 5,
+        fill: colors.get(call.event_type),
+        class: "trm-frequency-position-point",
+        tabindex: "0",
+      });
+      const title = svgElement("title");
+      title.textContent = [
+        `${call.family} · ${call.event_id}`,
+        `${call.event_type} · ${call.source} · strand ${call.strand}`,
+        `${call.chrom}:${formatInteger.format(call.start)}`,
+        `frequency ${valueOrDash(call.display_frequency, "%")}`,
+      ].join("\n");
+      point.appendChild(title);
+      svg.appendChild(point);
+    });
+    target.replaceChildren(svg);
   }
 
   function renderGenomeChart() {
@@ -430,6 +610,7 @@
     renderFamilyChart();
     renderFrequencyChart();
     renderGenomeChart();
+    renderFrequencyPositionChart();
     renderEvidence();
     renderTable();
   }

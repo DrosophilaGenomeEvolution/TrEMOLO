@@ -71,6 +71,24 @@ lang: en
 </section>
 ```
 
+```{=html}
+<section class="trm-panel">
+  <div class="trm-panel-heading trm-frequency-position-heading">
+    <div>
+      <p class="trm-kicker">Allele landscape</p>
+      <h3>Frequency by genomic position and event type</h3>
+    </div>
+    <label class="trm-chart-control">
+      Chromosome
+      <select id="trm-frequency-position-chrom" aria-label="Chromosome displayed in the frequency-by-position plot"></select>
+    </label>
+  </div>
+  <p class="trm-caption trm-caption-left">x: position in base pairs · y: displayed frequency (%) · color: legacy event type</p>
+  <div id="trm-frequency-position-legend" class="trm-plot-legend" aria-label="Event type legend"></div>
+  <div id="trm-frequency-position-chart" class="trm-chart trm-frequency-position-chart"></div>
+</section>
+```
+
 # Explore calls
 
 The filters below update every chart and the table. Downloading exports the current selection as a TSV file without modifying the pipeline outputs.

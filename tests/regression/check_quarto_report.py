@@ -26,6 +26,12 @@ def source(tremolo_id):
     return "UNKNOWN"
 
 
+def optional_number(value):
+    if value in {"", ".", "NONE", "NONE-FREQA", "NONE-FREQB", "INSIDER"}:
+        return None
+    return float(value.replace(",", "."))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("work_directory", type=Path)
@@ -48,12 +54,18 @@ def main():
     expected_events = Counter(row[14] for row in calls)
     expected_strands = Counter(row[4] for row in calls)
     expected_tsd = sum(row[5] not in {"", ".", "NONE"} for row in calls)
+    expected_frequencies = []
+    for row in calls:
+        raw = optional_number(row[10])
+        clipped = optional_number(row[11])
+        expected_frequencies.append(clipped if clipped is not None else raw)
 
     expected = {
         "calls": len(calls),
         "families": len({row[3].partition("|")[0] for row in calls}),
         "chromosomes_with_calls": len({row[0] for row in calls}),
         "tsd_confirmed": expected_tsd,
+        "frequency_available": sum(value is not None for value in expected_frequencies),
         "sources": dict(sorted(expected_sources.items())),
         "event_types": dict(sorted(expected_events.items())),
         "strands": dict(sorted(expected_strands.items())),
@@ -65,12 +77,32 @@ def main():
         raise SystemExit("report TE_INFOS checksum mismatch")
     if len(data["calls"]) != len(calls):
         raise SystemExit("report call projection is incomplete")
+    for line_number, (row, projected, frequency) in enumerate(
+        zip(calls, data["calls"], expected_frequencies), 2
+    ):
+        expected_projection = {
+            "chrom": row[0],
+            "start": int(row[1]),
+            "event_type": row[14],
+            "display_frequency": frequency,
+        }
+        observed_projection = {
+            key: projected.get(key) for key in expected_projection
+        }
+        if observed_projection != expected_projection:
+            raise SystemExit(
+                f"report frequency-position projection mismatch at TE_INFOS line {line_number}: "
+                f"{observed_projection!r} != {expected_projection!r}"
+            )
 
     html = report_html.read_text(errors="replace")
     required_ids = (
         "tremolo-report-data",
         "trm-summary-cards",
         "trm-family-chart",
+        "trm-frequency-position-chart",
+        "trm-frequency-position-chrom",
+        "trm-frequency-position-legend",
         "trm-call-table-body",
         "trm-proximity-table-body",
     )
@@ -88,4 +120,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

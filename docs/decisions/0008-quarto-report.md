@@ -59,6 +59,9 @@ Report equivalence is semantic, not byte-for-byte HTML equivalence:
   directly from that table;
 - the displayed frequency preserves the historical preference for
   `FREQ_WITH_CLIPPED`, falling back to `FREQ`;
+- the frequency landscape preserves the historical position-versus-frequency
+  view, one chromosome at a time, with points grouped by the legacy `TYPE`
+  field and all values driven by the current report filters;
 - the report embeds the input `TE_INFOS.bed` SHA-256 checksum;
 - the HTML loads no external script or stylesheet and performs no network
   request;
