@@ -5,6 +5,8 @@
   if (!node) return;
   const data = JSON.parse(node.textContent);
   const calls = data.calls || [];
+  const resident = data.resident_te || { available: false, summary: {}, copies: [], thresholds: {} };
+  const residentCopies = resident.copies || [];
   const PAGE_SIZE = 50;
   const EVENT_TYPE_COLORS = [
     "#087f78", "#6f5bd3", "#ed8a3b", "#c44f70", "#3d7db7",
@@ -15,6 +17,13 @@
     page: 0,
     frequencyPositionChrom: null,
     hiddenFrequencyPositionTypes: new Set(),
+  };
+  const residentState = {
+    filtered: [],
+    page: 0,
+    fullCoverage: Number(resident.thresholds.full_length_coverage || 80),
+    fullIdentity: Number(resident.thresholds.high_confidence_pident || 80),
+    partialCoverage: Number(resident.thresholds.partial_coverage || 20),
   };
   const $ = (id) => document.getElementById(id);
   const formatInteger = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -605,6 +614,227 @@
     });
   }
 
+  function residentTier(copy) {
+    if (copy.coverage >= residentState.fullCoverage && copy.identity >= residentState.fullIdentity) return "full_length";
+    if (copy.coverage >= residentState.partialCoverage) return "partial";
+    return "degraded_relic";
+  }
+
+  function residentCandidates(copy) {
+    if (!copy.candidates || !copy.candidates.length) return copy.te_candidates.join(", ");
+    return copy.candidates.map((candidate) =>
+      `${candidate.te} [${candidate.assignment}; cov ${formatDecimal.format(candidate.coverage)}%; id ${formatDecimal.format(candidate.identity)}%]`
+    ).join(" · ");
+  }
+
+  function initializeResidentFilters() {
+    const uniqueResident = (field) => [...new Set(residentCopies.map((copy) => copy[field]))]
+      .sort((a, b) => String(a).localeCompare(String(b)));
+    selectOptions($("trm-resident-filter-target"), uniqueResident("target"), "All targets");
+    selectOptions($("trm-resident-filter-chrom"), uniqueResident("chrom"), "All chromosomes");
+    selectOptions($("trm-resident-filter-status"), uniqueResident("status"), "All configured tiers");
+    ["target", "chrom", "status", "ambiguity"].forEach((key) => {
+      $(`trm-resident-filter-${key}`).addEventListener("change", applyResidentFilters);
+    });
+    $("trm-resident-filter-search").addEventListener("input", applyResidentFilters);
+    $("trm-resident-reset-filters").addEventListener("click", () => {
+      ["target", "chrom", "status"].forEach((key) => { $(`trm-resident-filter-${key}`).value = ""; });
+      $("trm-resident-filter-ambiguity").value = "multi_te";
+      $("trm-resident-filter-search").value = "";
+      applyResidentFilters();
+    });
+    $("trm-resident-download").addEventListener("click", downloadResidentCopies);
+    $("trm-resident-page-previous").addEventListener("click", () => changeResidentPage(-1));
+    $("trm-resident-page-next").addEventListener("click", () => changeResidentPage(1));
+  }
+
+  function applyResidentFilters() {
+    const target = $("trm-resident-filter-target").value;
+    const chrom = $("trm-resident-filter-chrom").value;
+    const status = $("trm-resident-filter-status").value;
+    const ambiguity = $("trm-resident-filter-ambiguity").value;
+    const search = $("trm-resident-filter-search").value.trim().toLocaleLowerCase();
+    residentState.filtered = residentCopies.filter((copy) => {
+      if (target && copy.target !== target) return false;
+      if (chrom && copy.chrom !== chrom) return false;
+      if (status && copy.status !== status) return false;
+      if (ambiguity === "multi_te" && copy.te_candidates.length <= 1) return false;
+      if (ambiguity === "ambiguous" && copy.candidate_count <= 1) return false;
+      if (ambiguity === "unique" && copy.candidate_count > 1) return false;
+      if (search) {
+        const haystack = [copy.copy_id, copy.target, copy.chrom, copy.primary_te, ...copy.te_candidates]
+          .join(" ").toLocaleLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
+      return true;
+    });
+    residentState.page = 0;
+    renderResidentTable();
+  }
+
+  function renderResidentCards() {
+    const summary = resident.summary || {};
+    const tiers = summary.tiers || {};
+    const target = $("trm-resident-cards");
+    target.replaceChildren(
+      summaryCard("Resident copies", formatInteger.format(summary.copies || 0), Object.entries(summary.targets || {}).map(([name, count]) => `${name} ${count}`).join(" · ")),
+      summaryCard("Primary families", formatInteger.format(summary.families || 0), "distinct primary assignments"),
+      summaryCard("Full length", formatInteger.format(tiers.full_length || 0), "configured classification"),
+      summaryCard("Partial / relic", `${formatInteger.format(tiers.partial || 0)} / ${formatInteger.format(tiers.degraded_relic || 0)}`, "configured classification"),
+      summaryCard("Multi-TE copies", formatInteger.format(summary.multi_te_copies || 0), `${formatInteger.format(summary.ambiguous_copies || 0)} copies retain multiple matches`)
+    );
+  }
+
+  function initializeResidentThresholds() {
+    const controls = [
+      ["full", "fullCoverage"], ["identity", "fullIdentity"], ["partial", "partialCoverage"],
+    ];
+    controls.forEach(([id, field]) => {
+      const input = $(`trm-resident-${id}-threshold`);
+      input.value = residentState[field];
+      input.addEventListener("input", () => {
+        residentState[field] = Number(input.value);
+        renderResidentCalibration();
+      });
+    });
+    $("trm-resident-reset-thresholds").addEventListener("click", () => {
+      residentState.fullCoverage = Number(resident.thresholds.full_length_coverage || 80);
+      residentState.fullIdentity = Number(resident.thresholds.high_confidence_pident || 80);
+      residentState.partialCoverage = Number(resident.thresholds.partial_coverage || 20);
+      controls.forEach(([id, field]) => { $(`trm-resident-${id}-threshold`).value = residentState[field]; });
+      renderResidentCalibration();
+    });
+  }
+
+  function renderResidentCalibration() {
+    $("trm-resident-full-value").textContent = `${residentState.fullCoverage}%`;
+    $("trm-resident-identity-value").textContent = `${residentState.fullIdentity}%`;
+    $("trm-resident-partial-value").textContent = `${residentState.partialCoverage}%`;
+    const counts = { full_length: 0, partial: 0, degraded_relic: 0 };
+    residentCopies.forEach((copy) => { counts[residentTier(copy)] += 1; });
+    $("trm-resident-calibration-summary").textContent = [
+      `${formatInteger.format(counts.full_length)} full-length`,
+      `${formatInteger.format(counts.partial)} partial`,
+      `${formatInteger.format(counts.degraded_relic)} degraded/relic`,
+      `from ${formatInteger.format(residentCopies.length)} reported copies`,
+      `discovery floor: ${resident.thresholds.min_pident}% identity and ${resident.thresholds.min_aligned_bp} aligned bp`,
+    ].join(" · ");
+
+    const target = $("trm-resident-calibration-chart");
+    if (!residentCopies.length) return emptyChart(target, "No resident copy to calibrate");
+    const width = 1000;
+    const height = 500;
+    const margin = { top: 25, right: 25, bottom: 55, left: 65 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const x = (value) => margin.left + plotWidth * Math.min(100, Math.max(0, value)) / 100;
+    const y = (value) => margin.top + plotHeight * (1 - Math.min(100, Math.max(0, value)) / 100);
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "Resident TE coverage and identity calibration" });
+    [0, 20, 40, 60, 80, 100].forEach((value) => {
+      svg.appendChild(svgElement("line", { x1: x(value), y1: margin.top, x2: x(value), y2: height - margin.bottom, class: "trm-scatter-grid trm-scatter-grid-vertical" }));
+      svg.appendChild(svgElement("line", { x1: margin.left, y1: y(value), x2: width - margin.right, y2: y(value), class: "trm-scatter-grid" }));
+      const xLabel = svgElement("text", { x: x(value), y: height - margin.bottom + 22, class: "trm-scatter-axis-label", "text-anchor": "middle" });
+      xLabel.textContent = `${value}%`;
+      svg.appendChild(xLabel);
+      const yLabel = svgElement("text", { x: margin.left - 10, y: y(value) + 4, class: "trm-scatter-axis-label", "text-anchor": "end" });
+      yLabel.textContent = `${value}%`;
+      svg.appendChild(yLabel);
+    });
+    const stride = Math.max(1, Math.ceil(residentCopies.length / 2500));
+    residentCopies.filter((copy, index) => index % stride === 0).forEach((copy) => {
+      const colors = { full_length: "#087f78", partial: "#ed8a3b", degraded_relic: "#a8b4b9" };
+      const point = svgElement("circle", { cx: x(copy.coverage), cy: y(copy.identity), r: 3.2, fill: colors[residentTier(copy)], class: "trm-resident-point" });
+      const title = svgElement("title");
+      title.textContent = `${copy.primary_te} · ${copy.copy_id}\n${copy.target}:${copy.chrom}:${copy.start}-${copy.end}\ncoverage ${copy.coverage}% · identity ${copy.identity}%`;
+      point.appendChild(title);
+      svg.appendChild(point);
+    });
+    svg.appendChild(svgElement("line", { x1: x(residentState.fullCoverage), y1: margin.top, x2: x(residentState.fullCoverage), y2: height - margin.bottom, class: "trm-threshold-line" }));
+    svg.appendChild(svgElement("line", { x1: margin.left, y1: y(residentState.fullIdentity), x2: width - margin.right, y2: y(residentState.fullIdentity), class: "trm-threshold-line" }));
+    svg.appendChild(svgElement("line", { x1: x(residentState.partialCoverage), y1: margin.top, x2: x(residentState.partialCoverage), y2: height - margin.bottom, class: "trm-threshold-line trm-threshold-line-secondary" }));
+    const xTitle = svgElement("text", { x: margin.left + plotWidth / 2, y: height - 8, class: "trm-scatter-axis-title", "text-anchor": "middle" });
+    xTitle.textContent = "Consensus coverage";
+    const yTitle = svgElement("text", { x: 16, y: margin.top + plotHeight / 2, class: "trm-scatter-axis-title", transform: `rotate(-90 16 ${margin.top + plotHeight / 2})`, "text-anchor": "middle" });
+    yTitle.textContent = "Identity";
+    svg.append(xTitle, yTitle);
+    target.replaceChildren(svg);
+  }
+
+  function renderResidentEvidence() {
+    const fragmentRows = Object.entries((resident.summary || {}).fragment_status || {}).map(([label, value]) => ({
+      label: label.replace("rejected:", "Rejected · "), value,
+      className: label === "accepted" ? "trm-bar-neutral" : "trm-bar-missing",
+    }));
+    renderSimpleBars("trm-resident-fragment-summary", fragmentRows);
+    const relationRows = Object.entries((resident.summary || {}).relation_types || {}).map(([label, value]) => ({ label, value, className: "trm-bar-outsider" }));
+    renderSimpleBars("trm-resident-relation-summary", relationRows);
+  }
+
+  function renderResidentTable() {
+    const body = $("trm-resident-table-body");
+    body.replaceChildren();
+    const pages = Math.max(1, Math.ceil(residentState.filtered.length / PAGE_SIZE));
+    residentState.page = Math.min(residentState.page, pages - 1);
+    const start = residentState.page * PAGE_SIZE;
+    residentState.filtered.slice(start, start + PAGE_SIZE).forEach((copy) => {
+      const row = document.createElement("tr");
+      appendTextCell(row, copy.target);
+      appendTextCell(row, `${copy.chrom}:${formatInteger.format(copy.start)}–${formatInteger.format(copy.end)} (${copy.strand})`);
+      appendTextCell(row, copy.primary_te);
+      const candidates = appendTextCell(row, residentCandidates(copy));
+      candidates.className = "trm-candidate-cell";
+      appendTextCell(row, valueOrDash(copy.coverage, "%"));
+      appendTextCell(row, valueOrDash(copy.identity, "%"));
+      appendTextCell(row, copy.aligned_bp);
+      appendTextCell(row, copy.fragments);
+      appendTextCell(row, copy.status);
+      appendTextCell(row, copy.structure);
+      body.appendChild(row);
+    });
+    $("trm-resident-page-status").textContent = residentState.filtered.length ? `Page ${residentState.page + 1} / ${pages}` : "No result";
+    $("trm-resident-page-previous").disabled = residentState.page === 0;
+    $("trm-resident-page-next").disabled = residentState.page >= pages - 1;
+    $("trm-resident-filter-count").textContent = `${formatInteger.format(residentState.filtered.length)} / ${formatInteger.format(residentCopies.length)} copies`;
+  }
+
+  function changeResidentPage(delta) {
+    residentState.page += delta;
+    renderResidentTable();
+  }
+
+  function downloadResidentCopies() {
+    const columns = ["target", "chrom", "start", "end", "strand", "copy_id", "primary_te", "te_candidates", "coverage", "identity", "aligned_bp", "fragments", "candidate_count", "status", "structure"];
+    const lines = [columns.join("\t")];
+    residentState.filtered.forEach((copy) => {
+      lines.push(columns.map((column) => {
+        const value = column === "te_candidates" ? copy.te_candidates.join(";") : copy[column];
+        return value === null || value === undefined ? "." : String(value).replace(/[\t\r\n]/g, " ");
+      }).join("\t"));
+    });
+    const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/tab-separated-values;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "TrEMOLO.resident-TE-copies.tsv";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  function renderResidentSection() {
+    if (!resident.available) {
+      $("trm-resident-content").hidden = true;
+      const note = $("trm-resident-unavailable");
+      note.hidden = false;
+      note.textContent = "Resident TE annotation is not available in this run. Enable CHOICE.PIPELINE.TE_GENOME to populate this independent assembly catalog.";
+      return;
+    }
+    renderResidentCards();
+    initializeResidentThresholds();
+    initializeResidentFilters();
+    renderResidentCalibration();
+    renderResidentEvidence();
+    applyResidentFilters();
+  }
+
   function renderSelection() {
     renderCards();
     renderFamilyChart();
@@ -622,5 +852,6 @@
   initializeFilters();
   renderSelection();
   renderProximity();
+  renderResidentSection();
   renderContext();
 })();

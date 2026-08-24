@@ -326,6 +326,9 @@ def main() -> int:
         ambiguous = sum(int(row["candidate_count"]) > 1 for row in copies)
         if ambiguous != 1335:
             errors.append(f"TE_GENOME ambiguous-copy count differs: {ambiguous}")
+        multi_te = sum(len(row["te_candidates"].split(";")) > 1 for row in copies)
+        if multi_te != 1016:
+            errors.append(f"TE_GENOME multi-TE-label count differs: {multi_te}")
         copy_ids = {row["copy_id"] for row in copies}
         if len(copy_ids) != len(copies):
             errors.append("TE_GENOME copy identifiers are not unique")
@@ -765,7 +768,7 @@ def main() -> int:
     print(f"Exact INSIDER TE files: {len(INSIDER_TE_FILES) + 1}")
     print(
         "TE_GENOME semantics: 11,589 HSPs, 6,224 copies, 364 full-length, "
-        "1,335 ambiguous-family components"
+        "1,335 multi-match components (1,016 multi-TE labels)"
     )
     print(
         "Exact INSIDER frequency files: "

@@ -13,6 +13,18 @@ REPORT_SCRIPT = PIPELINE_ROOT / "report/quarto/report.js"
 REPORT_BUILDER = PIPELINE_ROOT / "lib/python/workflow/build_quarto_report.py"
 REPORT_INPUT_MANIFEST = f"{WORKDIR}/input_manifest.json"
 REPORT_LOG_DIR = f"{WORKDIR}/log"
+REPORT_RESIDENT_COPIES = [
+    TE_GENOME_COPIES.format(target=target) for target in TE_GENOME_TARGETS
+] if TE_GENOME_ENABLED else []
+REPORT_RESIDENT_MATCHES = [
+    TE_GENOME_MATCHES.format(target=target) for target in TE_GENOME_TARGETS
+] if TE_GENOME_ENABLED else []
+REPORT_RESIDENT_FRAGMENTS = [
+    TE_GENOME_FRAGMENTS.format(target=target) for target in TE_GENOME_TARGETS
+] if TE_GENOME_ENABLED else []
+REPORT_RESIDENT_RELATIONS = [
+    TE_GENOME_RELATIONS.format(target=target) for target in TE_GENOME_TARGETS
+] if TE_GENOME_ENABLED else []
 
 if not isinstance(REPORT_LOCUS_WINDOW, int) or REPORT_LOCUS_WINDOW < 0:
     raise ValueError("REPORT.LOCUS_WINDOW must be a non-negative integer")
@@ -44,6 +56,10 @@ rule prepare_quarto_report:
         manifest=REPORT_INPUT_MANIFEST,
         mapping_stats=report_optional_input(MAPPING_STATS, TE_INFOS_WITH_OUTSIDER),
         sv_vcf=report_optional_input(SV_VCF, TE_INFOS_WITH_OUTSIDER),
+        resident_copies=REPORT_RESIDENT_COPIES,
+        resident_matches=REPORT_RESIDENT_MATCHES,
+        resident_fragments=REPORT_RESIDENT_FRAGMENTS,
+        resident_relations=REPORT_RESIDENT_RELATIONS,
         builder=str(REPORT_BUILDER),
         template=str(REPORT_TEMPLATE),
         style=str(REPORT_STYLE),
@@ -70,6 +86,15 @@ rule prepare_quarto_report:
             --input-manifest {input.manifest:q} \
             --mapping-stats {input.mapping_stats:q} \
             --sv-vcf {input.sv_vcf:q} \
+            --resident-copies {input.resident_copies:q} \
+            --resident-matches {input.resident_matches:q} \
+            --resident-fragments {input.resident_fragments:q} \
+            --resident-relations {input.resident_relations:q} \
+            --resident-min-pident {TE_GENOME_MIN_PIDENT} \
+            --resident-min-aligned-bp {TE_GENOME_MIN_ALIGNED_BP} \
+            --resident-full-length-coverage {TE_GENOME_FULL_LENGTH_COVERAGE} \
+            --resident-high-confidence-pident {TE_GENOME_HIGH_CONFIDENCE_PIDENT} \
+            --resident-partial-coverage {TE_GENOME_PARTIAL_COVERAGE} \
             --template {input.template:q} \
             --style {input.style:q} \
             --script {input.script:q} \

@@ -73,7 +73,9 @@ from full-length classification. See
 `docs/decisions/0010-te-genome-resident-annotation.md`.
 
 This resident annotation is deliberately not merged into the
-variant-associated `TE_INFOS.bed` or Quarto report.
+variant-associated `TE_INFOS.bed`. When both `TE_GENOME` and `REPORT` are
+enabled, its audited tables feed a separate resident-catalog section in the
+Quarto report.
 
 Insertion and deletion branches are independent. A sample with no qualifying
 SV, no sequence in one category, or no BLAST hit now produces canonical empty
@@ -188,7 +190,9 @@ It produces `REPORT/report-data.json`, the generated `REPORT/report.qmd`, and a
 single self-contained `REPORT/report.html`. The report has interactive source,
 type, chromosome, family, TSD and frequency filters; genome and family views;
 the complete call table; and an explicitly provisional nearby-call view. It
-does not use R, `curl`, a web server, or external JavaScript/CDN assets.
+also exposes the resident-copy tiers, a browser-only threshold calibration
+view, and all alternative TE assignments when `TE_GENOME` is enabled. It does
+not use R, `curl`, a web server, or external JavaScript/CDN assets.
 
 The refactored container definition pins Quarto 1.9.36. The previously built
 Snakemake 5.10 image does not contain it: that image can generate the QMD/data,
@@ -215,5 +219,7 @@ The INSIDER TSD and final call-table compatibility decision is recorded in
 `docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.
 The direct Quarto report migration is recorded in
 `docs/decisions/0008-quarto-report.md`.
+The resident-catalog report integration is recorded in
+`docs/decisions/0011-resident-te-quarto-report.md`.
 The whole-assembly INSIDER TE annotation decision is recorded in
 `docs/decisions/0009-insider-all-te-compatibility.md`.

@@ -99,7 +99,8 @@ With the default resident thresholds on the current Drosophila fixture:
   catalogue, so the permissive model adds evidence without dropping the old
   strict regions;
 - 1,818 are `partial` and 4,042 are `degraded_relic`;
-- 1,335 components retain more than one family match;
+- 1,335 components retain more than one match, including 1,016 with more than
+  one distinct TE label;
 - 7,301 geometric relations are explicitly provisional.
 
 These counts are a regression fixture, not evidence that the default thresholds
@@ -108,8 +109,10 @@ are universally optimal.
 ## Consequences and limits
 
 The new outputs are intentionally not byte-compatible with legacy ALL_TE. The
-variant-associated INSIDER/OUTSIDER calls, `TE_INFOS.bed`, their frequencies,
-TSD values and the Quarto report remain unchanged.
+variant-associated INSIDER/OUTSIDER calls, `TE_INFOS.bed`, their frequencies
+and TSD values remain unchanged. The Quarto report may project this catalog in
+a separate section without mixing resident copies into the variant call table;
+that presentation contract is described in decision 0011.
 
 The current Python implementation holds parsed HSPs in memory and is therefore
 expected to need further streaming or indexed grouping work for very large

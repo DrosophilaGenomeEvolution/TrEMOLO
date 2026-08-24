@@ -109,6 +109,41 @@ def main():
     for identifier in required_ids:
         if f'id="{identifier}"' not in html:
             raise SystemExit(f"rendered HTML lacks {identifier}")
+
+    resident = data.get("resident_te", {})
+    if resident.get("available"):
+        resident_rows = []
+        targets = resident.get("summary", {}).get("targets", {})
+        for target in targets:
+            copies_path = args.work_directory / f"TE_GENOME/{target}/ALL_TE_COPIES.tsv"
+            if not copies_path.is_file():
+                raise SystemExit(
+                    f"report exposes resident TE data but its {target} source table is missing"
+                )
+            with copies_path.open(newline="") as handle:
+                resident_rows.extend(csv.DictReader(handle, delimiter="\t"))
+        projected = resident.get("copies", [])
+        if len(projected) != len(resident_rows):
+            raise SystemExit("resident TE report projection is incomplete")
+        expected_ambiguous = sum(int(row["candidate_count"]) > 1 for row in resident_rows)
+        expected_multi_te = sum(len(row["te_candidates"].split(";")) > 1 for row in resident_rows)
+        if resident["summary"].get("ambiguous_copies") != expected_ambiguous:
+            raise SystemExit("resident TE ambiguous-copy count mismatch")
+        if resident["summary"].get("multi_te_copies") != expected_multi_te:
+            raise SystemExit("resident TE multi-label copy count mismatch")
+        if any(
+            copy["candidate_count"] > 1
+            and len(copy.get("candidates", [])) != copy["candidate_count"]
+            for copy in projected
+        ):
+            raise SystemExit("resident TE alternative assignments are incomplete")
+        for identifier in (
+            "trm-resident-cards",
+            "trm-resident-calibration-chart",
+            "trm-resident-table-body",
+        ):
+            if f'id="{identifier}"' not in html:
+                raise SystemExit(f"rendered HTML lacks {identifier}")
     if re.search(r"<(?:script|link)[^>]+(?:src|href)=[\"']https?://", html, re.I):
         raise SystemExit("rendered report loads an external script or stylesheet")
     print(

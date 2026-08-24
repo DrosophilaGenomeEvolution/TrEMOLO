@@ -112,6 +112,25 @@ body {
 .trm-frequency-position-point { stroke: rgba(255, 255, 255, 0.9); stroke-width: 1.1; opacity: 0.82; cursor: help; }
 .trm-frequency-position-point:hover, .trm-frequency-position-point:focus { opacity: 1; stroke: var(--trm-ink); stroke-width: 1.8; outline: none; }
 
+.trm-resident-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(10rem, 1fr)) auto;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+.trm-resident-controls label { display: grid; grid-template-columns: 1fr auto; gap: 0.35rem; color: var(--trm-muted); font-size: 0.72rem; font-weight: 700; }
+.trm-resident-controls output { color: var(--trm-ink); font-variant-numeric: tabular-nums; }
+.trm-resident-controls input { grid-column: 1 / -1; width: 100%; accent-color: var(--trm-teal); }
+.trm-resident-calibration-chart { overflow-x: auto; min-height: 25rem; }
+.trm-resident-calibration-chart svg { min-width: 760px; width: 100%; height: auto; }
+.trm-resident-point { opacity: 0.48; stroke: rgba(255, 255, 255, 0.65); stroke-width: 0.5; }
+.trm-resident-point:hover { opacity: 1; stroke: var(--trm-ink); stroke-width: 1.5; }
+.trm-threshold-line { stroke: var(--trm-teal-dark); stroke-width: 2.2; stroke-dasharray: 8 5; }
+.trm-threshold-line-secondary { stroke: var(--trm-outsider); }
+.trm-resident-filter-grid { grid-template-columns: repeat(6, minmax(8rem, 1fr)); }
+.trm-candidate-cell { white-space: normal !important; min-width: 24rem; max-width: 42rem; line-height: 1.45; }
+
 .trm-filter-grid { display: grid; grid-template-columns: repeat(6, minmax(8rem, 1fr)); gap: 0.8rem; }
 .trm-filter-grid label { display: flex; flex-direction: column; gap: 0.25rem; color: var(--trm-muted); font-size: 0.72rem; font-weight: 700; }
 .trm-filter-grid select, .trm-filter-grid input {
@@ -148,6 +167,8 @@ body {
 @media (max-width: 1100px) {
   .trm-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .trm-filter-grid { grid-template-columns: repeat(3, minmax(8rem, 1fr)); }
+  .trm-resident-controls { grid-template-columns: repeat(3, minmax(9rem, 1fr)); }
+  .trm-resident-controls .trm-button { grid-column: 1 / -1; justify-self: start; }
 }
 @media (max-width: 760px) {
   .trm-hero { align-items: start; flex-direction: column; padding: 1.25rem; }
@@ -158,4 +179,6 @@ body {
   .trm-toolbar { flex-wrap: wrap; }
   .trm-spacer { display: none; }
   .trm-frequency-position-heading { align-items: start; flex-direction: column; }
+  .trm-resident-controls { grid-template-columns: 1fr; }
+  .trm-resident-controls .trm-button { grid-column: auto; }
 }

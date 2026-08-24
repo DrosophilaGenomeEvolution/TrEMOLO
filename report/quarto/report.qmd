@@ -160,6 +160,72 @@ This view exposes calls whose breakpoint anchors fall within the configured wind
 </div>
 ```
 
+# Resident TE catalog
+
+This section is independent from INSIDER/OUTSIDER variant calls. It describes copies already present in each assembly selected by `TE_GENOME`, preserves alternative TE assignments at an ambiguous genomic interval, and exposes the current thresholds for calibration.
+
+```{=html}
+<div id="trm-resident-unavailable" class="trm-note" hidden></div>
+<div id="trm-resident-content">
+  <div id="trm-resident-cards" class="trm-card-grid"></div>
+
+  <section class="trm-panel">
+    <div class="trm-panel-heading">
+      <div><p class="trm-kicker">Threshold laboratory</p><h3>Coverage × identity classification</h3></div>
+      <span class="trm-caption">interactive preview only; pipeline files are unchanged</span>
+    </div>
+    <div class="trm-resident-controls">
+      <label>Full-length coverage <output id="trm-resident-full-value"></output><input id="trm-resident-full-threshold" type="range" min="0" max="100" step="1"></label>
+      <label>Full-length identity <output id="trm-resident-identity-value"></output><input id="trm-resident-identity-threshold" type="range" min="0" max="100" step="1"></label>
+      <label>Partial coverage <output id="trm-resident-partial-value"></output><input id="trm-resident-partial-threshold" type="range" min="0" max="100" step="1"></label>
+      <button id="trm-resident-reset-thresholds" type="button" class="trm-button trm-button-secondary">Reset configured values</button>
+    </div>
+    <p id="trm-resident-calibration-summary" class="trm-note"></p>
+    <p class="trm-caption trm-caption-left">Points are deterministically thinned above 2,500 for browser performance; counts always use every reported copy. Discovery still uses the configured minimum identity and aligned length; these sliders only simulate the three reporting tiers.</p>
+    <div id="trm-resident-calibration-chart" class="trm-chart trm-resident-calibration-chart"></div>
+  </section>
+
+  <div class="trm-grid trm-grid-2">
+    <section class="trm-panel">
+      <div class="trm-panel-heading"><div><p class="trm-kicker">Discovery</p><h3>Fragments retained and rejected</h3></div></div>
+      <div id="trm-resident-fragment-summary" class="trm-chart"></div>
+    </section>
+    <section class="trm-panel">
+      <div class="trm-panel-heading"><div><p class="trm-kicker">Structure</p><h3>Provisional copy relations</h3></div></div>
+      <div id="trm-resident-relation-summary" class="trm-chart"></div>
+    </section>
+  </div>
+
+  <section class="trm-panel trm-filter-panel">
+    <div class="trm-panel-heading"><div><p class="trm-kicker">Multi-TE assignments</p><h3>Ambiguous resident copies</h3></div></div>
+    <div class="trm-filter-grid trm-resident-filter-grid">
+      <label>Target<select id="trm-resident-filter-target"></select></label>
+      <label>Chromosome<select id="trm-resident-filter-chrom"></select></label>
+      <label>Status<select id="trm-resident-filter-status"></select></label>
+      <label>Ambiguity<select id="trm-resident-filter-ambiguity"><option value="multi_te">Multiple TE labels</option><option value="ambiguous">Multiple matches</option><option value="">All copies</option><option value="unique">Unique match</option></select></label>
+      <label class="trm-search-label">Search<input id="trm-resident-filter-search" type="search" placeholder="copy ID, TE family, chromosome…"></label>
+    </div>
+    <div class="trm-toolbar">
+      <strong id="trm-resident-filter-count"></strong><span class="trm-spacer"></span>
+      <button id="trm-resident-reset-filters" type="button" class="trm-button trm-button-secondary">Reset</button>
+      <button id="trm-resident-download" type="button" class="trm-button">Download selected TSV</button>
+    </div>
+  </section>
+
+  <div class="trm-table-wrap">
+    <table class="trm-table">
+      <thead><tr><th>Target</th><th>Interval</th><th>Primary TE</th><th>All candidates</th><th>Coverage</th><th>Identity</th><th>Aligned bp</th><th>Fragments</th><th>Status</th><th>Structure</th></tr></thead>
+      <tbody id="trm-resident-table-body"></tbody>
+    </table>
+  </div>
+  <div class="trm-pagination">
+    <button id="trm-resident-page-previous" type="button" class="trm-button trm-button-secondary">Previous</button>
+    <span id="trm-resident-page-status"></span>
+    <button id="trm-resident-page-next" type="button" class="trm-button trm-button-secondary">Next</button>
+  </div>
+</div>
+```
+
 # Pipeline context
 
 ```{=html}
@@ -183,7 +249,7 @@ This view exposes calls whose breakpoint anchors fall within the configured wind
 
 ## Interpretation boundary
 
-This report visualizes the legacy-compatible `TE_INFOS.bed` table without changing its scientific values. Frequencies retain the compatibility algorithms of the migrated workflow. Nearby-call groups are exploratory candidates only. Cohort-level multi-allelic inference must use the normalized locus model and explicit cross-sample evidence.
+This report visualizes the legacy-compatible `TE_INFOS.bed` table without changing its scientific values. Frequencies retain the compatibility algorithms of the migrated workflow. The resident catalog is a separate assembly annotation and must not be interpreted as an insertion polymorphism table. Nearby-call groups and resident copy relations are exploratory candidates only. Cohort-level multi-allelic inference must use the normalized locus model and explicit cross-sample evidence.
 
 <!-- TREMOLO_REPORT_DATA -->
 <!-- TREMOLO_REPORT_SCRIPT -->

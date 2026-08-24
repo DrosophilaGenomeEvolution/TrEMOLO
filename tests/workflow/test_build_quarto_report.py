@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "lib/python/workflow"))
 from build_quarto_report import (  # noqa: E402
+    build_resident_te_data,
     build_report_data,
     proximity_groups,
     read_te_infos,
@@ -146,6 +147,63 @@ class BuildQuartoReportTests(unittest.TestCase):
         self.assertIn("<style>\nbody {}\n</style>", source)
         self.assertIn("console.log('ok')", source)
         self.assertIn('"author":"A \\u003cB>"', source)
+
+    def test_projects_resident_copies_and_preserves_alternative_assignments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            copies = self.write(
+                root,
+                "ALL_TE_COPIES.tsv",
+                "copy_id\ttarget\tchrom\tstart\tend\tstrand\tprimary_te\tte_candidates\t"
+                "consensus_coverage\tidentity\taligned_bp\tfragment_count\tcandidate_count\tstatus\tstructure\n"
+                "TC1\tGENOME\tchr1\t10\t110\t+\troo\tcopia;roo\t85\t91\t100\t2\t2\tfull_length\tambiguous\n"
+                "TC2\tGENOME\tchr1\t200\t260\t-\tblood\tblood\t12\t70\t60\t1\t1\tdegraded_relic\tsingle\n",
+            )
+            matches = self.write(
+                root,
+                "ALL_TE_MATCHES.tsv",
+                "match_id\tcopy_id\ttarget\tchrom\tstart\tend\tstrand\tte_name\tconsensus_length\t"
+                "consensus_covered_bp\tconsensus_coverage\tidentity\tbitscore\tbest_evalue\tfragment_count\ttier\tassignment\n"
+                "TM1\tTC1\tGENOME\tchr1\t10\t110\t+\troo\t100\t85\t85\t91\t200\t1e-20\t2\tfull_length\tprimary\n"
+                "TM2\tTC1\tGENOME\tchr1\t12\t108\t+\tcopia\t120\t80\t66.7\t88\t180\t1e-18\t1\tpartial\talternative\n"
+                "TM3\tTC2\tGENOME\tchr1\t200\t260\t-\tblood\t500\t60\t12\t70\t80\t1e-10\t1\tdegraded_relic\tprimary\n",
+            )
+            fragments = self.write(
+                root,
+                "ALL_TE_FRAGMENTS.tsv",
+                "fragment_id\ttarget\tchrom\tstart\tend\tstrand\tte_name\tconsensus_start\tconsensus_end\t"
+                "consensus_length\taligned_bp\tidentity\tmismatches\tgap_opens\tevalue\tbitscore\tfilter_status\tfilter_reason\tredundant_with\tmatch_id\n"
+                "TF1\tGENOME\tchr1\t10\t110\t+\troo\t0\t100\t100\t100\t91\t9\t0\t1e-20\t200\taccepted\t.\t.\tTM1\n"
+                "TF2\tGENOME\tchr1\t300\t350\t+\troo\t0\t50\t100\t50\t50\t25\t0\t1\t10\trejected\tidentity\t.\t.\n",
+            )
+            relations = self.write(
+                root,
+                "ALL_TE_RELATIONS.tsv",
+                "relation_id\ttarget\tsource_copy_id\ttarget_copy_id\trelation\toverlap_bp\tconfidence\n"
+                "TR1\tGENOME\tTC1\tTC2\tnested_candidate\t10\tprovisional\n",
+            )
+            value = build_resident_te_data(
+                [copies], [matches], [fragments], [relations],
+                {"full_length_coverage": 80, "high_confidence_pident": 80},
+            )
+            self.assertTrue(value["available"])
+            self.assertEqual(value["summary"]["copies"], 2)
+            self.assertEqual(value["summary"]["ambiguous_copies"], 1)
+            self.assertEqual(value["summary"]["multi_te_copies"], 1)
+            self.assertEqual(value["summary"]["tiers"], {"degraded_relic": 1, "full_length": 1})
+            self.assertEqual(value["summary"]["fragment_status"], {"accepted": 1, "rejected:identity": 1})
+            self.assertEqual(value["summary"]["relation_types"], {"nested_candidate": 1})
+            self.assertEqual(value["copies"][0]["te_candidates"], ["copia", "roo"])
+            self.assertEqual(
+                [candidate["assignment"] for candidate in value["copies"][0]["candidates"]],
+                ["primary", "alternative"],
+            )
+
+    def test_resident_catalog_is_explicitly_unavailable_without_inputs(self):
+        value = build_resident_te_data(thresholds={"min_pident": 65})
+        self.assertFalse(value["available"])
+        self.assertEqual(value["copies"], [])
+        self.assertEqual(value["thresholds"], {"min_pident": 65})
 
 
 if __name__ == "__main__":
