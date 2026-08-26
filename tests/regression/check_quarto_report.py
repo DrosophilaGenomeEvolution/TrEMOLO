@@ -110,6 +110,22 @@ def main():
         if f'id="{identifier}"' not in html:
             raise SystemExit(f"rendered HTML lacks {identifier}")
 
+    candidates_path = args.work_directory / "TE_CALL_CANDIDATES.tsv"
+    ambiguous = data.get("ambiguous_calls", {})
+    if not candidates_path.is_file() or candidates_path.stat().st_size == 0:
+        raise SystemExit("missing normalized TE_CALL_CANDIDATES.tsv")
+    with candidates_path.open(newline="") as handle:
+        candidate_rows = list(csv.DictReader(handle, delimiter="\t"))
+    expected_groups = {row["candidate_group_id"] for row in candidate_rows}
+    if ambiguous.get("summary", {}).get("ambiguous_calls") != len(expected_groups):
+        raise SystemExit("ambiguous-call group count mismatch")
+    if len(ambiguous.get("candidates", [])) != len(candidate_rows):
+        raise SystemExit("ambiguous-call candidate projection is incomplete")
+    if any(int(row["candidate_count"]) < 2 for row in candidate_rows):
+        raise SystemExit("TE_CALL_CANDIDATES contains a non-ambiguous call")
+    if 'id="trm-ambiguous-call-table-body"' not in html:
+        raise SystemExit("rendered HTML lacks ambiguous-call table")
+
     resident = data.get("resident_te", {})
     if resident.get("available"):
         resident_rows = []

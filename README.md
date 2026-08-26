@@ -282,7 +282,8 @@ WORK_DIRECTORY
 ├── VALUES_TSD_ALL_GROUP.csv
 ├── VALUES_TSD_GROUP_OUTSIDER.csv
 ├── VALUES_TSD_INSIDER_GROUP.csv
-├── MULTIPLE_TE_BY_ID.txt
+├── TE_CALL_CANDIDATES.tsv ## ambiguous reported calls only; primary plus alternatives
+├── MULTIPLE_TE_BY_ID.txt ## legacy run.snk report only
 ├── TE_INFOS.bed ##**FILE CONTENING ALL INFO OF TE INSERTION
 ├── TE_GENOME
 │   ├── GENOME

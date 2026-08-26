@@ -52,6 +52,7 @@ rule report:
 rule prepare_quarto_report:
     input:
         te_infos=TE_INFOS,
+        te_call_candidates=TE_CALL_CANDIDATES,
         genome_index=PREPARED_GENOME_INDEX,
         manifest=REPORT_INPUT_MANIFEST,
         mapping_stats=report_optional_input(MAPPING_STATS, TE_INFOS_WITH_OUTSIDER),
@@ -82,6 +83,7 @@ rule prepare_quarto_report:
         mkdir -p {params.work_directory:q}/REPORT {params.log_dir:q}
         python3 {input.builder:q} \
             --te-infos {input.te_infos:q} \
+            --te-call-candidates {input.te_call_candidates:q} \
             --genome-index {input.genome_index:q} \
             --input-manifest {input.manifest:q} \
             --mapping-stats {input.mapping_stats:q} \

@@ -131,6 +131,24 @@ The filters below update every chart and the table. Downloading exports the curr
   <button id="trm-page-next" type="button" class="trm-button trm-button-secondary">Next</button>
 </div>
 
+## Ambiguous variable TE calls
+
+Only reported INSIDER/OUTSIDER events with at least two distinct TE labels belong in this table. The primary label is the one currently reported in `TE_INFOS.bed`; alternatives remain unresolved candidates, not confirmed composite components.
+
+```{=html}
+<div id="trm-ambiguous-call-note" class="trm-note"></div>
+<div class="trm-toolbar trm-compact-toolbar">
+  <span class="trm-spacer"></span>
+  <button id="trm-download-ambiguous-calls" type="button" class="trm-button">Download candidate TSV</button>
+</div>
+<div class="trm-table-wrap">
+  <table class="trm-table">
+    <thead><tr><th>Source</th><th>Event</th><th>Interval</th><th>Reported TE</th><th>Candidate TE</th><th>Assignment</th><th>Rank</th><th>Evidence</th><th>Fraction</th><th>Channel</th></tr></thead>
+    <tbody id="trm-ambiguous-call-table-body"></tbody>
+  </table>
+</div>
+```
+
 # Evidence summaries
 
 ```{=html}

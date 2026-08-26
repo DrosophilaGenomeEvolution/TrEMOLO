@@ -7,6 +7,8 @@
   const calls = data.calls || [];
   const resident = data.resident_te || { available: false, summary: {}, copies: [], thresholds: {} };
   const residentCopies = resident.copies || [];
+  const ambiguous = data.ambiguous_calls || { available: false, summary: {}, candidates: [] };
+  const ambiguousCandidates = ambiguous.candidates || [];
   const PAGE_SIZE = 50;
   const EVENT_TYPE_COLORS = [
     "#087f78", "#6f5bd3", "#ed8a3b", "#c44f70", "#3d7db7",
@@ -556,6 +558,67 @@
     }
   }
 
+  function renderAmbiguousCalls() {
+    const note = $("trm-ambiguous-call-note");
+    const body = $("trm-ambiguous-call-table-body");
+    const download = $("trm-download-ambiguous-calls");
+    body.replaceChildren();
+    if (!ambiguous.available) {
+      note.textContent = "The normalized ambiguous-call table is not available in this report.";
+      download.disabled = true;
+      return;
+    }
+    const summary = ambiguous.summary || {};
+    note.textContent = ambiguousCandidates.length
+      ? `${formatInteger.format(summary.ambiguous_calls || 0)} reported variable calls retain ${formatInteger.format(summary.candidate_rows || 0)} TE candidates. Unique calls are intentionally omitted.`
+      : "No reported variable TE call has more than one distinct candidate label. Unique calls are intentionally omitted.";
+    ambiguousCandidates.forEach((candidate) => {
+      const row = document.createElement("tr");
+      appendTextCell(row, candidate.source);
+      appendTextCell(row, candidate.event_id);
+      appendTextCell(row, `${candidate.chrom}:${formatInteger.format(candidate.start)}–${formatInteger.format(candidate.end)}`);
+      appendTextCell(row, candidate.reported_te);
+      appendTextCell(row, candidate.candidate_te);
+      const assignment = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = `trm-badge trm-candidate-${candidate.assignment}`;
+      badge.textContent = candidate.assignment === "reported_primary" ? "reported primary" : "alternative";
+      assignment.appendChild(badge);
+      row.appendChild(assignment);
+      appendTextCell(row, `${candidate.candidate_rank} / ${candidate.candidate_count}`);
+      appendTextCell(row, candidate.evidence_count);
+      appendTextCell(row, valueOrDash(100 * candidate.evidence_fraction, "%"));
+      appendTextCell(row, candidate.evidence_channels.join(", "));
+      body.appendChild(row);
+    });
+    download.disabled = !ambiguousCandidates.length;
+    download.addEventListener("click", downloadAmbiguousCalls);
+  }
+
+  function downloadAmbiguousCalls() {
+    const columns = [
+      "candidate_group_id", "source", "chrom", "start", "end", "event_id",
+      "tremolo_id", "event_type", "reported_te", "candidate_te", "assignment",
+      "candidate_rank", "candidate_count", "evidence_count", "evidence_fraction",
+      "evidence_channels", "ambiguity_type",
+    ];
+    const lines = [columns.join("\t")];
+    ambiguousCandidates.forEach((candidate) => {
+      lines.push(columns.map((column) => {
+        const value = column === "evidence_channels"
+          ? candidate.evidence_channels.join(";")
+          : candidate[column];
+        return value === null || value === undefined ? "." : String(value).replace(/[\t\r\n]/g, " ");
+      }).join("\t"));
+    });
+    const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/tab-separated-values;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "TrEMOLO.TE_CALL_CANDIDATES.tsv";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
   function keyValues(values, preferredKeys = []) {
     const list = document.createElement("dl");
     list.className = "trm-key-values";
@@ -852,6 +915,7 @@
   initializeFilters();
   renderSelection();
   renderProximity();
+  renderAmbiguousCalls();
   renderResidentSection();
   renderContext();
 })();

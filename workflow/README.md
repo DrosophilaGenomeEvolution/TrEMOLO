@@ -178,6 +178,21 @@ the same locus—and reproduces the historical 15-column table exactly. The
 compatibility choices and population-model boundary are documented in
 `docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.
 
+Ambiguous family evidence for reported variable calls is normalized separately:
+
+```bash
+snakemake --snakefile workflow/Snakefile \
+  --configfile tests/workflow/refactor_config.yml \
+  --cores 1 te_call_candidates
+```
+
+`TE_CALL_CANDIDATES.tsv` deliberately omits unambiguous calls. For each retained
+event it contains every candidate, identifies the family currently reported in
+`TE_INFOS.bed`, ranks alternatives, and records evidence counts, fractions and
+channels. The migrated OUTSIDER evidence is populated now; INSIDER alternatives
+require a later classifier redesign because the compatibility classifier keeps
+only one family per event.
+
 The new report is generated directly with Quarto:
 
 ```bash
@@ -190,9 +205,10 @@ It produces `REPORT/report-data.json`, the generated `REPORT/report.qmd`, and a
 single self-contained `REPORT/report.html`. The report has interactive source,
 type, chromosome, family, TSD and frequency filters; genome and family views;
 the complete call table; and an explicitly provisional nearby-call view. It
-also exposes the resident-copy tiers, a browser-only threshold calibration
-view, and all alternative TE assignments when `TE_GENOME` is enabled. It does
-not use R, `curl`, a web server, or external JavaScript/CDN assets.
+also exposes ambiguous variable-call candidates, the resident-copy tiers, a
+browser-only threshold calibration view, and all alternative TE assignments
+when `TE_GENOME` is enabled. It does not use R, `curl`, a web server, or external
+JavaScript/CDN assets.
 
 The refactored container definition pins Quarto 1.9.36. The previously built
 Snakemake 5.10 image does not contain it: that image can generate the QMD/data,
@@ -221,5 +237,7 @@ The direct Quarto report migration is recorded in
 `docs/decisions/0008-quarto-report.md`.
 The resident-catalog report integration is recorded in
 `docs/decisions/0011-resident-te-quarto-report.md`.
+The variable-call ambiguity table is recorded in
+`docs/decisions/0012-variable-te-call-candidates.md`.
 The whole-assembly INSIDER TE annotation decision is recorded in
 `docs/decisions/0009-insider-all-te-compatibility.md`.

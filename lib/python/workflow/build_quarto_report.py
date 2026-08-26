@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 
-REPORT_SCHEMA_VERSION = "1.1.0"
+REPORT_SCHEMA_VERSION = "1.2.0"
 TE_INFO_COLUMNS = (
     "chrom",
     "start",
@@ -50,6 +50,12 @@ RESIDENT_MATCH_COLUMNS = (
     "te_name", "consensus_length", "consensus_covered_bp",
     "consensus_coverage", "identity", "bitscore", "best_evalue",
     "fragment_count", "tier", "assignment",
+)
+AMBIGUOUS_CALL_COLUMNS = (
+    "candidate_group_id", "source", "chrom", "start", "end", "event_id",
+    "tremolo_id", "event_type", "reported_te", "candidate_te", "assignment",
+    "candidate_rank", "candidate_count", "evidence_count", "evidence_fraction",
+    "evidence_channels", "ambiguity_type",
 )
 
 
@@ -416,6 +422,86 @@ def build_resident_te_data(
     }
 
 
+def read_ambiguous_call_candidates(path: Optional[Path]) -> dict:
+    if path is None:
+        return {"available": False, "summary": {}, "candidates": []}
+    raw_rows = read_tsv_rows([path], AMBIGUOUS_CALL_COLUMNS)
+    candidates = []
+    grouped: dict[str, list[dict]] = defaultdict(list)
+    for row in raw_rows:
+        label = row["candidate_group_id"]
+        start = resident_int(label, "start", row["start"])
+        end = resident_int(label, "end", row["end"])
+        rank = resident_int(label, "candidate_rank", row["candidate_rank"])
+        count = resident_int(label, "candidate_count", row["candidate_count"])
+        evidence_count = resident_int(label, "evidence_count", row["evidence_count"])
+        evidence_fraction = resident_float(
+            label, "evidence_fraction", row["evidence_fraction"]
+        )
+        if start < 0 or end < start or rank < 1 or count < 2 or evidence_count < 1:
+            raise ValueError(f"{label}: invalid ambiguous-call candidate values")
+        if row["assignment"] not in {"reported_primary", "alternative"}:
+            raise ValueError(f"{label}: invalid candidate assignment")
+        value = {
+            "candidate_group_id": label,
+            "source": row["source"],
+            "chrom": row["chrom"],
+            "start": start,
+            "end": end,
+            "event_id": row["event_id"],
+            "tremolo_id": row["tremolo_id"],
+            "event_type": row["event_type"],
+            "reported_te": row["reported_te"],
+            "candidate_te": row["candidate_te"],
+            "assignment": row["assignment"],
+            "candidate_rank": rank,
+            "candidate_count": count,
+            "evidence_count": evidence_count,
+            "evidence_fraction": evidence_fraction,
+            "evidence_channels": row["evidence_channels"].split(";") if row["evidence_channels"] else [],
+            "ambiguity_type": row["ambiguity_type"],
+        }
+        candidates.append(value)
+        grouped[label].append(value)
+
+    for label, rows in grouped.items():
+        expected = rows[0]["candidate_count"]
+        invariant_fields = (
+            "source", "chrom", "start", "end", "event_id", "tremolo_id",
+            "event_type", "reported_te", "candidate_count", "ambiguity_type",
+        )
+        if len(rows) != expected or any(
+            row[field] != rows[0][field]
+            for row in rows[1:]
+            for field in invariant_fields
+        ):
+            raise ValueError(f"{label}: inconsistent ambiguous-call candidate group")
+        if (
+            len({row["candidate_te"] for row in rows}) != expected
+            or sorted(row["candidate_rank"] for row in rows) != list(range(1, expected + 1))
+            or sum(row["assignment"] == "reported_primary" for row in rows) != 1
+            or not any(
+                row["assignment"] == "reported_primary"
+                and row["candidate_te"] == row["reported_te"]
+                for row in rows
+            )
+        ):
+            raise ValueError(f"{label}: invalid ambiguous-call assignments")
+
+    sources = Counter(rows[0]["source"] for rows in grouped.values())
+    return {
+        "available": True,
+        "sha256": file_sha256(path),
+        "summary": {
+            "ambiguous_calls": len(grouped),
+            "candidate_rows": len(candidates),
+            "sources": dict(sorted(sources.items())),
+            "maximum_candidates": max((len(rows) for rows in grouped.values()), default=0),
+        },
+        "candidates": candidates,
+    }
+
+
 def mean(values: Iterable[Optional[float | int]]) -> Optional[float]:
     present = [float(value) for value in values if value is not None]
     return round(sum(present) / len(present), 6) if present else None
@@ -502,6 +588,7 @@ def build_report_data(
     resident_fragment_paths: Optional[list[Path]] = None,
     resident_relation_paths: Optional[list[Path]] = None,
     resident_thresholds: Optional[dict[str, float | int]] = None,
+    call_candidates_path: Optional[Path] = None,
 ) -> dict:
     calls = read_te_infos(te_infos)
     chromosomes = read_fasta_index(genome_index)
@@ -564,6 +651,7 @@ def build_report_data(
             relation_paths=resident_relation_paths,
             thresholds=resident_thresholds,
         ),
+        "ambiguous_calls": read_ambiguous_call_candidates(call_candidates_path),
         "calls": calls,
     }
 
@@ -647,6 +735,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resident-full-length-coverage", type=float, default=80.0)
     parser.add_argument("--resident-high-confidence-pident", type=float, default=80.0)
     parser.add_argument("--resident-partial-coverage", type=float, default=20.0)
+    parser.add_argument("--te-call-candidates", type=Path)
     args = parser.parse_args()
     if args.locus_window < 0:
         parser.error("--locus-window must be non-negative")
@@ -677,6 +766,7 @@ def main() -> None:
             "high_confidence_pident": args.resident_high_confidence_pident,
             "partial_coverage": args.resident_partial_coverage,
         },
+        call_candidates_path=args.te_call_candidates,
     )
     json_text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     source = render_source(
@@ -689,11 +779,12 @@ def main() -> None:
     atomic_write_text(args.output_qmd, source)
     print(
         "Prepared Quarto report data: {} calls, {} families, {} proximity groups, "
-        "{} resident copies.".format(
+        "{} resident copies, {} ambiguous variable calls.".format(
             data["summary"]["calls"],
             data["summary"]["families"],
             len(data["proximity_groups"]),
             data["resident_te"]["summary"].get("copies", 0),
+            data["ambiguous_calls"]["summary"].get("ambiguous_calls", 0),
         )
     )
 

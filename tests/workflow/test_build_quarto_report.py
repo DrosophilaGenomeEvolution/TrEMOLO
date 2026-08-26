@@ -13,6 +13,7 @@ from build_quarto_report import (  # noqa: E402
     build_resident_te_data,
     build_report_data,
     proximity_groups,
+    read_ambiguous_call_candidates,
     read_te_infos,
     render_source,
 )
@@ -204,6 +205,26 @@ class BuildQuartoReportTests(unittest.TestCase):
         self.assertFalse(value["available"])
         self.assertEqual(value["copies"], [])
         self.assertEqual(value["thresholds"], {"min_pident": 65})
+
+    def test_projects_only_normalized_ambiguous_call_candidates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = self.write(
+                root,
+                "TE_CALL_CANDIDATES.tsv",
+                "candidate_group_id\tsource\tchrom\tstart\tend\tevent_id\ttremolo_id\tevent_type\t"
+                "reported_te\tcandidate_te\tassignment\tcandidate_rank\tcandidate_count\tevidence_count\t"
+                "evidence_fraction\tevidence_channels\tambiguity_type\n"
+                "TCA1\tOUTSIDER\tchr1\t10\t11\te1\tid1\tINS\troo\troo\treported_primary\t1\t2\t3\t0.75\tdirect\tunresolved_family_candidates\n"
+                "TCA1\tOUTSIDER\tchr1\t10\t11\te1\tid1\tINS\troo\tcopia\talternative\t2\t2\t1\t0.25\tdirect\tunresolved_family_candidates\n",
+            )
+            value = read_ambiguous_call_candidates(path)
+            self.assertTrue(value["available"])
+            self.assertEqual(value["summary"]["ambiguous_calls"], 1)
+            self.assertEqual(value["summary"]["candidate_rows"], 2)
+            self.assertEqual(value["summary"]["sources"], {"OUTSIDER": 1})
+            self.assertEqual(value["candidates"][1]["candidate_te"], "copia")
+            self.assertEqual(value["candidates"][1]["evidence_channels"], ["direct"])
 
 
 if __name__ == "__main__":

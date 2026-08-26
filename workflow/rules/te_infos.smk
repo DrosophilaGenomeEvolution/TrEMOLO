@@ -1,6 +1,7 @@
 """Build the legacy public TE call table from declared workflow outputs."""
 
 TE_INFOS = f"{WORKDIR}/TE_INFOS.bed"
+TE_CALL_CANDIDATES = f"{WORKDIR}/TE_CALL_CANDIDATES.tsv"
 TE_INFOS_EMPTY_INPUT = "/dev/null"
 TE_INFOS_WITH_OUTSIDER = bool(CHOICES.get("OUTSIDER_VARIANT"))
 TE_INFOS_WITH_INSIDER = bool(CHOICES.get("INSIDER_VARIANT"))
@@ -16,6 +17,11 @@ def te_infos_input(path, enabled):
 rule te_infos:
     input:
         TE_INFOS,
+
+
+rule te_call_candidates:
+    input:
+        TE_CALL_CANDIDATES,
 
 
 rule build_te_infos:
@@ -102,4 +108,34 @@ rule build_te_infos:
             --insider-frequency {input.insider_frequency:q} \
             --insider-variants {input.insider_variants:q} \
             --output {output.infos:q} > {log:q} 2>&1
+        """
+
+
+rule build_te_call_candidates:
+    input:
+        script=str(PIPELINE_ROOT / "lib/python/workflow/build_te_call_candidates.py"),
+        te_infos=TE_INFOS,
+        outsider_direct=te_infos_input(
+            OUTSIDER_INS_READ_COUNTS, TE_INFOS_WITH_OUTSIDER
+        ),
+        outsider_sniffles=te_infos_input(
+            OUTSIDER_SNIFFLES_TE_READ_COUNTS, TE_INFOS_WITH_OUTSIDER
+        ),
+    output:
+        candidates=TE_CALL_CANDIDATES,
+    threads: 1
+    resources:
+        mem_mb=512,
+    log:
+        f"{WORKDIR}/log/build_te_call_candidates.log",
+    benchmark:
+        f"{WORKDIR}/benchmarks/build_te_call_candidates.tsv",
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
+        python3 {input.script:q} --te-infos {input.te_infos:q} \
+            --evidence outsider_direct_alignment={input.outsider_direct:q} \
+            --evidence outsider_sniffles={input.outsider_sniffles:q} \
+            --output {output.candidates:q} > {log:q} 2>&1
         """

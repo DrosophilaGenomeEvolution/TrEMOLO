@@ -154,6 +154,9 @@ body {
 .trm-badge-INSIDER { background: var(--trm-insider); }
 .trm-badge-OUTSIDER { background: var(--trm-outsider); }
 .trm-badge-UNKNOWN { background: var(--trm-missing); }
+.trm-candidate-reported_primary { background: var(--trm-teal); }
+.trm-candidate-alternative { background: var(--trm-outsider); }
+.trm-compact-toolbar { margin: 0 0 0.7rem; }
 .trm-pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 1rem 0 2rem; font-size: 0.78rem; }
 .trm-note { border-left: 4px solid var(--trm-teal); padding: 0.85rem 1rem; margin: 1rem 0; background: var(--trm-soft); border-radius: 0 0.6rem 0.6rem 0; }
 .trm-warning { border-left: 4px solid #c7543d; padding: 0.8rem; }

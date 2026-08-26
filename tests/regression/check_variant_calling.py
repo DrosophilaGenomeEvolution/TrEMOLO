@@ -758,6 +758,36 @@ def main() -> int:
                     f"({actual_count} != {expected_count})"
                 )
 
+    candidate_path = args.migrated / "TE_CALL_CANDIDATES.tsv"
+    if not candidate_path.is_file():
+        errors.append("missing normalized TE_CALL_CANDIDATES.tsv")
+    else:
+        with candidate_path.open(newline="") as handle:
+            candidate_rows = list(csv.DictReader(handle, delimiter="\t"))
+        groups = Counter(row["candidate_group_id"] for row in candidate_rows)
+        if len(candidate_rows) != 33 or len(groups) != 10:
+            errors.append(
+                "TE_CALL_CANDIDATES dimensions differ: "
+                f"{len(candidate_rows)} rows, {len(groups)} groups"
+            )
+        if any(
+            count < 2
+            or count != int(next(
+                row["candidate_count"]
+                for row in candidate_rows
+                if row["candidate_group_id"] == group_id
+            ))
+            for group_id, count in groups.items()
+        ):
+            errors.append("TE_CALL_CANDIDATES contains a non-ambiguous group")
+        primary = Counter(
+            row["candidate_group_id"]
+            for row in candidate_rows
+            if row["assignment"] == "reported_primary"
+        )
+        if set(primary) != set(groups) or any(count != 1 for count in primary.values()):
+            errors.append("TE_CALL_CANDIDATES primary assignments differ")
+
     if errors:
         print("INSIDER/OUTSIDER migration check: FAILED")
         for error in errors:
@@ -770,6 +800,7 @@ def main() -> int:
         "TE_GENOME semantics: 11,589 HSPs, 6,224 copies, 364 full-length, "
         "1,335 multi-match components (1,016 multi-TE labels)"
     )
+    print("Variable-call ambiguity: 10 reported calls, 33 TE candidates")
     print(
         "Exact INSIDER frequency files: "
         f"{len(INSIDER_FREQUENCY_EXACT_FILES)}"
