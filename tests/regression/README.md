@@ -58,6 +58,15 @@ the interactive call and nearby-candidate views, and the absence of external
 script or stylesheet dependencies. The HTML is intentionally not compared byte
 for byte with the old R Markdown report because the interface has been replaced.
 
+The optional module refactor is validated after generating both standalone
+reports from the bundled population fixture and `work_refactor_test`:
+
+```bash
+python3 tests/regression/check_modules.py \
+  /tmp/tremolo-population-refactor \
+  /tmp/tremolo-structure-cli
+```
+
 The migrated OUTSIDER frequency chain is checked byte for byte from
 `TE_SIZE.tsv` and its combined 69-candidate table through `COUNT_READS.txt`,
 `FREQUENCY_TE_INS.tsv`, and `FREQUENCY_TE_INS_PRECISE.tsv`. Semantic checks

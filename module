@@ -1,33 +1,49 @@
-#!/bin/bash
-CMD=$1
-NUM_MODULE=$2
+#!/usr/bin/env bash
+set -euo pipefail
 
-path_to_tremolo=`dirname "$0"`
-echo "   PATH : $path_to_tremolo";
-real_path=`realpath .`;
-echo "rd:$real_path"
+PIPELINE_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-if [ "$CMD" = "start" ]
-then
+usage() {
+    cat <<'EOF'
+Usage:
+  module build 1 -i MANIFEST -g REFERENCE_FASTA [-o OUTPUT]
+  module build 2 WORK_DIRECTORY [OUTPUT_DIRECTORY] [threshold options]
 
-    if [ $NUM_MODULE -eq 2 ]
-    then
-        date
-        echo "Begin module 2...";
-        echo "go to ${path_to_tremolo} ..."
-        cd "${path_to_tremolo}";
-        ln -sf modules/2-MODULE_TE_BLAST/server/scripts/run mod-2
-        sleep 2
-        node mod-2
-        rm -f mod-2
-        echo "End module 2...";
-        date
-    else
-        echo "Module [$NUM_MODULE] Not found";
-    fi;
+Both modules now generate self-contained Quarto HTML reports. A persistent
+Node server is no longer required.
+EOF
+}
 
-else
-    echo "Command $CMD Not found"
-    echo "Usage : $0 start <number-module>"
-    #echo "Usage : $0 stop <number-module>"
-fi;
+if [[ $# -lt 2 ]]; then
+    usage >&2
+    exit 2
+fi
+
+COMMAND="$1"
+MODULE_NUMBER="$2"
+shift 2
+
+if [[ "$COMMAND" == "start" && "$MODULE_NUMBER" == "2" ]]; then
+    echo "Module 2 no longer requires a server. Build it and open MODULE_TE_BLAST/report.html." >&2
+    usage >&2
+    exit 2
+fi
+if [[ "$COMMAND" != "build" ]]; then
+    echo "Unknown command: $COMMAND" >&2
+    usage >&2
+    exit 2
+fi
+
+case "$MODULE_NUMBER" in
+    1)
+        exec "$PIPELINE_ROOT/modules/1-FREQUENCY-MULTI-GENERATIONS/buildFrequencyGenerations.sh" "$@"
+        ;;
+    2)
+        exec "$PIPELINE_ROOT/modules/2-MODULE_TE_BLAST/server/scripts/buildData.sh" "$@"
+        ;;
+    *)
+        echo "Unknown module: $MODULE_NUMBER" >&2
+        usage >&2
+        exit 2
+        ;;
+esac

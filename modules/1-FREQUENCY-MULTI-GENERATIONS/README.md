@@ -1,90 +1,86 @@
-# MODULE SCATTER FREQUENCY TE TrEMOLO
+# Population frequency trajectories
 
-This graph is particularly useful for researchers aiming to track the evolution of the frequency of germinal insertions of transposable elements (TEs) across generations. It provides a clear visualization of the dynamics of these elements within the genome and offers valuable knowledge about their behavior and potential for adaptation or evolutionary change within populations over extended periods.
+This module compares TE allele frequencies across samples, generations or
+timepoints. Version 2 builds the normalized TrEMOLO locus model first and never
+turns a missing call into frequency zero.
 
-## Input Preparation
+## Recommended sample manifest
 
-To function, this module requires a file containing paths to various analyses performed by TrEMOLO (minimum version +v2.5.1).
+Use a tab-separated file with one row per sample or replicate:
 
-Example:
-
-```
-/path/to/work_directory_1
-/path/to/work_directory_2
-/path/to/work_directory_3
-```
-
-The order of paths is important as it designates the sequence in which the module will consider generations from oldest to newest.
-
-An alternative solution allows you to manually specify the timing of generations (format work_directory:G[NUMBER]), for 
-
-Example:
-
-```
-work_directory_1:G1
-work_directory_2:G10
-work_directory_3:G3
+```text
+sample_id	timepoint	replicate	te_infos
+G11_R1	11	1	/path/G11_R1/TE_INFOS.bed
+G11_R2	11	2	/path/G11_R2/TE_INFOS.bed
+G17_R1	17	1	/path/G17_R1/TE_INFOS.bed
 ```
 
-**Recommendation** : Do not exceed 7 paths.
+`timepoint` accepts a number or `G<number>`. Relative `te_infos` paths are
+resolved from the manifest directory. Sample IDs must be unique.
 
-This format indicates the order and the time gap between generations. In the above example, `G1` is the oldest generation, while `G10` is the most recent.
+The historical list format remains accepted:
 
-**Info** : The generation numbers (e.g., G2, G10...) enable the module to identify which Transposable Elements (TE) increase, decrease, or vary over generations.
-
-
-## Run Build Graph
-
-Execute the module with the following command:
-
-```
-singularity exec TrEMOLO.simg TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/buildFrequencyGenerations.sh -i <input-init-file> [-o OUTPUT-NAME-DIRECTORY] [-g GENOME-FASTA-FILE] [-c REGEX-CHROM]
+```text
+/path/work_G11:G11
+/path/work_G17:G17
 ```
 
-* `-i <input-init-file>` (required): This is the file containing the paths to your work directories.
-* `[-o OUTPUT-NAME-DIRECTORY]`: Specify the name of the output directory.
-* `[-g GENOME-FASTA-FILE]`: The genome (.fasta file) that was used across all work directories.
-* `[-c REGEX-CHROM]`: Use this option if you want to filter by chromosome in the TE_INFOS.bed file.
+It cannot describe replicates and should only be used for compatibility.
 
-For the module to function:
-* Each work_directory must contain a `TE_INFOS.bed` file (output of TrEMOLO).
-* If the genome is not passed with the -g option, `work_directory/OUTSIDER/FREQUENCY/MAPPING_POSITION_TE.bam` files are necessary.
-* The same genome (GENOME parameter in TrEMOLO) must be used for all `work_directories`.
-
-If you wish to select specific TEs, create a file `work_directory/TE_FREQUENCY_TrEMOLO.bed` in the same format as `TE_INFOS.bed`, including only the `OUTSIDER`.
-
-The `[-c REGEX-CHROM]` option is useless if you have put `work_directory/TE_FREQUENCY_TrEMOLO.bed` files in your work directories.
-
-For running tests
+## Run
 
 ```bash
-singularity exec TrEMOLO.simg TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/buildFrequencyGenerations.sh \
-    -i TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/INIT_FREQ_TE_TrEMOLO.txt \
-    -o TEST-GRAPH-FRQUENCIES \
-    -c "^[23][LR]\s|^[X]\s" \
-    -g TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/ref.fasta
+./module build 1 \
+  -i samples.tsv \
+  -g reference.fasta \
+  -o POPULATION_REPORT
 ```
 
-To see the graph, open `TEST-GRAPH-FRQUENCIES/index.html` file
+Options:
 
+- `--locus-window BP`: maximum complete anchor span of a provisional locus;
+  default `20`. Calls cannot chain beyond this span.
+- `--trend-epsilon VALUE`: minimum frequency change per timepoint used to call
+  increasing/decreasing trajectories; default `0.001`.
+- `-c/--chrom` is accepted for command compatibility, but filtering now occurs
+  interactively in the report.
 
-## Graph
+The reference FASTA is mandatory. Its SHA-256 checksum becomes the
+`reference_id` shared by every input run.
 
-### Generational Frequency Graph
+## Outputs
 
-This graph offers a visual representation of TE frequencies across generations. Customize your view by filtering:
-* Transposable elements (TEs) of interest,
-* Trajectories of frequency evolution — increasing, decreasing, stable, or variable,
-* The least number of generations sharing a common position,
-* Specific generations you want to focus on,
-* The chromosome of interest.
+```text
+POPULATION_REPORT/
+  LOCUS_MODEL/
+    manifest.json
+    loci.tsv
+    alleles.tsv
+    components.tsv
+    observations.tsv
+    evidence.tsv
+  population-observations.tsv
+  population-trajectories.tsv
+  report-data.json
+  report.qmd
+  report.html
+  index.html
+```
 
-<img src="img/ex1.png">
+`population-observations.tsv` uses explicit states:
 
-### Detailed TE Frequency Evolution
+- `observed`: a compatible call and a frequency are available;
+- `observed_unquantified`: a call exists but has no valid frequency;
+- `missing`: no compatible call was emitted for that sample/allele.
 
-By selecting a point on the generational frequency graph, the second graph provides a detailed view of the TE frequency changes across selected generations.
+`missing` is not biological absence. Confirmed empty-site evidence will require
+a later population genotyping stage and will receive a distinct status.
 
-<img src="img/ex2.png">
+Trajectory classes are calculated from replicate means at each observed
+timepoint. With fewer than two observed timepoints the result is
+`insufficient_data`; changes in both directions are labelled `variable`.
 
-**Note**: Zero values typically indicate TEs that were not detected in the respective generation.
+The Quarto report is self-contained, uses no R, CDN, pandas or Node server, and
+retains interactive chromosome, TE, trend and observation-count filters.
+The refactored Singularity definition includes Quarto; with an older image,
+run the wrapper from a host installation of Quarto instead.

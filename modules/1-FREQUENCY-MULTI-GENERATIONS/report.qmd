@@ -1,0 +1,62 @@
+---
+title: "POPULATION_REPORT_TITLE"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    page-layout: full
+    embed-resources: true
+---
+
+<!-- POPULATION_REPORT_STYLE -->
+
+# Overview
+
+```{=html}
+<div id="trm-pop-summary" class="trm-pop-cards"></div>
+<div class="trm-pop-note">
+Missing means that no compatible call was emitted for this sample. It is not
+converted to frequency zero and must not be interpreted as confirmed absence.
+</div>
+```
+
+# Genome-wide trajectories
+
+```{=html}
+<div class="trm-pop-toolbar">
+  <label>Chromosome <select id="trm-pop-chrom"></select></label>
+  <label>TE family <select id="trm-pop-family"><option value="">All</option></select></label>
+  <label>Trend <select id="trm-pop-trend"><option value="">All</option></select></label>
+  <label>Minimum observed samples <input id="trm-pop-min-observed" type="number" min="1" value="1"></label>
+</div>
+<p id="trm-pop-filter-note" class="trm-pop-muted"></p>
+<div class="trm-pop-chart-wrap"><svg id="trm-pop-scatter" viewBox="0 0 1200 430" role="img" aria-label="TE frequency by genomic position and timepoint"></svg></div>
+```
+
+# Selected locus trajectory
+
+```{=html}
+<h3 id="trm-pop-selected-title">Select a point or table row</h3>
+<p id="trm-pop-selected-note" class="trm-pop-muted"></p>
+<div class="trm-pop-chart-wrap"><svg id="trm-pop-trajectory" viewBox="0 0 1200 430" role="img" aria-label="Selected TE frequency trajectory"></svg></div>
+<div class="trm-pop-table-wrap">
+  <table class="trm-pop-table">
+    <thead><tr><th>Sample</th><th>Timepoint</th><th>Replicate</th><th>Frequency</th><th>Status</th><th>Filter</th></tr></thead>
+    <tbody id="trm-pop-observation-body"></tbody>
+  </table>
+</div>
+```
+
+# Locus catalogue
+
+```{=html}
+<div class="trm-pop-table-wrap">
+  <table class="trm-pop-table">
+    <thead><tr><th>Chromosome</th><th>Position</th><th>TE</th><th>Strand</th><th>Observed</th><th>Missing</th><th>Timepoints</th><th>Slope</th><th>R²</th><th>Trend</th></tr></thead>
+    <tbody id="trm-pop-trajectory-body"></tbody>
+  </table>
+</div>
+```
+
+<!-- POPULATION_REPORT_DATA -->
+<!-- POPULATION_REPORT_SCRIPT -->

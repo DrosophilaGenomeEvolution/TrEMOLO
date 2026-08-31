@@ -375,13 +375,24 @@ The output file **your_work_directory/TE_INFOS.bed** gathers all the necessary i
 
 Modules are crucial tools in post-processing for analyses. They enable the extraction and visualization of complex information in an intuitive and accessible manner. With these modules, users can gain a deep understanding of data by directly visualizing outcomes in various graphical formats, thereby facilitating the interpretation and utilization of research results or analyses.
 
-## 1 - Scatter Frequency <a name="module-1"></a>
+## 1 - Population frequency trajectories <a name="module-1"></a>
 
-The "Scatter Frequency TE Tremolo" module provides a crucial graphical tool for researchers studying the evolution of transposable element (TE) insertion frequencies across generations. It clearly visualizes the dynamics of these genomic elements, offering valuable insights into their behavior and potential for adaptation or evolutionary change within populations over extended periods. For more details, please consult the full documentation at [this link](modules/1-FREQUENCY-MULTI-GENERATIONS/README.md).
+This locus-aware module compares TE allele frequencies across generations,
+samples and replicates. Missing calls remain missing rather than becoming
+frequency zero. It produces normalized observation/trajectory tables and a
+self-contained Quarto report. See the
+[population module documentation](modules/1-FREQUENCY-MULTI-GENERATIONS/README.md).
 
-## 2 - ANALYSYS TE BLAST <a name="module-2"></a>
+## 2 - Insertion structure explorer <a name="module-2"></a>
 
-This module enables the visualization of BLAST results concerning the newly detected transposable element insertions. It allows for the visual identification of specific structures such as LTR recombinations, transposable elements (TEs) inserted within other TEs, or more complex structures like clusters of TEs. This tool is crucial for genomic researchers aiming to deeply analyze the dynamics of TE insertions. For more details, please consult the full documentation at [this link](modules/2-MODULE_TE_BLAST/README.md).
+This module preserves and normalizes every insertion-to-TE BLAST HSP, records
+filter decisions and proposes coordinate-supported single, repeated, nested or
+multi-TE structures. Evidence is aggregated by TrEMOLO event and linked to
+`TE_INFOS.bed` and `TE_CALL_CANDIDATES.tsv`. See the
+[structure module documentation](modules/2-MODULE_TE_BLAST/README.md).
+
+Both modules are launched with `./module build <number> ...`; neither requires
+R, external JavaScript/CDN assets or a persistent Node server.
 
 
 # How to use TrEMOLO<a name="how_to_use"></a>

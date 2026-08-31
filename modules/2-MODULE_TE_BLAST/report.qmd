@@ -1,0 +1,81 @@
+---
+title: "STRUCTURE_REPORT_TITLE"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    page-layout: full
+    embed-resources: true
+---
+
+<!-- STRUCTURE_REPORT_STYLE -->
+
+# Overview
+
+```{=html}
+<div id="trm-structure-summary" class="trm-structure-cards"></div>
+<div class="trm-structure-note">
+Components are coordinate-supported hypotheses. “Composite candidate” and
+“nested candidate” are not confirmed biological structures until reads or an
+assembled insertion sequence demonstrate linkage between components.
+</div>
+```
+
+# Structure catalogue
+
+## Multi-component event interpretations
+
+This event-level table aggregates all supporting insertion sequences. It is the
+first place to inspect when looking for several TE components at one call.
+
+```{=html}
+<div class="trm-structure-table-wrap">
+  <table class="trm-structure-table">
+    <thead><tr><th>Location</th><th>Event</th><th>Reported TE</th><th>Query sequences</th><th>Queries with components</th><th>Multi-component queries</th><th>Multi-family queries</th><th>Maximum components</th><th>Interpretation</th></tr></thead>
+    <tbody id="trm-event-body"></tbody>
+  </table>
+</div>
+```
+
+## Supporting sequence catalogue
+
+```{=html}
+<div class="trm-structure-toolbar">
+  <label>Chromosome <select id="trm-structure-chrom"><option value="">All</option></select></label>
+  <label>Classification <select id="trm-structure-class"><option value="">All</option></select></label>
+  <label>Final call <select id="trm-structure-final"><option value="">All</option><option value="yes">Reported only</option><option value="no">Unreported only</option></select></label>
+  <label>Minimum components <input id="trm-structure-min-components" type="number" min="0" value="0"></label>
+</div>
+<p id="trm-structure-filter-note" class="trm-structure-muted"></p>
+<div class="trm-structure-table-wrap">
+  <table class="trm-structure-table">
+    <thead><tr><th>Location</th><th>Event</th><th>Length</th><th>Reported TE</th><th>Retained matches</th><th>Components</th><th>Alternatives</th><th>Classification</th></tr></thead>
+    <tbody id="trm-structure-body"></tbody>
+  </table>
+</div>
+```
+
+# Selected insertion
+
+```{=html}
+<h3 id="trm-structure-title">Select an insertion</h3>
+<p id="trm-structure-note" class="trm-structure-muted"></p>
+<div class="trm-structure-svg-wrap"><svg id="trm-structure-svg" viewBox="0 0 1200 520" role="img" aria-label="TE matches along the inserted sequence"></svg></div>
+<h3>Candidate matches</h3>
+<div class="trm-structure-table-wrap">
+  <table class="trm-structure-table">
+    <thead><tr><th>TE</th><th>Query interval</th><th>Strand</th><th>Identity</th><th>Consensus coverage</th><th>Bitscore</th><th>Status</th><th>Assignment</th><th>Reason</th></tr></thead>
+    <tbody id="trm-match-body"></tbody>
+  </table>
+</div>
+```
+
+# Interpretation and thresholds
+
+The report retains every raw HSP in `insertion-hsps.tsv`. Thresholds only
+control normalized matches and provisional component proposals; rejected HSPs
+are never silently deleted. Exact values and input checksums are recorded in
+`manifest.json`.
+
+<!-- STRUCTURE_REPORT_DATA -->
+<!-- STRUCTURE_REPORT_SCRIPT -->

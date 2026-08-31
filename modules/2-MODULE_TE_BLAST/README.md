@@ -1,49 +1,78 @@
-# MODULE ANALYSYS TE BLAST
+# Insertion structure explorer
 
-This module enables the visualization of BLAST results concerning the newly detected transposable element insertions. It allows for the visual identification of specific structures such as LTR recombinations, transposable elements (TEs) inserted within other TEs, or more complex structures like clusters of TEs. This tool is crucial for genomic researchers aiming to deeply analyze the dynamics of TE insertions.
+This module normalizes the BLAST alignments between OUTSIDER insertion
+sequences and the TE database. It is designed to expose competing TE matches,
+possible composite insertions and possible repeated or nested structures
+without silently converting them into confirmed biological components.
 
-## Run Build Data
-
-Execute the module with the following command :
-
-```
-singularity exec TrEMOLO.simg TrEMOLO/modules/2-MODULE_TE_BLAST/server/scripts/buildData.sh <work-directory-path>
-```
-
-For running tests
+## Run
 
 ```bash
-#after running the following command 
-# singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/run.snk --configfile TrEMOLO/test/tmp_config.yml
-
-# run test
-singularity exec TrEMOLO.simg TrEMOLO/modules/2-MODULE_TE_BLAST/server/scripts/buildData.sh work_test
-# this command will create a file work_test/data.json and a symbolic link to this file in TrEMOLO/modules/2-MODULE_TE_BLAST/server/back-end/data/data_GEN.json
+./module build 2 WORK_DIRECTORY [OUTPUT_DIRECTORY]
 ```
 
+The default output is `WORK_DIRECTORY/MODULE_TE_BLAST`. The module consumes:
 
-**Limit : the size of the `YOUR_WORK_DIRECTORY/data.json` file must not exceed 500MB**
+- `OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bln`;
+- `OUTSIDER/TrEMOLO_SV_TE/INS/SV_SIZE.tsv`;
+- `1-UTILS/TE_SIZE.tsv`;
+- `TE_INFOS.bed`, when available, to mark final reported events;
+- `TE_CALL_CANDIDATES.tsv`, when available, to identify known alternatives.
 
-
-## RUN SERVER
+Scientific thresholds can be passed after the output directory:
 
 ```bash
-#get dependancies
-singularity exec TrEMOLO.simg npm install blessed
-
-#run
-singularity exec TrEMOLO.simg bash TrEMOLO/module start 2
+./module build 2 work_test STRUCTURE_REPORT \
+  --min-pident 90 \
+  --min-aligned-bp 80 \
+  --min-consensus-coverage 20 \
+  --max-component-overlap 0.2
 ```
 
-You can change the PORT numbers in the `TrEMOLO/modules/2-MODULE_TE_BLAST/server/config.yaml` file
+All raw HSPs are preserved regardless of thresholds. Thresholds only determine
+the normalized match status and the provisional component proposal.
 
-To open the viewer go to the link in the client section.
+## Outputs
 
+```text
+STRUCTURE_REPORT/
+  insertion-hsps.tsv
+  insertion-matches.tsv
+  insertion-components.tsv
+  insertion-structures.tsv
+  insertion-events.tsv
+  manifest.json
+  report-data.json
+  report.qmd
+  report.html
+  index.html
+```
 
-## Viewer
+- `insertion-hsps.tsv` contains every BLAST HSP in 0-based half-open query and
+  subject coordinates, with explicit filter reasons.
+- `insertion-matches.tsv` chains HSPs by query, TE and orientation and records
+  union coverage, weighted identity, score, final-call status and assignment.
+- `insertion-components.tsv` contains a conservative, non-overlapping set of
+  coordinate-supported matches for each query sequence.
+- `insertion-structures.tsv` describes each supporting insertion sequence.
+- `insertion-events.tsv` aggregates all supporting sequences belonging to the
+  same TrEMOLO event. This is the preferred table for finding events supported
+  by several query sequences.
 
+Event classifications distinguish:
 
-<img src="img/ex-1.png">
+- `multi_te_candidate`: multiple TE families occur on one supporting sequence;
+- `multi_te_supported`: the pattern occurs on at least two supporting
+  sequences;
+- `repeated_or_rearranged_te_candidate/supported`: several components have the
+  same TE label;
+- `single_candidate`, `unresolved`, and `no_match`.
 
+These labels remain hypotheses. A composite or nested biological allele should
+only be promoted after read/assembly evidence confirms linkage and breakpoints.
 
-This interface is designed for the vertical visualization of BLAST results, highlighting transposon insertion sequences. Black bars denote genomic locus changes, while blue dotted lines indicate a read support change within the same locus. Red or pink bars mark reverse-oriented insertion sequences, with blue for forward orientation. Translucent dotted segments represent unmatched areas with the TE or insertion sequence. The upper screen portion displays the insertion sequence complete with size indicators, and the lower portion presents the corresponding TE sequences from the database. The black vertical bar on the right allows tracking of the locus on the selected chromosome. Cursor movement and selecting "GO" enable navigation to a specific locus. Hovering over a sequence highlights the corresponding insertion sequence at the top, with its details displayed in a dedicated information block.
+The report is a self-contained Quarto HTML file. The historical Node server,
+global repository symlink, 500 MB monolithic JSON and CDN dependencies are no
+longer used.
+The refactored Singularity definition includes Quarto; with an older image,
+run the wrapper from a host installation of Quarto instead.
