@@ -61,7 +61,9 @@ def main():
     require(event["multi_family_queries"] == "1", "multi-family support differs")
     require(event["classification"] == "multi_te_candidate", "event classification differs")
     structure_html = (args.structure_report / "report.html").read_text()
-    require('id="trm-structure-svg"' in structure_html, "structure diagram missing")
+    require('id="trm-structure-gallery"' in structure_html, "structure landscape missing")
+    require('id="trm-structure-te"' in structure_html, "structure TE filter missing")
+    require("Evidence details" in structure_html, "structure evidence disclosure missing")
     require('id="trm-event-body"' in structure_html, "event interpretation table missing")
 
     print(

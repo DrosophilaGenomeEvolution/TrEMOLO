@@ -71,8 +71,16 @@ Event classifications distinguish:
 These labels remain hypotheses. A composite or nested biological allele should
 only be promoted after read/assembly evidence confirms linkage and breakpoints.
 
-The report is a self-contained Quarto HTML file. The historical Node server,
-global repository symlink, 500 MB monolithic JSON and CDN dependencies are no
-longer used.
+The report is a self-contained Quarto HTML file. Its primary view is a
+scrollable structure landscape: every insertion sequence remains available,
+while coordinate-scaled TE components, orientations, consensus coverage and
+identity are visible directly on each card. Multi-component and
+alternative-rich structures appear first by default without hiding the other
+sequences. Chromosome, TE family, classification, final-call, component-count
+and free-text filters can narrow the landscape. Each card exposes normalized
+matches and raw BLAST HSPs on demand, including rejection reasons.
+
+The historical Node server, global repository symlink, 500 MB monolithic JSON
+and CDN dependencies are no longer used.
 The refactored Singularity definition includes Quarto; with an older image,
 run the wrapper from a host installation of Quarto instead.

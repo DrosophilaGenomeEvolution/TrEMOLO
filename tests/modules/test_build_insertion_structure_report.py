@@ -91,6 +91,10 @@ class BuildInsertionStructureReportTests(unittest.TestCase):
             self.assertEqual(matches["low"]["status"], "rejected")
             with (root / "report/insertion-hsps.tsv").open(newline="") as handle:
                 self.assertEqual(len(list(csv.DictReader(handle, delimiter="\t"))), 3)
+            report_source = (root / "report/report.qmd").read_text()
+            self.assertIn('id="trm-structure-gallery"', report_source)
+            self.assertIn('id="trm-structure-te"', report_source)
+            self.assertIn("Evidence details", report_source)
 
     def test_thresholds_change_matches_but_not_raw_hsp_rows(self):
         with tempfile.TemporaryDirectory() as directory:

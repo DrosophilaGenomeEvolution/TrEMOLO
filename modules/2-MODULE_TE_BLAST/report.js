@@ -1,33 +1,76 @@
 (() => {
   "use strict";
+
   const data = JSON.parse(document.getElementById("structure-report-data").textContent);
   const structures = data.structures || [];
   const events = data.events || [];
   const components = data.components || [];
   const matches = data.matches || [];
+  const hsps = data.hsps || [];
   const $ = (id) => document.getElementById(id);
-  const ns = "http://www.w3.org/2000/svg";
   const integer = new Intl.NumberFormat();
   const decimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
-  const colors = ["#087f78", "#d66a26", "#5868b2", "#b04f72", "#6b8e23", "#7651a1", "#2f7ebc", "#b58a21"];
-  const colorByTe = new Map();
-  [...new Set(matches.map((match) => match.subject_te))].sort().forEach((te, index) => colorByTe.set(te, colors[index % colors.length]));
-  const matchesByQuery = new Map();
-  const componentsByStructure = new Map();
-  matches.forEach((match) => {
-    if (!matchesByQuery.has(match.query_id)) matchesByQuery.set(match.query_id, []);
-    matchesByQuery.get(match.query_id).push(match);
-  });
-  components.forEach((component) => {
-    if (!componentsByStructure.has(component.structure_id)) componentsByStructure.set(component.structure_id, []);
-    componentsByStructure.get(component.structure_id).push(component);
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+  const matchesByQuery = groupBy(matches, "query_id");
+  const hspsByQuery = groupBy(hsps, "query_id");
+  const componentsByStructure = groupBy(components, "structure_id");
+  const familiesByQuery = new Map();
+
+  structures.forEach((structure) => {
+    const families = new Set();
+    if (structure.reported_te && structure.reported_te !== ".") families.add(structure.reported_te);
+    (matchesByQuery.get(structure.query_id) || []).forEach((match) => families.add(match.subject_te));
+    (componentsByStructure.get(structure.structure_id) || []).forEach((component) => families.add(component.te_name));
+    familiesByQuery.set(structure.query_id, [...families].sort(collator.compare));
   });
 
-  function svgElement(name, attributes = {}, text = "") {
-    const node = document.createElementNS(ns, name);
-    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
-    if (text) node.textContent = text;
+  function groupBy(rows, field) {
+    const grouped = new Map();
+    rows.forEach((row) => {
+      if (!grouped.has(row[field])) grouped.set(row[field], []);
+      grouped.get(row[field]).push(row);
+    });
+    return grouped;
+  }
+
+  function element(name, className, text) {
+    const node = document.createElement(name);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
     return node;
+  }
+
+  function appendCell(row, value, className = "") {
+    const cell = element("td", className, value);
+    row.appendChild(cell);
+    return cell;
+  }
+
+  function label(value) {
+    return String(value || "").replaceAll("_", " ");
+  }
+
+  function percent(value) {
+    return `${decimal.format(Number(value) || 0)}%`;
+  }
+
+  function scientific(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "—";
+    if (number === 0) return "0";
+    return number.toExponential(2);
+  }
+
+  function teColor(te) {
+    let hash = 0;
+    for (const character of te) hash = ((hash << 5) - hash + character.codePointAt(0)) | 0;
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue} 52% 43%)`;
+  }
+
+  function parseSegments(value) {
+    if (!value || value === ".") return [];
+    return value.split(";").map((segment) => segment.split("-").map(Number));
   }
 
   function renderSummary() {
@@ -39,139 +82,371 @@
       [summary.components || 0, "provisional components"],
       [summary.final_events || 0, "reported final events"],
     ];
-    values.forEach(([value, label]) => {
-      const card = document.createElement("div");
-      card.className = "trm-structure-card";
-      const strong = document.createElement("strong");
-      strong.textContent = integer.format(value);
-      const span = document.createElement("span");
-      span.textContent = label;
-      card.append(strong, span);
+    values.forEach(([value, description]) => {
+      const card = element("div", "trm-structure-card");
+      card.append(element("strong", "", integer.format(value)), element("span", "", description));
       $("trm-structure-summary").appendChild(card);
     });
   }
 
+  function appendOptions(id, values) {
+    const select = $(id);
+    values.forEach((value) => select.appendChild(new Option(label(value), value)));
+  }
+
   function populateFilters() {
-    [...new Set(structures.map((row) => row.chrom))].sort().forEach((value) => $("trm-structure-chrom").appendChild(new Option(value, value)));
-    [...new Set(structures.map((row) => row.classification))].sort().forEach((value) => $("trm-structure-class").appendChild(new Option(value.replaceAll("_", " "), value)));
-    ["trm-structure-chrom", "trm-structure-class", "trm-structure-final", "trm-structure-min-components"].forEach((id) => $(id).addEventListener("input", renderCatalogue));
+    appendOptions("trm-structure-chrom", [...new Set(structures.map((row) => row.chrom))].sort(collator.compare));
+    appendOptions(
+      "trm-structure-te",
+      [...new Set(structures.flatMap((row) => familiesByQuery.get(row.query_id) || []))].sort(collator.compare),
+    );
+    appendOptions("trm-structure-class", [...new Set(structures.map((row) => row.classification))].sort(collator.compare));
+    [
+      "trm-structure-chrom",
+      "trm-structure-te",
+      "trm-structure-class",
+      "trm-structure-final",
+      "trm-structure-min-components",
+      "trm-structure-search",
+      "trm-structure-sort",
+    ].forEach((id) => $(id).addEventListener("input", renderLandscape));
+    $("trm-structure-reset").addEventListener("click", resetFilters);
+  }
+
+  function resetFilters() {
+    ["trm-structure-chrom", "trm-structure-te", "trm-structure-class", "trm-structure-final", "trm-structure-search"]
+      .forEach((id) => { $(id).value = ""; });
+    $("trm-structure-min-components").value = "0";
+    $("trm-structure-sort").value = "signal";
+    renderLandscape();
+  }
+
+  function genomicOrder(first, second) {
+    return collator.compare(first.chrom, second.chrom)
+      || Number(first.locus_start) - Number(second.locus_start)
+      || Number(first.locus_end) - Number(second.locus_end)
+      || collator.compare(first.event_id, second.event_id);
+  }
+
+  function signalOrder(first, second) {
+    const firstMatches = (matchesByQuery.get(first.query_id) || []).length;
+    const secondMatches = (matchesByQuery.get(second.query_id) || []).length;
+    return Number(second.component_count) - Number(first.component_count)
+      || Number(second.alternative_matches) - Number(first.alternative_matches)
+      || Number(second.retained_matches) - Number(first.retained_matches)
+      || secondMatches - firstMatches
+      || Number(second.final_call === "yes") - Number(first.final_call === "yes")
+      || genomicOrder(first, second);
+  }
+
+  function filteredStructures() {
+    const chrom = $("trm-structure-chrom").value;
+    const te = $("trm-structure-te").value;
+    const classification = $("trm-structure-class").value;
+    const finalCall = $("trm-structure-final").value;
+    const minimum = Math.max(0, Number($("trm-structure-min-components").value) || 0);
+    const search = $("trm-structure-search").value.trim().toLocaleLowerCase();
+    const order = $("trm-structure-sort").value;
+    const rows = structures.filter((row) => {
+      if (chrom && row.chrom !== chrom) return false;
+      if (te && !(familiesByQuery.get(row.query_id) || []).includes(te)) return false;
+      if (classification && row.classification !== classification) return false;
+      if (finalCall && row.final_call !== finalCall) return false;
+      if (Number(row.component_count) < minimum) return false;
+      if (search) {
+        const haystack = [
+          row.chrom, row.locus_start, row.locus_end, row.event_id, row.query_id,
+          row.structure_id, row.reported_te, row.classification,
+          ...(familiesByQuery.get(row.query_id) || []),
+        ].join(" ").toLocaleLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
+      return true;
+    });
+    if (order === "position") rows.sort(genomicOrder);
+    else if (order === "components") rows.sort((a, b) => Number(b.component_count) - Number(a.component_count) || signalOrder(a, b));
+    else if (order === "length") rows.sort((a, b) => Number(b.query_length) - Number(a.query_length) || genomicOrder(a, b));
+    else rows.sort(signalOrder);
+    return rows;
+  }
+
+  function badge(text, modifier = "") {
+    return element("span", `trm-structure-badge ${modifier}`.trim(), text);
+  }
+
+  function structureTitle(structure, queryComponents, queryMatches) {
+    const componentFamilies = [...new Set(queryComponents.map((component) => component.te_name))];
+    if (structure.reported_te && structure.reported_te !== ".") {
+      const distinctEvidence = componentFamilies.filter((family) => family !== structure.reported_te);
+      return distinctEvidence.length
+        ? `${structure.reported_te} · evidence: ${componentFamilies.join(" + ")}`
+        : structure.reported_te;
+    }
+    if (componentFamilies.length) return componentFamilies.join(" + ");
+    if (queryMatches.length) {
+      const strongest = queryMatches.slice().sort((a, b) => Number(b.bitscore_sum) - Number(a.bitscore_sum))[0];
+      return `Candidate: ${strongest.subject_te}`;
+    }
+    return "No TE signal";
+  }
+
+  function createStructureCard(structure) {
+    const queryMatches = (matchesByQuery.get(structure.query_id) || []).slice()
+      .sort((a, b) => Number(a.query_start) - Number(b.query_start) || Number(b.bitscore_sum) - Number(a.bitscore_sum));
+    const queryComponents = (componentsByStructure.get(structure.structure_id) || []).slice()
+      .sort((a, b) => Number(a.rank) - Number(b.rank));
+    const queryHsps = hspsByQuery.get(structure.query_id) || [];
+    const card = element("article", `trm-structure-item trm-class-${structure.classification}`);
+    card.id = `structure-${structure.structure_id}`;
+    card.setAttribute("role", "listitem");
+
+    const header = element("header", "trm-structure-item-header");
+    const identity = element("div", "trm-structure-identity");
+    identity.append(
+      element("p", "trm-structure-kicker", `${structure.chrom}:${integer.format(structure.locus_start)}–${integer.format(structure.locus_end)} · ${structure.event_id}`),
+      element("h3", "", structureTitle(structure, queryComponents, queryMatches)),
+      element("p", "trm-structure-query", `${integer.format(structure.query_length)} bp insertion sequence · ${structure.query_id}`),
+    );
+    const badges = element("div", "trm-structure-badges");
+    badges.appendChild(badge(label(structure.classification), `trm-badge-${structure.classification}`));
+    if (structure.final_call === "yes") badges.appendChild(badge("reported call", "trm-badge-final"));
+    badges.appendChild(badge(`${structure.component_count} component${Number(structure.component_count) === 1 ? "" : "s"}`));
+    if (Number(structure.alternative_matches)) badges.appendChild(badge(`${structure.alternative_matches} alternative${Number(structure.alternative_matches) === 1 ? "" : "s"}`, "trm-badge-alternative"));
+    header.append(identity, badges);
+    card.append(header, renderStructureMap(structure, queryMatches, queryComponents));
+
+    const details = element("details", "trm-structure-details");
+    const summary = element(
+      "summary",
+      "",
+      `Evidence details · ${integer.format(queryMatches.length)} normalized match${queryMatches.length === 1 ? "" : "es"} · ${integer.format(queryHsps.length)} raw HSP${queryHsps.length === 1 ? "" : "s"}`,
+    );
+    const detailBody = element("div", "trm-structure-detail-body");
+    details.append(summary, detailBody);
+    details.addEventListener("toggle", () => {
+      if (details.open && !detailBody.dataset.rendered) {
+        renderDetails(detailBody, structure, queryMatches, queryHsps);
+        detailBody.dataset.rendered = "yes";
+      }
+    });
+    card.appendChild(details);
+    return card;
+  }
+
+  function evidenceRow(structure, row, kind, index) {
+    const isComponent = kind === "component";
+    const te = isComponent ? row.te_name : row.subject_te;
+    const strand = isComponent ? row.strand : row.subject_strand;
+    const coverage = row.consensus_coverage;
+    const identity = row.weighted_identity;
+    const wrapper = element("div", `trm-structure-map-row trm-map-${kind}`);
+    const rowLabel = element("div", "trm-structure-map-label");
+    const prefix = isComponent ? `C${row.rank}` : kind === "alternative" ? "Alt" : "Candidate";
+    rowLabel.append(
+      element("strong", "", `${prefix} · ${te} ${strand}`),
+      element("span", "", `${percent(coverage)} consensus · ${percent(identity)} identity`),
+    );
+    const track = element("div", "trm-structure-track");
+    track.setAttribute("aria-label", `${te} coordinates on insertion sequence`);
+    const length = Math.max(1, Number(structure.query_length));
+    parseSegments(row.query_segments).forEach(([start, end]) => {
+      const segment = element("span", "trm-structure-segment");
+      const left = Math.max(0, Math.min(100, 100 * start / length));
+      const width = Math.max(0.35, Math.min(100 - left, 100 * (end - start) / length));
+      segment.style.left = `${left}%`;
+      segment.style.width = `${width}%`;
+      segment.style.setProperty("--trm-segment-color", teColor(te));
+      if (width >= 12) segment.textContent = te;
+      const status = isComponent ? "provisional component" : label(row.status);
+      segment.title = `${te} · ${integer.format(start)}–${integer.format(end)} bp · ${strand} · ${status} · ${percent(coverage)} consensus coverage · ${percent(identity)} identity`;
+      track.appendChild(segment);
+    });
+    wrapper.append(rowLabel, track);
+    wrapper.style.setProperty("--trm-row-index", index);
+    return wrapper;
+  }
+
+  function renderStructureMap(structure, queryMatches, queryComponents) {
+    const map = element("section", "trm-structure-map");
+    const axis = element("div", "trm-structure-axis");
+    axis.append(element("span", "", "0"), element("strong", "", "Insertion sequence"), element("span", "", `${integer.format(structure.query_length)} bp`));
+    map.appendChild(axis);
+
+    if (queryComponents.length) {
+      queryComponents.forEach((component, index) => map.appendChild(evidenceRow(structure, component, "component", index)));
+      const componentMatchIds = new Set(queryComponents.map((component) => component.match_id));
+      queryMatches
+        .filter((match) => match.status === "retained" && !componentMatchIds.has(match.match_id))
+        .slice(0, 3)
+        .forEach((match, index) => map.appendChild(evidenceRow(structure, match, "alternative", queryComponents.length + index)));
+    } else if (queryMatches.length) {
+      queryMatches
+        .slice()
+        .sort((a, b) => Number(b.bitscore_sum) - Number(a.bitscore_sum))
+        .slice(0, 3)
+        .forEach((match, index) => map.appendChild(evidenceRow(structure, match, "rejected", index)));
+      if (queryMatches.length > 3) map.appendChild(element("p", "trm-structure-more", `+ ${queryMatches.length - 3} additional candidates in evidence details`));
+    } else {
+      const empty = element("div", "trm-structure-map-empty", "No alignment to the TE database");
+      empty.appendChild(element("span", "", "The insertion sequence remains visible and can be retained or excluded with filters."));
+      map.appendChild(empty);
+    }
+    return map;
+  }
+
+  function detailFacts(structure) {
+    const facts = [
+      ["Structure ID", structure.structure_id],
+      ["Query ID", structure.query_id],
+      ["Reported TE", structure.reported_te === "." ? "Not a final call" : structure.reported_te],
+      ["Interpretation", label(structure.interpretation)],
+      ["Retained matches", structure.retained_matches],
+      ["Provisional components", structure.component_count],
+      ["Overlapping alternatives", structure.alternative_matches],
+    ];
+    const grid = element("dl", "trm-structure-facts");
+    facts.forEach(([term, value]) => {
+      const fact = document.createElement("div");
+      fact.append(element("dt", "", term), element("dd", "", value));
+      grid.appendChild(fact);
+    });
+    return grid;
+  }
+
+  function tableWithHeader(columns) {
+    const wrap = element("div", "trm-structure-table-wrap trm-detail-table-wrap");
+    const table = element("table", "trm-structure-table");
+    const head = document.createElement("thead");
+    const row = document.createElement("tr");
+    columns.forEach((column) => row.appendChild(element("th", "", column)));
+    head.appendChild(row);
+    const body = document.createElement("tbody");
+    table.append(head, body);
+    wrap.appendChild(table);
+    return { wrap, body };
+  }
+
+  function renderDetails(target, structure, queryMatches, queryHsps) {
+    target.appendChild(detailFacts(structure));
+    target.appendChild(element("h4", "", "Normalized TE matches"));
+    if (queryMatches.length) {
+      const matchTable = tableWithHeader([
+        "TE", "Query segments", "Strand", "Query coverage", "Consensus coverage",
+        "Identity", "HSPs", "Bitscore", "E-value", "Status", "Assignment", "Filter reason",
+      ]);
+      queryMatches.forEach((row) => {
+        const tr = document.createElement("tr");
+        [
+          row.subject_te,
+          row.query_segments,
+          row.subject_strand,
+          percent(row.query_coverage),
+          percent(row.consensus_coverage),
+          percent(row.weighted_identity),
+          row.hsp_count,
+          decimal.format(row.bitscore_sum),
+          scientific(row.best_evalue),
+          label(row.status),
+          label(row.assignment),
+          row.filter_reasons === "." ? "—" : label(row.filter_reasons),
+        ].forEach((value) => appendCell(tr, value));
+        if (row.status === "rejected") tr.className = "trm-st-rejected-row";
+        matchTable.body.appendChild(tr);
+      });
+      target.appendChild(matchTable.wrap);
+    } else {
+      target.appendChild(element("p", "trm-structure-muted", "No normalized match was produced for this sequence."));
+    }
+
+    const raw = element("details", "trm-raw-evidence");
+    raw.appendChild(element("summary", "", `Raw BLAST HSPs · ${queryHsps.length}`));
+    if (queryHsps.length) {
+      const hspTable = tableWithHeader([
+        "TE", "Query interval", "Consensus interval", "Strand", "Aligned bp",
+        "Identity", "Bitscore", "E-value", "Retained", "Filter reason",
+      ]);
+      queryHsps.forEach((row) => {
+        const tr = document.createElement("tr");
+        [
+          row.subject_te,
+          `${integer.format(row.query_start)}–${integer.format(row.query_end)}`,
+          `${integer.format(row.subject_start)}–${integer.format(row.subject_end)}`,
+          row.subject_strand,
+          integer.format(row.alignment_length),
+          percent(row.pident),
+          decimal.format(row.bitscore),
+          scientific(row.evalue),
+          row.retained,
+          row.filter_reasons === "." ? "—" : label(row.filter_reasons),
+        ].forEach((value) => appendCell(tr, value));
+        hspTable.body.appendChild(tr);
+      });
+      raw.appendChild(hspTable.wrap);
+    } else {
+      raw.appendChild(element("p", "trm-structure-muted", "No raw HSP for this insertion sequence."));
+    }
+    target.appendChild(raw);
+  }
+
+  function renderLandscape() {
+    const rows = filteredStructures();
+    $("trm-structure-filter-note").textContent = `${integer.format(rows.length)} / ${integer.format(structures.length)} insertion structures visible`;
+    $("trm-structure-empty").hidden = rows.length !== 0;
+    const fragment = document.createDocumentFragment();
+    rows.forEach((row) => fragment.appendChild(createStructureCard(row)));
+    $("trm-structure-gallery").replaceChildren(fragment);
+  }
+
+  function focusEvent(eventId) {
+    ["trm-structure-chrom", "trm-structure-te", "trm-structure-class", "trm-structure-final"]
+      .forEach((id) => { $(id).value = ""; });
+    $("trm-structure-min-components").value = "0";
+    $("trm-structure-search").value = eventId;
+    $("trm-structure-sort").value = "components";
+    renderLandscape();
+    $("trm-structure-gallery").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function renderEvents() {
     const body = $("trm-event-body");
-    const candidates = events.filter((event) => Number(event.multi_component_queries) > 0);
+    const candidates = events
+      .filter((event) => Number(event.multi_component_queries) > 0)
+      .sort((a, b) => Number(b.multi_family_queries) - Number(a.multi_family_queries) || Number(b.multi_component_queries) - Number(a.multi_component_queries) || genomicOrder(a, b));
     candidates.forEach((event) => {
       const tr = document.createElement("tr");
-      [`${event.chrom}:${integer.format(event.locus_start)}`, event.event_id, event.reported_te === "." ? "—" : event.reported_te, event.query_count, event.queries_with_components, event.multi_component_queries, event.multi_family_queries, event.maximum_component_count, event.classification.replaceAll("_", " ")].forEach((value) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        tr.appendChild(td);
-      });
-      tr.addEventListener("click", () => {
-        const selected = structures.filter((row) => row.event_id === event.event_id).sort((a, b) => Number(b.component_count) - Number(a.component_count))[0];
-        if (selected) renderStructure(selected);
+      [
+        `${event.chrom}:${integer.format(event.locus_start)}`,
+        event.event_id,
+        event.reported_te === "." ? "—" : event.reported_te,
+        event.query_count,
+        event.queries_with_components,
+        event.multi_component_queries,
+        event.multi_family_queries,
+        event.maximum_component_count,
+        label(event.classification),
+      ].forEach((value) => appendCell(tr, value));
+      tr.tabIndex = 0;
+      tr.setAttribute("role", "button");
+      tr.title = `Show all structures for ${event.event_id}`;
+      tr.addEventListener("click", () => focusEvent(event.event_id));
+      tr.addEventListener("keydown", (keyboardEvent) => {
+        if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+          keyboardEvent.preventDefault();
+          focusEvent(event.event_id);
+        }
       });
       body.appendChild(tr);
     });
     if (!candidates.length) {
       const tr = document.createElement("tr");
-      const td = document.createElement("td");
+      const td = appendCell(tr, "No event has more than one provisional component at the current thresholds.");
       td.colSpan = 9;
-      td.textContent = "No event has more than one provisional component at the current thresholds.";
-      tr.appendChild(td);
       body.appendChild(tr);
     }
   }
 
-  function filteredStructures() {
-    const chrom = $("trm-structure-chrom").value;
-    const classification = $("trm-structure-class").value;
-    const finalCall = $("trm-structure-final").value;
-    const minimum = Math.max(0, Number($("trm-structure-min-components").value) || 0);
-    return structures.filter((row) => (!chrom || row.chrom === chrom) && (!classification || row.classification === classification) && (!finalCall || row.final_call === finalCall) && Number(row.component_count) >= minimum);
-  }
-
-  function renderCatalogue() {
-    const rows = filteredStructures();
-    $("trm-structure-filter-note").textContent = `${integer.format(rows.length)} insertion structures match the filters.`;
-    const body = $("trm-structure-body");
-    body.replaceChildren();
-    rows.forEach((row) => {
-      const tr = document.createElement("tr");
-      [`${row.chrom}:${integer.format(row.locus_start)}`, row.event_id, integer.format(row.query_length), row.reported_te === "." ? "—" : row.reported_te, row.retained_matches, row.component_count, row.alternative_matches, row.classification.replaceAll("_", " ")].forEach((value) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        tr.appendChild(td);
-      });
-      tr.addEventListener("click", () => renderStructure(row));
-      body.appendChild(tr);
-    });
-    if (rows.length) renderStructure(rows[0]);
-  }
-
-  function parseSegments(value) {
-    if (!value || value === ".") return [];
-    return value.split(";").map((segment) => segment.split("-").map(Number));
-  }
-
-  function renderStructure(structure) {
-    const queryMatches = (matchesByQuery.get(structure.query_id) || []).slice().sort((a, b) => Number(a.query_start) - Number(b.query_start) || Number(b.bitscore_sum) - Number(a.bitscore_sum));
-    const queryComponents = (componentsByStructure.get(structure.structure_id) || []).slice().sort((a, b) => Number(a.rank) - Number(b.rank));
-    $("trm-structure-title").textContent = `${structure.event_id} · ${structure.chrom}:${integer.format(structure.locus_start)}`;
-    $("trm-structure-note").textContent = `${structure.classification.replaceAll("_", " ")} · ${structure.component_count} proposed components and ${structure.alternative_matches} retained overlapping alternatives. Reported TE: ${structure.reported_te === "." ? "not a final call" : structure.reported_te}.`;
-    renderDiagram(structure, queryMatches, queryComponents);
-    renderMatches(queryMatches);
-  }
-
-  function renderDiagram(structure, queryMatches, queryComponents) {
-    const svg = $("trm-structure-svg");
-    svg.replaceChildren();
-    const left = 170, right = 1160, queryY = 55;
-    const length = Math.max(1, Number(structure.query_length));
-    const scale = (value) => left + Number(value) / length * (right - left);
-    svg.appendChild(svgElement("rect", { x: left, y: queryY, width: right - left, height: 22, rx: 5, class: "trm-st-query" }));
-    svg.appendChild(svgElement("text", { x: 16, y: queryY + 17, class: "trm-st-label" }, `Insertion (${integer.format(length)} bp)`));
-    [0, 0.25, 0.5, 0.75, 1].forEach((fraction) => {
-      const x = scale(fraction * length);
-      svg.appendChild(svgElement("line", { x1: x, x2: x, y1: queryY + 24, y2: 500, class: "trm-st-axis", opacity: 0.2 }));
-      svg.appendChild(svgElement("text", { x, y: 96, "text-anchor": "middle", class: "trm-st-label" }, integer.format(fraction * length)));
-    });
-    queryComponents.forEach((component, index) => {
-      const y = 125 + index * 44;
-      svg.appendChild(svgElement("text", { x: 16, y: y + 16, class: "trm-st-label" }, `C${component.rank} ${component.te_name} ${component.strand}`));
-      parseSegments(component.query_segments).forEach(([start, end]) => {
-        const rectangle = svgElement("rect", { x: scale(start), y, width: Math.max(2, scale(end) - scale(start)), height: 22, rx: 3, fill: colorByTe.get(component.te_name), class: "trm-st-component" });
-        rectangle.appendChild(svgElement("title", {}, `${component.te_name}: ${start}–${end} bp`));
-        svg.appendChild(rectangle);
-      });
-    });
-    const matchStart = 145 + Math.max(queryComponents.length, 1) * 44;
-    queryMatches.slice(0, 12).forEach((match, index) => {
-      const y = matchStart + index * 20;
-      svg.appendChild(svgElement("text", { x: 16, y: y + 4, class: "trm-st-label" }, match.subject_te));
-      parseSegments(match.query_segments).forEach(([start, end]) => svg.appendChild(svgElement("line", { x1: scale(start), x2: scale(end), y1: y, y2: y, class: match.status === "retained" ? "trm-st-match-retained" : "trm-st-match-rejected" })));
-    });
-    if (queryMatches.length > 12) svg.appendChild(svgElement("text", { x: 16, y: matchStart + 250, class: "trm-st-label" }, `+ ${queryMatches.length - 12} matches in table`));
-  }
-
-  function renderMatches(rows) {
-    const body = $("trm-match-body");
-    body.replaceChildren();
-    rows.forEach((row) => {
-      const tr = document.createElement("tr");
-      [row.subject_te, `${integer.format(row.query_start)}–${integer.format(row.query_end)}`, row.subject_strand, `${decimal.format(row.weighted_identity)}%`, `${decimal.format(row.consensus_coverage)}%`, decimal.format(row.bitscore_sum), row.status, row.assignment.replaceAll("_", " "), row.filter_reasons === "." ? "—" : row.filter_reasons].forEach((value, index) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        if (index === 6 && row.status === "rejected") td.className = "trm-st-rejected";
-        if (index === 7 && row.assignment === "reported_primary") td.className = "trm-st-primary";
-        tr.appendChild(td);
-      });
-      body.appendChild(tr);
-    });
-  }
-
   renderSummary();
-  renderEvents();
   populateFilters();
-  renderCatalogue();
+  renderLandscape();
+  renderEvents();
 })();

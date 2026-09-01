@@ -21,51 +21,48 @@ assembled insertion sequence demonstrate linkage between components.
 </div>
 ```
 
-# Structure catalogue
+# Structure landscape
 
-## Multi-component event interpretations
-
-This event-level table aggregates all supporting insertion sequences. It is the
-first place to inspect when looking for several TE components at one call.
-
-```{=html}
-<div class="trm-structure-table-wrap">
-  <table class="trm-structure-table">
-    <thead><tr><th>Location</th><th>Event</th><th>Reported TE</th><th>Query sequences</th><th>Queries with components</th><th>Multi-component queries</th><th>Multi-family queries</th><th>Maximum components</th><th>Interpretation</th></tr></thead>
-    <tbody id="trm-event-body"></tbody>
-  </table>
-</div>
-```
-
-## Supporting sequence catalogue
+Every insertion sequence is visible below as a structure map. The default
+ordering brings multi-component and alternative-rich signals to the top, but
+does not hide unresolved sequences or sequences without a TE match. Filters
+only narrow this landscape when a specific question needs to be tested.
 
 ```{=html}
 <div class="trm-structure-toolbar">
   <label>Chromosome <select id="trm-structure-chrom"><option value="">All</option></select></label>
+  <label>TE family <select id="trm-structure-te"><option value="">All</option></select></label>
   <label>Classification <select id="trm-structure-class"><option value="">All</option></select></label>
   <label>Final call <select id="trm-structure-final"><option value="">All</option><option value="yes">Reported only</option><option value="no">Unreported only</option></select></label>
   <label>Minimum components <input id="trm-structure-min-components" type="number" min="0" value="0"></label>
+  <label>Search <input id="trm-structure-search" type="search" placeholder="event, TE, location…"></label>
+  <label>Order <select id="trm-structure-sort"><option value="signal">Most informative first</option><option value="position">Genomic position</option><option value="components">Most components</option><option value="length">Longest insertion</option></select></label>
 </div>
-<p id="trm-structure-filter-note" class="trm-structure-muted"></p>
-<div class="trm-structure-table-wrap">
-  <table class="trm-structure-table">
-    <thead><tr><th>Location</th><th>Event</th><th>Length</th><th>Reported TE</th><th>Retained matches</th><th>Components</th><th>Alternatives</th><th>Classification</th></tr></thead>
-    <tbody id="trm-structure-body"></tbody>
-  </table>
+<div class="trm-structure-toolbar-footer">
+  <strong id="trm-structure-filter-note"></strong>
+  <button id="trm-structure-reset" type="button" class="trm-structure-button">Reset filters</button>
 </div>
+<div class="trm-structure-legend" aria-label="Structure map legend">
+  <span><i class="trm-legend-retained"></i>Provisional component</span>
+  <span><i class="trm-legend-rejected"></i>Rejected candidate shown when no component remains</span>
+  <span>Click <strong>Evidence details</strong> for normalized matches and raw HSPs.</span>
+</div>
+<div id="trm-structure-gallery" class="trm-structure-gallery" role="list"></div>
+<p id="trm-structure-empty" class="trm-structure-empty" hidden>No structure matches the current filters.</p>
 ```
 
-# Selected insertion
+## Cross-sequence event support
+
+This secondary view aggregates all insertion sequences supporting the same
+event. It highlights patterns observed on one or several sequences. Selecting
+an event focuses the structure landscape above instead of opening a detached
+plot elsewhere on the page.
 
 ```{=html}
-<h3 id="trm-structure-title">Select an insertion</h3>
-<p id="trm-structure-note" class="trm-structure-muted"></p>
-<div class="trm-structure-svg-wrap"><svg id="trm-structure-svg" viewBox="0 0 1200 520" role="img" aria-label="TE matches along the inserted sequence"></svg></div>
-<h3>Candidate matches</h3>
-<div class="trm-structure-table-wrap">
+<div class="trm-structure-table-wrap trm-event-table-wrap">
   <table class="trm-structure-table">
-    <thead><tr><th>TE</th><th>Query interval</th><th>Strand</th><th>Identity</th><th>Consensus coverage</th><th>Bitscore</th><th>Status</th><th>Assignment</th><th>Reason</th></tr></thead>
-    <tbody id="trm-match-body"></tbody>
+    <thead><tr><th>Location</th><th>Event</th><th>Reported TE</th><th>Query sequences</th><th>Queries with components</th><th>Multi-component queries</th><th>Multi-family queries</th><th>Maximum components</th><th>Interpretation</th></tr></thead>
+    <tbody id="trm-event-body"></tbody>
   </table>
 </div>
 ```
