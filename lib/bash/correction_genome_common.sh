@@ -84,9 +84,24 @@ cg_filter_paf() {
             } else {
                 query_span=$4-$3
                 reference_span=$9-$8
+                # PAF matches/alignment-block is strongly depressed by large
+                # structural gaps and is therefore not a sequence-identity
+                # estimate for assembly alignments. Prefer the minimap2 `dv`
+                # divergence tag (then `de`) and keep the column ratio only as
+                # a compatibility fallback for tag-less PAF producers.
                 identity=($11 > 0 ? 100*$10/$11 : 0)
+                dv=""
+                de=""
                 for (field=13; field<=NF; field++) {
                     if ($field == "tp:A:S") secondary=1
+                    if ($field ~ /^dv:f:/) dv=substr($field,6)
+                    if ($field ~ /^de:f:/) de=substr($field,6)
+                }
+                number_regex="^([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][-+]?[0-9]+)?$"
+                if (dv ~ number_regex && dv >= 0 && dv <= 1) {
+                    identity=100*(1-dv)
+                } else if (de ~ number_regex && de >= 0 && de <= 1) {
+                    identity=100*(1-de)
                 }
                 if ($1 !~ chromosome_regex) {
                     status="rejected"
@@ -219,6 +234,8 @@ cg_select_nonoverlapping_anchors() {
     local selection_audit=$6
     local temporary_directory=$7
     local candidates="${temporary_directory}/anchor_candidates.tsv"
+    local guarded_home_anchors="${temporary_directory}/anchor_guarded_home.tsv"
+    local prioritized_candidates="${temporary_directory}/anchor_candidates.prioritized.tsv"
     local ranked="${temporary_directory}/anchor_candidates.ranked.tsv"
     local eligible_queries="${temporary_directory}/anchor_eligible_queries.tsv"
 
@@ -242,16 +259,48 @@ cg_select_nonoverlapping_anchors() {
             if (mode == "same" && home[$1] != $6) next
             if (mode != "same" && !($6 in owner)) next
             identity=($11 > 0 ? 100*$10/$11 : 0)
+            dv=""
+            de=""
+            for (field=13; field<=NF; field++) {
+                if ($field ~ /^dv:f:/) dv=substr($field,6)
+                if ($field ~ /^de:f:/) de=substr($field,6)
+            }
+            number_regex="^([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][-+]?[0-9]+)?$"
+            if (dv ~ number_regex && dv >= 0 && dv <= 1) {
+                identity=100*(1-dv)
+            } else if (de ~ number_regex && de >= 0 && de <= 1) {
+                identity=100*(1-de)
+            }
             print $1,$3,$4,$5,$6,$8,$9,$10,$11,$12,\
                 sprintf("%.4f",identity),(home[$1] == $6 ? 1 : 0)
         }
     ' "$chromosome_pairs" "$eligible_queries" "$filtered_paf" > "$candidates"
 
-    # Home-chromosome anchors are considered first. With a one-to-one pair
-    # table they cannot conflict across chromosomes, so every corrected query
-    # retains at least one block in its own destination.
-    sort -t $'\t' -k12,12nr -k9,9nr -k10,10nr -k11,11nr -k1,1 -k2,2n \
-        "$candidates" > "$ranked"
+    # Protect only the strongest home anchor for each query. Protecting every
+    # home alignment would allow a short repetitive hit to reject a much
+    # larger cross-chromosome anchor, hiding the translocation this script is
+    # meant to correct. One guarded home anchor per one-to-one chromosome pair
+    # is enough to keep every destination represented.
+    awk 'BEGIN {FS=OFS="\t"} $12 == 1 {print}' "$candidates" | \
+        sort -t $'\t' -k1,1 -k9,9nr -k10,10nr -k11,11nr -k2,2n | \
+        awk 'BEGIN {FS=OFS="\t"} !seen[$1]++ {
+            print $1,$2,$3,$4,$5,$6,$7
+        }' > "$guarded_home_anchors"
+
+    awk '
+        BEGIN {FS=OFS="\t"}
+        FILENAME == ARGV[1] {
+            guarded[$1 FS $2 FS $3 FS $4 FS $5 FS $6 FS $7]=1
+            next
+        }
+        {
+            key=$1 FS $2 FS $3 FS $4 FS $5 FS $6 FS $7
+            print $0,(key in guarded ? 1 : 0)
+        }
+    ' "$guarded_home_anchors" "$candidates" > "$prioritized_candidates"
+
+    sort -t $'\t' -k13,13nr -k9,9nr -k10,10nr -k11,11nr -k1,1 -k2,2n \
+        "$prioritized_candidates" > "$ranked"
 
     awk -v selected_file="$selected_file" -v maximum_overlap="$maximum_overlap" '
         function max(a,b) {return a>b?a:b}
@@ -395,7 +444,15 @@ cg_reconstruct_fasta() {
             || cg_die "no sequence block assigned to output chromosome: $chromosome"
         bedtools getfasta -fi "$query_fasta" -bed "$extraction_bed" -s \
             > "$extraction_fasta"
-        awk '!/^>/ && NF {print}' "$extraction_fasta" >> "$output_fasta"
+        # bedtools writes every extracted block as an independent FASTA
+        # sequence. Concatenating those lines directly would create variable
+        # line widths inside one reconstructed chromosome, which samtools
+        # faidx correctly rejects. Remove block boundaries as a stream, then
+        # let the native fold utility wrap it in linear time and constant
+        # memory; a character-by-character awk loop becomes quadratic on
+        # chromosome-sized lines emitted by bedtools.
+        awk '/^>/ || !NF {next} {printf "%s",$0} END {printf "\n"}' \
+            "$extraction_fasta" | fold -w 60 >> "$output_fasta"
     done < "$query_index"
 }
 

@@ -15,7 +15,7 @@ MINIMUM_SIZE=20000
 MINIMUM_MAPQ=20
 MINIMUM_IDENTITY=80
 MAXIMUM_ANCHOR_OVERLAP=1000
-THREADS=1
+THREADS=8
 MINIMAP_PRESET="asm20"
 AUDIT_PREFIX=""
 KEEP_TEMP=false
@@ -37,7 +37,8 @@ Options:
       --min-mapq INT            Minimum PAF mapping quality [20]
       --min-identity FLOAT      Minimum alignment identity in percent [80]
       --max-anchor-overlap INT  Maximum overlap between retained anchors [1000]
-  -t, --threads INT             minimap2 threads when no PAF is supplied [1]
+  -g, --threads INT             minimap2 threads when no PAF is supplied [8]
+  -t INT                        Legacy alias for -g
       --preset NAME             minimap2 preset [asm20]
       --audit-prefix PATH       Prefix for TSV audit files [<output>.correction]
       --report-only             Build and audit the correction plan only
@@ -81,7 +82,7 @@ while [[ $# -gt 0 ]]; do
             MAXIMUM_ANCHOR_OVERLAP=$2
             shift 2
             ;;
-        -t|--threads)
+        -g|-t|--threads)
             [[ $# -ge 2 ]] || cg_die "missing value for $1"
             THREADS=$2
             shift 2
@@ -145,7 +146,7 @@ cg_validate_percentage "minimum identity" "$MINIMUM_IDENTITY"
 cg_validate_nonnegative_integer "maximum anchor overlap" "$MAXIMUM_ANCHOR_OVERLAP"
 cg_validate_positive_integer "threads" "$THREADS"
 
-for command_name in awk bedtools cmp cut ln mktemp readlink samtools sort; do
+for command_name in awk bedtools cmp cut fold ln mktemp readlink samtools sort; do
     cg_require_command "$command_name"
 done
 [[ -n "$PAF_FILE" ]] || cg_require_command minimap2
@@ -169,6 +170,7 @@ trap cleanup EXIT
 QUERY_LINK="${TEMPORARY_DIRECTORY}/query.fasta"
 REFERENCE_LINK="${TEMPORARY_DIRECTORY}/reference.fasta"
 RAW_PAF="${TEMPORARY_DIRECTORY}/mapping.paf"
+GENERATED_PAF="${AUDIT_PREFIX}.mapping.paf"
 FILTERED_PAF="${TEMPORARY_DIRECTORY}/mapping.filtered.paf"
 PAIR_FILE="${AUDIT_PREFIX}.chromosomes.tsv"
 ANCHOR_AUDIT="${AUDIT_PREFIX}.anchors.tsv"
@@ -185,8 +187,9 @@ if [[ -n "$PAF_FILE" ]]; then
 else
     printf 'Aligning query against reference with minimap2...\n' >&2
     minimap2 -x "$MINIMAP_PRESET" --secondary=no -t "$THREADS" \
-        "$REFERENCE_LINK" "$QUERY_LINK" > "$RAW_PAF" \
+        "$REFERENCE_LINK" "$QUERY_LINK" > "$GENERATED_PAF" \
         2> "${AUDIT_PREFIX}.minimap2.log"
+    RAW_PAF=$GENERATED_PAF
 fi
 
 cg_filter_paf "$RAW_PAF" "$FILTERED_PAF" "$ANCHOR_AUDIT" \
