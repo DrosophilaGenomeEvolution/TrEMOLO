@@ -461,6 +461,7 @@ cg_validate_output_fasta() {
     local query_index=$2
     local output_fasta=$3
     local temporary_directory=$4
+    local expected_output_index=${5:-$query_index}
     local output_link="${temporary_directory}/corrected.fasta"
     local input_total
     local output_total
@@ -479,7 +480,7 @@ cg_validate_output_fasta() {
             "${temporary_directory}/output_sizes.tsv" \
             || cg_die "intrachromosomal correction changed chromosome names or sizes"
     else
-        cut -f1 "$query_index" > "${temporary_directory}/input_names.txt"
+        cut -f1 "$expected_output_index" > "${temporary_directory}/input_names.txt"
         cut -f1 "${output_link}.fai" > "${temporary_directory}/output_names.txt"
         cmp -s "${temporary_directory}/input_names.txt" \
             "${temporary_directory}/output_names.txt" \

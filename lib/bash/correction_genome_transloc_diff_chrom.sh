@@ -21,6 +21,7 @@ MINIMAP_PRESET="asm20"
 AUDIT_PREFIX=""
 KEEP_TEMP=false
 REPORT_ONLY=false
+REORDER_CHROMOSOMES=false
 
 help() {
     cat <<'EOF'
@@ -42,6 +43,8 @@ Options:
   -t INT                        Legacy alias for -g
       --preset NAME             minimap2 preset [asm20]
       --audit-prefix PATH       Prefix for TSV audit files [<output>.correction]
+      --reorder-chromosomes     Write paired query chromosomes in reference order
+      --reference-order        Alias for --reorder-chromosomes
       --report-only             Build and audit the correction plan only
       --keep-temp               Keep the isolated temporary directory
   -h, --help                    Show this help
@@ -99,6 +102,10 @@ while [[ $# -gt 0 ]]; do
             [[ $# -ge 2 ]] || cg_die "missing value for $1"
             AUDIT_PREFIX=$2
             shift 2
+            ;;
+        --reorder-chromosomes|--reference-order)
+            REORDER_CHROMOSOMES=true
+            shift
             ;;
         --report-only)
             REPORT_ONLY=true
@@ -183,6 +190,8 @@ RAW_PLAN="${TEMPORARY_DIRECTORY}/reconstruction.raw.tsv"
 ORDER_TABLE="${TEMPORARY_DIRECTORY}/output_order.tsv"
 PLAN_FILE="${TEMPORARY_DIRECTORY}/reconstruction.plan.tsv"
 CORRECTION_AUDIT="${AUDIT_PREFIX}.corrections.tsv"
+OUTPUT_INDEX="${TEMPORARY_DIRECTORY}/output.fasta.fai"
+OUTPUT_ORDER_AUDIT="${AUDIT_PREFIX}.output_chromosomes.tsv"
 
 cg_link_and_index_fasta "$QUERY_FASTA" "$QUERY_LINK"
 cg_link_and_index_fasta "$REFERENCE_FASTA" "$REFERENCE_LINK"
@@ -202,6 +211,69 @@ cg_filter_paf "$RAW_PAF" "$FILTERED_PAF" "$ANCHOR_AUDIT" \
 cg_build_chromosome_pairs "$FILTERED_PAF" "${QUERY_LINK}.fai" \
     "${REFERENCE_LINK}.fai" "$CHROMOSOME_FILE" "$PAIR_FILE" \
     "$TEMPORARY_DIRECTORY"
+
+if [[ "$REORDER_CHROMOSOMES" == true ]]; then
+    # Translate reference order back to query chromosome names through the
+    # one-to-one pair table. Same-name chromosomes absent from the pair table
+    # can still follow reference order; all other unpaired contigs are appended
+    # in their original query order.
+    awk '
+        BEGIN {FS=OFS="\t"}
+        FILENAME == ARGV[1] {
+            query_line[$1]=$0
+            query_order[++query_count]=$1
+            next
+        }
+        FILENAME == ARGV[2] {
+            query_reference[$1]=$2
+            reference_owner[$2]=$1
+            next
+        }
+        FILENAME == ARGV[3] {
+            query=reference_owner[$1]
+            if (query == "" && ($1 in query_line) && \
+                !($1 in query_reference)) query=$1
+            if (query != "" && !emitted[query]++) print query_line[query]
+            next
+        }
+        END {
+            for (idx=1; idx<=query_count; idx++) {
+                query=query_order[idx]
+                if (!emitted[query]++) print query_line[query]
+            }
+        }
+    ' "${QUERY_LINK}.fai" "$PAIR_FILE" "${REFERENCE_LINK}.fai" \
+        > "$OUTPUT_INDEX"
+else
+    cp -- "${QUERY_LINK}.fai" "$OUTPUT_INDEX"
+fi
+
+{
+    printf '%s\n' \
+        $'output_order\tquery_chrom\treference_chrom\torder_source\toriginal_order'
+    awk '
+        BEGIN {FS=OFS="\t"}
+        FILENAME == ARGV[1] {query_reference[$1]=$2; next}
+        FILENAME == ARGV[2] {reference[$1]=1; next}
+        FILENAME == ARGV[3] {original_order[$1]=++original_count; next}
+        FILENAME == ARGV[4] {
+            query=$1
+            if (query in query_reference) {
+                reference_chrom=query_reference[query]
+                source="chromosome_pair"
+            } else if (query in reference) {
+                reference_chrom=query
+                source="same_name"
+            } else {
+                reference_chrom="."
+                source="unpaired"
+            }
+            print ++output_count,query,reference_chrom,source,original_order[query]
+        }
+    ' "$PAIR_FILE" "${REFERENCE_LINK}.fai" "${QUERY_LINK}.fai" \
+        "$OUTPUT_INDEX"
+} > "$OUTPUT_ORDER_AUDIT"
+
 cg_select_nonoverlapping_anchors "$FILTERED_PAF" "$PAIR_FILE" all \
     "$MAXIMUM_ANCHOR_OVERLAP" "$SELECTED_ANCHORS" "$SELECTION_AUDIT" \
     "$TEMPORARY_DIRECTORY"
@@ -333,10 +405,10 @@ if [[ "$REPORT_ONLY" == true ]]; then
     exit 0
 fi
 
-cg_reconstruct_fasta "$QUERY_LINK" "${QUERY_LINK}.fai" "$PLAN_FILE" \
+cg_reconstruct_fasta "$QUERY_LINK" "$OUTPUT_INDEX" "$PLAN_FILE" \
     "$OUTPUT_FASTA" "$TEMPORARY_DIRECTORY"
 cg_validate_output_fasta different "${QUERY_LINK}.fai" "$OUTPUT_FASTA" \
-    "$TEMPORARY_DIRECTORY"
+    "$TEMPORARY_DIRECTORY" "$OUTPUT_INDEX"
 
 EDITED_BLOCKS=$(awk 'BEGIN {FS="\t"} $11 != "KEEP" {count++} END {print count+0}' \
     "$PLAN_FILE")
@@ -344,5 +416,5 @@ TRANSFERRED_BLOCKS=$(awk 'BEGIN {FS="\t"} $11 ~ /^TRANSFER/ {count++} END {print
     "$PLAN_FILE")
 printf 'Corrected FASTA: %s (%s edited block(s), %s transferred).\n' \
     "$OUTPUT_FASTA" "$EDITED_BLOCKS" "$TRANSFERRED_BLOCKS"
-printf 'Audit files: %s.{anchors,selected_anchors,chromosomes,corrections}.tsv\n' \
+printf 'Audit files: %s.{anchors,selected_anchors,chromosomes,output_chromosomes,corrections}.tsv\n' \
     "$AUDIT_PREFIX"
