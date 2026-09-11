@@ -218,7 +218,7 @@ CHOICE:
         TE_GENOME: False        # resident TE annotation across complete assemblies
         REPORT: True            # for getting a report.html file with graphics
     OUTSIDER_VARIANT:
-        CALL_SV: "sniffles"     # possibilities for SV tools: sniffles, no_sniffles
+        CALL_SV: "sniffles1"    # sniffles1, sniffles2; sniffles is the legacy alias
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the OUTSIDER integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INTERMEDIATE_FILE: True     # Conserve the intermediate analyses files to process them latter.
@@ -272,6 +272,33 @@ integrated insertion are projected to the reference with Liftoff; concordant
 calls are written to `POS_TE_OUTSIDER_ON_REF.bed`, while uncertain mappings and
 their reasons remain available in `BAD_POS_TE_LIFT.bed` and
 `OUTSIDER/INSIDER_VR/LIFT_OFF_AUDIT.tsv`.
+
+The refactored workflow supports two Sniffles generations. Select one in YAML:
+
+```yaml
+CHOICE:
+    OUTSIDER_VARIANT:
+        CALL_SV: sniffles2   # sniffles1 (default), sniffles2; sniffles aliases sniffles1
+PARAMS:
+    OUTSIDER_VARIANT:
+        SNIFFLES:
+            MIN_SUPPORT: 1
+TOOLS:
+    SNIFFLES1: sniffles
+    SNIFFLES2: sniffles2
+```
+
+Merge these settings into the existing sections; do not duplicate YAML keys.
+The container definition preserves Sniffles 1.0.12b and adds Sniffles 2.8.1 in
+an isolated Python 3.12 environment. Rebuild the image to obtain `sniffles2`.
+The historical `run.snk` is not extended: use `workflow/Snakefile` for this choice.
+`OUTSIDER/VARIANT_CALLING/sniffles-run.json` records the actual version and command.
+Sniffles 2 uses `--input`, `--reference`, `--minsupport`, and `--output-rnames`;
+its REF/ALT sequences and supporting reads are normalized before TE analysis.
+Symbolic alleles without sequence are counted in the extraction log and skipped.
+The algorithms and other defaults differ, so equal support thresholds do not
+imply identical calls. Use separate work directories when comparing callers.
+See [the Sniffles backend contract](docs/decisions/0016-sniffles-backends.md).
 
 The main parameters are:
 

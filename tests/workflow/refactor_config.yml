@@ -12,7 +12,7 @@ CHOICE:
     TE_GENOME: true
     REPORT: true
   OUTSIDER_VARIANT:
-    CALL_SV: sniffles
+    CALL_SV: sniffles1
     INTEGRATE_TE_TO_GENOME: true
     CLIPPED_READS: true
 TOOLS:

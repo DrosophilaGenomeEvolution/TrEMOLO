@@ -270,6 +270,8 @@ rule classify_outsider_alignment_insertions:
 rule extract_outsider_sniffles_sequences:
     input:
         vcf=SV_VCF,
+        parser=str(PIPELINE_ROOT / "lib/python/parsing/get_seq_vcf.py"),
+        adapter=str(PIPELINE_ROOT / "lib/python/parsing/sniffles_vcf.py"),
         bam=MAPPING_BAM,
         bai=MAPPING_BAM + ".bai",
         direct_sizes=OUTSIDER_INS_SIZE_BASE,
@@ -283,6 +285,7 @@ rule extract_outsider_sniffles_sequences:
         extract_script=str(PIPELINE_ROOT / "lib/python/parsing/get_seq_vcf.py"),
         reads_script=str(PIPELINE_ROOT / "lib/python/parsing/parse_bam_found_ins.py"),
         options=OUTSIDER_GET_SEQ_OPTIONS,
+        caller=SNIFFLES_CALLER,
         chrom=OUTSIDER_CHROM_KEEP,
     threads: 1
     resources:
@@ -295,16 +298,16 @@ rule extract_outsider_sniffles_sequences:
         """
         set -euo pipefail
         mkdir -p {OUTSIDER_TE_DIR}
-        python3 {params.extract_script:q} {params.options} -c {params.chrom:q} \
+        python3 {params.extract_script:q} {params.options} --caller {params.caller:q} -c {params.chrom:q} \
             {input.vcf:q} {output.raw:q} > {log:q} 2>&1
         awk 'BEGIN {{OFS="\t"}} substr($0,1,1)==">" {{split($0,a,":"); header=substr(a[1],2) OFS a[3] OFS a[4] OFS substr($0,2); next}} {{print header,length($0),$0}}' \
-            {output.raw:q} | grep -w -E 'INS|DEL' > {output.variants:q}
+            {output.raw:q} | awk '/INS|DEL/' > {output.variants:q}
         python3 {params.reads_script:q} -r {output.read_counts:q} \
             {input.bam:q} {output.variants:q} > {output.fasta:q} 2>> {log:q}
         cp {input.direct_sizes:q} {output.sizes:q}
         awk '/^>/ {{head=substr($0,2,length($0))}} /^[^>]/ && OFS="\t" {{print head,length($0)}}' \
             {output.fasta:q} >> {output.sizes:q}
-        test -s {output.fasta:q}
+        test -f {output.fasta:q}
         """
 
 
@@ -326,9 +329,14 @@ rule blast_outsider_sniffles_sequences:
         f"{WORKDIR}/benchmarks/outsider_blast_sniffles.tsv",
     shell:
         """
-        blastn -num_threads {threads} -db {input.database:q} \
-            -query {input.query:q} -outfmt 6 -out {output.blast:q} \
-            > {log:q} 2>&1
+        if test -s {input.query:q}; then
+            blastn -num_threads {threads} -db {input.database:q} \
+                -query {input.query:q} -outfmt 6 -out {output.blast:q} \
+                > {log:q} 2>&1
+        else
+            : > {output.blast:q}
+            printf 'No Sniffles sequences to align.\n' > {log:q}
+        fi
         """
 
 
@@ -364,7 +372,7 @@ rule classify_outsider_sniffles_te:
             | bedtools sort > {output.bed:q}
         awk 'NR>1 {{split($2,a,":"); if (a[2]=="<INS>") print a[5]}}' \
             {output.combined:q} > {output.ids:q}
-        grep -w -f {output.ids:q} {input.blast:q} \
+        (grep -w -f {output.ids:q} {input.blast:q} || test "$?" -eq 1) \
             | awk '{{print $1":"$2}}' | sort -u \
             | awk -F ':' '{{print $5":"$9}}' | sort | uniq -c \
             | awk 'OFS="\t" {{print $2,$1}}' > {output.read_counts:q}

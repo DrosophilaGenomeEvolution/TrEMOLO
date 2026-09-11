@@ -96,7 +96,12 @@ parser.add_argument("-m", "--min_len_seq", type=int, default=1000,
 parser.add_argument("--max-len-seq", dest='max_len_seq', type=int, default=-1,
                     help="maximum size of the sequence to keep (default: [-1])")
 
+parser.add_argument("--caller", choices=("auto", "sniffles1", "sniffles2"), default="auto")
 args = parser.parse_args()
+from sniffles_vcf import is_sniffles2, extract_read_names
+if args.caller == "sniffles2" or (args.caller == "auto" and is_sniffles2(args.vcf_file)):
+    extract_read_names(args)
+    sys.exit(0)
 
 
 repRegion = args.directory_name

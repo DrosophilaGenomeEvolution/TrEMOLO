@@ -99,7 +99,12 @@ parser.add_argument("-i", "--idrs", default=False, action='store_true',
 # print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta --keep --chrom \".\" " )
 # print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta --keep --chrom chrX,chrY " )
 # print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta \n" )
+parser.add_argument("--caller", choices=("auto", "sniffles1", "sniffles2"), default="auto")
 args = parser.parse_args()
+from sniffles_vcf import is_sniffles2, extract_sequences
+if args.caller == "sniffles2" or (args.caller == "auto" and is_sniffles2(args.vcf_file)):
+    extract_sequences(args)
+    sys.exit(0)
 
 #file in
 file = open(args.vcf_file, "r")

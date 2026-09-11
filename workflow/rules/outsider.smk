@@ -5,6 +5,18 @@ MAPPING_SAM = f"{OUTSIDER_MAPPING_DIR}/SAMPLE_mapping_GENOME.sam"
 MAPPING_BAM = f"{OUTSIDER_MAPPING_DIR}/SAMPLE_mapping_GENOME_MD.sorted.bam"
 MAPPING_STATS = f"{OUTSIDER_MAPPING_DIR}/stats.txt"
 SV_VCF = f"{OUTSIDER_VARIANT_DIR}/SV.vcf"
+SNIFFLES_CALLER_ALIASES = {"sniffles": "sniffles1", "sniffles1": "sniffles1", "sniffles2": "sniffles2"}
+SNIFFLES_CHOICE = OUTSIDER_CHOICES.get("CALL_SV", "sniffles")
+if SNIFFLES_CHOICE not in SNIFFLES_CALLER_ALIASES:
+    raise ValueError("CALL_SV must be sniffles1, sniffles2, or sniffles (legacy alias)")
+SNIFFLES_CALLER = SNIFFLES_CALLER_ALIASES[SNIFFLES_CHOICE]
+SNIFFLES_EXECUTABLE = config.get("TOOLS", {}).get(
+    SNIFFLES_CALLER.upper(), "sniffles" if SNIFFLES_CALLER == "sniffles1" else "sniffles2"
+)
+SNIFFLES_MIN_SUPPORT = OUTSIDER_PARAMS.get("SNIFFLES", {}).get("MIN_SUPPORT", 1)
+if type(SNIFFLES_MIN_SUPPORT) is not int or SNIFFLES_MIN_SUPPORT < 1:
+    raise ValueError("PARAMS.OUTSIDER_VARIANT.SNIFFLES.MIN_SUPPORT must be a positive integer")
+
 
 
 def option_without_threads(value):
@@ -116,8 +128,17 @@ rule call_sniffles_outsider:
     input:
         bam=MAPPING_BAM,
         bai=MAPPING_BAM + ".bai",
+        genome=PREPARED_GENOME,
+        genome_index=PREPARED_GENOME_INDEX,
+        script=str(PIPELINE_ROOT / "lib/python/workflow/run_sniffles.py"),
+        configuration=list(workflow.configfiles),
     output:
         vcf=SV_VCF,
+        metadata=f"{OUTSIDER_VARIANT_DIR}/sniffles-run.json",
+    params:
+        caller=SNIFFLES_CALLER,
+        executable=SNIFFLES_EXECUTABLE,
+        support=SNIFFLES_MIN_SUPPORT,
     threads: THREADS
     resources:
         mem_mb=4096,
@@ -129,23 +150,11 @@ rule call_sniffles_outsider:
         """
         set -euo pipefail
         mkdir -p {OUTSIDER_VARIANT_DIR}
-        : > {log:q}
-        version=$(sniffles -h 2>&1 | awk '/Version/ {{print $2; exit}}')
-        case "$version" in
-            1.0.10)
-                sniffles -t {threads} --report_seq -s 1 -m {input.bam:q} \
-                    -v {output.vcf:q} -n -1 2>> {log:q}
-                ;;
-            1.0.11|1.0.12|1.0.12b)
-                sniffles -t {threads} --report-seq -s 1 -m {input.bam:q} \
-                    -v {output.vcf:q} -n -1 2>> {log:q}
-                ;;
-            *)
-                echo "Unsupported Sniffles version: $version" >> {log:q}
-                exit 2
-                ;;
-        esac
-        test -s {output.vcf:q}
+        python3 {input.script:q} --caller {params.caller:q} \
+            --executable {params.executable:q} --bam {input.bam:q} \
+            --reference {input.genome:q} --vcf {output.vcf:q} \
+            --metadata {output.metadata:q} --threads {threads} \
+            --min-support {params.support} > {log:q} 2>&1
         """
 
 

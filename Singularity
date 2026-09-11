@@ -12,7 +12,8 @@ From: ubuntu:20.04
         Minimap2 2.28+
         Samtools 1.15.1
         Samtools 1.20
-        Sniffles 1.0.12b
+        Sniffles 1.0.12b (sniffles / sniffles1)
+        Sniffles 2.8.1 (sniffles2, isolated Python 3.12 environment)
         SVIM 1.4.2+
         libfontconfig1-dev
         Liftoff
@@ -287,6 +288,14 @@ _EOF_
     make
     cd ../bin/sniffles*
     ln -s $PWD/sniffles /usr/bin/sniffles
+    ln -s /usr/bin/sniffles /usr/local/bin/sniffles1
+
+    # Sniffles 2 requires Python >=3.10 and NumPy >=2.2. Keep its environment
+    # separate from the legacy scientific stack and Liftoff.
+    /opt/conda/bin/conda create --prefix /opt/sniffles2 python=3.12 pip -y
+    /opt/sniffles2/bin/python -m pip install --no-cache-dir sniffles==2.8.1
+    ln -s /opt/sniffles2/bin/sniffles /usr/local/bin/sniffles2
+    /usr/local/bin/sniffles2 --version
 
 
     #install RaGOO
@@ -352,6 +361,12 @@ _EOF_
     export R_PROFILE=/opt/init-file/.Rprofile
     export R_LIBS="/usr/local/lib/R/site-library:/usr/lib/R/site-library:/usr/lib/R/library"
     export R_LIBS_SITE="/usr/local/lib/R/site-library:/usr/lib/R/site-library:/usr/lib/R/library"
+
+%test
+    set -eu
+    /usr/bin/sniffles -h 2>&1 | grep '1.0.12'
+    /usr/local/bin/sniffles2 --version | grep '2.8.1'
+    /opt/quarto/bin/quarto --version
 
 %runscript
     exec "$@"

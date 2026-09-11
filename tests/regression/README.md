@@ -110,3 +110,20 @@ The bind is required only for an older image without Quarto. Adjust
 Snakemake 5.10 image has Liftoff at
 `/opt/conda/envs/liftoff_env/bin/liftoff`, outside its default PATH.
 Do not reuse a completed output directory as evidence of a clean run.
+
+## Sniffles 2
+
+Copy the workflow fixture config, select `CALL_SV: sniffles2`, set a fresh
+`DATA.WORK_DIRECTORY`, and use the rebuilt image (or set `TOOLS.SNIFFLES2` to
+an isolated executable). After completing `all`, run from the repository root:
+
+```bash
+python3 tests/regression/check_sniffles2.py /path/to/sniffles2-output
+python3 tests/regression/check_quarto_report.py /path/to/sniffles2-output
+```
+
+The first check is specific to the bundled fixture thresholds. It compares
+normalized consensus DNA, coordinates, identifiers and support with the native
+VCF without expecting Sniffles 1 call counts. To exercise the no-call branch,
+set `PARAMS.OUTSIDER_VARIANT.SNIFFLES.MIN_SUPPORT: 1000000` in a separate run
+and pass `--expect-empty` to the first check. Other TE evidence remains enabled.

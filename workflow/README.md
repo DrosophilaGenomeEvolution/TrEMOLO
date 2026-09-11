@@ -28,7 +28,8 @@ snakemake --snakefile TrEMOLO/workflow/Snakefile \
 ```
 
 It covers Minimap2 indexing and mapping, BAM preparation, mapping statistics,
-and Sniffles 1 variant calling. The default `all` target now completes every
+and configurable Sniffles 1/2 variant calling. `CALL_SV: sniffles` remains an
+alias for Sniffles 1; select `CALL_SV: sniffles2` for the new backend. The default `all` target now completes every
 enabled scientific branch through `TE_INFOS.bed`; it additionally renders the
 report when `CHOICE.PIPELINE.REPORT` is true.
 

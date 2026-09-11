@@ -15,7 +15,7 @@ CHOICE:
         TE_GENOME: False        # annotate resident TE copies across complete assemblies
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
-        CALL_SV: "sniffles" # possibility (sniffles, no_sniffles) 
+        CALL_SV: "sniffles1" # sniffles1 (1.0.12b), sniffles2 (2.8.1); sniffles = legacy alias
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with outsiders integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
@@ -37,6 +37,8 @@ PARAMS:
         PARTIAL_COVERAGE: 20
         AMBIGUITY_OVERLAP: 0.8   # reciprocal overlap for alternative family matches
     OUTSIDER_VARIANT:
+        SNIFFLES:
+            MIN_SUPPORT: 1     # minimum supporting reads; both generations keep their own other defaults
         MINIMAP2:
             PRESET_OPTION: 'map-ont' # minimap2 preset option is map-ont by default (map-pb, map-ont etc)
             OPTION: '' # more option of minimap2
@@ -61,3 +63,8 @@ PARAMS:
         MINIMAP2:
             PRESET_OPTION: 'asm5' # minimap2 preset option is asm5 by default (asm5, asm10, asm20 etc)
             OPTION: '--cs'
+
+# Executable overrides (optional). Sniffles 1 remains the default binary.
+TOOLS:
+    SNIFFLES1: sniffles
+    SNIFFLES2: sniffles2
