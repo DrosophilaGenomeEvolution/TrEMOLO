@@ -48,6 +48,9 @@ PARAMS:
             PRESET_OPTION: ''
         TSD:
             SIZE_FLANK: 20  # flanking sequence size to calculate TSD put value >= 4 
+        LIFT_OFF:
+            FLANK_SIZE: 100000 # source flank on each side of an integrated TE
+            MAX_GAP: 20000     # maximum projected interval/overlap on the reference
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "[23][RL],4,X" ; Put "." for keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 30" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf

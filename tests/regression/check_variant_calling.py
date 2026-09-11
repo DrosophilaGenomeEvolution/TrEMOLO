@@ -214,6 +214,21 @@ OUTSIDER_FLANK_ELIGIBILITY_EXPECTED = Counter(
     }
 )
 
+OUTSIDER_INTEGRATION_EXACT_FILES = (
+    "OUTSIDER/TE_TOWARD_GENOME/NEO_GENOME.fasta",
+    "OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE_NEO.bed",
+    "POSITION_TE_OUTSIDER_IN_NEO_GENOME.bed",
+)
+
+OUTSIDER_LIFT_EXPECTED_STATES = Counter(
+    {
+        ("projected", "concordant_flanks"): 10,
+        ("rejected", "gap_exceeds_limit"): 7,
+        ("rejected", "missing_or_ambiguous_flank"): 5,
+        ("rejected", "discordant_chromosomes"): 1,
+    }
+)
+
 
 def digest(path: Path) -> str:
     value = hashlib.sha256()
@@ -263,6 +278,27 @@ def directory_files(path: Path) -> dict[Path, str]:
 def read_table(path: Path) -> list[dict[str, str]]:
     with path.open(newline="") as handle:
         return list(csv.DictReader(handle, delimiter="\t"))
+
+
+def fasta_sequences(path: Path) -> dict[str, str]:
+    records = {}
+    name = None
+    chunks = []
+    with path.open() as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                if name is not None:
+                    records[name] = "".join(chunks)
+                name = line[1:].split()[0]
+                chunks = []
+            elif name is not None:
+                chunks.append(line)
+    if name is not None:
+        records[name] = "".join(chunks)
+    return records
 
 
 def main() -> int:
@@ -740,6 +776,93 @@ def main() -> int:
                             "accepted OUTSIDER candidates do not match combined flanks"
                         )
 
+    for relative in OUTSIDER_INTEGRATION_EXACT_FILES:
+        old = args.legacy / relative
+        new = args.migrated / relative
+        if not old.is_file() or not new.is_file():
+            errors.append(f"missing OUTSIDER integration output: {relative}")
+        elif digest(old) != digest(new):
+            errors.append(f"observed OUTSIDER integration differs: {relative}")
+
+    integration_audit_path = (
+        args.migrated / "OUTSIDER/TE_TOWARD_GENOME/INTEGRATION_TE.tsv"
+    )
+    canonical_genome_path = (
+        args.migrated
+        / "OUTSIDER/TE_TOWARD_GENOME/PSEUDO_GENOME_TE_DB_ID.fasta"
+    )
+    canonical_bed_path = (
+        args.migrated / "OUTSIDER/TE_TOWARD_GENOME/TRUE_POSITION_TE_PSEUDO.bed"
+    )
+    source_genome_path = args.migrated / "INPUT/genome.fasta"
+    integration_rows = []
+    if not integration_audit_path.is_file():
+        errors.append("missing OUTSIDER integration audit")
+    else:
+        integration_rows = read_table(integration_audit_path)
+        states = Counter((row["status"], row["reason"]) for row in integration_rows)
+        if states != Counter({("integrated", "integrated"): 25}):
+            errors.append(f"OUTSIDER integration states differ: {dict(states)}")
+        if sum(row["strand"] == "-" for row in integration_rows) != 7:
+            errors.append("OUTSIDER negative-strand integration count differs")
+
+    if not canonical_genome_path.is_file():
+        errors.append("missing canonical OUTSIDER integrated genome")
+    elif source_genome_path.is_file() and integration_rows:
+        canonical = fasta_sequences(canonical_genome_path)
+        source = fasta_sequences(source_genome_path)
+        unsupported = set("".join(canonical.values()).upper()) - set(
+            "ACGTURYKMSWBDHVN-"
+        )
+        if unsupported:
+            errors.append(
+                "canonical OUTSIDER genome contains non-DNA symbols: "
+                + ",".join(sorted(unsupported))
+            )
+        expected_size = sum(len(sequence) for sequence in source.values()) + sum(
+            int(row["canonical_length"]) for row in integration_rows
+        )
+        observed_size = sum(len(sequence) for sequence in canonical.values())
+        if observed_size != expected_size:
+            errors.append(
+                "canonical OUTSIDER genome size differs: "
+                f"{observed_size} != {expected_size}"
+            )
+
+    if not canonical_bed_path.is_file():
+        errors.append("missing canonical OUTSIDER integration BED")
+    elif len(canonical_bed_path.read_text().splitlines()) != 25:
+        errors.append("canonical OUTSIDER integration BED count differs")
+
+    lift_audit_path = args.migrated / "OUTSIDER/INSIDER_VR/LIFT_OFF_AUDIT.tsv"
+    public_lift_path = args.migrated / "POS_TE_OUTSIDER_ON_REF.bed"
+    combined_lift_path = args.migrated / "POSITION_TE_ON_REF.bed"
+    if not lift_audit_path.is_file():
+        errors.append("missing OUTSIDER Liftoff audit")
+    else:
+        lift_rows = read_table(lift_audit_path)
+        lift_states = Counter((row["status"], row["reason"]) for row in lift_rows)
+        if lift_states != OUTSIDER_LIFT_EXPECTED_STATES:
+            errors.append(f"OUTSIDER Liftoff states differ: {dict(lift_states)}")
+        projected = {
+            f"{row['te_family']}|{row['event_id']}"
+            for row in lift_rows
+            if row["status"] == "projected"
+        }
+        if not public_lift_path.is_file():
+            errors.append("missing public OUTSIDER reference BED")
+        else:
+            public_rows = [
+                line.split("\t") for line in public_lift_path.read_text().splitlines()
+            ]
+            public_names = {row[3] for row in public_rows if len(row) >= 4}
+            if public_names != projected or len(public_rows) != len(projected):
+                errors.append("public OUTSIDER reference BED differs from Liftoff audit")
+    if not combined_lift_path.is_file():
+        errors.append("missing combined reference-coordinate TE BED")
+    elif len(combined_lift_path.read_text().splitlines()) != 211:
+        errors.append("combined reference-coordinate TE BED count differs")
+
     for relative in TE_INFOS_EXACT_FILES:
         old = args.legacy / relative
         new = args.migrated / relative
@@ -826,6 +949,14 @@ def main() -> int:
     print(
         "Exact OUTSIDER flank artifact directories: "
         f"{len(OUTSIDER_TSD_EXACT_DIRECTORIES)}"
+    )
+    print(
+        "OUTSIDER integration: 25 valid canonical/observed insertions; "
+        "observed genome byte-identical"
+    )
+    print(
+        "OUTSIDER Liftoff: 10 concordant projections; "
+        "13 rejected mappings remain auditable"
     )
     print(f"Exact final TE tables: {len(TE_INFOS_EXACT_FILES)}")
     return 0

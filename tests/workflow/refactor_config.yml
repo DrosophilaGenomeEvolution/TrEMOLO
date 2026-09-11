@@ -16,6 +16,7 @@ CHOICE:
     INTEGRATE_TE_TO_GENOME: true
     CLIPPED_READS: true
 TOOLS:
+  LIFTOFF: /opt/conda/envs/liftoff_env/bin/liftoff
   QUARTO: /opt/quarto/bin/quarto
 
 REPORT:
@@ -50,6 +51,9 @@ PARAMS:
       PRESET_OPTION: ''
     TSD:
       SIZE_FLANK: 10
+    LIFT_OFF:
+      FLANK_SIZE: 100000
+      MAX_GAP: 20000
     TE_DETECTION:
       CHROM_KEEP: "^[23][RL]_,^[X4Y]_"
       GET_SEQ_REPORT_OPTION: "-m 1000"

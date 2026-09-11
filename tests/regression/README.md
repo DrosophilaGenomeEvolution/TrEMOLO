@@ -47,6 +47,14 @@ TSD calls. The final `TE_INFOS.bed` is also required byte for byte, including
 its 434 records, 15-column schema, source order, TSD shifts, frequencies, and
 legacy TrEMOLO identifiers.
 
+The optional `INTEGRATE_TE_TO_GENOME` branch intentionally departs from the
+invalid canonical legacy FASTA: it no longer inserts event IDs as DNA and now
+reverse-complements negative-strand canonical TEs. Its observed `NEO_GENOME`
+reconstruction remains byte-identical to `work_test`. Liftoff projections are
+reported with per-event states in `LIFT_OFF_AUDIT.tsv`; discordant chromosome
+pairs cannot enter the public reference BED. See decision 0015 for the exact
+contract.
+
 The Quarto report is checked as a lossless presentation of that final table:
 
 ```bash
@@ -80,3 +88,25 @@ that compatibility result are documented in
 Both pipelines completed in this reference run: 377 calls are labelled INSIDER
 and 57 are labelled OUTSIDER. The historical R Markdown report attempts an
 external `curl`; the refactored Quarto report does not perform network access.
+
+## Clean end-to-end validation
+
+Run from the parent directory of the checkout. Copy
+`TrEMOLO/tests/workflow/refactor_config.yml` to a separate YAML file and change
+`DATA.WORK_DIRECTORY` to a new, empty output path. Keep the bundled input paths.
+The fixture enables INSIDER, OUTSIDER, resident annotation, genome integration,
+Liftoff, and the Quarto report.
+
+```bash
+singularity exec --bind /opt/quarto:/opt/quarto:ro TrEMOLO-test.simg snakemake \
+  --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile /path/to/validation.yml --cores 8 all
+python3 TrEMOLO/tests/regression/check_variant_calling.py work_test /path/to/new-output
+python3 TrEMOLO/tests/regression/check_quarto_report.py /path/to/new-output
+```
+
+The bind is required only for an older image without Quarto. Adjust
+`TOOLS.QUARTO` and `TOOLS.LIFTOFF` to the paths inside your image. The local
+Snakemake 5.10 image has Liftoff at
+`/opt/conda/envs/liftoff_env/bin/liftoff`, outside its default PATH.
+Do not reuse a completed output directory as evidence of a clean run.

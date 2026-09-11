@@ -15,6 +15,7 @@
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Output files](#output)
+- [Assembly correction utilities](#assembly-correction)
 - [Modules](#modules)
     - [Scatter Frequency](#module-1)
     - [ANALYSYS TE BLAST](#module-2)
@@ -155,14 +156,37 @@ Alternatively, you can download a pre-compiled Singularity container from the fo
 
 
 
-Test TrEMOLO with singularity
+Test TrEMOLO with singularity (from the parent directory of the checkout)
 
 ```bash
-singularity exec TrEMOLO.simg snakemake --snakefile TrEMOLO/run.snk --configfile TrEMOLO/test/tmp_config.yml
-#OR
-singularity run TrEMOLO.simg snakemake --snakefile TrEMOLO/run.snk --configfile TrEMOLO/test/tmp_config.yml
+singularity exec TrEMOLO.simg snakemake \
+  --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml --cores 8 all
 ```
 
+
+The report requires Quarto. Check the image before running:
+
+```bash
+singularity exec TrEMOLO.simg snakemake --version
+singularity exec TrEMOLO.simg quarto --version
+singularity exec TrEMOLO.simg /opt/conda/envs/liftoff_env/bin/liftoff --version
+```
+
+Older images may lack Quarto. If Quarto is installed at `/opt/quarto` on the
+host, the complete workflow can use it through a read-only bind:
+
+```bash
+singularity exec --bind /opt/quarto:/opt/quarto:ro TrEMOLO.simg snakemake \
+  --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml --cores 8 all
+```
+
+The fixture sets `TOOLS.LIFTOFF: /opt/conda/envs/liftoff_env/bin/liftoff`
+and `TOOLS.QUARTO: /opt/quarto/bin/quarto`. For other installations,
+set this configuration value to the executable available inside the container.
+The repository container definition installs Quarto 1.9.36; existing images
+are not updated by editing that definition.
 
 ### Pulling from SingularityHub
 
@@ -222,6 +246,9 @@ PARAMS:
             PRESET_OPTION: ''
         TSD:
             SIZE_FLANK: 15  # flanking sequence size for calculation of TSD; put value > 4
+        LIFT_OFF:
+            FLANK_SIZE: 100000 # flank projected on each side of an integrated TE
+            MAX_GAP: 20000     # maximum accepted interval/overlap on the reference
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion for chromosome filtering; for instance for Drosophila  "2L,2R,3[RL],X" ; Put "." to keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 30" #sequence recovery file in the vcf
@@ -235,6 +262,16 @@ PARAMS:
 
 
 ```
+
+When `INTEGRATE_TE_TO_GENOME` is enabled, TrEMOLO writes both the canonical
+reconstruction (`OUTSIDER/TE_TOWARD_GENOME/PSEUDO_GENOME_TE_DB_ID.fasta`) and
+the reconstruction based on observed SV sequences (`NEO_GENOME.fasta`). The
+corresponding shifted BED files and `INTEGRATION_TE.tsv` make every inserted or
+rejected event explicit. If INSIDER is also enabled, the two flanks of each
+integrated insertion are projected to the reference with Liftoff; concordant
+calls are written to `POS_TE_OUTSIDER_ON_REF.bed`, while uncertain mappings and
+their reasons remain available in `BAD_POS_TE_LIFT.bed` and
+`OUTSIDER/INSIDER_VR/LIFT_OFF_AUDIT.tsv`.
 
 The main parameters are:
 
@@ -253,13 +290,23 @@ To analyse **OUTSIDER**, only the `SAMPLE` , the `GENOME`, the `TE_DB` and the `
 # Usage<a name="usage"></a>
 
 ```bash
-snakemake --snakefile /path/to/TrEMOLO/run.snk --configfile /path/to/your_config.yaml
+snakemake --snakefile /path/to/TrEMOLO/workflow/Snakefile \
+  --configfile /path/to/your_config.yaml --cores 8 all
 ```
 
-For running tests
+The supported entry point on this branch is `workflow/Snakefile`. See the
+[clean migration validation](docs/migration-validation.md) for the tested
+environment and results. The historical
+`run.snk` remains available for reproducing legacy runs. Paths in the YAML file
+are resolved from the current working directory; the bundled example below is
+run from the parent directory of `TrEMOLO`. Use a fresh `DATA.WORK_DIRECTORY`
+when switching from the legacy workflow.
+
+For running the bundled fixture
 
 ```bash
-snakemake --snakefile TrEMOLO/run.snk --configfile TrEMOLO/test/tmp_config.yml
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml --cores 8 all
 ```
 
 
@@ -370,6 +417,15 @@ The output file **your_work_directory/TE_INFOS.bed** gathers all the necessary i
  13.   `SV_SIZE`  : size of the structural variant (may be larger than the size of the TE)
  14.   `ID_TrEMOLO`  : TrEMOLO ID of the TE
  15.   `TYPE`  : type of insertion can be HARD,SOFT (Warning : HARD, SOFT are often false positives),INS,INS_DEL... (INS_DEL is an insertion located on a deletion of the assembly)
+
+# Assembly correction utilities <a name="assembly-correction"></a>
+
+The two reference-guided Bash utilities in `lib/bash` can correct block order,
+orientation and chromosome assignment while retaining every query base and
+producing a complete audit trail. They now share the same size, MAPQ, identity
+and overlap filters. See the
+[assembly correction documentation](docs/assembly-correction.md) for their
+respective roles, command-line options and output files.
 
 # Modules <a name="modules"></a>
 

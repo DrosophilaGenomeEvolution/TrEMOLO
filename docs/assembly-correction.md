@@ -19,7 +19,7 @@ unchanged. Existing FASTA indexes are never removed or overwritten.
 - minimap2, unless a PAF file is supplied;
 - samtools;
 - bedtools;
-- standard POSIX utilities (`awk`, `sort`, `cut`, `cmp`).
+- standard POSIX utilities (`awk`, `sort`, `cut`, `cmp`, `fold`).
 
 ## Basic use
 
@@ -44,6 +44,11 @@ lib/bash/correction_genome_transloc_diff_chrom.sh \
   --min-identity 80 \
   reference.fasta assembly.fasta corrected.fasta
 ```
+
+Add `--reorder-chromosomes` (or `--reference-order`) to the interchromosomal
+command to write paired query chromosomes in the order in which their partners
+occur in the reference FASTA. Names are not changed. Unpaired contigs are
+appended in their original query order, so the option never discards them.
 
 An existing alignment can be passed as a fourth positional argument. Its PAF
 orientation must be `reference` as target and `assembly` as query:
@@ -77,14 +82,22 @@ controls the minimum evidence used to define a corrected block; its default is
 Additional filters are:
 
 - `--min-mapq`, default `20`;
-- `--min-identity`, default `80` percent, computed from PAF matches/block size;
+- `--min-identity`, default `80` percent, computed from minimap2's PAF `dv`
+  divergence tag (`de` is the second choice and matches/block the fallback);
 - `--max-anchor-overlap`, default `1000` bp;
 - `--chrom_regex`, default `.`, applied to query chromosome names.
 
+Alignment uses eight threads by default. `-g INT` or `--threads INT` changes
+the number passed to minimap2; the historical `-t INT` spelling remains an
+alias. This setting has no effect when an existing PAF is supplied.
+
 Secondary PAF alignments (`tp:A:S`) are rejected. Remaining candidates are
-selected deterministically, prioritizing anchors supporting the declared
-chromosome pair, then alignment length, MAPQ and identity. Query and reference
-overlaps above the configured limit are excluded.
+selected deterministically. The strongest anchor supporting each declared
+chromosome pair is protected so every destination remains represented; all
+other anchors are ranked by alignment length, MAPQ and identity regardless of
+whether they are intra- or interchromosomal. Consequently, a large supported
+translocation wins over a short repetitive hit on the expected chromosome.
+Query and reference overlaps above the configured limit are excluded.
 
 ## Planning and audit files
 
@@ -98,7 +111,13 @@ can be changed with `--audit-prefix`.
 | `.selected_anchors.tsv` | Deterministic non-overlapping anchor selection |
 | `.chromosomes.tsv` | Query/reference chromosome pairs and alignment score |
 | `.corrections.tsv` | Source interval, destination, orientation, order and action |
+| `.output_chromosomes.tsv` | Final chromosome order and how each name was matched |
+| `.mapping.paf` | Generated minimap2 alignment when no PAF was supplied |
 | `.minimap2.log` | minimap2 stderr when the alignment is generated |
+
+The generated PAF is retained deliberately. If reconstruction or validation
+fails after the alignment, it can be supplied as the fourth positional
+argument on the next run without repeating minimap2.
 
 Possible correction actions are `KEEP`, `MOVE`, `REVERSE`,
 `MOVE_AND_REVERSE`, `TRANSFER`, and `TRANSFER_AND_REVERSE`.

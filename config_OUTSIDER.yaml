@@ -15,7 +15,7 @@ CHOICE:
         REPORT: True            # for getting report.html with graph
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles" # possibility (sniffles, no_sniffles) 
-        INTEGRATE_TE_TO_GENOME: False # (True, False) Re-build the assembly with insiders integrated in
+        INTEGRATE_TE_TO_GENOME: False # (True, False) Re-build the assembly with outsiders integrated in
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
 
@@ -47,6 +47,9 @@ PARAMS:
             PRESET_OPTION: ''
         TSD:
             SIZE_FLANK: 20  # flanking sequence size to calculate TSD put value > 4 
+        LIFT_OFF:
+            FLANK_SIZE: 100000
+            MAX_GAP: 20000
         TE_DETECTION:
             CHROM_KEEP: "." # regular expresion of chromosome; exemple  for Drosophila  "[23][RL],4,X" ; Put "." for keep all chromosome
             GET_SEQ_REPORT_OPTION: "-m 30" #option get_seq_vcf.py option du fichier de récupération des séquences dans le vcf

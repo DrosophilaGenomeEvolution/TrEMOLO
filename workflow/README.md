@@ -7,12 +7,13 @@ variant calling, TE detection, empty-site frequency, and TSD rules. It also
 builds the final legacy-compatible `TE_INFOS.bed` call table and a standalone
 interactive Quarto report.
 
-When Snakemake is available, run the preparation DAG with:
+Run from the parent directory of the TrEMOLO checkout. The default target
+executes all enabled branches, including the report:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile test/tmp_config.yml \
-  --cores 1
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --cores 8 all
 ```
 
 The preparation writes normalized, stable filenames under `WORK_DIRECTORY/INPUT`
@@ -21,8 +22,8 @@ and records original paths and SHA-256 checksums in `input_manifest.json`.
 The first migrated scientific segment can be inspected or executed explicitly:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile test/tmp_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 outsider_variant_calling
 ```
 
@@ -34,32 +35,32 @@ report when `CHOICE.PIPELINE.REPORT` is true.
 The migrated INSIDER structural-variant segment is available with:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 insider_variant_calling
 ```
 
 Shared FASTA and BLAST indexes for the normalized TE database are built once:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 1 te_database_indexes
 ```
 
 INSIDER TE detection reuses these indexes and can be run with:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 insider_te_detection
 ```
 
 Resident whole-assembly TE annotation is an independent optional target:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 te_genome
 ```
 
@@ -87,8 +88,8 @@ When both INSIDER calls and OUTSIDER read mappings are available, the
 legacy-compatible INSIDER empty-site frequency table can be generated with:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 insider_frequency
 ```
 
@@ -101,8 +102,8 @@ single-sample and multi-allele limitations are documented in
 INSIDER genome flanks and legacy-compatible TSD calls are available with:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 insider_tsd
 ```
 
@@ -114,16 +115,16 @@ insertions, Sniffles calls, soft-clipped reads, and hard-clipped reads. To stop
 after the two primary sources, run:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 outsider_primary_te_detection
 ```
 
 To include clipped-read evidence and reproduce the historical 100 bp merge:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 outsider_te_detection
 ```
 
@@ -136,8 +137,8 @@ merging, avoiding the data loss caused by concurrent writes to one file.
 Legacy-compatible OUTSIDER read frequencies are available with:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 outsider_frequency
 ```
 
@@ -152,8 +153,8 @@ OUTSIDER read/genome flanks and legacy-compatible TSD calls are available as a
 separate target:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 outsider_tsd
 ```
 
@@ -168,8 +169,8 @@ generated without invoking the legacy R Markdown report or its network
 requests:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 te_infos
 ```
 
@@ -181,8 +182,8 @@ compatibility choices and population-model boundary are documented in
 Ambiguous family evidence for reported variable calls is normalized separately:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 1 te_call_candidates
 ```
 
@@ -196,8 +197,8 @@ only one family per event.
 The new report is generated directly with Quarto:
 
 ```bash
-snakemake --snakefile workflow/Snakefile \
-  --configfile tests/workflow/refactor_config.yml \
+snakemake --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
   --cores 8 report
 ```
 
@@ -219,8 +220,8 @@ the report with `REPORT.TITLE`, `REPORT.AUTHOR`, and `REPORT.LOCUS_WINDOW`.
 Migration equivalence against a completed legacy work directory is checked by:
 
 ```bash
-python3 tests/regression/check_variant_calling.py \
-  ../work_test ../work_refactor_test
+python3 TrEMOLO/tests/regression/check_variant_calling.py \
+  work_test work_refactor_test
 ```
 
 The INSIDER caller architecture decision is recorded in

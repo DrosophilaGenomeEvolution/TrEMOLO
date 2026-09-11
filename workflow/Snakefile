@@ -20,6 +20,7 @@ if not isinstance(TE_GENOME_PARAMS, dict):
 INSIDER_SV_CALLER = INSIDER_PARAMS.get("SV_CALLER", "assemblytics")
 OUTSIDER_CHOICES = config.get("CHOICE", {}).get("OUTSIDER_VARIANT", {})
 INSIDER_CHOICES = config.get("CHOICE", {}).get("INSIDER_VARIANT", {})
+INTEGRATE_OUTSIDER_CHOICE = OUTSIDER_CHOICES.get("INTEGRATE_TE_TO_GENOME", False)
 TE_GENOME_CHOICE = CHOICES.get("TE_GENOME")
 LEGACY_DETECT_ALL_TE = INSIDER_CHOICES.get("DETECT_ALL_TE")
 PREPARED_GENOME = f"{WORKDIR}/INPUT/genome.fasta"
@@ -54,6 +55,10 @@ if TE_GENOME_CHOICE is not None and type(TE_GENOME_CHOICE) is not bool:
     raise ValueError("CHOICE.PIPELINE.TE_GENOME must be a boolean")
 if LEGACY_DETECT_ALL_TE is not None and type(LEGACY_DETECT_ALL_TE) is not bool:
     raise ValueError("CHOICE.INSIDER_VARIANT.DETECT_ALL_TE must be a boolean")
+if type(INTEGRATE_OUTSIDER_CHOICE) is not bool:
+    raise ValueError(
+        "CHOICE.OUTSIDER_VARIANT.INTEGRATE_TE_TO_GENOME must be a boolean"
+    )
 if (
     TE_GENOME_CHOICE is not None
     and LEGACY_DETECT_ALL_TE is not None
@@ -67,6 +72,12 @@ TE_GENOME_ENABLED = (
     TE_GENOME_CHOICE
     if TE_GENOME_CHOICE is not None
     else bool(LEGACY_DETECT_ALL_TE)
+)
+OUTSIDER_INTEGRATION_ENABLED = bool(
+    INTEGRATE_OUTSIDER_CHOICE and CHOICES.get("OUTSIDER_VARIANT")
+)
+OUTSIDER_LIFT_ENABLED = (
+    OUTSIDER_INTEGRATION_ENABLED and bool(CHOICES.get("INSIDER_VARIANT"))
 )
 TE_GENOME_TARGETS = TE_GENOME_PARAMS.get("TARGETS", ["GENOME"])
 if not isinstance(TE_GENOME_TARGETS, list) or not TE_GENOME_TARGETS:
@@ -90,6 +101,7 @@ include: "rules/insider.smk"
 include: "rules/te_genome.smk"
 include: "rules/insider_frequency.smk"
 include: "rules/insider_tsd.smk"
+include: "rules/outsider_integration.smk"
 include: "rules/te_infos.smk"
 include: "rules/report.smk"
 
@@ -107,6 +119,10 @@ if TE_GENOME_ENABLED:
     DEFAULT_TARGETS.extend(TE_GENOME_FINAL_OUTPUTS)
     if "GENOME" in TE_GENOME_TARGETS:
         DEFAULT_TARGETS.append(TE_GENOME_PUBLIC_BED)
+if OUTSIDER_INTEGRATION_ENABLED:
+    DEFAULT_TARGETS.extend(OUTSIDER_INTEGRATION_FINAL_OUTPUTS)
+if OUTSIDER_LIFT_ENABLED:
+    DEFAULT_TARGETS.extend(OUTSIDER_LIFT_FINAL_OUTPUTS)
 if CHOICES.get("REPORT"):
     DEFAULT_TARGETS.append(REPORT_HTML)
 

@@ -344,6 +344,7 @@ _EOF_
     export PATH="$PATH:/usr/bin/samtools/bcftools/"
 
     export PATH=/opt/conda/bin:$PATH
+    export PATH=/opt/conda/envs/liftoff_env/bin:$PATH
     export PATH=/usr/bin:$PATH
 
     export PATH="/opt/nvm/versions/node/v18.8.0/bin:$PATH"
