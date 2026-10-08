@@ -266,8 +266,9 @@ _EOF_
     # Ajouter conda au PATH
     /opt/conda/bin/conda init bash
 
-    # Créer un environnement conda pour Liftoff
-    /opt/conda/bin/conda create --name liftoff_env python=3.8.10 numpy=1.20 -y
+    # Utiliser exclusivement conda-forge pour éviter les dépôts Anaconda
+    # defaults, qui nécessitent une acceptation des conditions d'utilisation.
+    /opt/conda/bin/conda create --override-channels -c conda-forge --name liftoff_env python=3.8.10 numpy=1.20 -y
 
     # Activer l'environnement et installer Liftoff
     /bin/bash -c "source /opt/conda/bin/activate liftoff_env"
@@ -292,7 +293,7 @@ _EOF_
 
     # Sniffles 2 requires Python >=3.10 and NumPy >=2.2. Keep its environment
     # separate from the legacy scientific stack and Liftoff.
-    /opt/conda/bin/conda create --prefix /opt/sniffles2 python=3.12 pip -y
+    /opt/conda/bin/conda create --override-channels -c conda-forge --prefix /opt/sniffles2 python=3.12 pip -y
     /opt/sniffles2/bin/python -m pip install --no-cache-dir sniffles==2.8.1
     ln -s /opt/sniffles2/bin/sniffles /usr/local/bin/sniffles2
     /usr/local/bin/sniffles2 --version
