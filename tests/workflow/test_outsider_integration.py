@@ -15,6 +15,7 @@ from integrate_outsider_te import build as build_integration  # noqa: E402
 from prepare_outsider_liftoff import prepare as prepare_liftoff  # noqa: E402
 from summarize_outsider_liftoff import build as build_liftoff  # noqa: E402
 from summarize_outsider_liftoff import read_lifted_features, summarize  # noqa: E402
+from summarize_outsider_liftoff import read_expected_insertions  # noqa: E402
 
 
 class OutsiderIntegrationTests(unittest.TestCase):
@@ -216,8 +217,11 @@ class OutsiderLiftoffTests(unittest.TestCase):
             )
             insider = root / "insider.bed"
             insider.write_text("chr1\t1\t1\told|event\n")
+            positions = root / "positions.bed"
+            positions.write_text("chr1\t10\t14\troo:event1\nchr1\t20\t24\tcopia:event2\n")
             args = SimpleNamespace(
                 lifted_gff=lifted,
+                positions=positions,
                 insider_bed=insider,
                 good_bed=root / "good.bed",
                 bad_bed=root / "bad.bed",
@@ -287,6 +291,66 @@ class OutsiderLiftoffTests(unittest.TestCase):
             good, _, _, audit = self.project(Path(directory), (1, 100, "+"), (98, 200, "+"))
             self.assertEqual(good[0][1:3], (97, 100))
             self.assertEqual(audit[0]["projected_gap"], "-3")
+
+    def test_audit_includes_fully_unmapped_and_partially_mapped_insertions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "positions").write_text("chr1\t10\t14\troo:mapped\n"
+                                            "chr1\t20\t24\tcopia:unmapped\n"
+                                            "chr1\t30\t34\tblood:partial\n")
+            (root / "lift.gff").write_text(
+                "chr1\tLiftoff\trepeat_element\t1\t100\t.\t+\t.\tID=mapped;NAME=roo;SIDE=L\n"
+                "chr1\tLiftoff\trepeat_element\t101\t200\t.\t+\t.\tID=mapped;NAME=roo;SIDE=R\n"
+                "chr1\tLiftoff\trepeat_element\t201\t300\t.\t+\t.\tID=partial;NAME=blood;SIDE=L\n")
+            expected = read_expected_insertions(root / "positions")
+            good, _, ids, audit = summarize(read_lifted_features(root / "lift.gff"), 20000, expected)
+            self.assertEqual(len(good), 1)
+            self.assertEqual(ids, ["mapped"])
+            self.assertEqual([row["event_id"] for row in audit], ["mapped", "unmapped", "partial"])
+            self.assertEqual([(r["status"], r["reason"]) for r in audit],
+                             [("projected", "concordant_flanks"), ("rejected", "no_mapped_flanks"),
+                              ("rejected", "missing_or_ambiguous_flank")])
+            self.assertEqual(audit[1]["te_family"], "copia")
+            self.assertEqual(audit[1]["projected_chromosome"], "")
+
+    def test_empty_liftoff_gff_keeps_every_event_in_cli_audit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            # This covers total mapping failure and an insertion occupying a
+            # whole contig, for which no source flank can be generated.
+            (root / "positions").write_text("chr1\t0\t10\troo:TrEMOLO.INS.1\n"
+                                            "chr2\t4\t8\tcopia:TrEMOLO.INS.2\n")
+            (root / "lift.gff").write_text("##gff-version 3\n")
+            command = [sys.executable, str(ROOT / "lib/python/workflow/summarize_outsider_liftoff.py"),
+                       "--lifted-gff", str(root / "lift.gff"), "--positions", str(root / "positions")]
+            outputs = {name: root / name for name in ("good-bed", "bad-bed", "mapped-ids", "public-bed", "combined-bed", "audit")}
+            for name, path in outputs.items():
+                command.extend(["--" + name, str(path)])
+            result = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("0 insertions; 2 mappings rejected", result.stdout)
+            with outputs["audit"].open() as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+            self.assertEqual([row["te_family"] for row in rows], ["roo", "copia"])
+            self.assertTrue(all(row["reason"] == "no_mapped_flanks" for row in rows))
+            self.assertTrue(all(path.read_text() == "" for name, path in outputs.items() if name != "audit"))
+
+    def test_no_expected_insertions_produces_an_empty_audit(self):
+        self.assertEqual(summarize({}, 20000, {}), ([], [], [], []))
+
+    def test_unknown_lifted_event_cannot_be_published(self):
+        with tempfile.TemporaryDirectory() as directory:
+            good, _, _, _ = self.project(Path(directory), (1, 100, "+"), (101, 200, "+"))
+            self.assertEqual(len(good), 1)
+            with self.assertRaisesRegex(ValueError, "unexpected events: event"):
+                summarize(read_lifted_features(Path(directory) / "lift.gff"), 20000, {})
+
+    def test_duplicate_expected_event_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "positions"
+            path.write_text("chr1\t1\t2\troo:event\nchr1\t3\t4\troo:event\n")
+            with self.assertRaisesRegex(ValueError, "duplicate integrated event event"):
+                read_expected_insertions(path)
 
 
 if __name__ == "__main__":

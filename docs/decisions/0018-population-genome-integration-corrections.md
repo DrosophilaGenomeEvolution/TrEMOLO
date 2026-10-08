@@ -61,5 +61,5 @@ in `check_variant_calling.py` remains a frozen migration oracle; use
 candidate provenance and report checkers remain applicable.
 
 TSD-based breakpoint choice, arbitration between candidate sequences, genome
-memory usage and the audit of events with both Liftoff flanks entirely unmapped
-remain separate work. This decision does not change those policies.
+memory usage remain separate work. Auditing events with both Liftoff flanks
+entirely unmapped is subsequently addressed by decision 0019.

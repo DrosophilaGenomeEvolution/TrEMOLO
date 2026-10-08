@@ -204,6 +204,12 @@ and rejection reasons. Liftoff flanks exclude inserted bases and projected BED
 boundaries account for forward and reverse mappings. See
 `docs/decisions/0018-population-genome-integration-corrections.md`.
 
+Liftoff summarization uses the canonical integrated BED as the list of expected
+events. `LIFT_OFF_AUDIT.tsv` therefore retains every integrated INS, even if
+neither flank maps or no flank exists at a contig boundary. Such events are
+`rejected / no_mapped_flanks`, keep their family and event identifier, and do not
+enter the public projected BED. See decision 0019.
+
 Ambiguous family evidence for reported variable calls is normalized separately:
 
 ```bash

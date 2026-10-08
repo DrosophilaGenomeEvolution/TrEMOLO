@@ -70,19 +70,45 @@ def read_lifted_features(path):
     return grouped
 
 
-def summarize(grouped, max_gap):
+def read_expected_insertions(path):
+    """Keep every integrated event, including those with no source flanks."""
+
+    expected = OrderedDict()
+    with Path(path).open() as handle:
+        for line_number, raw_line in enumerate(handle, 1):
+            if not raw_line.strip():
+                continue
+            fields = raw_line.rstrip("\r\n").split("\t")
+            if len(fields) < 4 or ":" not in fields[3]:
+                raise ValueError("{}:{}: expected integrated TE:event BED record".format(path, line_number))
+            family, identifier = fields[3].rsplit(":", 1)
+            if not family or not identifier:
+                raise ValueError("{}:{}: empty TE family or event ID".format(path, line_number))
+            if identifier in expected:
+                raise ValueError("duplicate integrated event {}".format(identifier))
+            expected[identifier] = family
+    return expected
+
+
+def summarize(grouped, max_gap, expected=None):
+    if expected is None:
+        expected = OrderedDict((identifier, features[0]["family"] if features else "UNKNOWN")
+                               for identifier, features in grouped.items())
+    unexpected = set(grouped).difference(expected)
+    if unexpected:
+        raise ValueError("Lifted GFF contains unexpected events: {}".format(
+            ", ".join(sorted(unexpected))))
     good = []
     bad = []
     mapped_ids = []
     audit = []
-    for identifier, features in grouped.items():
+    for identifier, family in expected.items():
+        features = grouped.get(identifier, [])
         lefts = [feature for feature in features if feature["side"] == "L"]
         rights = [feature for feature in features if feature["side"] == "R"]
         row = {
             "event_id": identifier,
-            "te_family": (
-                features[0]["family"] if features else "UNKNOWN"
-            ),
+            "te_family": family,
             "status": "rejected",
             "reason": "",
             "left_chromosome": lefts[0]["chromosome"] if len(lefts) == 1 else "",
@@ -99,6 +125,10 @@ def summarize(grouped, max_gap):
             "right_strand": rights[0]["strand"] if len(rights) == 1 else "",
             "projected_strand": "",
         }
+        if not features:
+            row["reason"] = "no_mapped_flanks"
+            audit.append(row)
+            continue
         if len(lefts) != 1 or len(rights) != 1:
             row["reason"] = "missing_or_ambiguous_flank"
             audit.append(row)
@@ -184,7 +214,8 @@ def write_audit(path, rows):
 
 def build(args):
     grouped = read_lifted_features(args.lifted_gff)
-    good, bad, mapped_ids, audit = summarize(grouped, args.max_gap)
+    expected = read_expected_insertions(args.positions)
+    good, bad, mapped_ids, audit = summarize(grouped, args.max_gap, expected)
     write_rows(args.good_bed, good)
     write_rows(args.bad_bed, bad)
     write_rows(args.mapped_ids, ((identifier,) for identifier in mapped_ids))
@@ -206,6 +237,8 @@ def build(args):
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--lifted-gff", type=Path, required=True)
+    parser.add_argument("--positions", type=Path, required=True,
+                        help="Canonical integrated BED defining every expected insertion")
     parser.add_argument("--insider-bed", type=Path)
     parser.add_argument("--good-bed", type=Path, required=True)
     parser.add_argument("--bad-bed", type=Path, required=True)

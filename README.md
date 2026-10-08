@@ -282,6 +282,9 @@ their reasons remain available in `BAD_POS_TE_LIFT.bed` and
 `OUTSIDER/INSIDER_VR/LIFT_OFF_AUDIT.tsv`. Liftoff flanks use one-based inclusive
 GFF coordinates; output BED coordinates are zero-based and half-open, with
 orientation-aware validation of the flank pairs.
+The Liftoff audit contains one row per integrated INS, including
+`rejected / no_mapped_flanks` when neither flank is found. These events remain
+in the reconstructed genomes and have no public projected reference position.
 
 The refactored workflow supports two Sniffles generations. Select one in YAML:
 

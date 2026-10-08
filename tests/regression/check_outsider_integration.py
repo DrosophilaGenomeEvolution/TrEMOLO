@@ -133,7 +133,15 @@ def main():
                 else:
                     assert feature["start"] == end + 1
         mapped = read_lifted_features(lift_dir / "output_INOUT.gff3")
+        lift_audit = table(lift_dir / "LIFT_OFF_AUDIT.tsv")
+        assert len(lift_audit) == len(integrated), "Liftoff audit must contain one row per integrated INS"
+        assert {row["event_id"] for row in lift_audit} == set(integrated), "Missing or unexpected Liftoff audit events"
+        for row in lift_audit:
+            assert row["te_family"] == integrated[row["event_id"]]["te_family"]
+            if row["event_id"] not in mapped:
+                assert row["status"] == "rejected" and row["reason"] == "no_mapped_flanks"
         public = {name.rsplit("|", 1)[1]: (c, s, e) for c, s, e, name in bed(work / "POS_TE_OUTSIDER_ON_REF.bed")}
+        assert set(public) == {row["event_id"] for row in lift_audit if row["status"] == "projected"}
         for identifier, (chromosome, start, end) in public.items():
             pair = {feature["side"]: feature for feature in mapped[identifier]}
             assert len(mapped[identifier]) == 2 and set(pair) == {"L", "R"}

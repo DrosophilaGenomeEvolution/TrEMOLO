@@ -140,7 +140,8 @@ python3 TrEMOLO/tests/regression/check_quarto_report.py /path/to/new-output
 The integration check validates sequences against CIGAR I operations in the
 selected source reads, both reconstructed genomes and shifted BED intervals,
 retention of all original genome bases, DEL exclusion and Liftoff conversions.
-See `docs/decisions/0018-population-genome-integration-corrections.md`.
+It also requires exactly one Liftoff audit row per integrated INS, including
+events for which neither flank maps. See decisions 0018 and 0019.
 
 ## Sniffles 2
 

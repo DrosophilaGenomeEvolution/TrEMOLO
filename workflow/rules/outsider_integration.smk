@@ -197,6 +197,7 @@ rule summarize_outsider_liftoff:
     input:
         script=str(PIPELINE_ROOT / "lib/python/workflow/summarize_outsider_liftoff.py"),
         lifted=OUTSIDER_LIFT_GFF,
+        positions=OUTSIDER_CANONICAL_BED,
         insider=f"{INSIDER_TE_DIR}/INSERTION_TE_ON_REF.bed",
     output:
         good=OUTSIDER_LIFT_GOOD,
@@ -219,6 +220,7 @@ rule summarize_outsider_liftoff:
         set -euo pipefail
         python3 {input.script:q} \
             --lifted-gff {input.lifted:q} \
+            --positions {input.positions:q} \
             --insider-bed {input.insider:q} \
             --good-bed {output.good:q} \
             --bad-bed {output.bad:q} \
