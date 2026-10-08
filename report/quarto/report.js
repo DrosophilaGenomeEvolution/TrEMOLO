@@ -954,6 +954,22 @@
     render();
   }
 
+  function renderIntegration() {
+    const integration = data.integration || {};
+    const section = $("trm-integration-section");
+    if (!section || !integration.available) return;
+    section.hidden = false;
+    $("trm-integration-summary").textContent = `${integration.complete ? "Complete" : "PARTIAL"} reconstruction: ${integration.integrated} of ${integration.expected_insertions} eligible insertions integrated; ${integration.rejected} rejected; ${integration.excluded} non-insertion events excluded.`;
+    const rejected = $("trm-integration-rejections");
+    rejected.replaceChildren();
+    (integration.rejections || []).forEach((item) => {
+      const line = document.createElement("li");
+      line.textContent = `${item.event_id}: ${item.reason}`;
+      rejected.appendChild(line);
+    });
+    rejected.hidden = !(integration.rejections || []).length;
+  }
+
   function renderSelection() {
     renderCards();
     renderFamilyChart();
@@ -975,4 +991,5 @@
   renderResidentSection();
   renderContext();
   initializeTimings();
+  renderIntegration();
 })();

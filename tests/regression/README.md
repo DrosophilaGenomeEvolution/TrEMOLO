@@ -5,6 +5,7 @@ report checks on new workflow outputs:
 
 ```bash
 apptainer exec /path/to/TrEMOLO.sif python3 tests/regression/check_alignment_candidates.py /path/to/output
+apptainer exec /path/to/TrEMOLO.sif python3 tests/regression/check_outsider_integration.py /path/to/output
 python3 tests/regression/check_quarto_report.py /path/to/output
 ```
 
@@ -12,7 +13,9 @@ Pass `--no-clipped` to the first check when clipped detection is disabled.
 The exact `work_test` checks described below remain historical migration checks.
 They intentionally differ for corrected INS/SOFT/HARD outputs and downstream
 OUTSIDER calls; do not update their pinned historical checksums to conceal that
-scientific change. See decision 0017.
+scientific change. Integration corrections are validated against exact CIGAR
+sequences and reconstructed coordinates instead of historical FASTA bytes.
+See decisions 0017 and 0018.
 
 This test treats `../work_test` from the `master` branch as the first complete
 TrEMOLO regression oracle without
@@ -115,8 +118,6 @@ Liftoff, and the Quarto report.
 singularity exec --bind /opt/quarto:/opt/quarto:ro TrEMOLO-test.simg snakemake \
   --snakefile TrEMOLO/workflow/Snakefile \
   --configfile /path/to/validation.yml --cores 8 all
-python3 TrEMOLO/tests/regression/check_variant_calling.py work_test /path/to/new-output
-python3 TrEMOLO/tests/regression/check_quarto_report.py /path/to/new-output
 ```
 
 The bind is required only for an older image without Quarto. Adjust
@@ -124,6 +125,22 @@ The bind is required only for an older image without Quarto. Adjust
 Snakemake 5.10 image has Liftoff at
 `/opt/conda/envs/liftoff_env/bin/liftoff`, outside its default PATH.
 Do not reuse a completed output directory as evidence of a clean run.
+
+The historical `check_variant_calling.py` is a frozen migration comparator;
+the current scientific corrections intentionally differ from it (candidate
+recovery, insertion-only sequences, DEL exclusion and Liftoff coordinates).
+Validate current output with these checks inside the scientific image:
+
+```bash
+python3 TrEMOLO/tests/regression/check_alignment_candidates.py /path/to/new-output
+python3 TrEMOLO/tests/regression/check_outsider_integration.py /path/to/new-output
+python3 TrEMOLO/tests/regression/check_quarto_report.py /path/to/new-output
+```
+
+The integration check validates sequences against CIGAR I operations in the
+selected source reads, both reconstructed genomes and shifted BED intervals,
+retention of all original genome bases, DEL exclusion and Liftoff conversions.
+See `docs/decisions/0018-population-genome-integration-corrections.md`.
 
 ## Sniffles 2
 

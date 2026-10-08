@@ -24,6 +24,9 @@ AUDIT_HEADER = (
     "projected_start",
     "projected_end",
     "projected_gap",
+    "left_strand",
+    "right_strand",
+    "projected_strand",
 )
 
 
@@ -61,6 +64,7 @@ def read_lifted_features(path):
                     "family": values.get("NAME", "UNKNOWN"),
                     "side": side,
                     "coverage": float(values.get("coverage", "0") or 0),
+                    "strand": fields[6],
                 }
             )
     return grouped
@@ -91,6 +95,9 @@ def summarize(grouped, max_gap):
             "projected_start": "",
             "projected_end": "",
             "projected_gap": "",
+            "left_strand": lefts[0]["strand"] if len(lefts) == 1 else "",
+            "right_strand": rights[0]["strand"] if len(rights) == 1 else "",
+            "projected_strand": "",
         }
         if len(lefts) != 1 or len(rights) != 1:
             row["reason"] = "missing_or_ambiguous_flank"
@@ -99,33 +106,8 @@ def summarize(grouped, max_gap):
         mapped_ids.append(identifier)
         left = lefts[0]
         right = rights[0]
-        family = right["family"]
-        name = "{}|{}".format(family, identifier)
-        gap = right["start"] - left["end"]
-        row["projected_gap"] = str(gap)
-        if left["chromosome"] == right["chromosome"]:
-            if abs(gap) <= max_gap:
-                start = min(left["end"], right["start"])
-                end = max(left["end"], right["start"])
-                good.append((left["chromosome"], start, end, name, gap, "INSIDER"))
-                row["status"] = "projected"
-                row["reason"] = "concordant_flanks"
-                row["projected_chromosome"] = left["chromosome"]
-                row["projected_start"] = str(start)
-                row["projected_end"] = str(end)
-            else:
-                row["reason"] = "gap_exceeds_limit"
-                bad.append(
-                    (
-                        "{}:{}".format(right["chromosome"], right["start"]),
-                        "{}:{}".format(left["chromosome"], left["end"]),
-                        left["end"],
-                        name,
-                        gap,
-                        "INSIDER",
-                    )
-                )
-        else:
+        name = "{}|{}".format(right["family"], identifier)
+        if left["chromosome"] != right["chromosome"]:
             # A pair projected to two chromosomes is not a defensible locus.
             # The historical shell selected one flank by coverage and emitted
             # it as a regular call, sometimes combining the selected left
@@ -138,12 +120,49 @@ def summarize(grouped, max_gap):
                     "{}:{}".format(left["chromosome"], left["end"]),
                     left["end"],
                     name,
-                    gap,
+                    right["start"] - 1 - left["end"],
                     "INSIDER",
                     selected["side"],
                 )
             )
             row["reason"] = "discordant_chromosomes"
+        elif left["family"] != right["family"]:
+            row["reason"] = "discordant_families"
+        elif left["strand"] not in ("+", "-") or right["strand"] not in ("+", "-"):
+            row["reason"] = "unknown_flank_strand"
+        elif left["strand"] != right["strand"]:
+            row["reason"] = "discordant_flank_strands"
+        elif min(left["start"], right["start"]) < 1 or left["end"] < left["start"] or right["end"] < right["start"]:
+            row["reason"] = "invalid_flank_interval"
+        else:
+            # Inner boundaries in zero-based, half-open coordinates. A pair
+            # mapped on '-' reverses both the order and the relevant ends.
+            if left["strand"] == "+":
+                ordered = left["start"] <= right["start"] and left["end"] <= right["end"]
+                lower, upper = left["end"], right["start"] - 1
+            else:
+                ordered = right["start"] <= left["start"] and right["end"] <= left["end"]
+                lower, upper = right["end"], left["start"] - 1
+            gap = upper - lower
+            row["projected_gap"] = str(gap)
+            if not ordered:
+                row["reason"] = "discordant_flank_order"
+            elif abs(gap) > max_gap:
+                row["reason"] = "gap_exceeds_limit"
+                bad.append(("{}:{}".format(left["chromosome"], upper),
+                            "{}:{}".format(left["chromosome"], lower),
+                            lower, name, gap, "INSIDER"))
+            else:
+                # Small overlaps can reflect a target-site duplication;
+                # retain the signed gap in the audit rather than rejecting it.
+                start, end = min(lower, upper), max(lower, upper)
+                good.append((left["chromosome"], start, end, name, gap, "INSIDER"))
+                row["status"] = "projected"
+                row["reason"] = "concordant_flanks"
+                row["projected_chromosome"] = left["chromosome"]
+                row["projected_start"] = str(start)
+                row["projected_end"] = str(end)
+                row["projected_strand"] = left["strand"]
         audit.append(row)
     return good, bad, mapped_ids, audit
 
@@ -181,7 +200,7 @@ def build(args):
     with Path(args.combined_bed).open("w") as handle:
         for line in combined:
             handle.write(line + "\n")
-    return len(good), len(bad)
+    return len(good), sum(row["status"] == "rejected" for row in audit)
 
 
 def parse_args(argv=None):
@@ -203,8 +222,8 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    good, bad = build(args)
-    print("Projected {} insertions; {} mappings require review.".format(good, bad))
+    good, rejected = build(args)
+    print("Projected {} insertions; {} mappings rejected.".format(good, rejected))
 
 
 if __name__ == "__main__":

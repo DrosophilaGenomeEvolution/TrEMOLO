@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Build genomes containing the non-clipped OUTSIDER insertion calls.
+"""Build population genomes containing OUTSIDER INS calls.
 
 The historical rule implemented this transformation through nested ``grep``
 loops and inserted the event identifier itself before every canonical TE.  The
-identifier made ``PSEUDO_GENOME_TE_DB_ID.fasta`` an invalid DNA FASTA.  This
-implementation keeps the public filenames and coordinate semantics, but stores
-event identity in BED/audit records and inserts nucleotide sequence only.
+identifier made ``PSEUDO_GENOME_TE_DB_ID.fasta`` an invalid DNA FASTA.
+Insertions at the same site are concatenated intentionally to represent the
+population's alternatives. Observed input FASTAs must contain insertion-only
+sequences, without the read flanks used for BLAST and TSD detection.
 """
 
 from __future__ import print_function
@@ -131,13 +132,13 @@ def read_merged_calls(path):
                     )
                 )
             name = fields[3]
-            if "HARD" in name or "SOFT" in name:
-                continue
             if "|" not in name:
                 raise ValueError(
                     "{}:{}: malformed TE|event name {}".format(path, line_number, name)
                 )
             family, identifier = name.rsplit("|", 1)
+            if identifier.startswith(("HARD.", "SOFT.")):
+                continue
             records.append(
                 {
                     "family": family,
@@ -189,6 +190,11 @@ def resolve_insertions(
             "status": "rejected",
             "reason": "",
         }
+        if identifier.split(".", 2)[1:2] != ["INS"]:
+            row["status"] = "excluded"
+            row["reason"] = "non_insertion_event"
+            audit.append(row)
+            continue
         if identifier in seen_events:
             row["reason"] = "duplicate_merged_event"
             audit.append(row)
@@ -217,6 +223,11 @@ def resolve_insertions(
         fields = qseqid.split(":")
         row["source"] = call["source"]
         row["qseqid"] = qseqid
+        if len(fields) > 1 and fields[1] != "<INS>":
+            row["reason"] = "classified_event_is_not_insertion"
+            audit.append(row)
+            errors.append("{} is not classified as an INS".format(identifier))
+            continue
         if len(fields) < 6:
             row["reason"] = "malformed_qseqid"
             audit.append(row)
@@ -267,6 +278,11 @@ def resolve_insertions(
             continue
         canonical = canonical.upper()
         observed = observed.upper()
+        if not canonical or not observed:
+            row["reason"] = "empty_insertion_sequence"
+            audit.append(row)
+            errors.append("{} has an empty insertion sequence".format(identifier))
+            continue
         if strand == "-":
             canonical = reverse_complement(canonical)
         try:
@@ -381,9 +397,18 @@ def build(args):
         genome,
     )
     write_audit(audit, args.audit)
+    rejected = sum(row["status"] == "rejected" for row in audit)
+    excluded = sum(row["status"] == "excluded" for row in audit)
+    print("OUTSIDER integration: {} eligible, {} integrated, {} rejected, {} excluded; {}.".format(
+        len(insertions) + rejected, len(insertions), rejected, excluded,
+        "partial" if rejected else "complete"), file=sys.stderr)
     if errors:
         for error in errors:
             print("Rejected OUTSIDER integration: {}".format(error), file=sys.stderr)
+        if not getattr(args, "allow_partial", False):
+            raise ValueError("Incomplete OUTSIDER integration: {} insertion(s) rejected; "
+                             "see the integration audit. Use --allow-partial only to explicitly "
+                             "accept a partial reconstruction.".format(rejected))
 
     canonical_genome, canonical_positions = integrate(genome, insertions, "canonical")
     observed_genome, observed_positions = integrate(genome, insertions, "observed")
@@ -403,8 +428,9 @@ def parse_args(argv=None):
     parser.add_argument("--merged-bed", type=Path, required=True)
     parser.add_argument("--sniffles-calls", type=Path, required=True)
     parser.add_argument("--direct-calls", type=Path, required=True)
-    parser.add_argument("--sniffles-fasta", type=Path, required=True)
-    parser.add_argument("--direct-fasta", type=Path, required=True)
+    parser.add_argument("--sniffles-fasta", type=Path, required=True, help="Insertion-only Sniffles FASTA")
+    parser.add_argument("--direct-fasta", type=Path, required=True, help="Insertion-only direct FASTA")
+    parser.add_argument("--allow-partial", action="store_true", help="Explicitly allow rejected INS calls in the reconstruction")
     parser.add_argument("--canonical-genome", type=Path, required=True)
     parser.add_argument("--observed-genome", type=Path, required=True)
     parser.add_argument("--canonical-bed", type=Path, required=True)
@@ -417,9 +443,14 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    count = build(args)
+    try:
+        count = build(args)
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+        return 1
     print("Integrated {} OUTSIDER calls into both genomes.".format(count))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

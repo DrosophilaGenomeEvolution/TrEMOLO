@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import csv
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -12,6 +14,7 @@ sys.path.insert(0, str(ROOT / "lib/python/workflow"))
 from integrate_outsider_te import build as build_integration  # noqa: E402
 from prepare_outsider_liftoff import prepare as prepare_liftoff  # noqa: E402
 from summarize_outsider_liftoff import build as build_liftoff  # noqa: E402
+from summarize_outsider_liftoff import read_lifted_features, summarize  # noqa: E402
 
 
 class OutsiderIntegrationTests(unittest.TestCase):
@@ -112,6 +115,7 @@ class OutsiderIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             args = self.fixture(Path(directory))
             args.direct_fasta.write_text("")
+            args.allow_partial = True
 
             self.assertEqual(build_integration(args), 1)
 
@@ -125,6 +129,53 @@ class OutsiderIntegrationTests(unittest.TestCase):
                 )
             )
             self.assertEqual(len(args.canonical_bed.read_text().splitlines()), 1)
+
+    def test_strict_cli_fails_and_keeps_audit_without_publishing_genomes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.fixture(Path(directory))
+            args.direct_fasta.write_text("")
+            command = [sys.executable, str(ROOT / "lib/python/workflow/integrate_outsider_te.py")]
+            for key, value in vars(args).items():
+                command.extend(["--" + key.replace("_", "-"), str(value)])
+            result = subprocess.run(command, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("2 eligible, 1 integrated, 1 rejected", result.stderr)
+            self.assertIn("missing_observed_sequence", args.audit.read_text())
+            self.assertFalse(args.observed_genome.exists())
+            self.assertFalse(args.canonical_genome.exists())
+
+    def test_deletions_are_excluded_without_requiring_their_sequences(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.fixture(Path(directory))
+            # A native caller ID may itself contain 'INS'; the event type is
+            # the second identifier field, not a substring anywhere in the ID.
+            args.merged_bed.write_text("chr1\t2\t4\troo|sniffles.DEL.INS.1\n")
+            args.sniffles_fasta.write_text("")
+            self.assertEqual(build_integration(args), 0)
+            self.assertEqual(args.observed_genome.read_text(), ">chr1\nAAAAAAAA\n")
+            with args.audit.open() as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+            self.assertEqual((rows[0]["status"], rows[0]["reason"]), ("excluded", "non_insertion_event"))
+            self.assertEqual(args.observed_bed.read_text(), "")
+
+    def test_population_alternatives_at_same_site_are_concatenated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.fixture(Path(directory))
+            args.merged_bed.write_text(args.merged_bed.read_text().replace("chr1\t6\t7", "chr1\t2\t3"))
+            args.direct_calls.write_text(args.direct_calls.read_text().replace("<INS>:6:7:", "<INS>:2:3:"))
+            args.direct_fasta.write_text(args.direct_fasta.read_text().replace("<INS>:6:7:", "<INS>:2:3:"))
+            self.assertEqual(build_integration(args), 2)
+            self.assertEqual(args.observed_genome.read_text(), ">chr1\nAACCCTTAAAAAA\n")
+            self.assertEqual(args.observed_bed.read_text(),
+                             "chr1\t2\t5\troo:TrEMOLO.INS.2\nchr1\t5\t7\troo:sniffles.INS.1\n")
+
+    def test_empty_sequence_prevents_a_complete_reconstruction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.fixture(Path(directory))
+            args.direct_fasta.write_text(args.direct_fasta.read_text().replace("CCC", ""))
+            with self.assertRaisesRegex(ValueError, "Incomplete OUTSIDER integration"):
+                build_integration(args)
+            self.assertIn("empty_insertion_sequence", args.audit.read_text())
 
 
 class OutsiderLiftoffTests(unittest.TestCase):
@@ -145,7 +196,7 @@ class OutsiderLiftoffTests(unittest.TestCase):
 
             rows = [line.split("\t") for line in gff.read_text().splitlines()]
             self.assertEqual((rows[0][3], rows[0][4]), ("1", "5"))
-            self.assertEqual((rows[1][3], rows[1][4]), ("9", "19"))
+            self.assertEqual((rows[1][3], rows[1][4]), ("10", "19"))
             self.assertEqual(feature_file.read_text(), "repeat_element\n")
 
     def test_rejects_discordant_chromosomes_from_public_calls(self):
@@ -180,12 +231,62 @@ class OutsiderLiftoffTests(unittest.TestCase):
             self.assertEqual(build_liftoff(args), (1, 1))
 
             self.assertEqual(
-                args.public_bed.read_text(), "chr1\t100\t105\troo|event1\n"
+                args.public_bed.read_text(), "chr1\t100\t104\troo|event1\n"
             )
             self.assertNotIn("event2", args.public_bed.read_text())
             self.assertIn("event2", args.bad_bed.read_text())
             self.assertEqual(len(args.combined_bed.read_text().splitlines()), 2)
             self.assertIn("discordant_chromosomes", args.audit.read_text())
+
+    def test_edge_and_internal_flanks_contain_only_genome_bases(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "positions").write_text("chr1\t0\t2\troo:TrEMOLO.INS.1\n"
+                                            "chr1\t8\t10\troo:TrEMOLO.INS.2\n"
+                                            "chr1\t4\t6\troo:TrEMOLO.INS.3\n")
+            (root / "index").write_text("chr1\t10\n")
+            self.assertEqual(prepare_liftoff(root / "positions", root / "index", root / "gff", root / "features", 3), 3)
+            rows = [line.split("\t") for line in (root / "gff").read_text().splitlines()]
+            self.assertEqual([(int(r[3]), int(r[4])) for r in rows], [(3, 5), (6, 8), (2, 4), (7, 9)])
+            self.assertTrue(all(1 <= int(r[3]) <= int(r[4]) <= 10 for r in rows))
+
+    def project(self, root, left, right):
+        path = root / "lift.gff"
+        path.write_text("".join("chr1\tLiftoff\trepeat_element\t{}\t{}\t.\t{}\t.\t"
+                                "ID=event;NAME=roo;SIDE={};coverage=1\n".format(start, end, strand, side)
+                                for (start, end, strand), side in [(left, "L"), (right, "R")]))
+        return summarize(read_lifted_features(path), 20000)
+
+    def test_projection_uses_inner_boundaries_on_both_strands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for left, right in [((1, 100, "+"), (106, 200, "+")),
+                                ((106, 200, "-"), (1, 100, "-"))]:
+                good, _, _, audit = self.project(root, left, right)
+                self.assertEqual(good[0][1:3], (100, 105))
+                self.assertEqual(audit[0]["projected_gap"], "5")
+                self.assertEqual(audit[0]["projected_strand"], left[2])
+            for left, right in [((1, 100, "+"), (101, 200, "+")),
+                                ((101, 200, "-"), (1, 100, "-"))]:
+                good, _, _, _ = self.project(root, left, right)
+                self.assertEqual(good[0][1:3], (100, 100))
+
+    def test_projection_rejects_opposite_strands_and_reversed_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cases = [((100, 200, "+"), (190, 290, "-"), "discordant_flank_strands"),
+                     ((106, 200, "+"), (1, 100, "+"), "discordant_flank_order"),
+                     ((1, 100, "-"), (106, 200, "-"), "discordant_flank_order")]
+            for left, right, reason in cases:
+                good, _, _, audit = self.project(root, left, right)
+                self.assertEqual(good, [])
+                self.assertEqual(audit[0]["reason"], reason)
+
+    def test_small_ordered_overlap_is_retained_for_tsd(self):
+        with tempfile.TemporaryDirectory() as directory:
+            good, _, _, audit = self.project(Path(directory), (1, 100, "+"), (98, 200, "+"))
+            self.assertEqual(good[0][1:3], (97, 100))
+            self.assertEqual(audit[0]["projected_gap"], "-3")
 
 
 if __name__ == "__main__":

@@ -45,9 +45,43 @@ class ClusterFormattingTests(unittest.TestCase):
         format_insertions(iter([]), *streams)
         self.assertTrue(all(stream.getvalue() == '' for stream in streams))
 
+    def test_insertion_sequences_exclude_full_and_truncated_read_flanks(self):
+        rows = [['chr1', '10', '11', 'full', 'AACCCGG', '5', '10', '3', '1'],
+                ['chr1', '20', '21', 'left', 'ACCCGG', '4', '20', '3', '2'],
+                ['chr1', '30', '31', 'right', 'AACCCG', '5', '30', '3', '3']]
+        fasta, positions, sizes, insertions = [io.StringIO() for _ in range(4)]
+        format_insertions(iter(rows), fasta, positions, sizes, insertions, 2)
+        self.assertEqual([line for line in insertions.getvalue().splitlines() if not line.startswith('>')], ['CCC'] * 3)
+        self.assertIn('\nAACCCGG\n', fasta.getvalue())
+        self.assertEqual([line for line in fasta.getvalue().splitlines() if line.startswith('>')],
+                         [line for line in insertions.getvalue().splitlines() if line.startswith('>')])
+
 
 @unittest.skipIf(pysam is None, 'requires scientific container with pysam')
 class AlignmentExtractionTests(unittest.TestCase):
+    def test_sniffles_companion_fasta_is_exact_cigar_insertion_with_truncated_flanks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bam = root / 'input.bam'
+            header = {'HD': {'VN': '1.6', 'SO': 'coordinate'}, 'SQ': [{'SN': 'chr1', 'LN': 1000}]}
+            with pysam.AlignmentFile(str(bam), 'wb', header=header) as output:
+                read = pysam.AlignedSegment()
+                read.query_name = 'read'
+                read.reference_id = 0
+                read.reference_start = 10
+                read.cigartuples = [(7, 5), (8, 5), (1, 40), (0, 5)]
+                read.query_sequence = 'A' * 5 + 'T' * 5 + 'C' * 40 + 'G' * 5
+                output.write(read)
+            pysam.index(str(bam))
+            qseqid = 'chr1:<INS>:20:20:sniffles.INS.1:1:PRECISE'
+            (root / 'variants').write_text('chr1\t20\t20\t{}\t40\t{}\n'.format(qseqid, 'T' * 40))
+            result = subprocess.run([sys.executable, str(ROOT / 'lib/python/parsing/parse_bam_found_ins.py'),
+                                     '--insertion-fasta', str(root / 'insertions'), str(bam), str(root / 'variants')],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((root / 'insertions').read_text(), '>' + qseqid + ':1\n' + 'C' * 40 + '\n>' + qseqid + ':0\n' + 'T' * 40 + '\n')
+            self.assertIn('A' * 5 + 'T' * 5 + 'C' * 40 + 'G' * 5, result.stdout)
+
     def run_extraction(self, root, records, threads=2, no_clipped=False, chunk_size=0):
         bam = root / 'input.bam'
         header = {'HD': {'VN': '1.6', 'SO': 'coordinate'}, 'SQ': [{'SN': 'chr1', 'LN': 100000}]}

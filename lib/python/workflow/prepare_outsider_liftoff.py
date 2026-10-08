@@ -54,44 +54,45 @@ def prepare(position_bed, genome_index, output_gff, feature_file, flank_size):
                         chromosome, start, end
                     )
                 )
-            # Keep the historical coordinates here: the left feature ends at
-            # BED start and the right feature starts at BED end.  GFF itself is
-            # one-based, so the outer boundary is clamped to one.
+            # BED is zero-based, half-open; GFF is one-based, inclusive.
+            # Empty flanks at contig boundaries must not become invalid GFF.
             attributes_left = "ID={};NAME={};SIDE=L".format(identifier, family)
             attributes_right = "ID={};NAME={};SIDE=R".format(identifier, family)
-            features.append(
-                (
-                    chromosome,
-                    "Liftoff",
-                    "repeat_element",
-                    max(1, start - flank_size),
-                    start,
-                    ".",
-                    "+",
-                    ".",
-                    attributes_left,
+            if start > 0:
+                features.append(
+                    (
+                        chromosome,
+                        "Liftoff",
+                        "repeat_element",
+                        max(0, start - flank_size) + 1,
+                        start,
+                        ".",
+                        "+",
+                        ".",
+                        attributes_left,
+                    )
                 )
-            )
-            features.append(
-                (
-                    chromosome,
-                    "Liftoff",
-                    "repeat_element",
-                    end,
-                    min(lengths[chromosome], end + flank_size),
-                    ".",
-                    "+",
-                    ".",
-                    attributes_right,
+            if end < lengths[chromosome]:
+                features.append(
+                    (
+                        chromosome,
+                        "Liftoff",
+                        "repeat_element",
+                        end + 1,
+                        min(lengths[chromosome], end + flank_size),
+                        ".",
+                        "+",
+                        ".",
+                        attributes_right,
+                    )
                 )
-            )
 
     Path(output_gff).parent.mkdir(parents=True, exist_ok=True)
     with Path(output_gff).open("w") as handle:
         for feature in features:
             handle.write("\t".join(str(value) for value in feature) + "\n")
     Path(feature_file).write_text("repeat_element\n")
-    return len(features) // 2
+    return len(seen)
 
 
 def parse_args(argv=None):

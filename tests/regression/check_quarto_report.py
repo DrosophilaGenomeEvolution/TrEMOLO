@@ -109,10 +109,23 @@ def main():
         "trm-timing-chart",
         "trm-timing-branch",
         "trm-download-timings",
+        "trm-integration-summary",
     )
     for identifier in required_ids:
         if f'id="{identifier}"' not in html:
             raise SystemExit(f"rendered HTML lacks {identifier}")
+
+    integration = data.get("integration", {})
+    integration_path = args.work_directory / "OUTSIDER/TE_TOWARD_GENOME/INTEGRATION_TE.tsv"
+    if integration.get("available"):
+        with integration_path.open() as handle:
+            states = Counter(row["status"] for row in csv.DictReader(handle, delimiter="\t"))
+        expected_integration = {"expected_insertions": states["integrated"] + states["rejected"],
+                                "integrated": states["integrated"], "rejected": states["rejected"],
+                                "excluded": states["excluded"], "complete": states["rejected"] == 0}
+        for key, value in expected_integration.items():
+            if integration.get(key) != value:
+                raise SystemExit(f"report integration mismatch: {key}")
 
     timings = data.get("timings", {})
     steps = timings.get("steps", [])

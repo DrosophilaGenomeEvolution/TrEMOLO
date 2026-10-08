@@ -16,6 +16,7 @@ CHOICE:
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles1" # sniffles1 (1.0.12b), sniffles2 (2.8.1); sniffles = legacy alias
         INTEGRATE_TE_TO_GENOME: False # (True, False) Re-build the assembly with outsiders integrated in
+        INTEGRATION_ALLOW_PARTIAL: False # fail if an eligible insertion cannot be integrated
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INTERMEDIATE_FILE: True     # to keep the intermediate analysis files to process them. 
 

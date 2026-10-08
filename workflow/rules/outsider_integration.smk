@@ -51,6 +51,9 @@ if type(OUTSIDER_LIFT_FLANK) is not int or OUTSIDER_LIFT_FLANK <= 0:
 if type(OUTSIDER_LIFT_MAX_GAP) is not int or OUTSIDER_LIFT_MAX_GAP < 0:
     raise ValueError("PARAMS.OUTSIDER_VARIANT.LIFT_OFF.MAX_GAP must be >= 0")
 LIFTOFF_EXECUTABLE = config.get("TOOLS", {}).get("LIFTOFF", "liftoff")
+OUTSIDER_INTEGRATION_ALLOW_PARTIAL = OUTSIDER_CHOICES.get("INTEGRATION_ALLOW_PARTIAL", False)
+if type(OUTSIDER_INTEGRATION_ALLOW_PARTIAL) is not bool:
+    raise ValueError("CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL must be a boolean")
 
 
 rule integrate_outsider_te_into_genome:
@@ -61,8 +64,8 @@ rule integrate_outsider_te_into_genome:
         merged=OUTSIDER_MERGED_BED,
         sniffles_calls=OUTSIDER_SNIFFLES_CSV,
         direct_calls=OUTSIDER_INS_CSV,
-        sniffles_fasta=OUTSIDER_SNIFFLES_FASTA,
-        direct_fasta=OUTSIDER_INS_FASTA,
+        sniffles_fasta=OUTSIDER_SNIFFLES_INSERTION_FASTA,
+        direct_fasta=OUTSIDER_INS_INSERTION_FASTA,
         tsd=OUTSIDER_TSD,
     output:
         canonical_genome=OUTSIDER_CANONICAL_GENOME,
@@ -72,6 +75,8 @@ rule integrate_outsider_te_into_genome:
         canonical_public=OUTSIDER_CANONICAL_PUBLIC_BED,
         observed_public=OUTSIDER_OBSERVED_PUBLIC_BED,
         audit=OUTSIDER_INTEGRATION_AUDIT,
+    params:
+        partial="--allow-partial" if OUTSIDER_INTEGRATION_ALLOW_PARTIAL else "",
     threads: 1
     resources:
         mem_mb=4096,
@@ -97,7 +102,7 @@ rule integrate_outsider_te_into_genome:
             --observed-bed {output.observed_bed:q} \
             --canonical-public-bed {output.canonical_public:q} \
             --observed-public-bed {output.observed_public:q} \
-            --audit {output.audit:q} > {log:q} 2>&1
+            --audit {output.audit:q} {params.partial} > {log:q} 2>&1
         """
 
 

@@ -193,6 +193,17 @@ change the reported OUTSIDER calls; INSIDER fixture calls remain unchanged. The
 compatibility choices and population-model boundary are documented in
 `docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.
 
+OUTSIDER genome integration adds only INS events. The companion
+`SV_INS_CLUST.insertions.fasta` and `SEQUENCE_INDEL.insertions.fasta` contain
+sequences without read flanks; the original candidate FASTAs retain flanks for
+classification and TSD detection. DEL events are excluded and audited. Same-site
+alternatives remain concatenated to represent the population. Integration fails
+on unresolved INS by default; `CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL`
+must be explicitly true to accept a partial result. The report shows the counts
+and rejection reasons. Liftoff flanks exclude inserted bases and projected BED
+boundaries account for forward and reverse mappings. See
+`docs/decisions/0018-population-genome-integration-corrections.md`.
+
 Ambiguous family evidence for reported variable calls is normalized separately:
 
 ```bash

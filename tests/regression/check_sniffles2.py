@@ -55,7 +55,10 @@ def main():
     assert calls and all(len(row) == 15 for row in calls)
     with (args.workdir / "OUTSIDER/TE_TOWARD_GENOME/INTEGRATION_TE.tsv").open() as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
-            assert row["status"] == "integrated", row
+            if row["event_id"].split(".", 2)[1:2] == ["INS"]:
+                assert row["status"] == "integrated", row
+            else:
+                assert row["status"] == "excluded" and row["reason"] == "non_insertion_event", row
     print("Sniffles 2 regression: PASSED ({} SVs, {} consensus sequences, {} final calls)".format(
         count, len(observed), len(calls)))
 

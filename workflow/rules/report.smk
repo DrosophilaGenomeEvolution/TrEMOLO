@@ -94,6 +94,7 @@ rule prepare_quarto_report:
         manifest=REPORT_INPUT_MANIFEST,
         mapping_stats=report_optional_input(MAPPING_STATS, TE_INFOS_WITH_OUTSIDER),
         sv_vcf=report_optional_input(SV_VCF, TE_INFOS_WITH_OUTSIDER),
+        integration_audit=report_optional_input(OUTSIDER_INTEGRATION_AUDIT, OUTSIDER_INTEGRATION_ENABLED),
         resident_copies=REPORT_RESIDENT_COPIES,
         resident_matches=REPORT_RESIDENT_MATCHES,
         resident_fragments=REPORT_RESIDENT_FRAGMENTS,
@@ -126,6 +127,7 @@ rule prepare_quarto_report:
             --input-manifest {input.manifest:q} \
             --mapping-stats {input.mapping_stats:q} \
             --sv-vcf {input.sv_vcf:q} \
+            --integration-audit {input.integration_audit:q} \
             --resident-copies {input.resident_copies:q} \
             --resident-matches {input.resident_matches:q} \
             --resident-fragments {input.resident_fragments:q} \

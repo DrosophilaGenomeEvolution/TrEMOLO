@@ -19,6 +19,8 @@ parser.add_argument("-f", "--flank-size", dest="flank_size", type=int, default=3
                     help="flanking size sequence for get TSD.")
 parser.add_argument("-r", "--rd_num", dest='rd_num', type=argparse.FileType('w'), default=None,
                     help="Output file read name and num read support")
+parser.add_argument("--insertion-fasta", type=argparse.FileType('w'), default=None,
+                    help="Optional companion FASTA containing insertion sequences without read flanks")
 parser.add_argument("-m", "--max_distance", dest='max_distance', type=int, default=30,
                     help="Maximum distance to group SV together.")
 parser.add_argument("-s", "--min-size-percent", dest="min_size_percent", type=int, default=0.9,
@@ -61,10 +63,10 @@ for line in befile:
         count_read = 0
         for tupl in read.cigartuples:
             
-            if tupl[0] in [0, 2, 7]: #Check M,D,= CIGAR for position on ref
+            if tupl[0] in [0, 2, 3, 7, 8]: # Reference-consuming CIGAR operations
                 count_ref  += tupl[1]
 
-            if tupl[0] in [0, 1, 7, 4]: #Check M,I,=,S CIGAR for postion on reads
+            if tupl[0] in [0, 1, 7, 8, 4]: # Query-consuming CIGAR operations
                 count_read += tupl[1]
 
             #if we have found INS to a good position
@@ -84,6 +86,8 @@ for line in befile:
 
                     print(">" + name + ":" + str(number_read_support))
                     print(seq_vr)
+                    if args.insertion_fasta is not None:
+                        args.insertion_fasta.write('>' + name + ':' + str(number_read_support) + '\n' + seq_te_tsd + '\n')
                     number_read_support += 1
 
     #Put the sequence report by sniffles
@@ -96,7 +100,11 @@ for line in befile:
 
     print(">" + name + ":" + str(0))
     print(bed_seq)
+    if args.insertion_fasta is not None:
+        args.insertion_fasta.write('>' + name + ':0\n' + bed_seq.strip() + '\n')
 
+if args.insertion_fasta is not None:
+    args.insertion_fasta.close()
 
 
 

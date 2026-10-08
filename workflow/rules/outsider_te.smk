@@ -16,6 +16,7 @@ OUTSIDER_MERGE_DIR = f"{OUTSIDER_TE_DIR}/MERGE_TE"
 OUTSIDER_INS_RAW = f"{OUTSIDER_INS_DIR}/SV_INS.bed"
 OUTSIDER_INS_CLUSTERED = f"{OUTSIDER_INS_DIR}/SV_INS_CLUST.bed"
 OUTSIDER_INS_FASTA = f"{OUTSIDER_INS_DIR}/SV_INS_CLUST.fasta"
+OUTSIDER_INS_INSERTION_FASTA = f"{OUTSIDER_INS_DIR}/SV_INS_CLUST.insertions.fasta"
 OUTSIDER_INS_BLAST = f"{OUTSIDER_INS_DIR}/SV_INS_CLUST.bln"
 OUTSIDER_INS_CSV = f"{OUTSIDER_INS_DIR}/INS_TREMOLO.csv"
 OUTSIDER_INS_COMBINE = f"{OUTSIDER_INS_DIR}/COMBINE_INS_TREMOLO.csv"
@@ -57,6 +58,7 @@ OUTSIDER_HARD_BED = f"{OUTSIDER_HARD_DIR}/HARD_TE.bed"
 
 OUTSIDER_SNIFFLES_RAW_FASTA = f"{OUTSIDER_VARIANT_DIR}/SEQUENCE_INDEL.raw.fasta"
 OUTSIDER_SNIFFLES_FASTA = f"{OUTSIDER_VARIANT_DIR}/SEQUENCE_INDEL.fasta"
+OUTSIDER_SNIFFLES_INSERTION_FASTA = f"{OUTSIDER_VARIANT_DIR}/SEQUENCE_INDEL.insertions.fasta"
 OUTSIDER_SNIFFLES_VARIANTS = f"{OUTSIDER_TE_DIR}/TE_VR.bed"
 OUTSIDER_SNIFFLES_READ_COUNTS = f"{OUTSIDER_TE_DIR}/RD_NUMBER.txt"
 OUTSIDER_SNIFFLES_BLAST = f"{OUTSIDER_TE_DIR}/BLAST_SEQUENCE_INDEL_vs_DBTE.bln"
@@ -158,8 +160,11 @@ rule cluster_outsider_alignment_insertions:
     output:
         clustered=OUTSIDER_INS_CLUSTERED,
         fasta=OUTSIDER_INS_FASTA,
+        insertion_fasta=OUTSIDER_INS_INSERTION_FASTA,
         read_positions=OUTSIDER_INS_READ_POSITIONS,
         sizes=OUTSIDER_INS_SIZE_BASE,
+    params:
+        flank=OUTSIDER_SIZE_FLANK,
     threads: 1
     resources:
         mem_mb=2048,
@@ -174,7 +179,8 @@ rule cluster_outsider_alignment_insertions:
             > {output.clustered:q} 2> {log:q}
         python3 {input.script:q} ins --input {output.clustered:q} \
             --fasta {output.fasta:q} --positions {output.read_positions:q} \
-            --sizes {output.sizes:q} >> {log:q} 2>&1
+            --sizes {output.sizes:q} --insertion-fasta {output.insertion_fasta:q} \
+            --flank-size {params.flank} >> {log:q} 2>&1
         """
 
 
@@ -258,6 +264,7 @@ rule extract_outsider_sniffles_sequences:
         raw=temp(OUTSIDER_SNIFFLES_RAW_FASTA),
         variants=OUTSIDER_SNIFFLES_VARIANTS,
         fasta=OUTSIDER_SNIFFLES_FASTA,
+        insertion_fasta=OUTSIDER_SNIFFLES_INSERTION_FASTA,
         read_counts=OUTSIDER_SNIFFLES_READ_COUNTS,
         sizes=OUTSIDER_SV_SIZE,
     params:
@@ -282,6 +289,7 @@ rule extract_outsider_sniffles_sequences:
         awk 'BEGIN {{OFS="\t"}} substr($0,1,1)==">" {{split($0,a,":"); header=substr(a[1],2) OFS a[3] OFS a[4] OFS substr($0,2); next}} {{print header,length($0),$0}}' \
             {output.raw:q} | awk '/INS|DEL/' > {output.variants:q}
         python3 {params.reads_script:q} -r {output.read_counts:q} \
+            --insertion-fasta {output.insertion_fasta:q} \
             {input.bam:q} {output.variants:q} > {output.fasta:q} 2>> {log:q}
         cp {input.direct_sizes:q} {output.sizes:q}
         awk '/^>/ {{head=substr($0,2,length($0))}} /^[^>]/ && OFS="\t" {{print head,length($0)}}' \

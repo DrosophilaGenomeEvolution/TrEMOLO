@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 
-REPORT_SCHEMA_VERSION = "1.3.0"
+REPORT_SCHEMA_VERSION = "1.4.0"
 TE_INFO_COLUMNS = (
     "chrom",
     "start",
@@ -601,6 +601,29 @@ def read_benchmarks(paths: Optional[list[Path]]) -> dict:
             "sum_job_seconds": math.fsum(step["seconds"] for step in steps)}
 
 
+def read_integration_audit(path: Optional[Path]) -> dict:
+    if path is None:
+        return {"available": False}
+    with path.open(newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        if not {"event_id", "status", "reason"}.issubset(reader.fieldnames or []):
+            raise ValueError(f"invalid integration audit header: {path}")
+        rows = list(reader)
+    statuses = Counter(row["status"] for row in rows)
+    if set(statuses) - {"integrated", "rejected", "excluded"}:
+        raise ValueError(f"unknown status in integration audit: {path}")
+    return {
+        "available": True,
+        "expected_insertions": statuses["integrated"] + statuses["rejected"],
+        "integrated": statuses["integrated"],
+        "rejected": statuses["rejected"],
+        "excluded": statuses["excluded"],
+        "complete": statuses["rejected"] == 0,
+        "rejections": [{"event_id": row["event_id"], "reason": row["reason"]}
+                       for row in rows if row["status"] == "rejected"],
+    }
+
+
 def build_report_data(
     te_infos: Path,
     genome_index: Path,
@@ -619,6 +642,7 @@ def build_report_data(
     resident_thresholds: Optional[dict[str, float | int]] = None,
     call_candidates_path: Optional[Path] = None,
     benchmark_paths: Optional[list[Path]] = None,
+    integration_audit_path: Optional[Path] = None,
 ) -> dict:
     calls = read_te_infos(te_infos)
     chromosomes = read_fasta_index(genome_index)
@@ -684,6 +708,7 @@ def build_report_data(
         "ambiguous_calls": read_ambiguous_call_candidates(call_candidates_path),
         "calls": calls,
         "timings": read_benchmarks(benchmark_paths),
+        "integration": read_integration_audit(integration_audit_path),
     }
 
 
@@ -747,6 +772,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input-manifest", type=Path, required=True)
     parser.add_argument("--mapping-stats", default="")
     parser.add_argument("--sv-vcf", default="")
+    parser.add_argument("--integration-audit", default="")
     parser.add_argument("--template", type=Path, required=True)
     parser.add_argument("--style", type=Path, required=True)
     parser.add_argument("--script", type=Path, required=True)
@@ -800,6 +826,7 @@ def main() -> None:
         },
         call_candidates_path=args.te_call_candidates,
         benchmark_paths=args.benchmarks,
+        integration_audit_path=optional_path(args.integration_audit),
     )
     json_text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     source = render_source(

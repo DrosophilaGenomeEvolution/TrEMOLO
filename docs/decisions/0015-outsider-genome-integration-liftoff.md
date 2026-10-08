@@ -2,6 +2,10 @@
 
 Status: accepted during the Snakemake 5.10 migration.
 
+Sequence integration and Liftoff coordinate compatibility below are superseded
+by [0018](0018-population-genome-integration-corrections.md). The validation
+counts and byte comparisons in this document describe that earlier migration.
+
 ## Context
 
 The historical `TE_TOWARD_GENOME` rule generated two reconstructions:

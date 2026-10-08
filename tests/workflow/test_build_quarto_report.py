@@ -16,6 +16,7 @@ from build_quarto_report import (  # noqa: E402
     read_ambiguous_call_candidates,
     read_te_infos,
     read_benchmarks,
+    read_integration_audit,
     render_source,
 )
 
@@ -27,6 +28,20 @@ HEADER = (
 
 
 class BuildQuartoReportTests(unittest.TestCase):
+    def test_integration_summary_distinguishes_exclusions_and_partial_reconstruction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write(Path(directory), 'audit.tsv', 'event_id\tstatus\treason\n'
+                              'one\tintegrated\tintegrated\n'
+                              'two\trejected\tmissing_observed_sequence\n'
+                              'deletion\texcluded\tnon_insertion_event\n')
+            summary = read_integration_audit(path)
+            self.assertEqual((summary['expected_insertions'], summary['integrated'], summary['rejected'], summary['excluded']), (2, 1, 1, 1))
+            self.assertFalse(summary['complete'])
+            self.assertEqual(summary['rejections'], [{'event_id': 'two', 'reason': 'missing_observed_sequence'}])
+            path.write_text('event_id\tstatus\treason\n')
+            self.assertTrue(read_integration_audit(path)['complete'])
+            self.assertFalse(read_integration_audit(None)['available'])
+
     def write(self, root, name, content):
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)

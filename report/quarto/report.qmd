@@ -43,6 +43,12 @@ lang: en
 ```
 
 ```{=html}
+<section id="trm-integration-section" class="trm-panel" hidden>
+  <div class="trm-panel-heading"><div><p class="trm-kicker">Population genome</p><h3>OUTSIDER integration</h3></div></div>
+  <p id="trm-integration-summary"></p>
+  <p class="trm-caption trm-caption-left">Only INS events are added. Alternatives at the same site are concatenated to represent the population.</p>
+  <ul id="trm-integration-rejections" hidden></ul>
+</section>
 <div class="trm-grid trm-grid-2">
   <section class="trm-panel">
     <div class="trm-panel-heading">

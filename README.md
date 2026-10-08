@@ -220,6 +220,7 @@ CHOICE:
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles1"    # sniffles1, sniffles2; sniffles is the legacy alias
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the OUTSIDER integrated in
+        INTEGRATION_ALLOW_PARTIAL: False # fail if an eligible INS cannot be integrated
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INTERMEDIATE_FILE: True     # Conserve the intermediate analyses files to process them latter.
 
@@ -266,12 +267,21 @@ PARAMS:
 When `INTEGRATE_TE_TO_GENOME` is enabled, TrEMOLO writes both the canonical
 reconstruction (`OUTSIDER/TE_TOWARD_GENOME/PSEUDO_GENOME_TE_DB_ID.fasta`) and
 the reconstruction based on observed SV sequences (`NEO_GENOME.fasta`). The
-corresponding shifted BED files and `INTEGRATION_TE.tsv` make every inserted or
-rejected event explicit. If INSIDER is also enabled, the two flanks of each
+corresponding shifted BED files and `INTEGRATION_TE.tsv` make every inserted,
+rejected or excluded event explicit. Only INS events are added; DEL events are
+excluded because their sequence is already present in the input assembly.
+Observed sequences exclude the read flanks used for BLAST/TSD. Alternatives
+at the same site are concatenated intentionally for this population
+representation. An unresolved INS fails integration by default. Set
+`CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL: true` only to explicitly
+accept a partial reconstruction; the report shows eligible, integrated,
+rejected and excluded counts. If INSIDER is also enabled, the two flanks of each
 integrated insertion are projected to the reference with Liftoff; concordant
 calls are written to `POS_TE_OUTSIDER_ON_REF.bed`, while uncertain mappings and
 their reasons remain available in `BAD_POS_TE_LIFT.bed` and
-`OUTSIDER/INSIDER_VR/LIFT_OFF_AUDIT.tsv`.
+`OUTSIDER/INSIDER_VR/LIFT_OFF_AUDIT.tsv`. Liftoff flanks use one-based inclusive
+GFF coordinates; output BED coordinates are zero-based and half-open, with
+orientation-aware validation of the flank pairs.
 
 The refactored workflow supports two Sniffles generations. Select one in YAML:
 
