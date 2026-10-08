@@ -91,7 +91,7 @@ lang: en
 
 # Explore calls
 
-The filters below update every chart and the table. Downloading exports the current selection as a TSV file without modifying the pipeline outputs.
+The filters below update the call charts and the call table. Downloading exports the current selection as a TSV file without modifying the pipeline outputs.
 
 ```{=html}
 <section class="trm-panel trm-filter-panel">
@@ -147,6 +147,23 @@ Only reported INSIDER/OUTSIDER events with at least two distinct TE labels belon
     <tbody id="trm-ambiguous-call-table-body"></tbody>
   </table>
 </div>
+```
+
+# Execution times
+
+Durations are measured wall times for individual workflow jobs. Jobs can run concurrently: their sum is **not** the elapsed time of the whole analysis. Measurements include reused results from earlier executions when a run resumes. Report preparation and rendering are excluded.
+
+```{=html}
+<section class="trm-panel">
+  <div class="trm-panel-heading">
+    <div><p class="trm-kicker">Performance</p><h3>Duration by workflow step</h3></div>
+    <label class="trm-chart-control">Branch<select id="trm-timing-branch"></select></label>
+    <label class="trm-chart-control">Order<select id="trm-timing-order"><option value="duration">Longest first</option><option value="step">Step name</option></select></label>
+  </div>
+  <p id="trm-timing-summary" class="trm-caption trm-caption-left"></p>
+  <div id="trm-timing-chart" class="trm-chart trm-timing-chart"></div>
+  <div class="trm-toolbar"><span class="trm-spacer"></span><button id="trm-download-timings" class="trm-button" type="button">Download durations TSV</button></div>
+</section>
 ```
 
 # Evidence summaries

@@ -898,6 +898,62 @@
     applyResidentFilters();
   }
 
+  function initializeTimings() {
+    const timings = (data.timings || {}).steps || [];
+    const branch = $("trm-timing-branch");
+    const order = $("trm-timing-order");
+    if (!branch || !order) return;
+    selectOptions(branch, [...new Set(timings.map((item) => item.branch))].sort(), "All branches");
+    function selected() {
+      return timings.filter((item) => !branch.value || item.branch === branch.value).sort((a, b) =>
+        order.value === "step" ? a.step.localeCompare(b.step) : b.seconds - a.seconds || a.step.localeCompare(b.step));
+    }
+    function duration(seconds) {
+      if (seconds < 60) return `${formatDecimal.format(seconds)} s`;
+      if (seconds < 3600) return `${formatDecimal.format(seconds / 60)} min`;
+      return `${formatDecimal.format(seconds / 3600)} h`;
+    }
+    function render() {
+      const rows = selected();
+      const target = $("trm-timing-chart");
+      target.replaceChildren();
+      $("trm-timing-summary").textContent = `${rows.length} measured jobs · sum of job durations: ${duration(rows.reduce((sum, item) => sum + item.seconds, 0))}`;
+      if (!rows.length) { emptyChart(target, "No execution-time measurements available."); return; }
+      const maximum = Math.max(...rows.map((item) => item.seconds), 0.001);
+      rows.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "trm-bar-row";
+        const label = document.createElement("span");
+        label.className = "trm-bar-label";
+        label.textContent = item.step;
+        label.title = `${item.branch} · ${item.step} · measurement ${item.measurement}`;
+        const track = document.createElement("div");
+        track.className = "trm-bar-track";
+        const bar = document.createElement("span");
+        bar.className = `trm-bar ${item.branch === "INSIDER" ? "trm-bar-insider" : item.branch === "OUTSIDER" ? "trm-bar-outsider" : "trm-bar-neutral"}`;
+        bar.style.width = `${100 * item.seconds / maximum}%`;
+        bar.title = `${item.seconds} seconds`;
+        track.appendChild(bar);
+        const value = document.createElement("span");
+        value.className = "trm-bar-value";
+        value.textContent = duration(item.seconds);
+        row.append(label, track, value);
+        target.appendChild(row);
+      });
+    }
+    branch.addEventListener("change", render);
+    order.addEventListener("change", render);
+    $("trm-download-timings").addEventListener("click", () => {
+      const columns = ["step", "branch", "measurement", "seconds", "benchmark"];
+      const lines = [columns.join("\t"), ...selected().map((item) => columns.map((key) => String(item[key]).replace(/[\t\r\n]/g, " ")).join("\t"))];
+      const url = URL.createObjectURL(new Blob([lines.join("\n") + "\n"], { type: "text/tab-separated-values;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url; link.download = "TrEMOLO.execution-times.tsv"; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    render();
+  }
+
   function renderSelection() {
     renderCards();
     renderFamilyChart();
@@ -911,11 +967,12 @@
   document.title = data.report.title || document.title;
   $("trm-report-title").textContent = data.report.title || "Transposable-element landscape";
   const sourceText = (data.report.enabled_sources || []).join(" + ") || "No enabled evidence source";
-  $("trm-report-subtitle").textContent = `${sourceText} · ${data.summary.calls} legacy-compatible calls · data schema ${data.schema_version}`;
+  $("trm-report-subtitle").textContent = `${sourceText} · ${data.summary.calls} reported calls · data schema ${data.schema_version}`;
   initializeFilters();
   renderSelection();
   renderProximity();
   renderAmbiguousCalls();
   renderResidentSection();
   renderContext();
+  initializeTimings();
 })();

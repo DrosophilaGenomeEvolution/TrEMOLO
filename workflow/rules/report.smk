@@ -44,6 +44,42 @@ REPORT_SOURCE_ARGS = " ".join(
 )
 
 
+def report_benchmark_inputs(wildcards):
+    # Explicit benchmark dependencies wait for all enabled branches and exclude
+    # stale files left by previously enabled branches. Report jobs exclude themselves.
+    files = {"common.smk", "te_database.smk", "te_infos.smk"}
+    if TE_INFOS_WITH_OUTSIDER:
+        files.update({"outsider.smk", "outsider_te.smk", "outsider_frequency.smk", "outsider_tsd.smk"})
+    if TE_INFOS_WITH_INSIDER:
+        files.update({"insider.smk", "insider_tsd.smk"})
+    if TE_INFOS_WITH_INSIDER_FREQUENCY:
+        files.add("insider_frequency.smk")
+    if TE_GENOME_ENABLED:
+        files.add("te_genome.smk")
+    if OUTSIDER_INTEGRATION_ENABLED:
+        files.add("outsider_integration.smk")
+    paths = []
+    lift_rules = {"prepare_outsider_liftoff_flanks", "lift_outsider_flanks_to_reference",
+                  "summarize_outsider_liftoff", "index_outsider_integrated_genome"}
+    for rule in workflow.rules:
+        if Path(rule.snakefile).name not in files or rule.benchmark is None:
+            continue
+        if rule.name == "index_outsider_fastq" and OUTSIDER_CLIPPED_FLAG:
+            continue
+        if rule.name in lift_rules and not OUTSIDER_LIFT_ENABLED:
+            continue
+        if rule.name == "index_prepared_reference_fasta" and not (
+            TE_INFOS_WITH_INSIDER or (TE_GENOME_ENABLED and "REFERENCE" in TE_GENOME_TARGETS)
+        ):
+            continue
+        path = str(rule.benchmark)
+        if "{target}" in path:
+            paths.extend(path.format(target=target) for target in TE_GENOME_TARGETS)
+        else:
+            paths.append(path)
+    return sorted(set(paths))
+
+
 rule report:
     input:
         REPORT_HTML,
@@ -52,6 +88,7 @@ rule report:
 rule prepare_quarto_report:
     input:
         te_infos=TE_INFOS,
+        benchmarks=report_benchmark_inputs,
         te_call_candidates=TE_CALL_CANDIDATES,
         genome_index=PREPARED_GENOME_INDEX,
         manifest=REPORT_INPUT_MANIFEST,
@@ -83,6 +120,7 @@ rule prepare_quarto_report:
         mkdir -p {params.work_directory:q}/REPORT {params.log_dir:q}
         python3 {input.builder:q} \
             --te-infos {input.te_infos:q} \
+            --benchmarks {input.benchmarks:q} \
             --te-call-candidates {input.te_call_candidates:q} \
             --genome-index {input.genome_index:q} \
             --input-manifest {input.manifest:q} \

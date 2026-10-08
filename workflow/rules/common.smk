@@ -8,8 +8,8 @@ rule prepare_inputs:
         done=f"{WORKDIR}/.inputs.prepared",
         manifest=f"{WORKDIR}/input_manifest.json",
         genome=PREPARED_GENOME,
-        reference=PREPARED_REFERENCE if REFERENCE else [],
-        sample=PREPARED_SAMPLE if SAMPLE else [],
+        optional=([PREPARED_REFERENCE] if REFERENCE else [])
+                 + ([PREPARED_SAMPLE] if SAMPLE else []),
         te_database=f"{WORKDIR}/INPUT/te_database.fasta",
         te_headers=f"{WORKDIR}/INPUT/te_headers.tsv",
     params:
@@ -19,6 +19,8 @@ rule prepare_inputs:
         sample=(f"--sample {SAMPLE}" if SAMPLE else ""),
     log:
         f"{WORKDIR}/log/prepare_inputs.log",
+    benchmark:
+        f"{WORKDIR}/benchmarks/prepare_inputs.tsv",
     shell:
         """
         mkdir -p {WORKDIR}/log

@@ -130,6 +130,17 @@ snakemake --snakefile TrEMOLO/workflow/Snakefile \
 ```
 
 All four branches reuse the single normalized TE FASTA and its shared indexes.
+The CIGAR extractor schedules 10 Mb reference blocks, assigns each alignment
+to the block containing its start, and groups soft clips after ordered merging.
+This preserves IDs and evidence across block boundaries and worker counts. Set
+`PARAMS.OUTSIDER_VARIANT.TE_DETECTION.CHUNK_SIZE: 0` to process whole chromosomes.
+Worker errors and time-limit expiration fail the job without publishing partial
+outputs. INS/HARD cluster formatting retains first, singleton and final clusters;
+soft candidates are no longer discarded by the historical buffer reset. These
+corrections intentionally change calls relative to the original migration oracle.
+The optional diagnostic BLAST of all soft clips is disabled by default; enable
+`SOFT_CLIP_DIAGNOSTICS: true` to generate it.
+
 Unlike the legacy rules, they declare their intermediate outputs, do not append
 concurrently to `SV_SIZE.tsv`, and do not delete unrelated FASTA indexes. Raw
 CIGAR flank candidates are also written per chromosome before deterministic
@@ -146,7 +157,8 @@ snakemake --snakefile TrEMOLO/workflow/Snakefile \
 This target replaces the background chunk processes from `FREQUENCEv2` with a
 declared, deterministic DAG and propagates worker failures. It preserves the
 historical `FREQUENCY_TE_INS.tsv` and `FREQUENCY_TE_INS_PRECISE.tsv` bytes,
-including the current candidate-selection semantics; the known compatibility
+for identical input evidence, including the current candidate-selection semantics.
+Recovered INS/SOFT/HARD evidence changes the resulting frequency inputs; the known compatibility
 limits are recorded in
 `docs/decisions/0004-outsider-frequency-compatibility.md`.
 
@@ -160,8 +172,8 @@ snakemake --snakefile TrEMOLO/workflow/Snakefile \
 ```
 
 This target replaces the monolithic `GET_SEQ_TE` and `TSD_OUTSIDER` rules. It
-declares every sequence, table, and merged-call dependency; preserves the
-historical `ALL_FK_REPORT_FT*.bed` and `TSD_TE.tsv` bytes; and writes
+declares every sequence, table, and merged-call dependency; preserves historical `ALL_FK_REPORT_FT*.bed` and `TSD_TE.tsv` bytes
+when given identical input evidence; and writes
 `OUTSIDER/FK/TSD_FLANK_ELIGIBILITY.tsv` with one acceptance or rejection reason
 per candidate. It does not delete shared `.fai` files.
 
@@ -176,7 +188,8 @@ snakemake --snakefile TrEMOLO/workflow/Snakefile \
 ```
 
 `TE_INFOS.bed` keeps one row per detected event—including distinct TE calls at
-the same locus—and reproduces the historical 15-column table exactly. The
+the same locus—and preserves the historical 15-column schema. Corrected alignment candidates
+change the reported OUTSIDER calls; INSIDER fixture calls remain unchanged. The
 compatibility choices and population-model boundary are documented in
 `docs/decisions/0007-insider-tsd-te-infos-compatibility.md`.
 
@@ -209,7 +222,13 @@ type, chromosome, family, TSD and frequency filters; genome and family views;
 the complete call table; and an explicitly provisional nearby-call view. It
 also exposes ambiguous variable-call candidates, the resident-copy tiers, a
 browser-only threshold calibration view, and all alternative TE assignments
-when `TE_GENOME` is enabled. It does not use R, `curl`, a web server, or external
+when `TE_GENOME` is enabled. A separate execution-time view displays measured job durations from declared
+Snakemake benchmark dependencies, with branch filtering, duration/name ordering
+and TSV export. The sum of concurrent job durations is not whole-run elapsed
+time; resumed runs can include earlier measurements. Report generation itself
+is excluded.
+
+It does not use R, `curl`, a web server, or external
 JavaScript/CDN assets.
 
 The refactored container definition pins Quarto 1.9.36. The previously built
@@ -218,7 +237,16 @@ but the source must be rendered by a host Quarto installation or by a rebuilt
 container. Configure a non-default executable with `TOOLS.QUARTO`; customize
 the report with `REPORT.TITLE`, `REPORT.AUTHOR`, and `REPORT.LOCUS_WINDOW`.
 
-Migration equivalence against a completed legacy work directory is checked by:
+Corrected candidate provenance and complete cluster emission are checked by:
+
+```bash
+python3 TrEMOLO/tests/regression/check_alignment_candidates.py /path/to/new-output
+python3 TrEMOLO/tests/regression/check_quarto_report.py /path/to/new-output
+```
+
+The original migration equivalence checker below remains a historical comparator;
+its exact OUTSIDER/final-table pins intentionally differ after the candidate
+corrections described in `docs/decisions/0017-alignment-candidates-and-timings.md`:
 
 ```bash
 python3 TrEMOLO/tests/regression/check_variant_calling.py \

@@ -5,6 +5,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import re
 from collections import Counter
 from pathlib import Path
@@ -105,10 +106,26 @@ def main():
         "trm-frequency-position-legend",
         "trm-call-table-body",
         "trm-proximity-table-body",
+        "trm-timing-chart",
+        "trm-timing-branch",
+        "trm-download-timings",
     )
     for identifier in required_ids:
         if f'id="{identifier}"' not in html:
             raise SystemExit(f"rendered HTML lacks {identifier}")
+
+    timings = data.get("timings", {})
+    steps = timings.get("steps", [])
+    for step in steps:
+        path = args.work_directory / "benchmarks" / step["benchmark"]
+        with path.open() as benchmark_source:
+            measurements = list(csv.DictReader(benchmark_source, delimiter="\t"))
+        if float(measurements[step["measurement"]-1]["s"]) != step["seconds"]:
+            raise SystemExit(f"report duration mismatch: {path}")
+    if not math.isclose(timings.get("sum_job_seconds", -1), math.fsum(step["seconds"] for step in steps), rel_tol=1e-12, abs_tol=1e-9):
+        raise SystemExit("report job-duration sum mismatch")
+    if (args.work_directory / "benchmarks").is_dir() and not steps:
+        raise SystemExit("report omitted available workflow benchmarks")
 
     candidates_path = args.work_directory / "TE_CALL_CANDIDATES.tsv"
     ambiguous = data.get("ambiguous_calls", {})

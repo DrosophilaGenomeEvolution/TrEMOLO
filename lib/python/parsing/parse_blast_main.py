@@ -169,7 +169,7 @@ print("[" + str(sys.argv[0]) + "] : KEEP ONLY TE on DB, NUMBER :", len(df.values
 
 print("[" + str(sys.argv[0]) + "] : FILTER BEST bitscore...")
 #keep the TE with the highest score
-best_score_match = []
+best_score_match = set()
 best_score_match_index = []
 best_score_match_index_comb = []
 
@@ -179,9 +179,7 @@ size_df    = len(df.values)
 ##TODO add sort by length maybe
 dfs = df.sort_values(by=["bitscore"], ascending=False)
 df["index"] = [0] * len(df.values)
-for index, row in enumerate(dfs.values):
-    
-    qseqid = dfs["qseqid"].values[index]
+for index_sort, qseqid in zip(dfs.index, dfs["qseqid"]):
     ID     = qseqid.split(":")[4]
 
     #ex 2R:<INS>:12536774:12536775:TrEMOLO.INS.2785:57:IMPRECISE:25:+ to 2R:<INS>:12536774:12536775:TrEMOLO.INS.2785:57:IMPRECISE
@@ -189,19 +187,18 @@ for index, row in enumerate(dfs.values):
     
     if chaine not in best_score_match :
 
-        index_sort = dfs.index.values[index]
-        best_score_match.append(chaine)
+        best_score_match.add(chaine)
 
-        sseqid       = df.iloc[index_sort]["sseqid"]
-        qseqid       = df.iloc[index_sort]["qseqid"]
+        sseqid       = df.at[index_sort, "sseqid"]
+        qseqid       = df.at[index_sort, "qseqid"]
 
-        sstart       = int(df.iloc[index_sort]["sstart"])
-        send         = int(df.iloc[index_sort]["send"])
+        sstart       = int(df.at[index_sort, "sstart"])
+        send         = int(df.at[index_sort, "send"])
 
         if send < sstart :
-            df.iloc[index_sort, df.columns.get_loc("qseqid")] = df.iloc[index_sort]["qseqid"] + ":" + "-"
+            df.at[index_sort, "qseqid"] = df.at[index_sort, "qseqid"] + ":" + "-"
         else :
-            df.iloc[index_sort, df.columns.get_loc("qseqid")] = df.iloc[index_sort]["qseqid"] + ":" + "+"
+            df.at[index_sort, "qseqid"] = df.at[index_sort, "qseqid"] + ":" + "+"
 
         #GET RS
         info_qseqid  = qseqid.split(":")
@@ -215,12 +212,12 @@ for index, row in enumerate(dfs.values):
             
             best_score_match_index_comb.append(index_sort)
             i = index_sort + 1
-            while i < size_df and qseqid == df.iloc[i]["qseqid"] and sseqid == df.iloc[i]["sseqid"]:
+            while i < size_df and qseqid == df.at[i, "qseqid"] and sseqid == df.at[i, "sseqid"]:
 
                 if send < sstart :
-                    df.iloc[i, df.columns.get_loc("qseqid")] = df.iloc[i]["qseqid"] + ":" + "-"
+                    df.at[i, "qseqid"] = df.at[i, "qseqid"] + ":" + "-"
                 else :
-                    df.iloc[i, df.columns.get_loc("qseqid")] = df.iloc[i]["qseqid"] + ":" + "+"
+                    df.at[i, "qseqid"] = df.at[i, "qseqid"] + ":" + "+"
 
                 df.loc[i, "index"] = i
                 best_score_match_index_comb.append(i)

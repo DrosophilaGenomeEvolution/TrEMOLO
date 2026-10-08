@@ -185,3 +185,9 @@ body {
   .trm-resident-controls { grid-template-columns: 1fr; }
   .trm-resident-controls .trm-button { grid-column: auto; }
 }
+
+.trm-timing-chart .trm-bar-row { grid-template-columns: minmax(12rem, 28rem) 1fr 7rem; }
+.trm-timing-chart .trm-bar-value { white-space: nowrap; }
+@media (max-width: 640px) {
+  .trm-timing-chart .trm-bar-row { grid-template-columns: minmax(7rem, 1fr) 1fr 5rem; }
+}

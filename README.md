@@ -323,8 +323,11 @@ snakemake --snakefile /path/to/TrEMOLO/workflow/Snakefile \
 
 The supported entry point on this branch is `workflow/Snakefile`. See the
 [clean migration validation](docs/migration-validation.md) for the tested
-environment and results. The historical
-`run.snk` remains available for reproducing legacy runs. Paths in the YAML file
+environment and results. Subsequent
+[alignment-candidate corrections and timing plots](docs/decisions/0017-alignment-candidates-and-timings.md)
+recover previously dropped OUTSIDER evidence. Reproducing the exact historical
+results requires the earlier checkout (`5d803ba`); `run.snk` shares parsing scripts
+with the migrated workflow. Paths in the YAML file
 are resolved from the current working directory; the bundled example below is
 run from the parent directory of `TrEMOLO`. Use a fresh `DATA.WORK_DIRECTORY`
 when switching from the legacy workflow.

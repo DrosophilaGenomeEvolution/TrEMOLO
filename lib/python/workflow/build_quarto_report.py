@@ -7,6 +7,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import os
 import re
 import tempfile
@@ -15,7 +16,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 
-REPORT_SCHEMA_VERSION = "1.2.0"
+REPORT_SCHEMA_VERSION = "1.3.0"
 TE_INFO_COLUMNS = (
     "chrom",
     "start",
@@ -572,6 +573,34 @@ def proximity_groups(calls: list[dict], window: int) -> list[dict]:
     return rows
 
 
+def read_benchmarks(paths: Optional[list[Path]]) -> dict:
+    """Read measured job wall times, never interpreting their sum as elapsed run time."""
+    steps = []
+    for path in paths or []:
+        with path.open() as source:
+            rows = list(csv.DictReader(source, delimiter="\t"))
+        if not rows or "s" not in rows[0]:
+            raise ValueError(f"{path}: missing Snakemake benchmark seconds")
+        for number, row in enumerate(rows, 1):
+            seconds = float(row["s"])
+            if not math.isfinite(seconds) or seconds < 0:
+                raise ValueError(f"{path}: invalid benchmark duration")
+            name = path.stem
+            if name.startswith("outsider_") or name in ("minimap2_index", "minimap2_mapping", "samtools", "sniffles"):
+                branch = "OUTSIDER"
+            elif name.startswith("insider_"):
+                branch = "INSIDER"
+            elif name.startswith("te_genome_"):
+                branch = "TE_GENOME"
+            else:
+                branch = "Shared"
+            steps.append({"step": name, "branch": branch, "measurement": number,
+                          "seconds": seconds, "benchmark": path.name})
+    steps.sort(key=lambda item: (-item["seconds"], item["step"], item["measurement"]))
+    return {"available": bool(steps), "steps": steps,
+            "sum_job_seconds": math.fsum(step["seconds"] for step in steps)}
+
+
 def build_report_data(
     te_infos: Path,
     genome_index: Path,
@@ -589,6 +618,7 @@ def build_report_data(
     resident_relation_paths: Optional[list[Path]] = None,
     resident_thresholds: Optional[dict[str, float | int]] = None,
     call_candidates_path: Optional[Path] = None,
+    benchmark_paths: Optional[list[Path]] = None,
 ) -> dict:
     calls = read_te_infos(te_infos)
     chromosomes = read_fasta_index(genome_index)
@@ -653,6 +683,7 @@ def build_report_data(
         ),
         "ambiguous_calls": read_ambiguous_call_candidates(call_candidates_path),
         "calls": calls,
+        "timings": read_benchmarks(benchmark_paths),
     }
 
 
@@ -736,6 +767,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resident-high-confidence-pident", type=float, default=80.0)
     parser.add_argument("--resident-partial-coverage", type=float, default=20.0)
     parser.add_argument("--te-call-candidates", type=Path)
+    parser.add_argument("--benchmarks", type=Path, nargs="*", default=[])
     args = parser.parse_args()
     if args.locus_window < 0:
         parser.error("--locus-window must be non-negative")
@@ -767,6 +799,7 @@ def main() -> None:
             "partial_coverage": args.resident_partial_coverage,
         },
         call_candidates_path=args.te_call_candidates,
+        benchmark_paths=args.benchmarks,
     )
     json_text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     source = render_source(

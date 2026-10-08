@@ -1,7 +1,3 @@
-import os
-import sys
-import pandas as pd
-import linecache
 import argparse
 
 
@@ -37,6 +33,17 @@ while line :
 
 fil_index.close()
 
+# Build byte offsets, retaining only read names rather than the entire FASTA.
+sequence_offsets = {}
+with open(name_fil_fasta, "rb") as source:
+    while True:
+        header = source.readline()
+        if not header:
+            break
+        if header.startswith(b">"):
+            sequence_offsets[header[1:].strip().decode()] = source.tell()
+fasta_source = open(name_fil_fasta, "rb")
+
 #GET SEQ
 line = fil_hard.readline()
 while line :
@@ -51,8 +58,9 @@ while line :
         #print(id_reads, str(size_hard), str(side))
         num_line = int(dico_index_fasta[id_reads])
         #print("line:", num_line)
-        if linecache.getline(name_fil_fasta, num_line).strip()[1:] == id_reads :
-            seq = linecache.getline(name_fil_fasta, num_line + 1).strip()
+        if id_reads in sequence_offsets:
+            fasta_source.seek(sequence_offsets[id_reads])
+            seq = fasta_source.readline().strip().decode()
             if not max_size :
                 if side == "L" :
                     #print("side:", str(side), "seq:", seq[:size_hard])
@@ -82,3 +90,5 @@ while line :
 fil_hard.close()
 
 
+
+fasta_source.close()

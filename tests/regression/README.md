@@ -1,5 +1,19 @@
 # Historical `work_test` regression
 
+After the 2026-10-07 alignment-candidate corrections, use the provenance and
+report checks on new workflow outputs:
+
+```bash
+apptainer exec /path/to/TrEMOLO.sif python3 tests/regression/check_alignment_candidates.py /path/to/output
+python3 tests/regression/check_quarto_report.py /path/to/output
+```
+
+Pass `--no-clipped` to the first check when clipped detection is disabled.
+The exact `work_test` checks described below remain historical migration checks.
+They intentionally differ for corrected INS/SOFT/HARD outputs and downstream
+OUTSIDER calls; do not update their pinned historical checksums to conceal that
+scientific change. See decision 0017.
+
 This test treats `../work_test` from the `master` branch as the first complete
 TrEMOLO regression oracle without
 copying its 712 MB of generated files into the repository.

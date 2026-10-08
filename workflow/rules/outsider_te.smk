@@ -85,6 +85,12 @@ OUTSIDER_GET_SEQ_OPTIONS = OUTSIDER_TE_PARAMS.get("GET_SEQ_REPORT_OPTION", "-m 1
 OUTSIDER_BLAST_FILTER = OUTSIDER_PARAMS.get(
     "PARS_BLN_OPTION", "--min-size-percent 90 --min-pident 90 -k 'INS|DEL'"
 )
+OUTSIDER_SOFT_DIAGNOSTICS = OUTSIDER_TE_PARAMS.get("SOFT_CLIP_DIAGNOSTICS", False)
+OUTSIDER_CHUNK_SIZE = OUTSIDER_TE_PARAMS.get("CHUNK_SIZE", 10000000)
+if type(OUTSIDER_SOFT_DIAGNOSTICS) is not bool:
+    raise ValueError("PARAMS.OUTSIDER_VARIANT.TE_DETECTION.SOFT_CLIP_DIAGNOSTICS must be a boolean")
+if type(OUTSIDER_CHUNK_SIZE) is not int or OUTSIDER_CHUNK_SIZE < 0:
+    raise ValueError("PARAMS.OUTSIDER_VARIANT.TE_DETECTION.CHUNK_SIZE must be a non-negative integer")
 OUTSIDER_CLIPPED_FLAG = (
     "" if OUTSIDER_CHOICES.get("CLIPPED_READS", False) else "--no-clipped"
 )
@@ -106,6 +112,7 @@ rule find_outsider_alignment_candidates:
     input:
         bam=MAPPING_BAM,
         bai=MAPPING_BAM + ".bai",
+        script=str(PIPELINE_ROOT / "lib/python/parsing/find_all_type_ins.py"),
     output:
         insertions=OUTSIDER_INS_RAW,
         tsd=OUTSIDER_INS_TSD,
@@ -117,6 +124,7 @@ rule find_outsider_alignment_candidates:
         clipped=OUTSIDER_CLIPPED_FLAG,
         flank=OUTSIDER_SIZE_FLANK,
         time_limit=OUTSIDER_TIME_LIMIT,
+        chunk_size=OUTSIDER_CHUNK_SIZE,
     threads: THREADS
     resources:
         mem_mb=4096,
@@ -133,11 +141,12 @@ rule find_outsider_alignment_candidates:
             --flank-size {params.flank} \
             --threads {threads} \
             --time-limit {params.time_limit} \
+            --chunk-size {params.chunk_size} \
             --output-soft {output.soft:q} \
             --output-hard {output.hard:q} \
             --output-ins {output.insertions:q} {params.clipped} \
             > {log:q} 2>&1
-        test -s {output.insertions:q}
+        test -f {output.insertions:q}
         touch {output.soft:q} {output.soft_all:q} {output.hard:q}
         """
 
@@ -145,6 +154,7 @@ rule find_outsider_alignment_candidates:
 rule cluster_outsider_alignment_insertions:
     input:
         insertions=OUTSIDER_INS_RAW,
+        script=str(PIPELINE_ROOT / "lib/python/workflow/cluster_alignment_candidates.py"),
     output:
         clustered=OUTSIDER_INS_CLUSTERED,
         fasta=OUTSIDER_INS_FASTA,
@@ -162,46 +172,9 @@ rule cluster_outsider_alignment_insertions:
         set -euo pipefail
         bedtools sort -i {input.insertions:q} | bedtools cluster -d 50 \
             > {output.clustered:q} 2> {log:q}
-        : > {output.read_positions:q}
-        awk -v FILE_RD_NUM={output.read_positions:q} '
-            BEGIN {{clust = 0}}
-            {{
-                if (clust == 0) {{
-                    chrom=$1; start=$2; end=$3; clust=$NF;
-                    dic_clust[clust][1]["header"]=">"chrom":<INS>:"start":"end":TrEMOLO.INS."clust;
-                    dic_clust[clust][1]["seq"]=$5;
-                    dic_clust[clust][1]["RS"]=1;
-                    dic_clust[clust][1]["READ"]=$4;
-                }} else if (clust != $NF) {{
-                    chrom=$1; start=$2; end=$3;
-                    for (i=1; i<dic_clust[clust][1]["RS"]+1; i++) {{
-                        print dic_clust[clust][i]["header"]":"dic_clust[clust][1]["RS"]":IMPRECISE:"i;
-                        print dic_clust[clust][i]["seq"];
-                    }}
-                    clust=$NF;
-                    dic_clust[clust][1]["header"]=">"chrom":<INS>:"start":"end":TrEMOLO.INS."clust;
-                    dic_clust[clust][1]["seq"]=$5;
-                    dic_clust[clust][1]["RS"]=1;
-                    dic_clust[clust][1]["READ"]=$4;
-                    print chrom":<INS>:"start":"end":TrEMOLO.INS."clust":1:"dic_clust[clust][1]["READ"]":"$7":"$8":"($7+$8) >> FILE_RD_NUM;
-                }} else {{
-                    present=0;
-                    for (i=1; i<dic_clust[clust][1]["RS"]+1; i++) {{
-                        if (dic_clust[clust][i]["READ"] == $4) {{present=1; i=dic_clust[clust][1]["RS"]+1}}
-                    }}
-                    if (present == 0) {{
-                        dic_clust[clust][1]["RS"]+=1;
-                        n=dic_clust[clust][1]["RS"];
-                        dic_clust[clust][n]["READ"]=$4;
-                        dic_clust[clust][n]["header"]=">"chrom":<INS>:"start":"end":TrEMOLO.INS."clust;
-                        dic_clust[clust][n]["seq"]=$5;
-                        print chrom":<INS>:"start":"end":TrEMOLO.INS."clust":"n":"dic_clust[clust][n]["READ"]":"$7":"$8":"($7+$8) >> FILE_RD_NUM;
-                    }}
-                }}
-            }}' {output.clustered:q} > {output.fasta:q}
-        awk '/^>/ {{head=substr($0,2,length($0))}} /^[^>]/ && OFS="\t" {{print head,length($0)}}' \
-            {output.fasta:q} > {output.sizes:q}
-        test -s {output.fasta:q}
+        python3 {input.script:q} ins --input {output.clustered:q} \
+            --fasta {output.fasta:q} --positions {output.read_positions:q} \
+            --sizes {output.sizes:q} >> {log:q} 2>&1
         """
 
 
@@ -223,9 +196,14 @@ rule blast_outsider_alignment_insertions:
         f"{WORKDIR}/benchmarks/outsider_blast_alignment_insertions.tsv",
     shell:
         """
-        blastn -num_threads {threads} -db {input.database:q} \
-            -query {input.query:q} -outfmt 6 -out {output.blast:q} \
-            > {log:q} 2>&1
+        if test -s {input.query:q}; then
+            blastn -num_threads {threads} -db {input.database:q} \
+                -query {input.query:q} -outfmt 6 -out {output.blast:q} \
+                > {log:q} 2>&1
+        else
+            : > {output.blast:q}
+            printf 'No alignment insertion sequences to align.\n' > {log:q}
+        fi
         """
 
 
@@ -233,6 +211,7 @@ rule classify_outsider_alignment_insertions:
     input:
         blast=OUTSIDER_INS_BLAST,
         database_index=TE_FASTA_INDEX,
+        script=str(PIPELINE_ROOT / "lib/python/parsing/parse_blast_main.py"),
     output:
         calls=OUTSIDER_INS_CSV,
         combined=OUTSIDER_INS_COMBINE,
@@ -260,7 +239,7 @@ rule classify_outsider_alignment_insertions:
             {output.calls:q} > {output.bed:q}
         awk 'NR>1 {{split($2,a,":"); if (a[2]=="<INS>") print a[5]}}' \
             {output.combined:q} > {output.ids:q}
-        grep -w -f {output.ids:q} {input.blast:q} \
+        (grep -w -f {output.ids:q} {input.blast:q} || test "$?" -eq 1) \
             | awk '{{print $1":"$2}}' | sort -u \
             | awk -F ':' '{{print $5":"$9}}' | sort | uniq -c \
             | awk 'OFS="\t" {{print $2,$1}}' > {output.read_counts:q}
@@ -447,6 +426,8 @@ rule blast_outsider_soft_clipped_sequences:
     output:
         blast=OUTSIDER_SOFT_BLAST,
         all_blast=OUTSIDER_SOFT_ALL_BLAST,
+    params:
+        diagnostics=int(bool(OUTSIDER_SOFT_DIAGNOSTICS)),
     threads: THREADS
     resources:
         mem_mb=2048,
@@ -464,7 +445,7 @@ rule blast_outsider_soft_clipped_sequences:
                 -query {input.fasta:q} -outfmt 6 -out {output.blast:q} \
                 > {log:q} 2>&1
         fi
-        if test -s {input.all_fasta:q}; then
+        if [ {params.diagnostics} -eq 1 ] && test -s {input.all_fasta:q}; then
             blastn -num_threads {threads} -db {input.database:q} \
                 -query {input.all_fasta:q} -outfmt 6 -out {output.all_blast:q} \
                 >> {log:q} 2>&1
@@ -533,7 +514,7 @@ rule extract_outsider_hard_clipped_reads:
     input:
         candidates=OUTSIDER_HARD_VCF,
         reads=PREPARED_SAMPLE,
-        reads_index=OUTSIDER_READS_INDEX,
+        reads_index=OUTSIDER_READS_INDEX if not OUTSIDER_CLIPPED_FLAG else [],
     output:
         ids=OUTSIDER_HARD_IDS,
         fastq=OUTSIDER_HARD_FASTQ,
@@ -561,14 +542,13 @@ rule prepare_outsider_hard_clipped_sequences:
         candidates=OUTSIDER_HARD_VCF,
         fastq=OUTSIDER_HARD_FASTQ,
         database=PREPARED_TE_DATABASE,
+        cluster_script=str(PIPELINE_ROOT / "lib/python/workflow/cluster_alignment_candidates.py"),
+        extract_script=str(PIPELINE_ROOT / "lib/python/workflow/prepare_hard_clip_sequences.py"),
     output:
         reads_fasta=OUTSIDER_HARD_READS_FASTA,
         reads_index=OUTSIDER_HARD_READS_FASTA_INDEX,
         variants=OUTSIDER_HARD_RAW_BED,
         fasta=OUTSIDER_HARD_FASTA,
-    params:
-        convert_script=str(PIPELINE_ROOT / "lib/python/format_files/fastq_to_fasta.py"),
-        extract_script=str(PIPELINE_ROOT / "lib/python/parsing/get_seq_hard.py"),
     threads: 1
     resources:
         mem_mb=4096,
@@ -584,27 +564,16 @@ rule prepare_outsider_hard_clipped_sequences:
         : > {output.reads_index:q}
         : > {output.variants:q}
         : > {output.fasta:q}
-        if test -s {input.fastq:q}; then
-            python3 {params.convert_script:q} {input.fastq:q} {output.reads_fasta:q} \
-                > {log:q} 2>&1
-            grep -n '>' {output.reads_fasta:q} | tr -d '>' > {output.reads_index:q}
-        fi
-        if test -s {output.reads_index:q} && test -s {input.candidates:q}; then
-            python3 {params.extract_script:q} -s "$max_size" {output.reads_index:q} \
-                {output.reads_fasta:q} {input.candidates:q} > {output.variants:q} \
-                2>> {log:q}
-        fi
+        python3 {input.extract_script:q} --candidates {input.candidates:q} \
+            --fastq {input.fastq:q} --reads-fasta {output.reads_fasta:q} \
+            --reads-index {output.reads_index:q} --variants {output.variants:q} \
+            --max-size "$max_size" > {log:q} 2>&1
         if test -s {output.variants:q}; then
             bedtools sort -i {output.variants:q} | bedtools cluster -d 100 \
-                | awk 'BEGIN {{count=0; id=""}} OFS=":" {{
-                    if (id != $8) {{
-                        if (NR>1) for (i=1; i<count+1; i++) {{print tab_head[1],count,"IMPRECISE",(i-1); print tab_seq[i]}}
-                        id=$8; count=0; delete tab_head; delete tab_seq;
-                    }} else {{
-                        tab_head[count+1]=">"$1":<HARD>:"$2":"$3":HARD."id"."$6;
-                        tab_seq[count+1]=$5; count+=1;
-                    }}
-                }}' > {output.fasta:q} 2>> {log:q}
+                > {output.variants:q}.clustered
+            python3 {input.cluster_script:q} hard --input {output.variants:q}.clustered \
+                --fasta {output.fasta:q} >> {log:q} 2>&1
+            rm -f {output.variants:q}.clustered
         fi
         """
 

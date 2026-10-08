@@ -15,6 +15,7 @@ from build_quarto_report import (  # noqa: E402
     proximity_groups,
     read_ambiguous_call_candidates,
     read_te_infos,
+    read_benchmarks,
     render_source,
 )
 
@@ -61,6 +62,26 @@ class BuildQuartoReportTests(unittest.TestCase):
             "chr1\t200\t2\tN\t<DEL>\t.\tPASS\tSVTYPE=DEL;END=220\n",
         )
         return te_infos, index, manifest, mapping, vcf
+
+    def test_benchmark_durations_units_repeats_and_branch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = [self.write(root, "outsider_blast_alignment_insertions.tsv", "s\th:m:s\n120.5\t0:02:00\n60\t0:01:00\n"),
+                     self.write(root, "insider_minimap2.tsv", "s\th:m:s\n2\t0:00:02\n")]
+            timings = read_benchmarks(paths)
+            self.assertEqual(timings["sum_job_seconds"], 182.5)
+            self.assertEqual([row["seconds"] for row in timings["steps"]], [120.5, 60, 2])
+            self.assertEqual(timings["steps"][1]["measurement"], 2)
+            self.assertEqual(timings["steps"][2]["branch"], "INSIDER")
+            self.assertFalse(read_benchmarks([])["available"])
+
+    def test_invalid_benchmark_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for content in ("s\nnan\n", "s\n-1\n", "wrong\n2\n", "s\n"):
+                path = self.write(root, "invalid.tsv", content)
+                with self.assertRaises(ValueError):
+                    read_benchmarks([path])
 
     def test_builds_scientific_summaries_without_changing_calls(self):
         with tempfile.TemporaryDirectory() as directory:
