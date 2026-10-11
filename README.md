@@ -352,6 +352,9 @@ outputs are available under `PUBLIC/` with the same relative branch paths
 The branch source files retain prepared identifiers for calculations.
 See the [name restoration contract](docs/decisions/0020-original-te-names.md)
 for the export manifest and TSV quoting conventions.
+The [frequency table documentation](docs/frequency-tables.md) describes all
+11 columns, the support correction, and INS/DEL interpretation. A copy is
+written next to each set of frequency tables as `README.md`.
 
 For running the bundled fixture
 

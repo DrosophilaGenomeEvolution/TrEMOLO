@@ -159,3 +159,10 @@ normalized consensus DNA, coordinates, identifiers and support with the native
 VCF without expecting Sniffles 1 call counts. To exercise the no-call branch,
 set `PARAMS.OUTSIDER_VARIANT.SNIFFLES.MIN_SUPPORT: 1000000` in a separate run
 and pass `--expect-empty` to the first check. Other TE evidence remains enabled.
+
+The migrated OUTSIDER frequency tables now have an eleven-column header;
+frequency checks compare data rows after removing that exact header. TSD
+candidate selection no longer preserves historical row drops or singleton
+suppression. Historical TSD byte oracles describe the earlier compatibility
+stage; see [decision 0021](../../docs/decisions/0021-tsd-selection-and-frequency-headers.md)
+for current validation and intentional differences.

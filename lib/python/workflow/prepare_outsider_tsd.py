@@ -6,11 +6,8 @@ inputs and outputs.  The final ``ALL_FK_REPORT_FT*.bed`` files intentionally
 retain the legacy layout (including its 11-base left read flank when the
 configured flank size is 10), so that the existing TSD caller can be reused.
 
-Two historical selection quirks are also retained for regression
-compatibility: the first direct-insertion row matching ``MERGE_TE_ALL.bed`` is
-discarded, followed by the first row of the combined Sniffles/direct candidate
-list.  They are isolated in :func:`select_legacy_candidates` and can therefore
-be removed deliberately in a later data-model migration.
+All selected Sniffles and retained direct-insertion candidates are kept,
+including the first record and singleton candidate sets.
 """
 
 from __future__ import print_function
@@ -108,13 +105,6 @@ def read_rows(path, skip_header=False):
     return rows[1:] if skip_header and rows else rows
 
 
-def whole_word_match(text, pattern):
-    """Implement the relevant ``grep -w`` behaviour used by the old rule."""
-
-    expression = r"(?<![A-Za-z0-9_]){}(?![A-Za-z0-9_])".format(re.escape(pattern))
-    return re.search(expression, text) is not None
-
-
 def event_id(qseqid):
     """Extract a Sniffles/TrEMOLO event identifier from a query name."""
 
@@ -128,14 +118,14 @@ def strip_orientation(qseqid):
     return re.sub(r":[+-]", "", qseqid)
 
 
-def select_legacy_candidates(
+def select_candidates(
     sniffles_filtered,
     sniffles_combine,
     merged_bed,
     direct_calls,
     direct_combine,
 ):
-    """Select candidate rows while preserving the two legacy row drops."""
+    """Select every eligible row using exact query/event membership."""
 
     sniffles_ids = [
         row[1]
@@ -143,38 +133,26 @@ def select_legacy_candidates(
         if len(row) > 1
     ]
 
-    merged_ids = []
+    merged_ids = set()
     for row in read_rows(merged_bed):
         if len(row) > 3:
             name_fields = row[3].split("|", 1)
             if len(name_fields) == 2:
-                merged_ids.append(name_fields[1])
+                merged_ids.add(name_fields[1])
 
-    # ``grep -w -f merged_ids INS_TREMOLO.csv | awk 'NR>1 {print $2}'``:
-    # grep does not select the CSV header, hence NR>1 drops a real candidate.
-    matched_direct = []
-    for row in read_rows(direct_calls, skip_header=True):
-        raw_line = "\t".join(row)
-        if any(whole_word_match(raw_line, identifier) for identifier in merged_ids):
-            matched_direct.append(row)
-    direct_ids = [row[1] for row in matched_direct[1:] if len(row) > 1]
+    direct_ids = [row[1] for row in read_rows(direct_calls, skip_header=True)
+                  if len(row) > 1 and event_id(row[1]) in merged_ids]
 
-    selected_ids = set(sniffles_ids + direct_ids)
+    selected_ids = {"sniffles": set(sniffles_ids), "direct": set(direct_ids)}
     combined = []
     for source, path in (
         ("sniffles", sniffles_combine),
         ("direct", direct_combine),
     ):
         for row in read_rows(path, skip_header=True):
-            if len(row) > 1 and row[1] in selected_ids:
+            if len(row) > 1 and row[1] in selected_ids[source]:
                 combined.append((source, row))
 
-    # The generated tmp_combine.csv had no header, but the old awk used NR>1.
-    combined = combined[1:]
-    # The following shell guard required more than one surviving line before
-    # creating tmp_TE_all.csv.  This odd minimum is part of legacy mode too.
-    if len(combined) <= 1:
-        combined = []
     candidates = []
     for source, row in combined:
         if len(row) < 9:
@@ -403,7 +381,7 @@ def prepare_with_genome(args, genome_fasta):
         query_sequences[name] = sequence
     declared_sizes = read_declared_sizes(args.sequence_sizes)
 
-    candidates = select_legacy_candidates(
+    candidates = select_candidates(
         args.sniffles_calls,
         args.sniffles_combined,
         args.merged_bed,

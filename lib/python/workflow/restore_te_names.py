@@ -34,7 +34,7 @@ def publish(source, destination, kind, names):
     os.close(descriptor)
     changed = 0
     try:
-        if all(key == value for key, value in names.items()):
+        if kind == "copy" or all(key == value for key, value in names.items()):
             shutil.copyfile(str(source), temporary)
         else:
             with source.open(newline="") as reader_handle, open(temporary, "w", newline="") as writer_handle:

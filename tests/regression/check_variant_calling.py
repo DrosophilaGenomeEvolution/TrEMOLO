@@ -8,6 +8,20 @@ from collections import Counter
 import csv
 import hashlib
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "lib/python/workflow"))
+from summarize_outsider_frequency import FREQUENCY_COLUMNS
+
+
+def frequency_bytes(path):
+    data = path.read_bytes()
+    header = ("\t".join(FREQUENCY_COLUMNS) + "\n").encode()
+    return data[len(header):] if data.startswith(header) else data
+
+
+def outsider_frequency_lines(path):
+    return frequency_bytes(path).decode().splitlines()
 
 
 INSIDER_FILES = (
@@ -531,13 +545,15 @@ def main() -> int:
         new = args.migrated / relative
         if not old.is_file() or not new.is_file():
             errors.append(f"missing OUTSIDER frequency output: {relative}")
-        elif digest(old) != digest(new):
+        elif (frequency_bytes(old) != frequency_bytes(new) if relative.endswith(("FREQUENCY_TE_INS.tsv", "FREQUENCY_TE_INS_PRECISE.tsv"))
+              else digest(old) != digest(new)):
             errors.append(f"OUTSIDER frequency output differs: {relative}")
 
     for relative, expected_count in OUTSIDER_FREQUENCY_EXPECTED_COUNTS.items():
         path = args.migrated / relative
         if path.is_file():
-            actual_count = sum(1 for _ in path.open("rb"))
+            actual_count = (len(outsider_frequency_lines(path)) if relative.endswith(("FREQUENCY_TE_INS.tsv", "FREQUENCY_TE_INS_PRECISE.tsv"))
+                            else sum(1 for _ in path.open("rb")))
             if actual_count != expected_count:
                 errors.append(
                     f"OUTSIDER frequency line count differs: {relative} "
@@ -594,7 +610,7 @@ def main() -> int:
     frequency_types = Counter()
     frequency_sources = Counter()
     if frequency.is_file():
-        for row in frequency.read_text().splitlines():
+        for row in outsider_frequency_lines(frequency):
             fields = row.split("\t")
             if len(fields) < 11:
                 errors.append("malformed OUTSIDER frequency row")
@@ -631,7 +647,7 @@ def main() -> int:
     precise_ids = []
     precise_types = Counter()
     if precise_frequency.is_file():
-        for row in precise_frequency.read_text().splitlines():
+        for row in outsider_frequency_lines(precise_frequency):
             fields = row.split("\t")
             if len(fields) < 11:
                 errors.append("malformed OUTSIDER precise-frequency row")
@@ -645,7 +661,7 @@ def main() -> int:
             )
         frequency_ins_ids = {
             row.split("\t")[1]
-            for row in frequency.read_text().splitlines()
+            for row in outsider_frequency_lines(frequency)
             if len(row.split("\t")) >= 11 and row.split("\t")[10] == "INS"
         } if frequency.is_file() else set()
         if frequency_ins_ids and set(precise_ids) != frequency_ins_ids:

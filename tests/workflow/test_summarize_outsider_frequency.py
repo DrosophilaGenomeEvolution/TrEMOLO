@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "lib/python/workflow"))
 from summarize_outsider_frequency import (  # noqa: E402
+    FREQUENCY_COLUMNS,
     concatenate_support,
     main,
     precise_rows,
@@ -192,7 +193,7 @@ class SupportAndCliTests(unittest.TestCase):
                 combined.read_bytes(), sniffles.read_bytes() + direct.read_bytes()
             )
 
-    def test_cli_writes_empty_outputs_for_empty_inputs(self):
+    def test_cli_writes_header_only_tables_for_empty_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             counts = root / "counts.txt"
@@ -217,8 +218,9 @@ class SupportAndCliTests(unittest.TestCase):
             )
 
             self.assertEqual(result, 0)
-            for path in (frequency, precise, combined):
-                self.assertEqual(path.read_bytes(), b"")
+            for path in (frequency, precise):
+                self.assertEqual(path.read_text(), "\t".join(FREQUENCY_COLUMNS) + "\n")
+            self.assertEqual(combined.read_bytes(), b"")
 
 
 if __name__ == "__main__":

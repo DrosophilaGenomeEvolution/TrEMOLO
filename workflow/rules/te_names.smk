@@ -28,8 +28,9 @@ if TE_INFOS_WITH_OUTSIDER:
                    OUTSIDER_SOFT_COMBINE, OUTSIDER_HARD_COMBINE]:
         export_table(source)
     export_table(OUTSIDER_TSD, "compound:0")
-    export_table(OUTSIDER_FREQUENCY, "column:2")
-    export_table(OUTSIDER_FREQUENCY_PRECISE, "column:2")
+    export_table(OUTSIDER_FREQUENCY)
+    export_table(OUTSIDER_FREQUENCY_PRECISE)
+    export_table(OUTSIDER_FREQUENCY_README, "copy")
     for source in [OUTSIDER_INS_COUNT, OUTSIDER_SNIFFLES_COUNT, OUTSIDER_SOFT_COUNT,
                    OUTSIDER_HARD_COUNT, OUTSIDER_MERGED_COUNT]:
         export_table(source, "column:1")

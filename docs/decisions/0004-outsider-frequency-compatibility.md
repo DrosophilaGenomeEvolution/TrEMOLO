@@ -2,6 +2,8 @@
 
 Status: accepted
 
+[0021](0021-tsd-selection-and-frequency-headers.md) adds an eleven-column header. Numeric data retain the compatibility behavior below; header-aware regression compares data rows.
+
 ## Context
 
 The historical `FREQUENCEv2` rule combines 69 OUTSIDER candidates in the test

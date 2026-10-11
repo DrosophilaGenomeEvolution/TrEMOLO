@@ -10,6 +10,8 @@ import re
 from collections import OrderedDict, defaultdict
 from pathlib import Path
 
+from summarize_outsider_frequency import FREQUENCY_COLUMNS
+
 
 HEADER = (
     "#chrom",
@@ -154,7 +156,9 @@ def intersects_same_family_deletion(position, deletions, window=30):
 
 def index_frequency(rows, source):
     indexed = OrderedDict()
-    for row in rows:
+    for index, row in enumerate(rows):
+        if index == 0 and tuple(row) == FREQUENCY_COLUMNS:
+            continue
         require_width(row, 10, source)
         indexed.setdefault(row[1], row)
     return indexed

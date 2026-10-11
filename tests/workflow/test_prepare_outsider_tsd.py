@@ -15,6 +15,7 @@ from prepare_outsider_tsd import (  # noqa: E402
     family_filename_component,
     prepare,
     read_fasta,
+    select_candidates,
     validate_candidate,
 )
 
@@ -211,7 +212,7 @@ class PrepareOutsiderTsdTests(unittest.TestCase):
             with patch(
                 "prepare_outsider_tsd.open_indexed_genome", return_value=indexed
             ):
-                self.assertEqual(prepare(args), (2, 2))
+                self.assertEqual(prepare(args), (3, 3))
             self.assertTrue(indexed.closed)
             first = {
                 path.relative_to(output): path.read_bytes()
@@ -222,7 +223,7 @@ class PrepareOutsiderTsdTests(unittest.TestCase):
             with patch(
                 "prepare_outsider_tsd.open_indexed_genome", return_value=indexed
             ):
-                self.assertEqual(prepare(args), (2, 2))
+                self.assertEqual(prepare(args), (3, 3))
             self.assertTrue(indexed.closed)
             second = {
                 path.relative_to(output): path.read_bytes()
@@ -232,11 +233,36 @@ class PrepareOutsiderTsdTests(unittest.TestCase):
 
             self.assertEqual(first, second)
             validation = args.validation.read_text().splitlines()
-            self.assertEqual(len(validation), 3)
+            self.assertEqual(len(validation), 4)
             self.assertIn("\taccepted\taccepted\t", validation[1])
             combined = args.combined_flanks.read_text().splitlines()
-            self.assertEqual(len(combined), 2)
-            self.assertIn("\tkeep\t", combined[0])
+            self.assertEqual(len(combined), 3)
+            self.assertIn("\tdrop-first\t", combined[0])
+
+    def test_selection_keeps_first_and_singleton_and_uses_exact_event_ids(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = [root / str(i) for i in range(5)]
+            query = 'chr1:<INS>:10:10:TrEMOLO.INS.1:1:PRECISE:0:+'
+            other = query.replace('INS.1:', 'INS.10:')
+            header = 'sseqid\tqseqid\tpident\tsize_per\tsize_el\tqstart\tqend\tsstart\tsend\n'
+            row = 'roo\t' + query + '\t99\t100\t5\t6\t10\t1\t5\n'
+            paths[0].write_text('sseqid\tqseqid\n')
+            paths[1].write_text(header)
+            paths[2].write_text('chr1\t10\t10\troo|TrEMOLO.INS.1\n')
+            # A family equal to the target event must not select an unrelated query.
+            paths[3].write_text('sseqid\tqseqid\nroo\t' + query + '\nTrEMOLO.INS.1\t' + other + '\n')
+            paths[4].write_text(header + row + row.replace(query, other))
+            selected = select_candidates(*paths)
+            self.assertEqual(len(selected), 1)
+            self.assertEqual(selected[0]['qseqid'], query[:-2])
+            self.assertEqual(selected[0]['source'], 'direct')
+            # Sniffles singleton candidates must also survive without a direct call.
+            paths[0].write_text('sseqid\tqseqid\nroo\t' + query + '\n')
+            paths[1].write_text(header + row)
+            paths[2].write_text('')
+            selected = select_candidates(*paths)
+            self.assertEqual([(c['source'], c['qseqid']) for c in selected], [('sniffles', query[:-2])])
 
     def test_family_name_is_encoded_only_in_artifact_paths(self):
         self.assertEqual(family_filename_component("roo/sub family"), "roo%2Fsub%20family")

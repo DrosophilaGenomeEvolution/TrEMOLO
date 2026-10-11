@@ -2,6 +2,8 @@
 
 Status: accepted.
 
+The TSD candidate-order limitation observed below was corrected in [0021](0021-tsd-selection-and-frequency-headers.md). Frequency exports now include headers and accompanying documentation.
+
 ## Problem
 
 Input preparation uses safe `TrEMOLOTE<N>` identifiers when a TE FASTA header

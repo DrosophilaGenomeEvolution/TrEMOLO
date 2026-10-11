@@ -27,6 +27,7 @@ OUTSIDER_FREQUENCY_READ_SUPPORT = (
     f"{OUTSIDER_FREQUENCY_DIR}/COUNT_TE_IN_RS.txt"
 )
 OUTSIDER_FREQUENCY = f"{OUTSIDER_FREQUENCY_DIR}/FREQUENCY_TE_INS.tsv"
+OUTSIDER_FREQUENCY_README = f"{OUTSIDER_FREQUENCY_DIR}/README.md"
 OUTSIDER_FREQUENCY_PRECISE = (
     f"{OUTSIDER_FREQUENCY_DIR}/FREQUENCY_TE_INS_PRECISE.tsv"
 )
@@ -276,6 +277,7 @@ rule order_outsider_frequency_counts_by_event:
 rule summarize_outsider_frequency:
     input:
         script=str(PIPELINE_ROOT / "lib/python/workflow/summarize_outsider_frequency.py"),
+        documentation=str(PIPELINE_ROOT / "docs/frequency-tables.md"),
         counts=OUTSIDER_FREQUENCY_COUNTS_BY_EVENT,
         sniffles_support=OUTSIDER_SNIFFLES_TE_READ_COUNTS,
         direct_support=OUTSIDER_INS_READ_COUNTS,
@@ -283,6 +285,7 @@ rule summarize_outsider_frequency:
         support=OUTSIDER_FREQUENCY_READ_SUPPORT,
         frequency=OUTSIDER_FREQUENCY,
         precise=OUTSIDER_FREQUENCY_PRECISE,
+        documentation=OUTSIDER_FREQUENCY_README,
     threads: 1
     resources:
         mem_mb=1024,
@@ -298,4 +301,5 @@ rule summarize_outsider_frequency:
             {output.frequency:q} {output.precise:q} \
             --combined-support-output {output.support:q} --pre-sorted \
             > {log:q} 2>&1
+        cp {input.documentation:q} {output.documentation:q}
         """

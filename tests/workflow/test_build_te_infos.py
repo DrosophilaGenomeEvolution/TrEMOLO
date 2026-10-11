@@ -148,6 +148,22 @@ class BuildTeInfosTests(unittest.TestCase):
             self.assertEqual(rows[2][5:13], ["NONE", "97", "96", "5", "100", "100.0000", "INSIDER", "7"])
             self.assertEqual(rows[2][14], "Repeat_expansion")
 
+    def test_frequency_headers_preserve_all_public_call_fields(self):
+        from summarize_outsider_frequency import FREQUENCY_COLUMNS
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.fixture(Path(directory))
+            build(args)
+            expected = args.output.read_bytes()
+            for path in (args.outsider_frequency, args.outsider_frequency_precise):
+                path.write_text('\t'.join(FREQUENCY_COLUMNS) + '\n' + path.read_text())
+            build(args)
+            self.assertEqual(args.output.read_bytes(), expected)
+            for path in (args.outsider_frequency, args.outsider_frequency_precise):
+                path.write_text('\t'.join(FREQUENCY_COLUMNS) + '\n')
+            build(args)
+            rows = args.output.read_text().splitlines()
+            self.assertEqual(rows[1].split('\t')[10:12], ['NONE', 'NONE'])
+
     def test_header_only_output_replaces_stale_result(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

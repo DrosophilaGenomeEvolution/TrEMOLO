@@ -2,6 +2,8 @@
 
 Status: accepted
 
+The selection row drops and singleton suppression were removed in [0021](0021-tsd-selection-and-frequency-headers.md). The original validation below records the earlier compatibility stage.
+
 ## Context
 
 The historical `GET_SEQ_TE` rule contains two order-dependent row drops:

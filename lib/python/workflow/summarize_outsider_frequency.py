@@ -29,6 +29,12 @@ NUMBER_PREFIX = re.compile(
     r"^[\t ]*([+-]?(?:(?:[0-9]+(?:\.[0-9]*)?)|(?:\.[0-9]+))(?:[eE][+-]?[0-9]+)?)"
 )
 
+FREQUENCY_COLUMNS = (
+    "position", "event_id", "te_family", "support_reads", "clipped_reads",
+    "total_reads_without_clipped", "te_present_reads", "total_reads",
+    "frequency_without_clipped", "frequency_with_clipped", "sv_type",
+)
+
 
 def awk_number(value):
     """Return AWK-like numeric conversion for a whitespace field."""
@@ -255,9 +261,10 @@ def precise_rows(frequency_rows, support):
 
 
 def write_rows(path, rows):
-    """Write tab-separated rows with the same final newline as AWK."""
+    """Write a named 11-column table, including for an empty result."""
 
     with path.open("w") as handle:
+        handle.write("\t".join(FREQUENCY_COLUMNS) + "\n")
         for fields in rows:
             handle.write("\t".join(fields))
             handle.write("\n")

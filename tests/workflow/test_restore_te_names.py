@@ -37,6 +37,14 @@ class RestoreNamesTests(unittest.TestCase):
             publish(source, output, 'table', {'TrEMOLOTE1': 'A|B', 'TrEMOLOTE10': 'C:D'})
             self.assertEqual(output.read_text(), 'reported_te\tcandidate_te\tqseqid\tevent_id\nA|B\tC:D\tTrEMOLOTE1:read\tTrEMOLOTE1\n')
 
+    def test_documentation_copy_does_not_transform_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output = root / 'input', root / 'output'
+            source.write_bytes(b'Documentation\nTrEMOLOTE1\tvalue\n')
+            publish(source, output, 'copy', {'TrEMOLOTE1': 'family|name'})
+            self.assertEqual(output.read_bytes(), source.read_bytes())
+
     def test_identity_mapping_preserves_bytes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
