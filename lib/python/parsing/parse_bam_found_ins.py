@@ -23,9 +23,13 @@ parser.add_argument("--insertion-fasta", type=argparse.FileType('w'), default=No
                     help="Optional companion FASTA containing insertion sequences without read flanks")
 parser.add_argument("-m", "--max_distance", dest='max_distance', type=int, default=30,
                     help="Maximum distance to group SV together.")
+parser.add_argument("--fetch-window", type=int, default=1,
+                    help="Reference bases around the breakpoint to fetch supporting reads")
 parser.add_argument("-s", "--min-size-percent", dest="min_size_percent", type=int, default=0.9,
                     help="minimum percentage of TE size.")
 args = parser.parse_args()
+if min(args.fetch_window, args.max_distance, args.flank_size) < 0:
+    parser.error("fetch window, matching distance and flank size must be non-negative")
 
 name_bamfile = args.bam_file
 name_bedfile = args.bed_file.name
@@ -53,7 +57,8 @@ for line in befile:
 
     #print("NAME: ", name)
     number_read_support = 1
-    for read in bamfile.fetch(chrom, (start-1), (start+1)):
+    for read in bamfile.fetch(chrom, max(start-args.fetch_window, 0),
+                              min(start+args.fetch_window, bamfile.get_reference_length(chrom))):
         start_query     = read.query_alignment_start
         reference_start = read.reference_start
         seq             = read.seq

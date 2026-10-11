@@ -79,6 +79,8 @@ rule build_te_infos:
         insider_variants=te_infos_input(INSIDER_BED, TE_INFOS_WITH_INSIDER),
     output:
         infos=INTERNAL_TE_INFOS,
+    params:
+        deletion_window=WINDOWS["TE_INFOS_DELETION_EXCLUSION_WINDOW"],
     threads: 1
     resources:
         mem_mb=2048,
@@ -90,7 +92,7 @@ rule build_te_infos:
         """
         set -euo pipefail
         mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
-        python3 {input.script:q} \
+        python3 {input.script:q} --deletion-exclusion-window {params.deletion_window} \
             --outsider-positions {input.outsider_positions:q} \
             --outsider-sniffles-combine {input.outsider_sniffles_combine:q} \
             --outsider-direct-combine {input.outsider_direct_combine:q} \

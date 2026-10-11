@@ -64,6 +64,10 @@ rule prepare_insider_frequency_intervals:
         outer=INSIDER_FREQUENCY_OUTER_FLANKS,
         inner=INSIDER_FREQUENCY_INNER_FLANKS,
         depth=INSIDER_FREQUENCY_DEPTH_FLANKS,
+    params:
+        outer=WINDOWS["INSIDER_FREQUENCY_OUTER_MARGIN"],
+        inner=WINDOWS["INSIDER_FREQUENCY_INNER_MARGIN"],
+        depth=WINDOWS["INSIDER_FREQUENCY_DEPTH_MARGIN"],
     threads: 1
     resources:
         mem_mb=512,
@@ -75,7 +79,8 @@ rule prepare_insider_frequency_intervals:
         """
         set -euo pipefail
         mkdir -p {INSIDER_MAPPING_TO_REF_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
-        python3 {input.script:q} {input.candidates:q} {output.insertions:q} \
+        python3 {input.script:q} --outer-margin {params.outer} --inner-margin {params.inner} \
+            --depth-margin {params.depth} {input.candidates:q} {output.insertions:q} \
             {output.outer:q} {output.inner:q} {output.depth:q} \
             > {log:q} 2>&1
         """
@@ -161,6 +166,9 @@ rule count_insider_empty_site_reads:
         candidates=INSIDER_FREQUENCY_INSERTIONS,
     output:
         counts=INSIDER_FREQUENCY_EMPTY_COUNTS,
+    params:
+        size_window=WINDOWS["INSIDER_FREQUENCY_SIZE_WINDOW"],
+        breakpoint_distance=WINDOWS["INSIDER_FREQUENCY_BREAKPOINT_DISTANCE"],
     threads: THREADS
     resources:
         mem_mb=2048,
@@ -172,7 +180,7 @@ rule count_insider_empty_site_reads:
         """
         set -euo pipefail
         mkdir -p {INSIDER_MAPPING_TO_REF_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
-        python3 {input.script:q} --size-window 30 --breakpoint-distance 30 \
+        python3 {input.script:q} --size-window {params.size_window} --breakpoint-distance {params.breakpoint_distance} \
             --threads {threads} {input.bam:q} {input.candidates:q} \
             {output.counts:q} > {log:q} 2>&1
         """
@@ -217,6 +225,8 @@ rule summarize_insider_frequency:
         depth=INSIDER_FREQUENCY_FLANK_DEPTH,
     output:
         frequency=INSIDER_FREQUENCY,
+    params:
+        depth=WINDOWS["INSIDER_FREQUENCY_DEPTH_MARGIN"],
     threads: 1
     resources:
         mem_mb=512,
@@ -228,7 +238,7 @@ rule summarize_insider_frequency:
         """
         set -euo pipefail
         mkdir -p {INSIDER_FREQUENCY_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
-        python3 {input.script:q} --depth-margin 30 {input.candidates:q} \
+        python3 {input.script:q} --depth-margin {params.depth} {input.candidates:q} \
             {input.empty:q} {input.depth:q} {output.frequency:q} \
             > {log:q} 2>&1
         """

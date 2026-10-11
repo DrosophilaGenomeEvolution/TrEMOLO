@@ -355,6 +355,8 @@ for the export manifest and TSV quoting conventions.
 The [frequency table documentation](docs/frequency-tables.md) describes all
 11 columns, the support correction, and INS/DEL interpretation. A copy is
 written next to each set of frequency tables as `README.md`.
+Genomic clustering, read retrieval and frequency windows are configurable in
+`PARAMS.WINDOWS`; see the [window parameter descriptions](docs/window-parameters.md).
 
 For running the bundled fixture
 

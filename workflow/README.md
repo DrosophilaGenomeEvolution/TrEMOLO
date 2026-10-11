@@ -288,3 +288,7 @@ The variable-call ambiguity table is recorded in
 `docs/decisions/0012-variable-te-call-candidates.md`.
 The whole-assembly INSIDER TE annotation decision is recorded in
 `docs/decisions/0009-insider-all-te-compatibility.md`.
+
+Genomic analysis windows are configured under `PARAMS.WINDOWS`, independently
+of `REPORT.LOCUS_WINDOW`. See [the parameter table](../docs/window-parameters.md)
+for defaults, coordinate semantics and coupled frequency preparation/counting.

@@ -154,6 +154,9 @@ rule build_outsider_frequency_regions:
         calls=OUTSIDER_FREQUENCY_CALLS_SORTED,
     output:
         regions=OUTSIDER_FREQUENCY_REGIONS,
+    params:
+        window=WINDOWS["OUTSIDER_FREQUENCY_WINDOW"],
+        merge_distance=WINDOWS["OUTSIDER_FREQUENCY_REGION_MERGE_DISTANCE"],
     threads: 1
     resources:
         mem_mb=512,
@@ -164,8 +167,8 @@ rule build_outsider_frequency_regions:
     shell:
         """
         set -euo pipefail
-        awk -v window=50 'NR>1 && OFS="\t" {{split($2,position,":"); print position[1],(position[3]-window>0 ? position[3]-window : 1),position[4]+window}}' \
-            {input.calls:q} | bedtools merge -d 1 > {output.regions:q} \
+        awk -v window={params.window} 'NR>1 && OFS="\t" {{split($2,position,":"); print position[1],(position[3]-window>0 ? position[3]-window : 1),position[4]+window}}' \
+            {input.calls:q} | bedtools merge -d {params.merge_distance} > {output.regions:q} \
             2> {log:q}
         """
 
@@ -213,6 +216,7 @@ rule count_outsider_frequency_reads:
     output:
         counts=temp(OUTSIDER_FREQUENCY_COUNTS_RAW),
     params:
+        window=WINDOWS["OUTSIDER_FREQUENCY_WINDOW"],
         size_percent=lambda wildcards: legacy_frequency_size_percent(
             OUTSIDER_BLAST_FILTER
         ),
@@ -226,7 +230,7 @@ rule count_outsider_frequency_reads:
     shell:
         """
         set -euo pipefail
-        python3 {input.script:q} --per-size {params.size_percent} \
+        python3 {input.script:q} --per-size {params.size_percent} --window {params.window} \
             --threads {threads} {input.bam:q} {input.calls:q} \
             {input.te_sizes:q} {input.sv_sizes:q} {output.counts:q} \
             > {log:q} 2>&1

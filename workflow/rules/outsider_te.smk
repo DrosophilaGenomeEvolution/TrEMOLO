@@ -122,6 +122,7 @@ rule find_outsider_alignment_candidates:
         soft_all=OUTSIDER_SOFT_VCF_ALL,
         hard=OUTSIDER_HARD_VCF,
     params:
+        window=WINDOWS["OUTSIDER_SOFT_CLIP_WINDOW"],
         script=str(PIPELINE_ROOT / "lib/python/parsing/find_all_type_ins.py"),
         clipped=OUTSIDER_CLIPPED_FLAG,
         flank=OUTSIDER_SIZE_FLANK,
@@ -143,7 +144,7 @@ rule find_outsider_alignment_candidates:
             --flank-size {params.flank} \
             --threads {threads} \
             --time-limit {params.time_limit} \
-            --chunk-size {params.chunk_size} \
+            --chunk-size {params.chunk_size} --window {params.window} \
             --output-soft {output.soft:q} \
             --output-hard {output.hard:q} \
             --output-ins {output.insertions:q} {params.clipped} \
@@ -164,6 +165,7 @@ rule cluster_outsider_alignment_insertions:
         read_positions=OUTSIDER_INS_READ_POSITIONS,
         sizes=OUTSIDER_INS_SIZE_BASE,
     params:
+        distance=WINDOWS["OUTSIDER_INSERTION_CLUSTER_DISTANCE"],
         flank=OUTSIDER_SIZE_FLANK,
     threads: 1
     resources:
@@ -175,7 +177,7 @@ rule cluster_outsider_alignment_insertions:
     shell:
         """
         set -euo pipefail
-        bedtools sort -i {input.insertions:q} | bedtools cluster -d 50 \
+        bedtools sort -i {input.insertions:q} | bedtools cluster -d {params.distance} \
             > {output.clustered:q} 2> {log:q}
         python3 {input.script:q} ins --input {output.clustered:q} \
             --fasta {output.fasta:q} --positions {output.read_positions:q} \
@@ -268,6 +270,9 @@ rule extract_outsider_sniffles_sequences:
         read_counts=OUTSIDER_SNIFFLES_READ_COUNTS,
         sizes=OUTSIDER_SV_SIZE,
     params:
+        match_window=WINDOWS["OUTSIDER_SNIFFLES_READ_MATCH_WINDOW"],
+        fetch_window=WINDOWS["OUTSIDER_SNIFFLES_READ_FETCH_WINDOW"],
+        read_flank=WINDOWS["OUTSIDER_SNIFFLES_READ_FLANK_SIZE"],
         extract_script=str(PIPELINE_ROOT / "lib/python/parsing/get_seq_vcf.py"),
         reads_script=str(PIPELINE_ROOT / "lib/python/parsing/parse_bam_found_ins.py"),
         options=OUTSIDER_GET_SEQ_OPTIONS,
@@ -289,6 +294,8 @@ rule extract_outsider_sniffles_sequences:
         awk 'BEGIN {{OFS="\t"}} substr($0,1,1)==">" {{split($0,a,":"); header=substr(a[1],2) OFS a[3] OFS a[4] OFS substr($0,2); next}} {{print header,length($0),$0}}' \
             {output.raw:q} | awk '/INS|DEL/' > {output.variants:q}
         python3 {params.reads_script:q} -r {output.read_counts:q} \
+            --max_distance {params.match_window} --fetch-window {params.fetch_window} \
+            --flank-size {params.read_flank} \
             --insertion-fasta {output.insertion_fasta:q} \
             {input.bam:q} {output.variants:q} > {output.fasta:q} 2>> {log:q}
         cp {input.direct_sizes:q} {output.sizes:q}
@@ -375,6 +382,8 @@ rule prepare_outsider_soft_clipped_sequences:
         variants=OUTSIDER_SOFT_SV_BED,
         fasta=OUTSIDER_SOFT_FASTA,
         all_fasta=OUTSIDER_SOFT_ALL_FASTA,
+    params:
+        padding=WINDOWS["OUTSIDER_CLIPPED_SEQUENCE_PADDING"],
     threads: 1
     resources:
         mem_mb=2048,
@@ -385,7 +394,7 @@ rule prepare_outsider_soft_clipped_sequences:
     shell:
         """
         set -euo pipefail
-        max_size=$(awk 'substr($0,1,1)!=">" && length($0)>max {{max=length($0)}} END {{print max+100}}' {input.database:q})
+        max_size=$(awk -v padding={params.padding} 'substr($0,1,1)!=">" && length($0)>max {{max=length($0)}} END {{print max+padding}}' {input.database:q})
         : > {output.variants:q}
         : > {output.fasta:q}
         : > {output.all_fasta:q}
@@ -557,6 +566,9 @@ rule prepare_outsider_hard_clipped_sequences:
         reads_index=OUTSIDER_HARD_READS_FASTA_INDEX,
         variants=OUTSIDER_HARD_RAW_BED,
         fasta=OUTSIDER_HARD_FASTA,
+    params:
+        padding=WINDOWS["OUTSIDER_CLIPPED_SEQUENCE_PADDING"],
+        distance=WINDOWS["OUTSIDER_HARD_CLIP_CLUSTER_DISTANCE"],
     threads: 1
     resources:
         mem_mb=4096,
@@ -567,7 +579,7 @@ rule prepare_outsider_hard_clipped_sequences:
     shell:
         """
         set -euo pipefail
-        max_size=$(awk 'substr($0,1,1)!=">" && length($0)>max {{max=length($0)}} END {{print max+100}}' {input.database:q})
+        max_size=$(awk -v padding={params.padding} 'substr($0,1,1)!=">" && length($0)>max {{max=length($0)}} END {{print max+padding}}' {input.database:q})
         : > {output.reads_fasta:q}
         : > {output.reads_index:q}
         : > {output.variants:q}
@@ -577,7 +589,7 @@ rule prepare_outsider_hard_clipped_sequences:
             --reads-index {output.reads_index:q} --variants {output.variants:q} \
             --max-size "$max_size" > {log:q} 2>&1
         if test -s {output.variants:q}; then
-            bedtools sort -i {output.variants:q} | bedtools cluster -d 100 \
+            bedtools sort -i {output.variants:q} | bedtools cluster -d {params.distance} \
                 > {output.variants:q}.clustered
             python3 {input.cluster_script:q} hard --input {output.variants:q}.clustered \
                 --fasta {output.fasta:q} >> {log:q} 2>&1
@@ -673,6 +685,8 @@ rule merge_outsider_te_evidence:
         counts=OUTSIDER_MERGED_COUNT,
         positions=OUTSIDER_POSITION_BED,
     params:
+        cluster_distance=WINDOWS["OUTSIDER_EVIDENCE_CLUSTER_DISTANCE"],
+        match_window=WINDOWS["OUTSIDER_EVIDENCE_MATCH_WINDOW"],
         chrom=OUTSIDER_CHROM_KEEP,
     threads: 1
     resources:
@@ -699,18 +713,18 @@ rule merge_outsider_te_evidence:
 
         if test -s {input.sniffles:q}; then
             bedtools sort -i {input.sniffles:q} | grep -E "$chrom_keep" \
-                | bedtools cluster -d 100 \
+                | bedtools cluster -d {params.cluster_distance} \
                 | awk 'BEGIN {{te=""; cluster=""}} {{split($4,a,"|"); if (cluster==$7 && a[1]==te) {{te=a[1]; cluster=$7}} else {{print; te=a[1]; cluster=$7}}}}' \
                 | cut -f 1-6 > {output.sniffles_cluster:q}
         fi
         if test -s {input.direct:q}; then
             bedtools sort -i {input.direct:q} | grep -E "$chrom_keep" \
-                | bedtools cluster -d 100 \
+                | bedtools cluster -d {params.cluster_distance} \
                 | awk 'BEGIN {{te=""; cluster=""}} {{split($4,a,"|"); if (cluster==$7 && a[1]==te) {{te=a[1]; cluster=$7}} else {{print; te=a[1]; cluster=$7}}}}' \
                 | cut -f 1-6 > {output.direct_cluster:q}
         fi
         if test -s {output.direct_cluster:q} && test -s {output.sniffles_cluster:q}; then
-            bedtools window -a {output.direct_cluster:q} -b {output.sniffles_cluster:q} -w 100 \
+            bedtools window -a {output.direct_cluster:q} -b {output.sniffles_cluster:q} -w {params.match_window} \
                 | awk '{{split($4,a,"|"); split($10,b,"|"); if (a[1]==b[1]) print $4}}' \
                 | sort -u > {output.direct_ids:q}
         fi
@@ -721,17 +735,17 @@ rule merge_outsider_te_evidence:
 
         if test -s {input.soft:q}; then
             bedtools sort -i {input.soft:q} | grep -E "$chrom_keep" \
-                | bedtools cluster -d 100 \
+                | bedtools cluster -d {params.cluster_distance} \
                 | awk 'BEGIN {{te=""; cluster=""}} {{split($4,a,"|"); if (cluster==$7 && a[1]==te) {{te=a[1]; cluster=$7}} else {{print; te=a[1]; cluster=$7}}}}' \
                 | cut -f 1-6 > {output.soft_cluster:q}
         fi
         if test -s {output.soft_cluster:q} && test -s {output.sniffles_cluster:q}; then
-            bedtools window -a {output.soft_cluster:q} -b {output.sniffles_cluster:q} -w 100 \
+            bedtools window -a {output.soft_cluster:q} -b {output.sniffles_cluster:q} -w {params.match_window} \
                 | awk '{{split($4,a,"|"); split($10,b,"|"); if (a[1]==b[1]) print $4}}' \
                 | sort -u > {output.soft_ids:q}
         fi
         if test -s {output.soft_cluster:q} && test -s {output.direct_cluster:q}; then
-            bedtools window -a {output.soft_cluster:q} -b {output.direct_cluster:q} -w 100 \
+            bedtools window -a {output.soft_cluster:q} -b {output.direct_cluster:q} -w {params.match_window} \
                 | awk '{{split($4,a,"|"); split($10,b,"|"); if (a[1]==b[1]) print $4}}' \
                 | sort -u >> {output.soft_ids:q}
         fi
@@ -742,22 +756,22 @@ rule merge_outsider_te_evidence:
 
         if test -s {input.hard:q}; then
             bedtools sort -i {input.hard:q} | grep -E "$chrom_keep" \
-                | bedtools cluster -d 100 \
+                | bedtools cluster -d {params.cluster_distance} \
                 | awk 'BEGIN {{te=""; cluster=""}} {{split($4,a,"|"); if (cluster==$7 && a[1]==te) {{te=a[1]; cluster=$7}} else {{print; te=a[1]; cluster=$7}}}}' \
                 | cut -f 1-6 > {output.hard_cluster:q}
         fi
         if test -s {output.hard_cluster:q} && test -s {output.sniffles_cluster:q}; then
-            bedtools window -a {output.hard_cluster:q} -b {output.sniffles_cluster:q} -w 100 \
+            bedtools window -a {output.hard_cluster:q} -b {output.sniffles_cluster:q} -w {params.match_window} \
                 | awk '{{split($4,a,"|"); split($10,b,"|"); if (a[1]==b[1]) print $4}}' \
                 | sort -u > {output.hard_ids:q}
         fi
         if test -s {output.hard_cluster:q} && test -s {output.direct_cluster:q}; then
-            bedtools window -a {output.hard_cluster:q} -b {output.direct_cluster:q} -w 100 \
+            bedtools window -a {output.hard_cluster:q} -b {output.direct_cluster:q} -w {params.match_window} \
                 | awk '{{split($4,a,"|"); split($10,b,"|"); if (a[1]==b[1]) print $4}}' \
                 | sort -u >> {output.hard_ids:q}
         fi
         if test -s {output.hard_cluster:q} && test -s {output.soft_cluster:q}; then
-            bedtools window -a {output.hard_cluster:q} -b {output.soft_cluster:q} -w 100 \
+            bedtools window -a {output.hard_cluster:q} -b {output.soft_cluster:q} -w {params.match_window} \
                 | awk '{{split($4,a,"|"); split($10,b,"|"); if (a[1]==b[1]) print $4}}' \
                 | sort -u >> {output.hard_ids:q}
         fi

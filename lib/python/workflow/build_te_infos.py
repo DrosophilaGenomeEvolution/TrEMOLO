@@ -277,7 +277,9 @@ def render_outsider_rows(args):
 
         event_type_match = re.search(r"SOFT|HARD|DEL|INS", identifier)
         event_type = event_type_match.group(0) if event_type_match else "UNDEFINED"
-        if intersects_same_family_deletion(position, deletions):
+        if intersects_same_family_deletion(
+            position, deletions, getattr(args, "deletion_exclusion_window", 30)
+        ):
             event_type += "_DEL"
 
         tsd_row = tsds.get(identifier)
@@ -491,6 +493,12 @@ def build(args):
 
 def build_parser():
     parser = argparse.ArgumentParser()
+    def non_negative(value):
+        number = int(value)
+        if number < 0:
+            raise argparse.ArgumentTypeError("must be a non-negative integer")
+        return number
+    parser.add_argument("--deletion-exclusion-window", type=non_negative, default=30)
     for option in (
         "outsider-positions",
         "outsider-sniffles-combine",

@@ -3,12 +3,16 @@
 from pathlib import Path
 import math
 import re
+import sys
 
 
 DATA = config.get("DATA", {})
 CHOICES = config.get("CHOICE", {}).get("PIPELINE", {})
 WORKDIR = DATA.get("WORK_DIRECTORY", "").strip() or "TrEMOLO_OUTPUT"
 PIPELINE_ROOT = Path(workflow.basedir).resolve().parent
+sys.path.insert(0, str(PIPELINE_ROOT / "lib/python/workflow"))
+from window_parameters import resolve_windows
+WINDOWS = resolve_windows(config.get("PARAMS", {}).get("WINDOWS"))
 PREPARE_INPUTS_SCRIPT = PIPELINE_ROOT / "lib/python/workflow/prepare_inputs.py"
 THREADS = config.get("PARAMS", {}).get("THREADS", 1)
 THREADS = THREADS if isinstance(THREADS, int) and THREADS > 0 else 1
