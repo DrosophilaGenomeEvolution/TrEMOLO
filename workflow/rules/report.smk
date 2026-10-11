@@ -56,6 +56,9 @@ def report_benchmark_inputs(wildcards):
         files.add("insider_frequency.smk")
     if TE_GENOME_ENABLED:
         files.add("te_genome.smk")
+    if UNMAPPED_TE_ENABLED:
+        files.add("unmapped_te.smk")
+        files.add("outsider.smk")
     if OUTSIDER_INTEGRATION_ENABLED:
         files.add("outsider_integration.smk")
     paths = []
@@ -63,6 +66,10 @@ def report_benchmark_inputs(wildcards):
                   "summarize_outsider_liftoff", "index_outsider_integrated_genome"}
     for rule in workflow.rules:
         if Path(rule.snakefile).name not in files or rule.benchmark is None:
+            continue
+        if (UNMAPPED_TE_ENABLED and not TE_INFOS_WITH_OUTSIDER
+            and Path(rule.snakefile).name == "outsider.smk"
+            and rule.name not in {"minimap2_index_outsider", "map_reads_outsider"}):
             continue
         if rule.name == "index_outsider_fastq" and OUTSIDER_CLIPPED_FLAG:
             continue

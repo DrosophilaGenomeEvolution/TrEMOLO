@@ -592,6 +592,8 @@ def read_benchmarks(paths: Optional[list[Path]]) -> dict:
                 branch = "INSIDER"
             elif name.startswith("te_genome_"):
                 branch = "TE_GENOME"
+            elif "unmapped" in name:
+                branch = "UNMAPPED_TE"
             else:
                 branch = "Shared"
             steps.append({"step": name, "branch": branch, "measurement": number,

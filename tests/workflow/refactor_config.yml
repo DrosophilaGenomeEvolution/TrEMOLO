@@ -7,6 +7,7 @@ DATA:
 
 CHOICE:
   PIPELINE:
+    UNMAPPED_TE: true
     OUTSIDER_VARIANT: true
     INSIDER_VARIANT: true
     TE_GENOME: true

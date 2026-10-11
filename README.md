@@ -196,6 +196,11 @@ This option is disabled since Singularity Hub is for the moment in read-only. We
 
 # Configuration of the parameter file<a name="configuration"></a>
 
+The migrated workflow can also catalogue TE matches in reads with no genomic
+alignment using `CHOICE.PIPELINE.UNMAPPED_TE: true` (disabled by default).
+Results are written under `UNMAPPED_TE/`, with original TE labels and coordinates
+within each read. See [configuration and column descriptions](docs/unmapped-te.md).
+
 TrEMOLO uses [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) to perform its analyses. You have then first to provide your parameters in a *.yaml* file (see an example in the *config.yaml* file). Parameters are :
 
 ```yaml

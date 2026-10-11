@@ -12,7 +12,12 @@ WORKDIR = DATA.get("WORK_DIRECTORY", "").strip() or "TrEMOLO_OUTPUT"
 PIPELINE_ROOT = Path(workflow.basedir).resolve().parent
 sys.path.insert(0, str(PIPELINE_ROOT / "lib/python/workflow"))
 from window_parameters import resolve_windows
+from unmapped_te import resolve_parameters as resolve_unmapped_parameters
 WINDOWS = resolve_windows(config.get("PARAMS", {}).get("WINDOWS"))
+UNMAPPED_TE_ENABLED = CHOICES.get("UNMAPPED_TE", False)
+if type(UNMAPPED_TE_ENABLED) is not bool:
+    raise ValueError("CHOICE.PIPELINE.UNMAPPED_TE must be a boolean")
+UNMAPPED_TE_PARAMS = resolve_unmapped_parameters(config.get("PARAMS", {}).get("UNMAPPED_TE"))
 PREPARE_INPUTS_SCRIPT = PIPELINE_ROOT / "lib/python/workflow/prepare_inputs.py"
 THREADS = config.get("PARAMS", {}).get("THREADS", 1)
 THREADS = THREADS if isinstance(THREADS, int) and THREADS > 0 else 1
@@ -50,6 +55,8 @@ if CHOICES.get("INSIDER_VARIANT") and not REFERENCE:
     raise ValueError("DATA.REFERENCE is required when INSIDER_VARIANT is enabled")
 if CHOICES.get("OUTSIDER_VARIANT") and not SAMPLE:
     raise ValueError("DATA.SAMPLE is required when OUTSIDER_VARIANT is enabled")
+if UNMAPPED_TE_ENABLED and not SAMPLE:
+    raise ValueError("DATA.SAMPLE is required when UNMAPPED_TE is enabled")
 if INSIDER_SV_CALLER != "assemblytics":
     raise ValueError(
         f"INSIDER SV caller '{INSIDER_SV_CALLER}' is not implemented; "
@@ -98,6 +105,7 @@ if "REFERENCE" in TE_GENOME_TARGETS and not REFERENCE:
 include: "rules/common.smk"
 include: "rules/outsider.smk"
 include: "rules/te_database.smk"
+include: "rules/unmapped_te.smk"
 include: "rules/outsider_te.smk"
 include: "rules/outsider_frequency.smk"
 include: "rules/outsider_tsd.smk"
@@ -118,6 +126,8 @@ DEFAULT_TARGETS = [
     f"{WORKDIR}/INPUT/te_headers.tsv",
 ]
 DEFAULT_TARGETS.extend(TE_NAME_PUBLIC_OUTPUTS + [TE_NAME_MANIFEST])
+if UNMAPPED_TE_ENABLED:
+    DEFAULT_TARGETS.extend(UNMAPPED_TE_FINAL_OUTPUTS)
 if CHOICES.get("INSIDER_VARIANT") or CHOICES.get("OUTSIDER_VARIANT"):
     DEFAULT_TARGETS.append(TE_INFOS)
     DEFAULT_TARGETS.append(TE_CALL_CANDIDATES)

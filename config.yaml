@@ -10,6 +10,7 @@ DATA:
 
 CHOICE:
     PIPELINE:
+        UNMAPPED_TE: False      # optional TE catalogue in reads without genomic alignment
         OUTSIDER_VARIANT: True  # TE no assembled (out of genome)
         INSIDER_VARIANT: True   # TE assembled (in genome)
         TE_GENOME: False        # annotate resident TE copies across complete assemblies
@@ -23,6 +24,11 @@ CHOICE:
 
 
 PARAMS:
+    UNMAPPED_TE:
+        MIN_PIDENT: 80
+        MIN_ALIGNED_BP: 80
+        MAX_EVALUE: 1e-10
+        FULL_LENGTH_COVERAGE: 80
     # Genomic distances in bp; see docs/window-parameters.md
     WINDOWS:
         OUTSIDER_INSERTION_CLUSTER_DISTANCE: 50
