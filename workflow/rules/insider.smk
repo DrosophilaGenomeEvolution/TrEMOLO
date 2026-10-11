@@ -20,7 +20,7 @@ INSIDER_INSERTION_COMBINE = f"{INSIDER_TE_DIR}/INSERTION_COMBINE_TE.csv"
 INSIDER_DELETION_COMBINE = f"{INSIDER_TE_DIR}/DELETION_COMBINE_TE.csv"
 INSIDER_INSERTION_TE_BED = f"{INSIDER_TE_DIR}/INSERTION_TE.bed"
 INSIDER_DELETION_TE_BED = f"{INSIDER_TE_DIR}/DELETION_TE.bed"
-INSIDER_POSITION_BED = f"{WORKDIR}/POSITION_TE_INSIDER.bed"
+INSIDER_POSITION_BED = f"{WORKDIR}/INTERNAL/POSITION_TE_INSIDER.bed"
 
 INSIDER_MINIMAP2_PRESET = (
     INSIDER_PARAMS.get("MINIMAP2", {}).get("PRESET_OPTION") or "asm5"
@@ -434,6 +434,7 @@ rule format_insider_te_calls:
     shell:
         """
         set -euo pipefail
+        mkdir -p {WORKDIR}/INTERNAL
         awk 'NR>1 {{split($2,a,":"); split(a[6],b,"-"); print a[5],b[1]+$6,b[2]-((b[2]-b[1])-$7),$1"|"a[1],a[7]}}' \
             OFS='\t' {input.insertion_combine:q} > {output.insertion_bed:q}
         : > {output.insertion_ref:q}

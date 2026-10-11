@@ -345,6 +345,14 @@ are resolved from the current working directory; the bundled example below is
 run from the parent directory of `TrEMOLO`. Use a fresh `DATA.WORK_DIRECTORY`
 when switching from the legacy workflow.
 
+The migrated workflow restores original TE names in `TE_INFOS.bed`,
+`TE_CALL_CANDIDATES.tsv`, root position BEDs and the report. Detailed readable
+outputs are available under `PUBLIC/` with the same relative branch paths
+(for example, `PUBLIC/OUTSIDER/FREQUENCY/FREQUENCY_TE_INS.tsv`).
+The branch source files retain prepared identifiers for calculations.
+See the [name restoration contract](docs/decisions/0020-original-te-names.md)
+for the export manifest and TSV quoting conventions.
+
 For running the bundled fixture
 
 ```bash

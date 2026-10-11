@@ -2,6 +2,8 @@
 
 TE_INFOS = f"{WORKDIR}/TE_INFOS.bed"
 TE_CALL_CANDIDATES = f"{WORKDIR}/TE_CALL_CANDIDATES.tsv"
+INTERNAL_TE_INFOS = f"{WORKDIR}/INTERNAL/TE_INFOS.bed"
+INTERNAL_TE_CALL_CANDIDATES = f"{WORKDIR}/INTERNAL/TE_CALL_CANDIDATES.tsv"
 TE_INFOS_EMPTY_INPUT = "/dev/null"
 TE_INFOS_WITH_OUTSIDER = bool(CHOICES.get("OUTSIDER_VARIANT"))
 TE_INFOS_WITH_INSIDER = bool(CHOICES.get("INSIDER_VARIANT"))
@@ -76,7 +78,7 @@ rule build_te_infos:
         ),
         insider_variants=te_infos_input(INSIDER_BED, TE_INFOS_WITH_INSIDER),
     output:
-        infos=TE_INFOS,
+        infos=INTERNAL_TE_INFOS,
     threads: 1
     resources:
         mem_mb=2048,
@@ -114,7 +116,7 @@ rule build_te_infos:
 rule build_te_call_candidates:
     input:
         script=str(PIPELINE_ROOT / "lib/python/workflow/build_te_call_candidates.py"),
-        te_infos=TE_INFOS,
+        te_infos=INTERNAL_TE_INFOS,
         outsider_direct=te_infos_input(
             OUTSIDER_INS_READ_COUNTS, TE_INFOS_WITH_OUTSIDER
         ),
@@ -122,7 +124,7 @@ rule build_te_call_candidates:
             OUTSIDER_SNIFFLES_TE_READ_COUNTS, TE_INFOS_WITH_OUTSIDER
         ),
     output:
-        candidates=TE_CALL_CANDIDATES,
+        candidates=INTERNAL_TE_CALL_CANDIDATES,
     threads: 1
     resources:
         mem_mb=512,

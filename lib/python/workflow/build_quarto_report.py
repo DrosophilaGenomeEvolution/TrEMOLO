@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 
-REPORT_SCHEMA_VERSION = "1.4.0"
+REPORT_SCHEMA_VERSION = "1.5.0"
 TE_INFO_COLUMNS = (
     "chrom",
     "start",
@@ -136,7 +136,7 @@ def read_te_infos(path: Path) -> list[dict]:
             if start < 0 or end < start:
                 raise ValueError(f"{path}:{line_number}: invalid interval {start}-{end}")
 
-            family, separator, event_id = row["te_call"].partition("|")
+            family, separator, event_id = row["te_call"].rpartition("|")
             if not separator or not family or not event_id:
                 raise ValueError(f"{path}:{line_number}: malformed TE|ID value")
 

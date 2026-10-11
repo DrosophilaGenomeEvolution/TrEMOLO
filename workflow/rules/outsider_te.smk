@@ -72,7 +72,7 @@ OUTSIDER_SNIFFLES_TE_READ_COUNTS = f"{OUTSIDER_TE_DIR}/COUNT_TE_IN_RS.txt"
 OUTSIDER_MERGED_BED = f"{OUTSIDER_MERGE_DIR}/MERGE_TE_ALL.bed"
 OUTSIDER_MERGED_BED_COPY = f"{OUTSIDER_MERGE_DIR}/MERGE_TE_ALL2.bed"
 OUTSIDER_MERGED_COUNT = f"{OUTSIDER_MERGE_DIR}/MERGE_TE_ALL_COUNT.csv"
-OUTSIDER_POSITION_BED = f"{WORKDIR}/POSITION_TE_OUTSIDER.bed"
+OUTSIDER_POSITION_BED = f"{WORKDIR}/INTERNAL/POSITION_TE_OUTSIDER.bed"
 
 OUTSIDER_TE_PARAMS = OUTSIDER_PARAMS.get("TE_DETECTION", {})
 OUTSIDER_SIZE_FLANK = OUTSIDER_PARAMS.get("TSD", {}).get("SIZE_FLANK", 10)
@@ -684,7 +684,7 @@ rule merge_outsider_te_evidence:
     shell:
         """
         set -eu
-        mkdir -p {OUTSIDER_MERGE_DIR}
+        mkdir -p {OUTSIDER_MERGE_DIR} {WORKDIR}/INTERNAL
         chrom_keep=$(printf '%s' {params.chrom:q} | tr ',' '|')
         : > {output.sniffles_cluster:q}
         : > {output.direct_cluster:q}

@@ -103,6 +103,7 @@ include: "rules/insider_frequency.smk"
 include: "rules/insider_tsd.smk"
 include: "rules/outsider_integration.smk"
 include: "rules/te_infos.smk"
+include: "rules/te_names.smk"
 include: "rules/report.smk"
 
 
@@ -112,6 +113,7 @@ DEFAULT_TARGETS = [
     f"{WORKDIR}/INPUT/te_database.fasta",
     f"{WORKDIR}/INPUT/te_headers.tsv",
 ]
+DEFAULT_TARGETS.extend(TE_NAME_PUBLIC_OUTPUTS + [TE_NAME_MANIFEST])
 if CHOICES.get("INSIDER_VARIANT") or CHOICES.get("OUTSIDER_VARIANT"):
     DEFAULT_TARGETS.append(TE_INFOS)
     DEFAULT_TARGETS.append(TE_CALL_CANDIDATES)

@@ -132,8 +132,9 @@ def build(runs: list[InputRun], output: Path, reference_id: str) -> dict[str, in
                 raise ValueError(f"duplicate call id for sample {run.sample_id}: {call['tremolo_id']}")
             seen_calls.add(call_key)
 
-            te_name, separator, original_call_id = call["te_call"].partition("|")
+            te_name, separator, original_call_id = call["te_call"].rpartition("|")
             if not separator:
+                te_name = call["te_call"]
                 original_call_id = call["tremolo_id"]
             locus_id = stable_id(
                 "L", reference_id, call["chrom"], call["start"], call["end"], call["tremolo_id"]

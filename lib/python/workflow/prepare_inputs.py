@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import os
 from pathlib import Path
 
 
-FORBIDDEN_HEADER_CHARACTERS = set(":/\\|[]")
+FORBIDDEN_HEADER_CHARACTERS = set(":/\\|[];!?\"'&<>")
 
 
 def sha256(path: Path) -> str:
@@ -77,17 +78,21 @@ def prepare(
     records = list(fasta_records(te_database))
     if not records:
         raise ValueError(f"no FASTA record found in {te_database}")
+    if any(not header or any(c in header for c in "\t\r\n") for header, _ in records):
+        raise ValueError("TE headers must be nonempty and cannot contain tab or newline characters")
     needs_pseudonyms = any(
-        FORBIDDEN_HEADER_CHARACTERS.intersection(header) for header, _ in records
+        FORBIDDEN_HEADER_CHARACTERS.intersection(header) or any(c.isspace() for c in header)
+        for header, _ in records
     )
     prepared_database = input_directory / "te_database.fasta"
     mapping = input_directory / "te_headers.tsv"
     with prepared_database.open("w") as fasta, mapping.open("w") as names:
-        names.write("original\tprepared\n")
+        writer = csv.writer(names, delimiter="\t", lineterminator="\n")
+        writer.writerow(("original", "prepared"))
         for index, (header, sequence) in enumerate(records, 1):
             prepared = f"TrEMOLOTE{index}" if needs_pseudonyms else header
             fasta.write(f">{prepared}\n{sequence}\n")
-            names.write(f"{header}\t{prepared}\n")
+            writer.writerow((header, prepared))
 
     manifest = {
         "format_version": 1,

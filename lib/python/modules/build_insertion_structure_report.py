@@ -251,7 +251,7 @@ def read_final_calls(path: Optional[Path]) -> dict[str, str]:
                 continue
             if len(row) != 15:
                 raise ValueError(f"{path}:{line_number}: expected 15 columns")
-            family, separator, event_id = row[3].partition("|")
+            family, separator, event_id = row[3].rpartition("|")
             if not separator:
                 raise ValueError(f"{path}:{line_number}: malformed TE|ID")
             previous = calls.get(event_id)
@@ -602,6 +602,13 @@ def build(
     final_calls = read_final_calls(te_infos)
     candidate_calls = read_candidate_calls(te_call_candidates)
     hsps = read_hsps(blast, insertion_sizes, subject_sizes, min_pident, min_aligned_bp)
+    # Raw BLAST keeps prepared identifiers; public call tables carry original names.
+    mapping = te_infos.parent / "INPUT/te_headers.tsv" if te_infos is not None else None
+    if mapping is not None and mapping.is_file():
+        with mapping.open(newline="") as handle:
+            names = {row["prepared"]: row["original"] for row in csv.DictReader(handle, delimiter="\t")}
+        for hsp in hsps:
+            hsp["subject_te"] = names.get(hsp["subject_te"], hsp["subject_te"])
     matches = build_matches(
         hsps,
         final_calls,

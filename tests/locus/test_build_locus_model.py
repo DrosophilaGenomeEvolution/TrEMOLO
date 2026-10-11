@@ -51,6 +51,20 @@ class BuildLocusModelTests(unittest.TestCase):
                 observations = list(csv.DictReader(handle, delimiter="\t"))
             self.assertEqual([row["frequency"] for row in observations], ["0.25", "0.4"])
 
+    def test_family_with_pipe_preserves_family_and_event(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'TE_INFOS.bed'
+            source.write_text(HEADER + '\n2L\t100\t101\troo|variant|call1\t+\tNONE\t98\t99\t9000\t100\t20\t25\t9010\tTE_ID_OUTSIDER.1\tINS\n')
+            output = root / 'model'
+            MODULE.build([MODULE.InputRun('sample', source)], output, 'reference')
+            with (output / 'components.tsv').open() as handle:
+                components = list(csv.DictReader(handle, delimiter='\t'))
+            self.assertEqual(components[0]['te_name'], 'roo|variant')
+            with (output / 'evidence.tsv').open() as handle:
+                evidence = list(csv.DictReader(handle, delimiter='\t'))
+            self.assertEqual(evidence[0]['call_id'], 'call1')
+
     def test_ids_are_deterministic(self):
         self.assertEqual(
             MODULE.stable_id("L", "ref", "2L", 100, 101, "call"),

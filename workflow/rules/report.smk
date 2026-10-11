@@ -47,7 +47,7 @@ REPORT_SOURCE_ARGS = " ".join(
 def report_benchmark_inputs(wildcards):
     # Explicit benchmark dependencies wait for all enabled branches and exclude
     # stale files left by previously enabled branches. Report jobs exclude themselves.
-    files = {"common.smk", "te_database.smk", "te_infos.smk"}
+    files = {"common.smk", "te_database.smk", "te_infos.smk", "te_names.smk"}
     if TE_INFOS_WITH_OUTSIDER:
         files.update({"outsider.smk", "outsider_te.smk", "outsider_frequency.smk", "outsider_tsd.smk"})
     if TE_INFOS_WITH_INSIDER:

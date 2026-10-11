@@ -21,8 +21,8 @@ def table(path):
 
 
 def bed(path):
-    return [(f[0], int(f[1]), int(f[2]), f[3]) for f in
-            (line.split("\t") for line in path.read_text().splitlines())]
+    with path.open(newline="") as handle:
+        return [(f[0], int(f[1]), int(f[2]), f[3]) for f in csv.reader(handle, delimiter="\t")]
 
 
 def main():
@@ -30,6 +30,7 @@ def main():
     parser.add_argument("workdir", type=Path)
     args = parser.parse_args()
     work = args.workdir
+    names = {row["prepared"]: row["original"] for row in table(work / "INPUT/te_headers.tsv")}
     outsider = work / "OUTSIDER"
     integration = outsider / "TE_TOWARD_GENOME"
     audit = table(integration / "INTEGRATION_TE.tsv")
@@ -97,7 +98,8 @@ def main():
         rebuilt = read_fasta(integration / fasta_name)
         positions = bed(integration / bed_name)
         assert set(rebuilt) == set(genome) and len(positions) == len(expected)
-        assert bed(work / public_bed) == [(c, s, e, n.replace(":", "|")) for c, s, e, n in positions]
+        assert bed(work / public_bed) == [(c, s, e, names[n.rsplit(":", 1)[0]] + "|" + n.rsplit(":", 1)[1])
+                                       for c, s, e, n in positions]
         by_chrom = defaultdict(list)
         for chromosome, start, end, name in positions:
             identifier = name.rsplit(":", 1)[1]

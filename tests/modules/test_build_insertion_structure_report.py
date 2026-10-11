@@ -25,6 +25,37 @@ CANDIDATE_HEADER = (
 
 
 class BuildInsertionStructureReportTests(unittest.TestCase):
+    def test_restored_names_match_raw_blast_subjects(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            blast, sizes, queries, infos, candidates = self.fixture(root)
+            original = 'roo|variant: "name"'
+            with infos.open(newline="") as handle:
+                rows = list(csv.reader(handle, delimiter="\t"))
+            rows[1][3] = original + '|event1'
+            with infos.open('w', newline="") as handle:
+                csv.writer(handle, delimiter="\t", lineterminator="\n").writerows(rows)
+            with candidates.open(newline="") as handle:
+                rows = list(csv.reader(handle, delimiter="\t"))
+            for row in rows[1:]:
+                row[8] = original
+                if row[9] == 'roo':
+                    row[9] = original
+            with candidates.open('w', newline="") as handle:
+                csv.writer(handle, delimiter="\t", lineterminator="\n").writerows(rows)
+            mapping = root / 'INPUT/te_headers.tsv'
+            mapping.parent.mkdir()
+            with mapping.open('w', newline="") as handle:
+                csv.writer(handle, delimiter="\t", lineterminator="\n").writerows([
+                    ['original', 'prepared'], [original, 'roo'], ['copia', 'copia'], ['low', 'low']])
+            data = build(blast, sizes, queries, root / 'report', infos, candidates,
+                         80, 100, 20, 0.2,
+                         ROOT / 'modules/2-MODULE_TE_BLAST/report.qmd',
+                         ROOT / 'modules/2-MODULE_TE_BLAST/report.css',
+                         ROOT / 'modules/2-MODULE_TE_BLAST/report.js', 'test')
+            self.assertTrue(any(match['subject_te'] == original and match['assignment'] == 'reported_primary'
+                                for match in data['matches']))
+
     def fixture(self, root):
         query = "2L:<INS>:100:101:event1:1:IMPRECISE:1"
         blast = root / "matches.bln"

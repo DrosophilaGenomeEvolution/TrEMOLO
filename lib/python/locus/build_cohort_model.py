@@ -71,7 +71,7 @@ def cluster_calls(calls: list[dict[str, str]], window: int) -> list[list[dict[st
 
 
 def allele_signature(call: dict[str, str]) -> tuple[str, str, str]:
-    te_name = call["te_call"].split("|", 1)[0]
+    te_name = call["te_call"].rsplit("|", 1)[0]
     strand = call["strand"] if call["strand"] in {"+", "-"} else "."
     return event_class(call["event_type"]), te_name, strand
 
@@ -168,7 +168,7 @@ def build_cohort(
             by_sample: dict[str, list[dict[str, str]]] = defaultdict(list)
             for call in allele_calls:
                 by_sample[call["sample_id"]].append(call)
-                original_call_id = call["te_call"].partition("|")[2] or call["tremolo_id"]
+                original_call_id = call["te_call"].rpartition("|")[2] or call["tremolo_id"]
                 source = "INSIDER" if "_INSIDER" in call["tremolo_id"] else "OUTSIDER"
                 evidence_rows.append(
                     {

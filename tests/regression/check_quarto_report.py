@@ -63,7 +63,7 @@ def main():
 
     expected = {
         "calls": len(calls),
-        "families": len({row[3].partition("|")[0] for row in calls}),
+        "families": len({row[3].rpartition("|")[0] for row in calls}),
         "chromosomes_with_calls": len({row[0] for row in calls}),
         "tsd_confirmed": expected_tsd,
         "frequency_available": sum(value is not None for value in expected_frequencies),
