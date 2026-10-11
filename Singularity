@@ -26,7 +26,10 @@ From: ubuntu:20.04
             intervaltree 2.1.0
             scipy 1.10.1
         R libs
-            knitr 1.38
+            xfun 0.48
+            knitr 1.46
+            tinytex 0.50
+            markdown 1.7
             rmarkdown 2.26
             bookdown 0.38
             viridis 0.6.2
@@ -118,9 +121,24 @@ _EOF_
 
     R -e "install.packages('remotes', repos='https://cloud.r-project.org')"
 
-    R -e "remotes::install_version('knitr', version='1.38', repos='https://cloud.r-project.org')"
-    R -e "remotes::install_version('rmarkdown', version='2.26', repos='https://cloud.r-project.org')"
-    R -e "remotes::install_version('bookdown', version='0.38', repos='https://cloud.r-project.org')"
+    # Keep the legacy R report stack compatible. xfun >= 0.56 removed attr(),
+    # imported by older knitr; rmarkdown 2.26 requires knitr >= 1.43.
+    # Pin HTML dependencies too: current CRAN dependencies can require newer R
+    # than the Ubuntu 20.04 image's R 3.6.3.
+    # Later remotes calls must not silently replace these pinned dependencies.
+    export R_REMOTES_UPGRADE=never
+    R --vanilla --slave <<'TREMOLO_R_REPORT_STACK'
+    versions <- c(rlang='1.1.4', fastmap='1.2.0', rappdirs='0.3.3',
+                  htmltools='0.5.8.1', sass='0.4.9', fontawesome='0.5.2', bslib='0.7.0',
+                  xfun='0.48', knitr='1.46', tinytex='0.50', markdown='1.7',
+                  rmarkdown='2.26', bookdown='0.38')
+    for (package in names(versions)) {
+        remotes::install_version(package, version=versions[[package]],
+                                 repos='https://cloud.r-project.org',
+                                 upgrade='never', dependencies=NA)
+        stopifnot(as.character(packageVersion(package)) == versions[[package]])
+    }
+TREMOLO_R_REPORT_STACK
     
     R -e "remotes::install_version('gtable',    version='0.3.0', repos='https://cloud.r-project.org')"
     R -e "remotes::install_version('gridExtra', version='2.3',   repos='https://cloud.r-project.org')"
@@ -368,6 +386,18 @@ _EOF_
     /usr/bin/sniffles -h 2>&1 | grep '1.0.12'
     /usr/local/bin/sniffles2 --version | grep '2.8.1'
     /opt/quarto/bin/quarto --version
+    # Catch missing packages or dependency upgrades at the end of the build.
+    R --vanilla --slave <<'TREMOLO_R_REPORT_CHECK'
+    versions <- c(rlang='1.1.4', fastmap='1.2.0', rappdirs='0.3.3',
+                  htmltools='0.5.8.1', sass='0.4.9', fontawesome='0.5.2', bslib='0.7.0',
+                  xfun='0.48', knitr='1.46', tinytex='0.50', markdown='1.7',
+                  rmarkdown='2.26', bookdown='0.38')
+    for (package in names(versions)) {
+        stopifnot(requireNamespace(package, quietly=TRUE),
+                  as.character(packageVersion(package)) == versions[[package]])
+    }
+    cat('Legacy R report stack: OK\n')
+TREMOLO_R_REPORT_CHECK
 
 %runscript
     exec "$@"

@@ -146,6 +146,15 @@ The *Singularity* file provided in this repo and can be compiled as such:
 sudo singularity build TrEMOLO.simg TrEMOLO/Singularity
 ```
 
+The recipe pins a compatible legacy R report stack, including `xfun 0.48`,
+`knitr 1.46`, `rmarkdown 2.26` and their HTML dependencies, and disables
+automatic dependency upgrades by `remotes`. An error such as
+`object 'attr' is not exported by 'namespace:xfun'` indicates an older recipe
+mixing an old knitr with a recent xfun. Rebuild using the updated `Singularity`
+file; changing R packages on the host does not fix packages installed inside
+the image. The final container checks load these packages and verify their
+pinned versions.
+
 **YOU MUST BE ROOT for compiling**
 
 
