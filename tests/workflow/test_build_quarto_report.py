@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 import json
+import shlex
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +21,7 @@ from build_quarto_report import (  # noqa: E402
     read_benchmarks,
     read_integration_audit,
     render_source,
+    parse_args,
 )
 
 
@@ -28,6 +32,25 @@ HEADER = (
 
 
 class BuildQuartoReportTests(unittest.TestCase):
+    def test_workflow_author_argument_accepts_empty_and_named_authors(self):
+        from snakemake.utils import format as format_command
+        # Exercise the actual rule's shell argument: quoting an empty string
+        # with Snakemake previously left a bare --author before the next option.
+        author_line = next(line.strip().rstrip("\\").strip()
+                           for line in (ROOT / "workflow/rules/report.smk").read_text().splitlines()
+                           if line.strip().startswith("--author"))
+        required = ["build_quarto_report.py"]
+        for name in ("te-infos", "genome-index", "input-manifest", "template", "style",
+                     "script", "output-qmd", "output-json"):
+            required.extend(["--" + name, "placeholder"])
+        with patch.object(sys, "argv", required):
+            self.assertEqual(parse_args().author, "")
+        for author in ("", "Alice", "Alice et Bob", "O'Brien", "--Auteur"):
+            with self.subTest(author=author):
+                argument = format_command(author_line, params=SimpleNamespace(author=author))
+                with patch.object(sys, "argv", required + shlex.split(argument) + ["--work-directory", "output"]):
+                    self.assertEqual(parse_args().author, author)
+
     def test_integration_summary_distinguishes_exclusions_and_partial_reconstruction(self):
         with tempfile.TemporaryDirectory() as directory:
             path = self.write(Path(directory), 'audit.tsv', 'event_id\tstatus\treason\n'

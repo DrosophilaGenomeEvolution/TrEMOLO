@@ -4,7 +4,7 @@ REPORT_SOURCE = f"{REPORT_DIR}/report.qmd"
 REPORT_HTML = f"{REPORT_DIR}/report.html"
 REPORT_OPTIONS = config.get("REPORT", {})
 REPORT_TITLE = REPORT_OPTIONS.get("TITLE", "TrEMOLO analysis report")
-REPORT_AUTHOR = REPORT_OPTIONS.get("AUTHOR", "")
+REPORT_AUTHOR = REPORT_OPTIONS.get("AUTHOR") or ""
 REPORT_LOCUS_WINDOW = REPORT_OPTIONS.get("LOCUS_WINDOW", 100)
 REPORT_QUARTO = config.get("TOOLS", {}).get("QUARTO", "quarto")
 REPORT_TEMPLATE = PIPELINE_ROOT / "report/quarto/report.qmd"
@@ -150,7 +150,7 @@ rule prepare_quarto_report:
             --output-qmd {output.source:q} \
             --output-json {output.data:q} \
             --title {params.title:q} \
-            --author {params.author:q} \
+            --author={params.author:q} \
             --work-directory {params.work_directory:q} \
             --locus-window {params.locus_window} \
             {params.source_args} > {log:q} 2>&1

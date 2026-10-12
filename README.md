@@ -311,11 +311,16 @@ PARAMS:
         SNIFFLES:
             MIN_SUPPORT: 1
 TOOLS:
-    SNIFFLES1: sniffles
-    SNIFFLES2: sniffles2
+    SNIFFLES1: sniffles     # optional executable override
+    SNIFFLES2: sniffles2    # optional executable override
 ```
 
 Merge these settings into the existing sections; do not duplicate YAML keys.
+`TOOLS.SNIFFLES1` and `TOOLS.SNIFFLES2` may be omitted: their defaults are
+`sniffles` and `sniffles2`, respectively. Only the selected caller needs to be
+available on PATH (or at its configured path) when OUTSIDER variant calling runs.
+`REPORT.AUTHOR` is optional as well: omit it, leave it blank, or set `""` to
+generate a report without an author.
 The container definition preserves Sniffles 1.0.12b and adds Sniffles 2.8.1 in
 an isolated Python 3.12 environment. Rebuild the image to obtain `sniffles2`.
 The historical `run.snk` is not extended: use `workflow/Snakefile` for this choice.
