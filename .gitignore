@@ -14,3 +14,4 @@ modules/2-MODULE_TE_BLAST/server/back-end/index/index_*
 mod-*
 __pycache__/
 *.py[cod]
+config_dm6*
