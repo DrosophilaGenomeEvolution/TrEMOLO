@@ -215,6 +215,10 @@ Ambiguous variable TE calls retain their sequence/read provenance in
 The REPORT distinguishes annotations on the same query from evidence on different
 insertion sequences; see [column descriptions and limitations](docs/te-call-candidates.md).
 
+A reference-backed TE insertion GFA can be built as an explicit post-processing
+step, with representatives ranked by BLAST bitscore and synthetic walks by level.
+See [inputs, selection rules and output files](docs/te-gfa.md).
+
 TrEMOLO uses [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) to perform its analyses. You have then first to provide your parameters in a *.yaml* file (see an example in the *config.yaml* file). Parameters are :
 
 ```yaml
