@@ -56,8 +56,11 @@ def records(path):
                     sequence = allele[len(anchor):]
                 else:
                     raise ValueError("Sequence/SVLEN mismatch: " + identifier)
+            # Native IDs already carry caller and SV type. Keep legacy wrapping
+            # only for nonstandard IDs so their type remains available downstream.
             yield {"chrom": chrom, "start": start, "end": end, "kind": kind,
-                   "id": "sniffles.{}.{}".format(kind, identifier),
+                   "id": (identifier if identifier.startswith("Sniffles2.{}.".format(kind))
+                          else "sniffles.{}.{}".format(kind, identifier)),
                    "support": int(info["SUPPORT"]),
                    "precision": "PRECISE" if "PRECISE" in info else "IMPRECISE",
                    "sequence": sequence, "rnames": str(info.get("RNAMES", "")).split(",")}

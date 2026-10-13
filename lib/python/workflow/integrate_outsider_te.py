@@ -202,7 +202,7 @@ def resolve_insertions(
             continue
         seen_events.add(identifier)
 
-        if identifier.startswith("sniffles."):
+        if identifier.startswith(("sniffles.", "Sniffles2.")):
             call = sniffles_calls.get(identifier)
             source_sequences = sniffles_sequences
         elif identifier.startswith("TrEMOLO."):

@@ -136,6 +136,18 @@ class FrequencyAggregationTests(unittest.TestCase):
 
             self.assertEqual(summarize_counts(counts), [])
 
+    def test_native_sniffles2_ids_keep_the_sniffles_support_floor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            counts = Path(directory) / "counts.tsv"
+            results = []
+            for identifier in ("sniffles.INS.Sniffles2.INS.1S0", "Sniffles2.INS.1S0", "TrEMOLO.INS.1"):
+                counts.write_text(evidence("I", "read1", identifier, "INS", support="4"))
+                results.append(summarize_counts(counts)[0])
+            self.assertEqual(results[0][3], "4")
+            self.assertEqual(results[1][3], "4")
+            self.assertEqual(results[0][:1] + results[0][2:], results[1][:1] + results[1][2:])
+            self.assertEqual(results[2][3], "1")
+
     def test_precise_correction_increments_totals_at_support_plus_one_boundary(self):
         frequency = [
             [

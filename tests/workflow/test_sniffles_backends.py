@@ -50,10 +50,21 @@ class SnifflesTests(unittest.TestCase):
             subprocess.run([sys.executable, str(ROOT / "lib/python/parsing/get_seq_vcf.py"),
                             "-c", ".", "-m", "0", str(path), str(output)], check=True, capture_output=True)
             self.assertEqual(output.read_text(),
-                ">chr1:<INS>:10:10:sniffles.INS.Sniffles2.INS.1S0:3:IMPRECISE\nACGN\n")
+                ">chr1:<INS>:10:10:Sniffles2.INS.1S0:3:IMPRECISE\nACGN\n")
             subprocess.run([sys.executable, str(ROOT / "lib/python/parsing/extract_region_reads_vcf.py"),
                             "-c", ".", "-d", str(root / "reads"), str(path)], check=True, capture_output=True)
             self.assertEqual(next((root / "reads").iterdir()).read_text(), "r1\nr2\nr3\n")
+            self.assertIn("Sniffles2.INS.1S0", next((root / "reads").iterdir()).name)
+
+    def test_native_insertion_and_deletion_ids_and_nonstandard_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = self.fixture(root, self.row() + self.row(
+                identifier="Sniffles2.DEL.2S0", ref="AACGN", alt="A",
+                info="PRECISE;SVTYPE=DEL;SVLEN=-4;END=14;SUPPORT=2") +
+                self.row(identifier="custom_id"))
+            self.assertEqual([row["id"] for row in records(path)],
+                             ["Sniffles2.INS.1S0", "Sniffles2.DEL.2S0", "sniffles.INS.custom_id"])
 
     def test_unanchored_alt_does_not_lose_a_real_base(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -65,6 +76,7 @@ class SnifflesTests(unittest.TestCase):
             root = Path(directory)
             record = list(records(self.fixture(root, self.row())))[0]
             identifier = record["id"]
+            self.assertEqual(identifier, "Sniffles2.INS.1S0")
             header = "chr1:<INS>:10:10:{}:3:IMPRECISE:0".format(identifier)
             def write(name, text):
                 path = root / name

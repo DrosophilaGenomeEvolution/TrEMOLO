@@ -134,7 +134,7 @@ def finalize_event(state):
     if sv_type == "INS":
         inserted = max(state["inserted"], support)
         insertion_only = state["insertion_only"]
-        if state["event_id"].startswith("sniffles") and insertion_only < support:
+        if state["event_id"].startswith(("sniffles", "Sniffles2.")) and insertion_only < support:
             insertion_only = support
         if insertion_only == 0:
             insertion_only = support

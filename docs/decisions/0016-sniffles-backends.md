@@ -18,6 +18,15 @@ it without replacing Python, NumPy, or the original Sniffles binary.
 `TOOLS.SNIFFLES1` and `TOOLS.SNIFFLES2` override executable paths. The runner
 checks the actual major version before calling and records the version and
 argument list in `OUTSIDER/VARIANT_CALLING/sniffles-run.json`.
+Native Sniffles 2 IDs (`Sniffles2.INS.*`, `Sniffles2.DEL.*`) are retained directly
+in sequence headers and all downstream tables, without an extra `sniffles.TYPE.`
+prefix. Nonstandard VCF IDs still receive that prefix to preserve the event type.
+Sniffles 1 naming is unchanged. Frequency support correction and genome
+integration recognize both the legacy prefix and the native Sniffles 2 prefix.
+To update an existing Sniffles 2 analysis, rerun `all` with
+`--forcerun extract_outsider_sniffles_sequences` (put `all` before this option).
+This regenerates the sequence IDs and dependent tables from the existing VCF;
+read mapping and SV calling do not need to be forced for this naming change.
 `PARAMS.OUTSIDER_VARIANT.SNIFFLES.MIN_SUPPORT` is a positive integer, default 1.
 Other defaults remain caller-specific: selecting generation 2 is a scientific
 change, not a promise of byte-identical output.
@@ -45,7 +54,8 @@ remain unchanged for historical outputs.
   accepted when its length already equals SVLEN.
 - VCF POS numerically equals the zero-based insertion breakpoint after the
   preceding base; it is passed unchanged to the current downstream contract.
-- Keep original IDs within `sniffles.<TYPE>.<original_id>` so all existing
+- Keep native `Sniffles2.<TYPE>.<id>` IDs directly (wrap nonstandard IDs with
+  `sniffles.<TYPE>.<original_id>`) so all existing
   evidence, frequency, TSD, and integration joins keep the same schema.
 - Preserve N bases in generation 2 sequences. Apply the existing strict
   `length > -m` threshold and normalized INS/DEL exclusions.
