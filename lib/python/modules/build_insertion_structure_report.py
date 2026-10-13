@@ -10,13 +10,16 @@ import json
 import math
 import os
 import tempfile
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Iterable, Optional
 
 
 PIPELINE_ROOT = Path(__file__).resolve().parents[3]
-SCHEMA_VERSION = "1.0.0"
+sys.path.insert(0, str(PIPELINE_ROOT / "lib/python/workflow"))
+from te_candidate_provenance import read_provenance, read_sequences
+SCHEMA_VERSION = "1.1.0"
 HSP_COLUMNS = (
     "hsp_id", "query_id", "event_id", "chrom", "locus_start", "locus_end",
     "subject_te", "pident", "alignment_length", "mismatch", "gapopen",
@@ -628,6 +631,28 @@ def build(
     write_tsv(output / "insertion-components.tsv", COMPONENT_COLUMNS, components)
     write_tsv(output / "insertion-structures.tsv", STRUCTURE_COLUMNS, structures)
     write_tsv(output / "insertion-events.tsv", EVENT_COLUMNS, events)
+    origins, insertion_hashes = {}, {}
+    if te_infos is not None:
+        workdir = te_infos.parent.parent if te_infos.parent.name == "INTERNAL" else te_infos.parent
+        for directory, fasta_name in (("OUTSIDER/TrEMOLO_SV_TE/INS", "SV_INS_CLUST.insertions.fasta"),
+                                      ("OUTSIDER/VARIANT_CALLING", "SEQUENCE_INDEL.insertions.fasta")):
+            origin_path = workdir / directory / "SEQUENCE_PROVENANCE.tsv"
+            if origin_path.is_file():
+                origins.update(read_provenance(origin_path))
+            fasta_path = workdir / directory / fasta_name
+            if fasta_path.is_file():
+                insertion_hashes.update(read_sequences(fasta_path))
+    provenance_rows = []
+    for structure in structures:
+        query_id = structure["query_id"]
+        origin = origins.get(query_id, {})
+        digest, length = insertion_hashes.get(query_id, (".", "."))
+        structure.update(read_id=origin.get("read_id", "."), sequence_origin=origin.get("sequence_origin", "unknown"),
+                         insertion_sha256=digest, insertion_length=length)
+        provenance_rows.append({key: structure[key] for key in (
+            "query_id", "event_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length")})
+    write_tsv(output / "insertion-sequence-provenance.tsv",
+              ("query_id", "event_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length"), provenance_rows)
     classification_counts: dict[str, int] = defaultdict(int)
     for row in structures:
         classification_counts[row["classification"]] += 1

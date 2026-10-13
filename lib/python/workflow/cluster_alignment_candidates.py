@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """Format bedtools clusters without dropping boundary records or retaining old clusters."""
 import argparse
+import csv
 from itertools import groupby
 from pathlib import Path
 
 
-def format_insertions(rows, fasta, positions, sizes, insertion_fasta=None, flank_size=0):
+def format_insertions(rows, fasta, positions, sizes, insertion_fasta=None, flank_size=0, provenance=None):
+    writer = None
+    if provenance is not None:
+        writer = csv.writer(provenance, delimiter="\t", lineterminator="\n")
+        writer.writerow(("query_id", "event_id", "read_id", "sequence_origin"))
     for cluster_id, cluster_rows in groupby(rows, key=lambda row: row[-1]):
         records = []
         seen = set()
@@ -19,6 +24,8 @@ def format_insertions(rows, fasta, positions, sizes, insertion_fasta=None, flank
         for number, row in enumerate(records, 1):
             header = f"{prefix}:{support}:IMPRECISE:{number}"
             fasta.write(f">{header}\n{row[4]}\n")
+            if writer is not None:
+                writer.writerow((header, f"TrEMOLO.INS.{cluster_id}", row[3], "read_sequence"))
             if insertion_fasta is not None:
                 # count_read is the query position immediately after the CIGAR I.
                 # A read can start within flank_size bases of the insertion.
@@ -50,6 +57,7 @@ def main():
     parser.add_argument("--sizes", type=Path)
     parser.add_argument("--insertion-fasta", type=Path)
     parser.add_argument("--flank-size", type=int, default=0)
+    parser.add_argument("--provenance", type=Path)
     args = parser.parse_args()
     if args.flank_size < 0:
         parser.error("--flank-size must be non-negative")
@@ -62,10 +70,18 @@ def main():
                 parser.error("ins requires --positions and --sizes")
             with args.positions.open("w") as positions, args.sizes.open("w") as sizes:
                 if args.insertion_fasta is None:
-                    format_insertions(rows, fasta, positions, sizes)
+                    if args.provenance is None:
+                        format_insertions(rows, fasta, positions, sizes)
+                    else:
+                        with args.provenance.open("w", newline="") as provenance:
+                            format_insertions(rows, fasta, positions, sizes, provenance=provenance)
                 else:
                     with args.insertion_fasta.open("w") as insertion_fasta:
-                        format_insertions(rows, fasta, positions, sizes, insertion_fasta, args.flank_size)
+                        if args.provenance is None:
+                            format_insertions(rows, fasta, positions, sizes, insertion_fasta, args.flank_size)
+                        else:
+                            with args.provenance.open("w", newline="") as provenance:
+                                format_insertions(rows, fasta, positions, sizes, insertion_fasta, args.flank_size, provenance)
 
 
 if __name__ == "__main__":

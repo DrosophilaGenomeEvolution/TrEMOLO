@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 
-REPORT_SCHEMA_VERSION = "1.5.0"
+REPORT_SCHEMA_VERSION = "1.6.0"
 TE_INFO_COLUMNS = (
     "chrom",
     "start",
@@ -234,12 +234,12 @@ def read_vcf_counts(path: Optional[Path]) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
-def read_tsv_rows(paths: list[Path], expected_header: tuple[str, ...]) -> list[dict]:
+def read_tsv_rows(paths: list[Path], expected_header: tuple[str, ...], extended_header=None) -> list[dict]:
     rows = []
     for path in paths:
         with path.open(newline="") as handle:
             reader = csv.DictReader(handle, delimiter="\t")
-            if tuple(reader.fieldnames or ()) != expected_header:
+            if tuple(reader.fieldnames or ()) not in (expected_header, extended_header):
                 raise ValueError(f"{path}: unexpected resident-TE table header")
             for line_number, row in enumerate(reader, 2):
                 if None in row:
@@ -423,10 +423,11 @@ def build_resident_te_data(
     }
 
 
-def read_ambiguous_call_candidates(path: Optional[Path]) -> dict:
+def read_ambiguous_call_candidates(path: Optional[Path], evidence_path: Optional[Path] = None) -> dict:
     if path is None:
         return {"available": False, "summary": {}, "candidates": []}
-    raw_rows = read_tsv_rows([path], AMBIGUOUS_CALL_COLUMNS)
+    raw_rows = read_tsv_rows([path], AMBIGUOUS_CALL_COLUMNS, AMBIGUOUS_CALL_COLUMNS + (
+        "query_count", "sequence_count", "read_count", "vcf_query_count", "provenance_status", "relation_types"))
     candidates = []
     grouped: dict[str, list[dict]] = defaultdict(list)
     for row in raw_rows:
@@ -462,6 +463,10 @@ def read_ambiguous_call_candidates(path: Optional[Path]) -> dict:
             "evidence_channels": row["evidence_channels"].split(";") if row["evidence_channels"] else [],
             "ambiguity_type": row["ambiguity_type"],
         }
+        for field in ("query_count", "sequence_count", "read_count", "vcf_query_count"):
+            value[field] = resident_int(label, field, row[field]) if field in row else None
+        value["provenance_status"] = row.get("provenance_status", "unavailable")
+        value["relation_types"] = row.get("relation_types", ".")
         candidates.append(value)
         grouped[label].append(value)
 
@@ -500,6 +505,11 @@ def read_ambiguous_call_candidates(path: Optional[Path]) -> dict:
             "maximum_candidates": max((len(rows) for rows in grouped.values()), default=0),
         },
         "candidates": candidates,
+        "evidence": read_tsv_rows([evidence_path], (
+            "candidate_group_id", "event_id", "evidence_channel", "query_id", "read_id",
+            "sequence_origin", "insertion_sha256", "insertion_length", "candidate_te",
+            "query_start", "query_end", "te_start", "te_end", "strand", "identity",
+            "aligned_bp", "evalue", "bitscore", "relation_types")) if evidence_path else [],
     }
 
 
@@ -645,6 +655,7 @@ def build_report_data(
     call_candidates_path: Optional[Path] = None,
     benchmark_paths: Optional[list[Path]] = None,
     integration_audit_path: Optional[Path] = None,
+    candidate_evidence_path: Optional[Path] = None,
 ) -> dict:
     calls = read_te_infos(te_infos)
     chromosomes = read_fasta_index(genome_index)
@@ -707,7 +718,7 @@ def build_report_data(
             relation_paths=resident_relation_paths,
             thresholds=resident_thresholds,
         ),
-        "ambiguous_calls": read_ambiguous_call_candidates(call_candidates_path),
+        "ambiguous_calls": read_ambiguous_call_candidates(call_candidates_path, candidate_evidence_path),
         "calls": calls,
         "timings": read_benchmarks(benchmark_paths),
         "integration": read_integration_audit(integration_audit_path),
@@ -795,6 +806,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resident-high-confidence-pident", type=float, default=80.0)
     parser.add_argument("--resident-partial-coverage", type=float, default=20.0)
     parser.add_argument("--te-call-candidates", type=Path)
+    parser.add_argument("--te-candidate-evidence", type=Path)
     parser.add_argument("--benchmarks", type=Path, nargs="*", default=[])
     args = parser.parse_args()
     if args.locus_window < 0:
@@ -827,6 +839,7 @@ def main() -> None:
             "partial_coverage": args.resident_partial_coverage,
         },
         call_candidates_path=args.te_call_candidates,
+        candidate_evidence_path=args.te_candidate_evidence,
         benchmark_paths=args.benchmarks,
         integration_audit_path=optional_path(args.integration_audit),
     )

@@ -9,6 +9,12 @@
   const residentCopies = resident.copies || [];
   const ambiguous = data.ambiguous_calls || { available: false, summary: {}, candidates: [] };
   const ambiguousCandidates = ambiguous.candidates || [];
+  const candidateEvidence = ambiguous.evidence || [];
+  const candidateEvidenceByGroup = new Map();
+  candidateEvidence.forEach((item) => {
+    if (!candidateEvidenceByGroup.has(item.candidate_group_id)) candidateEvidenceByGroup.set(item.candidate_group_id, []);
+    candidateEvidenceByGroup.get(item.candidate_group_id).push(item);
+  });
   const PAGE_SIZE = 50;
   const EVENT_TYPE_COLORS = [
     "#087f78", "#6f5bd3", "#ed8a3b", "#c44f70", "#3d7db7",
@@ -562,10 +568,12 @@
     const note = $("trm-ambiguous-call-note");
     const body = $("trm-ambiguous-call-table-body");
     const download = $("trm-download-ambiguous-calls");
+    const evidenceDownload = $("trm-download-candidate-evidence");
     body.replaceChildren();
     if (!ambiguous.available) {
       note.textContent = "The normalized ambiguous-call table is not available in this report.";
       download.disabled = true;
+      evidenceDownload.disabled = true;
       return;
     }
     const summary = ambiguous.summary || {};
@@ -589,10 +597,57 @@
       appendTextCell(row, candidate.evidence_count);
       appendTextCell(row, valueOrDash(100 * candidate.evidence_fraction, "%"));
       appendTextCell(row, candidate.evidence_channels.join(", "));
+      const relationshipLabels = {
+        same_sequence_annotation_ambiguity: "Competing annotations on one sequence",
+        same_sequence_multiple_regions: "Different regions on one sequence",
+        different_sequence_evidence: "Different insertion sequences",
+        mixed_sequence_evidence: "Mixed sequence evidence",
+        unresolved_family_candidates: "Unresolved sequence relationship",
+      };
+      appendTextCell(row, relationshipLabels[candidate.ambiguity_type] || candidate.ambiguity_type);
+      appendTextCell(row, [candidate.query_count, candidate.sequence_count, candidate.read_count, candidate.vcf_query_count].map((value) => value === null || value === undefined ? "?" : value).join(" / "));
+      appendTextCell(row, candidate.provenance_status || "unavailable");
+      const evidenceCell = document.createElement("td");
+      const details = document.createElement("details");
+      const summaryNode = document.createElement("summary");
+      summaryNode.textContent = "Inspect raw HSPs";
+      details.appendChild(summaryNode);
+      details.addEventListener("toggle", () => {
+        if (!details.open || details.dataset.rendered) return;
+        details.dataset.rendered = "yes";
+        const records = (candidateEvidenceByGroup.get(candidate.candidate_group_id) || []).filter((item) => item.candidate_te === candidate.candidate_te);
+        if (!records.length) {
+          const note = document.createElement("p");
+          note.textContent = "Sequence provenance unavailable for this candidate.";
+          details.appendChild(note);
+        }
+        records.forEach((item) => {
+          const line = document.createElement("p");
+          line.textContent = `${item.query_id} · read ${item.read_id} · ${item.sequence_origin} · query [${item.query_start}, ${item.query_end}) · TE [${item.te_start}, ${item.te_end}) ${item.strand} · identity ${item.identity}% · insertion ${item.insertion_length} bp · SHA256 ${item.insertion_sha256}`;
+          details.appendChild(line);
+        });
+      });
+      evidenceCell.appendChild(details);
+      row.appendChild(evidenceCell);
       body.appendChild(row);
     });
     download.disabled = !ambiguousCandidates.length;
     download.addEventListener("click", downloadAmbiguousCalls);
+    evidenceDownload.disabled = !candidateEvidence.length;
+    evidenceDownload.addEventListener("click", () => {
+      const columns = ["candidate_group_id", "event_id", "evidence_channel", "query_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length", "candidate_te", "query_start", "query_end", "te_start", "te_end", "strand", "identity", "aligned_bp", "evalue", "bitscore", "relation_types"];
+      const content = [columns.join("\t"), ...candidateEvidence.map((item) => columns.map((column) => candidateTsvCell(item[column])).join("\t"))].join("\n") + "\n";
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(new Blob([content], { type: "text/tab-separated-values;charset=utf-8" }));
+      link.download = "TE_CALL_CANDIDATE_EVIDENCE.tsv";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+  }
+
+  function candidateTsvCell(value) {
+    const text = value === null || value === undefined ? "." : String(value).replace(/[\t\r\n]/g, " ");
+    return text.includes('"') ? '"' + text.replaceAll('"', '""') + '"' : text;
   }
 
   function downloadAmbiguousCalls() {
@@ -601,6 +656,7 @@
       "tremolo_id", "event_type", "reported_te", "candidate_te", "assignment",
       "candidate_rank", "candidate_count", "evidence_count", "evidence_fraction",
       "evidence_channels", "ambiguity_type",
+      "query_count", "sequence_count", "read_count", "vcf_query_count", "provenance_status", "relation_types",
     ];
     const lines = [columns.join("\t")];
     ambiguousCandidates.forEach((candidate) => {
@@ -608,7 +664,7 @@
         const value = column === "evidence_channels"
           ? candidate.evidence_channels.join(";")
           : candidate[column];
-        return value === null || value === undefined ? "." : String(value).replace(/[\t\r\n]/g, " ");
+        return candidateTsvCell(value);
       }).join("\t"));
     });
     const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/tab-separated-values;charset=utf-8" });

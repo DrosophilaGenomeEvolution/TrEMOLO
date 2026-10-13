@@ -4,6 +4,7 @@ import json
 TE_NAME_EXPORTS = [
     dict(source=INTERNAL_TE_INFOS, output=TE_INFOS, kind="compound:3"),
     dict(source=INTERNAL_TE_CALL_CANDIDATES, output=TE_CALL_CANDIDATES, kind="table"),
+    dict(source=INTERNAL_TE_CALL_CANDIDATE_EVIDENCE, output=TE_CALL_CANDIDATE_EVIDENCE, kind="table"),
 ]
 
 def export_root(source):

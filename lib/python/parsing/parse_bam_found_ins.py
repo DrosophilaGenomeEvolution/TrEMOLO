@@ -2,6 +2,7 @@ import pysam
 import os
 import sys
 import argparse
+import csv
 
 
 parser = argparse.ArgumentParser(description="parse bam file to get sequence of insertion, at specific position in bed file", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -21,6 +22,8 @@ parser.add_argument("-r", "--rd_num", dest='rd_num', type=argparse.FileType('w')
                     help="Output file read name and num read support")
 parser.add_argument("--insertion-fasta", type=argparse.FileType('w'), default=None,
                     help="Optional companion FASTA containing insertion sequences without read flanks")
+parser.add_argument("--provenance", type=argparse.FileType('w'), default=None,
+                    help="Companion TSV mapping emitted sequences to reads or VCF origin")
 parser.add_argument("-m", "--max_distance", dest='max_distance', type=int, default=30,
                     help="Maximum distance to group SV together.")
 parser.add_argument("--fetch-window", type=int, default=1,
@@ -34,6 +37,10 @@ if min(args.fetch_window, args.max_distance, args.flank_size) < 0:
 name_bamfile = args.bam_file
 name_bedfile = args.bed_file.name
 rd_num_file  = args.rd_num
+provenance = None
+if args.provenance is not None:
+    provenance = csv.writer(args.provenance, delimiter="\t", lineterminator="\n")
+    provenance.writerow(("query_id", "event_id", "read_id", "sequence_origin"))
 flank_size = args.flank_size
 
 min_size_percent = args.min_size_percent
@@ -91,6 +98,8 @@ for line in befile:
 
                     print(">" + name + ":" + str(number_read_support))
                     print(seq_vr)
+                    if provenance is not None:
+                        provenance.writerow((name + ":" + str(number_read_support), name.split(":")[4], read.query_name, "read_sequence"))
                     if args.insertion_fasta is not None:
                         args.insertion_fasta.write('>' + name + ':' + str(number_read_support) + '\n' + seq_te_tsd + '\n')
                     number_read_support += 1
@@ -105,11 +114,17 @@ for line in befile:
 
     print(">" + name + ":" + str(0))
     print(bed_seq)
+    if provenance is not None:
+        # This VCF allele is not necessarily the last scanned read's sequence.
+        # Sniffles 2 may have constructed it from several reads.
+        provenance.writerow((name + ":0", name.split(":")[4], ".", "vcf_reported"))
     if args.insertion_fasta is not None:
         args.insertion_fasta.write('>' + name + ':0\n' + bed_seq.strip() + '\n')
 
 if args.insertion_fasta is not None:
     args.insertion_fasta.close()
+if args.provenance is not None:
+    args.provenance.close()
 
 
 

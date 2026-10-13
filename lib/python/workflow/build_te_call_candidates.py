@@ -11,6 +11,7 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path
 from typing import Optional
+from te_candidate_provenance import SUMMARY_COLUMNS, EVIDENCE_COLUMNS, load_evidence, summarize
 
 
 HEADER = (
@@ -31,7 +32,7 @@ HEADER = (
     "evidence_fraction",
     "evidence_channels",
     "ambiguity_type",
-)
+) + SUMMARY_COLUMNS
 
 
 def classify_source(tremolo_id: str) -> str:
@@ -135,7 +136,7 @@ def format_fraction(value: float) -> str:
     return format(value, ".6g")
 
 
-def build_rows(calls: dict[str, dict], evidence: dict) -> list[tuple[str, ...]]:
+def build_rows(calls: dict[str, dict], evidence: dict, provenance=None, detail_rows=None) -> list[tuple[str, ...]]:
     rows = []
     for event_id, candidates in evidence.items():
         call = calls.get(event_id)
@@ -157,6 +158,13 @@ def build_rows(calls: dict[str, dict], evidence: dict) -> list[tuple[str, ...]]:
         group_id = stable_group_id(
             call["source"], call["chrom"], call["start"], event_id
         )
+        summary, details = summarize((provenance or {}).get(event_id, []), set(candidates))
+        expected_channels = set().union(*(item["channels"] for item in candidates.values()))
+        if details and (set(item["candidate_te"] for item in details) != set(candidates)
+                        or set(item["evidence_channel"] for item in details) != expected_channels):
+            summary["provenance_status"] = "partial"
+        if detail_rows is not None:
+            detail_rows.extend(dict(item, candidate_group_id=group_id, relation_types=summary["relation_types"]) for item in details)
         for rank, (candidate_te, item) in enumerate(ordered, 1):
             channels = item["channels"]
             assert isinstance(channels, set)
@@ -179,7 +187,8 @@ def build_rows(calls: dict[str, dict], evidence: dict) -> list[tuple[str, ...]]:
                     str(count),
                     format_fraction(count / total),
                     ";".join(sorted(channels)),
-                    "unresolved_family_candidates",
+                    summary["ambiguity_type"],
+                    *(str(summary[column]) for column in SUMMARY_COLUMNS),
                 )
             )
     return sorted(rows, key=lambda row: (row[1], row[2], int(row[3]), row[5], int(row[11])))
@@ -202,11 +211,22 @@ def atomic_write(path: Path, rows: list[tuple[str, ...]]) -> None:
         raise
 
 
-def build(te_infos: Path, evidence_inputs: list[tuple[str, Path]], output: Path) -> tuple[int, int]:
+def build(te_infos: Path, evidence_inputs: list[tuple[str, Path]], output: Path,
+          alignments=(), provenances=(), fastas=(), evidence_output=None) -> tuple[int, int]:
     calls = read_calls(te_infos)
     evidence = read_evidence(evidence_inputs)
-    rows = build_rows(calls, evidence)
+    detail_rows = []
+    selected_events = {event for event, families in evidence.items() if event in calls and len(families) > 1}
+    rows = build_rows(calls, evidence, load_evidence(alignments, provenances, fastas, selected_events), detail_rows)
     atomic_write(output, rows)
+    if evidence_output is not None:
+        ordered = sorted(detail_rows, key=lambda row: (row["event_id"], row["evidence_channel"], row["query_id"], row["candidate_te"], row["query_start"], row["te_start"]))
+        evidence_output = Path(evidence_output)
+        evidence_output.parent.mkdir(parents=True, exist_ok=True)
+        with evidence_output.open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, EVIDENCE_COLUMNS, delimiter="\t", lineterminator="\n", extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(ordered)
     return len({row[0] for row in rows}), len(rows)
 
 
@@ -221,12 +241,16 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         metavar="CHANNEL=PATH",
     )
     parser.add_argument("--output", required=True, type=Path)
+    for option in ("alignment", "provenance", "sequence-fasta"):
+        parser.add_argument("--" + option, action="append", default=[], type=parse_evidence_argument)
+    parser.add_argument("--evidence-output", type=Path)
     return parser.parse_args(argv)
 
 
 def main(argv: Optional[list[str]] = None) -> None:
     args = parse_args(argv)
-    group_count, row_count = build(args.te_infos, args.evidence, args.output)
+    group_count, row_count = build(args.te_infos, args.evidence, args.output, args.alignment,
+                                 args.provenance, args.sequence_fasta, args.evidence_output)
     print(
         f"Wrote {row_count} candidates for {group_count} ambiguous variable TE calls."
     )

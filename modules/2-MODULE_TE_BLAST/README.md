@@ -18,6 +18,11 @@ The default output is `WORK_DIRECTORY/MODULE_TE_BLAST`. The module consumes:
 - `1-UTILS/TE_SIZE.tsv`;
 - `TE_INFOS.bed`, when available, to mark final reported events;
 - `TE_CALL_CANDIDATES.tsv`, when available, to identify known alternatives.
+- `SEQUENCE_PROVENANCE.tsv` and insertion-only FASTA companions, when present in
+  the work directory, to associate queries with source reads or VCF-reported
+  alleles. The cards show this origin; `insertion-sequence-provenance.tsv` retains
+  it with insertion hashes. Unknown origins remain explicit. See
+  [candidate provenance](../../docs/te-call-candidates.md).
 
 Scientific thresholds can be passed after the output directory:
 

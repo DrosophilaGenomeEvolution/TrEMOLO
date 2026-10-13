@@ -31,6 +31,10 @@ class ClusterFormattingTests(unittest.TestCase):
         self.assertIn('TrEMOLO.INS.2:2:IMPRECISE:2\nTTT', fasta.getvalue())
         self.assertEqual(len(positions.getvalue().splitlines()), 3)
         self.assertEqual(len(sizes.getvalue().splitlines()), 3)
+        provenance = io.StringIO()
+        format_insertions(iter(rows), io.StringIO(), io.StringIO(), io.StringIO(), provenance=provenance)
+        self.assertIn("\ta\tread_sequence\n", provenance.getvalue())
+        self.assertIn("\tc\tread_sequence\n", provenance.getvalue())
 
     def test_hard_singletons_first_and_last_are_retained(self):
         fasta = io.StringIO()
@@ -76,9 +80,11 @@ class AlignmentExtractionTests(unittest.TestCase):
             qseqid = 'chr1:<INS>:20:20:sniffles.INS.1:1:PRECISE'
             (root / 'variants').write_text('chr1\t20\t20\t{}\t40\t{}\n'.format(qseqid, 'T' * 40))
             result = subprocess.run([sys.executable, str(ROOT / 'lib/python/parsing/parse_bam_found_ins.py'),
-                                     '--insertion-fasta', str(root / 'insertions'), str(bam), str(root / 'variants')],
+                                     '--insertion-fasta', str(root / 'insertions'), '--provenance', str(root / 'provenance.tsv'), str(bam), str(root / 'variants')],
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(f'{qseqid}:1\tsniffles.INS.1\tread\tread_sequence', (root / 'provenance.tsv').read_text())
+            self.assertIn(f'{qseqid}:0\tsniffles.INS.1\t.\tvcf_reported', (root / 'provenance.tsv').read_text())
             self.assertEqual((root / 'insertions').read_text(), '>' + qseqid + ':1\n' + 'C' * 40 + '\n>' + qseqid + ':0\n' + 'T' * 40 + '\n')
             self.assertIn('A' * 5 + 'T' * 5 + 'C' * 40 + 'G' * 5, result.stdout)
 

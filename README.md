@@ -210,6 +210,11 @@ alignment using `CHOICE.PIPELINE.UNMAPPED_TE: true` (disabled by default).
 Results are written under `UNMAPPED_TE/`, with original TE labels and coordinates
 within each read. See [configuration and column descriptions](docs/unmapped-te.md).
 
+Ambiguous variable TE calls retain their sequence/read provenance in
+`TE_CALL_CANDIDATES.tsv` and the companion `TE_CALL_CANDIDATE_EVIDENCE.tsv`.
+The REPORT distinguishes annotations on the same query from evidence on different
+insertion sequences; see [column descriptions and limitations](docs/te-call-candidates.md).
+
 TrEMOLO uses [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) to perform its analyses. You have then first to provide your parameters in a *.yaml* file (see an example in the *config.yaml* file). Parameters are :
 
 ```yaml

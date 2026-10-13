@@ -35,7 +35,7 @@ explicit ambiguity type.
 count for that event. It is a descriptive share of preserved evidence, not a
 posterior probability or a biological allele frequency.
 
-The current ambiguity type is `unresolved_family_candidates`. Raw candidate
+The initial ambiguity type was `unresolved_family_candidates`. Raw candidate
 counts contain no coordinates on the inserted sequence, so the table does not
 claim whether alternatives are competing annotations of one segment or
 separate components of a composite insertion.
@@ -60,3 +60,13 @@ ambiguous?”. Header-only output is a valid result when no ambiguity exists or
 when the enabled pipelines do not preserve alternative evidence. Quarto shows
 the same candidates in a dedicated table and labels the current primary choice
 without presenting alternatives as confirmed biological components.
+
+## Sequence provenance extension
+
+The summary now appends query, insertion-sequence and known-read counts, VCF
+origin counts, provenance availability and raw sequence relationships. A companion
+`TE_CALL_CANDIDATE_EVIDENCE.tsv` preserves HSP coordinates and links to sequence
+origin maps. Overlapping family hits on one query, disjoint regions and different
+insertion sequences are distinguished; mixed and unresolved cases remain explicit.
+Original ranks, counts and fractions are retained. These descriptions do not
+resolve loci or identify biological alleles. See [column descriptions](../te-call-candidates.md).

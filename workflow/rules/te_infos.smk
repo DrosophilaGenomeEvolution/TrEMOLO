@@ -4,6 +4,8 @@ TE_INFOS = f"{WORKDIR}/TE_INFOS.bed"
 TE_CALL_CANDIDATES = f"{WORKDIR}/TE_CALL_CANDIDATES.tsv"
 INTERNAL_TE_INFOS = f"{WORKDIR}/INTERNAL/TE_INFOS.bed"
 INTERNAL_TE_CALL_CANDIDATES = f"{WORKDIR}/INTERNAL/TE_CALL_CANDIDATES.tsv"
+TE_CALL_CANDIDATE_EVIDENCE = f"{WORKDIR}/TE_CALL_CANDIDATE_EVIDENCE.tsv"
+INTERNAL_TE_CALL_CANDIDATE_EVIDENCE = f"{WORKDIR}/INTERNAL/TE_CALL_CANDIDATE_EVIDENCE.tsv"
 TE_INFOS_EMPTY_INPUT = "/dev/null"
 TE_INFOS_WITH_OUTSIDER = bool(CHOICES.get("OUTSIDER_VARIANT"))
 TE_INFOS_WITH_INSIDER = bool(CHOICES.get("INSIDER_VARIANT"))
@@ -118,6 +120,7 @@ rule build_te_infos:
 rule build_te_call_candidates:
     input:
         script=str(PIPELINE_ROOT / "lib/python/workflow/build_te_call_candidates.py"),
+        helper=str(PIPELINE_ROOT / "lib/python/workflow/te_candidate_provenance.py"),
         te_infos=INTERNAL_TE_INFOS,
         outsider_direct=te_infos_input(
             OUTSIDER_INS_READ_COUNTS, TE_INFOS_WITH_OUTSIDER
@@ -125,8 +128,15 @@ rule build_te_call_candidates:
         outsider_sniffles=te_infos_input(
             OUTSIDER_SNIFFLES_TE_READ_COUNTS, TE_INFOS_WITH_OUTSIDER
         ),
+        direct_blast=te_infos_input(OUTSIDER_INS_BLAST, TE_INFOS_WITH_OUTSIDER),
+        sniffles_blast=te_infos_input(OUTSIDER_SNIFFLES_BLAST, TE_INFOS_WITH_OUTSIDER),
+        direct_provenance=te_infos_input(OUTSIDER_INS_PROVENANCE, TE_INFOS_WITH_OUTSIDER),
+        sniffles_provenance=te_infos_input(OUTSIDER_SNIFFLES_PROVENANCE, TE_INFOS_WITH_OUTSIDER),
+        direct_fasta=te_infos_input(OUTSIDER_INS_INSERTION_FASTA, TE_INFOS_WITH_OUTSIDER),
+        sniffles_fasta=te_infos_input(OUTSIDER_SNIFFLES_INSERTION_FASTA, TE_INFOS_WITH_OUTSIDER),
     output:
         candidates=INTERNAL_TE_CALL_CANDIDATES,
+        evidence=INTERNAL_TE_CALL_CANDIDATE_EVIDENCE,
     threads: 1
     resources:
         mem_mb=512,
@@ -141,5 +151,12 @@ rule build_te_call_candidates:
         python3 {input.script:q} --te-infos {input.te_infos:q} \
             --evidence outsider_direct_alignment={input.outsider_direct:q} \
             --evidence outsider_sniffles={input.outsider_sniffles:q} \
+            --alignment outsider_direct_alignment={input.direct_blast:q} \
+            --alignment outsider_sniffles={input.sniffles_blast:q} \
+            --provenance outsider_direct_alignment={input.direct_provenance:q} \
+            --provenance outsider_sniffles={input.sniffles_provenance:q} \
+            --sequence-fasta outsider_direct_alignment={input.direct_fasta:q} \
+            --sequence-fasta outsider_sniffles={input.sniffles_fasta:q} \
+            --evidence-output {output.evidence:q} \
             --output {output.candidates:q} > {log:q} 2>&1
         """
