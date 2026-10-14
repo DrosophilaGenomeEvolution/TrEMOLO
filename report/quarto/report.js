@@ -16,6 +16,7 @@
     candidateEvidenceByGroup.get(item.candidate_group_id).push(item);
   });
   const PAGE_SIZE = 50;
+  const ambiguousState = { page: 0 };
   const EVENT_TYPE_COLORS = [
     "#087f78", "#6f5bd3", "#ed8a3b", "#c44f70", "#3d7db7",
     "#a06b20", "#6b8e23", "#8b5e83", "#4f737b", "#b24b3e",
@@ -64,6 +65,56 @@
 
   function unique(field) {
     return [...new Set(calls.map((call) => call[field]))].sort((a, b) => String(a).localeCompare(String(b)));
+  }
+
+  function renderPageNumbers(prefix, current, pages, navigate) {
+    const status = $(`${prefix}-status`);
+    let numbers = $(`${prefix}-numbers`);
+    if (!numbers) {
+      numbers = document.createElement("span");
+      numbers.id = `${prefix}-numbers`;
+      numbers.className = "trm-page-numbers";
+      numbers.setAttribute("aria-label", "Page numbers");
+      status.after(numbers);
+    }
+    numbers.replaceChildren();
+    const start = Math.max(0, Math.min(current - 3, pages - 7));
+    const visible = new Set([0, pages - 1]);
+    for (let page = start; page < Math.min(pages, start + 7); page += 1) visible.add(page);
+    let previous = -1;
+    [...visible].sort((a, b) => a - b).forEach((page) => {
+      if (page > previous + 1) {
+        const gap = document.createElement("span");
+        gap.textContent = "…";
+        numbers.appendChild(gap);
+      }
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "trm-button trm-button-secondary";
+      button.textContent = page + 1;
+      button.setAttribute("aria-label", `Go to page ${page + 1}`);
+      if (page === current) button.setAttribute("aria-current", "page");
+      button.addEventListener("click", () => navigate(page));
+      numbers.appendChild(button);
+      previous = page;
+    });
+    if (pages > 9) {
+      const label = document.createElement("label");
+      label.textContent = "Go to page ";
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = 1;
+      input.max = pages;
+      input.value = current + 1;
+      input.setAttribute("aria-label", "Page number");
+      input.addEventListener("change", () => {
+        const page = Number(input.value);
+        if (Number.isInteger(page) && page >= 1 && page <= pages) navigate(page - 1);
+        else input.value = current + 1;
+      });
+      label.appendChild(input);
+      numbers.appendChild(label);
+    }
   }
 
   function initializeFilters() {
@@ -514,6 +565,10 @@
     $("trm-page-status").textContent = state.filtered.length ? `Page ${state.page + 1} / ${pages}` : "No result";
     $("trm-page-previous").disabled = state.page === 0;
     $("trm-page-next").disabled = state.page >= pages - 1;
+    renderPageNumbers("trm-page", state.page, pages, (page) => {
+      state.page = page;
+      renderTable();
+    });
     $("trm-filter-count").textContent = `${formatInteger.format(state.filtered.length)} / ${formatInteger.format(calls.length)} calls`;
   }
 
@@ -574,13 +629,19 @@
       note.textContent = "The normalized ambiguous-call table is not available in this report.";
       download.disabled = true;
       evidenceDownload.disabled = true;
+      $("trm-ambiguous-page-previous").disabled = true;
+      $("trm-ambiguous-page-next").disabled = true;
+      $("trm-ambiguous-page-status").textContent = "No result";
       return;
     }
     const summary = ambiguous.summary || {};
     note.textContent = ambiguousCandidates.length
       ? `${formatInteger.format(summary.ambiguous_calls || 0)} reported variable calls retain ${formatInteger.format(summary.candidate_rows || 0)} TE candidates. Unique calls are intentionally omitted.`
       : "No reported variable TE call has more than one distinct candidate label. Unique calls are intentionally omitted.";
-    ambiguousCandidates.forEach((candidate) => {
+    const pages = Math.max(1, Math.ceil(ambiguousCandidates.length / PAGE_SIZE));
+    ambiguousState.page = Math.max(0, Math.min(ambiguousState.page, pages - 1));
+    const start = ambiguousState.page * PAGE_SIZE;
+    ambiguousCandidates.slice(start, start + PAGE_SIZE).forEach((candidate) => {
       const row = document.createElement("tr");
       appendTextCell(row, candidate.source);
       appendTextCell(row, candidate.event_id);
@@ -632,9 +693,14 @@
       body.appendChild(row);
     });
     download.disabled = !ambiguousCandidates.length;
-    download.addEventListener("click", downloadAmbiguousCalls);
+    if (!download.dataset.bound) {
+      download.addEventListener("click", downloadAmbiguousCalls);
+      download.dataset.bound = "yes";
+    }
     evidenceDownload.disabled = !candidateEvidence.length;
-    evidenceDownload.addEventListener("click", () => {
+    if (!evidenceDownload.dataset.bound) {
+      evidenceDownload.dataset.bound = "yes";
+      evidenceDownload.addEventListener("click", () => {
       const columns = ["candidate_group_id", "event_id", "evidence_channel", "query_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length", "candidate_te", "query_start", "query_end", "te_start", "te_end", "strand", "identity", "aligned_bp", "evalue", "bitscore", "relation_types"];
       const content = [columns.join("\t"), ...candidateEvidence.map((item) => columns.map((column) => candidateTsvCell(item[column])).join("\t"))].join("\n") + "\n";
       const link = document.createElement("a");
@@ -642,6 +708,15 @@
       link.download = "TE_CALL_CANDIDATE_EVIDENCE.tsv";
       link.click();
       URL.revokeObjectURL(link.href);
+      });
+    }
+    $("trm-ambiguous-page-status").textContent = ambiguousCandidates.length
+      ? `Page ${ambiguousState.page + 1} / ${pages}` : "No result";
+    $("trm-ambiguous-page-previous").disabled = ambiguousState.page === 0;
+    $("trm-ambiguous-page-next").disabled = ambiguousState.page >= pages - 1;
+    renderPageNumbers("trm-ambiguous-page", ambiguousState.page, pages, (page) => {
+      ambiguousState.page = page;
+      renderAmbiguousCalls();
     });
   }
 
@@ -1043,6 +1118,14 @@
   initializeFilters();
   renderSelection();
   renderProximity();
+  $("trm-ambiguous-page-previous").addEventListener("click", () => {
+    ambiguousState.page -= 1;
+    renderAmbiguousCalls();
+  });
+  $("trm-ambiguous-page-next").addEventListener("click", () => {
+    ambiguousState.page += 1;
+    renderAmbiguousCalls();
+  });
   renderAmbiguousCalls();
   renderResidentSection();
   renderContext();

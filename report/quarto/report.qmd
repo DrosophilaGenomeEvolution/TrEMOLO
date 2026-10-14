@@ -141,6 +141,14 @@ The filters below update the call charts and the call table. Downloading exports
 
 Only reported INSIDER/OUTSIDER events with at least two distinct TE labels belong in this table. Sequence provenance distinguishes competing annotations on one query, hits on separate query regions, and evidence from different insertion sequences or reads. These are descriptions of raw alignment evidence, not confirmed alleles, components or SWAPs. Sequence differences can include read errors. VCF-reported alleles have no assigned read identity and may be consensus sequences.
 
+Fraction is the candidate's evidence count divided by the sum of candidate counts
+for that event, displayed as a percentage; it is not an allele frequency or a
+share of unique reads. Queries / sequences / reads / VCF counts refer to the whole
+candidate group: BLAST queries, distinct exact insertion sequences, known source
+reads, and VCF-reported queries. Provenance indicates whether sequence origins
+and insertion sequences are complete, partial, or unavailable. Raw HSPs
+(High-scoring Segment Pairs) are the original local BLAST alignments.
+
 ```{=html}
 <div id="trm-ambiguous-call-note" class="trm-note"></div>
 <div class="trm-toolbar trm-compact-toolbar">
@@ -153,6 +161,11 @@ Only reported INSIDER/OUTSIDER events with at least two distinct TE labels belon
     <thead><tr><th>Source</th><th>Event</th><th>Interval</th><th>Reported TE</th><th>Candidate TE</th><th>Assignment</th><th>Rank</th><th>Evidence</th><th>Fraction</th><th>Channel</th><th>Sequence relationship</th><th>Queries / sequences / reads / VCF</th><th>Provenance</th><th>Sequence details</th></tr></thead>
     <tbody id="trm-ambiguous-call-table-body"></tbody>
   </table>
+</div>
+<div class="trm-pagination">
+  <button id="trm-ambiguous-page-previous" type="button" class="trm-button trm-button-secondary">Previous</button>
+  <span id="trm-ambiguous-page-status"></span>
+  <button id="trm-ambiguous-page-next" type="button" class="trm-button trm-button-secondary">Next</button>
 </div>
 ```
 

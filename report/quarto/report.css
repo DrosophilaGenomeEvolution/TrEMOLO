@@ -158,6 +158,10 @@ body {
 .trm-candidate-alternative { background: var(--trm-outsider); }
 .trm-compact-toolbar { margin: 0 0 0.7rem; }
 .trm-pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 1rem 0 2rem; font-size: 0.78rem; }
+.trm-pagination { flex-wrap: wrap; }
+.trm-page-numbers { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.35rem; }
+.trm-page-numbers [aria-current="page"] { background: var(--trm-teal); color: #fff; }
+.trm-page-numbers input { width: 4.5rem; margin-left: 0.3rem; }
 .trm-note { border-left: 4px solid var(--trm-teal); padding: 0.85rem 1rem; margin: 1rem 0; background: var(--trm-soft); border-radius: 0 0.6rem 0.6rem 0; }
 .trm-warning { border-left: 4px solid #c7543d; padding: 0.8rem; }
 .trm-key-values { display: grid; grid-template-columns: minmax(10rem, 1fr) 2fr; margin: 0; font-size: 0.76rem; }
