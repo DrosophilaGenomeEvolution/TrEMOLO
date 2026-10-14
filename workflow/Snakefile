@@ -13,11 +13,13 @@ PIPELINE_ROOT = Path(workflow.basedir).resolve().parent
 sys.path.insert(0, str(PIPELINE_ROOT / "lib/python/workflow"))
 from window_parameters import resolve_windows
 from unmapped_te import resolve_parameters as resolve_unmapped_parameters
+from unmapped_te import resolve_extraction_parameters
 WINDOWS = resolve_windows(config.get("PARAMS", {}).get("WINDOWS"))
 UNMAPPED_TE_ENABLED = CHOICES.get("UNMAPPED_TE", False)
 if type(UNMAPPED_TE_ENABLED) is not bool:
     raise ValueError("CHOICE.PIPELINE.UNMAPPED_TE must be a boolean")
 UNMAPPED_TE_PARAMS = resolve_unmapped_parameters(config.get("PARAMS", {}).get("UNMAPPED_TE"))
+UNMAPPED_EXTRACTION_PARAMS = resolve_extraction_parameters(config.get("PARAMS", {}).get("UNMAPPED_TE_EXTRACTION"))
 PREPARE_INPUTS_SCRIPT = PIPELINE_ROOT / "lib/python/workflow/prepare_inputs.py"
 THREADS = config.get("PARAMS", {}).get("THREADS", 1)
 THREADS = THREADS if isinstance(THREADS, int) and THREADS > 0 else 1

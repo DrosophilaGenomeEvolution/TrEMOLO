@@ -58,13 +58,50 @@ en mémoire, les reads sont traités directement, sans copier les séquences des
 reads non candidats. Le CLI `extract --name-memory-mb N` permet d'ajuster ce budget ; `0` force
 le traitement sur disque.
 
-Deux parcours du SAM restent nécessaires pour exclure tout read ayant aussi un
+La méthode par défaut conserve deux parcours du SAM pour exclure tout read ayant aussi un
 alignement mappé, quel que soit l'ordre des enregistrements, sans stocker tous les
 noms mappés. Le second parcours est omis si aucun candidat non mappé n'existe.
 Le FASTQ est parcouru une fois ; les séquences, leur ordre, les identifiants de
 sortie et les statistiques restent identiques à l'extraction précédente.
-Cette étape reste mono-thread ; l'optimisation réduit les recherches SQL et les
+La méthode par défaut reste mono-thread ; l'optimisation réduit les recherches SQL et les
 copies de séquences. Le BLAST suivant utilise les threads du workflow.
+
+Une variante de sélection avec `samtools collate` est disponible pour comparaison :
+
+```yaml
+PARAMS:
+  THREADS: 4
+  UNMAPPED_TE_EXTRACTION:
+    METHOD: collate
+    NAME_MEMORY_MB: 256
+    SAMTOOLS: samtools
+```
+
+`METHOD` vaut `two-pass` par défaut ; `SAMTOOLS` peut être un chemin vers
+l'exécutable. Les threads attribués par Snakemake sont transmis à l'extraction.
+La variante `collate` lance `samtools collate -O -u` sur le SAM initial, sans
+filtrage préalable et sans mode rapide `-f` : les alignements secondaires et
+supplémentaires participent à l'exclusion. Le BAM regroupé est lu directement
+depuis un pipe, sans créer de BAM complet intermédiaire. Les fichiers temporaires
+du regroupement sont placés dans un répertoire privé près du FASTA de sortie,
+puis supprimés, y compris en cas d'erreur. Un échec de samtools interrompt
+l'extraction et affiche son code de sortie et ses messages d'erreur.
+
+Chaque groupe de noms est examiné une seule fois. Les compteurs et les séquences
+restent identiques à `two-pass`, et l'ordre de sortie reste celui du FASTQ original,
+indépendamment de l'ordre produit par collate. Le budget `--threads N` réserve
+deux traitements principaux (samtools et Python) et donne `max(0, N-2)` threads
+supplémentaires aux opérations de compression de samtools ; il ne parallélise
+pas la décision Python par groupe ni la lecture du FASTQ. Choisir au moins deux
+threads pour cette variante.
+
+Le CLI équivalent est `extract --selection-method collate --threads 4`, avec les
+mêmes options d'entrée/sortie et éventuellement `--samtools /path/samtools`.
+Le regroupement peut coûter plus cher que le second parcours séquentiel,
+notamment pour un SAM sur disque rapide. Cette variante ne devient donc pas
+automatiquement la méthode par défaut. Lors d'une comparaison sur une analyse
+existante, relancer explicitement `extract_unmapped_reads` (avec `--forcerun`)
+afin de ne pas réutiliser l'ancienne extraction.
 
 La banque TE est alignée par `blastn -task blastn` sur une base des reads non
 mappés. Le nombre maximal de sujets est fixé au nombre de reads sélectionnés,

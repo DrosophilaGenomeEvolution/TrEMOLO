@@ -6,9 +6,11 @@ import json
 import math
 import re
 import sqlite3
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from contextlib import contextmanager
 
 from annotate_resident_te import (
     read_fragments, read_te_names, build_matches, build_copies,
@@ -19,6 +21,21 @@ DEFAULTS = dict(MIN_PIDENT=80.0, MIN_ALIGNED_BP=80, MAX_EVALUE=1e-10,
                 FULL_LENGTH_COVERAGE=80.0, MIN_CHAIN_GAP=200,
                 MAX_GAP_FRACTION=0.2, MAX_OVERLAP=20, AMBIGUITY_OVERLAP=0.8)
 READ_COLUMNS = ("query_id", "read_id", "read_length")
+
+
+def resolve_extraction_parameters(parameters=None):
+    parameters = {} if parameters is None else parameters
+    defaults = dict(METHOD="two-pass", NAME_MEMORY_MB=256, SAMTOOLS="samtools")
+    if not isinstance(parameters, dict) or set(parameters) - set(defaults):
+        raise ValueError("Invalid PARAMS.UNMAPPED_TE_EXTRACTION options")
+    result = dict(defaults, **parameters)
+    if result["METHOD"] not in ("two-pass", "collate"):
+        raise ValueError("UNMAPPED_TE_EXTRACTION.METHOD must be two-pass or collate")
+    if type(result["NAME_MEMORY_MB"]) is not int or result["NAME_MEMORY_MB"] < 0:
+        raise ValueError("UNMAPPED_TE_EXTRACTION.NAME_MEMORY_MB must be a non-negative integer")
+    if not isinstance(result["SAMTOOLS"], str) or not result["SAMTOOLS"].strip():
+        raise ValueError("UNMAPPED_TE_EXTRACTION.SAMTOOLS must be an executable name or path")
+    return result
 MATCH_COLUMNS = ("match_id", "component_id", "read_id", "read_length", "te_family",
                  "read_start", "read_end", "strand", "te_length", "te_covered_bp",
                  "te_coverage", "read_aligned_bp", "identity", "bitscore",
@@ -142,11 +159,87 @@ def _fastq_batches(source):
         yield batch
 
 
-def extract(sam, fastq, fasta, reads, stats, name_memory_mb=256):
+@contextmanager
+def _collated_alignments(sam, directory, samtools, threads):
+    """Stream unfiltered collate output, surfacing errors and reaping the child."""
+    import pysam
+    command = [samtools, "collate", "-O", "-u", "-@", str(max(0, threads - 2)),
+               str(sam), str(Path(directory) / "collate")]
+    error_path = Path(directory) / "collate.stderr"
+    with error_path.open("wb") as error_file:
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error_file, stdin=subprocess.DEVNULL)
+        try:
+            try:
+                with pysam.AlignmentFile(process.stdout, "rb", check_sq=False) as alignments:
+                    yield alignments
+            except BaseException as error:
+                # A malformed/truncated stream may be the consequence of a
+                # samtools error. Capture stderr before scratch files disappear.
+                process.stdout.close()
+                try:
+                    code = process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.terminate()
+                    try:
+                        code = process.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        code = process.wait()
+                if code != 0 and isinstance(error, Exception):
+                    detail = error_path.read_text(errors="replace").strip()
+                    raise RuntimeError(f"samtools collate failed (exit code {code}): {detail}") from error
+                raise
+            code = process.wait()
+            if code != 0:
+                detail = error_path.read_text(errors="replace").strip()
+                raise RuntimeError(f"samtools collate failed (exit code {code}): {detail}")
+        finally:
+            process.stdout.close()
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+
+
+def _collect_collated(index, alignments):
+    """Decide each QNAME once, including every secondary/supplementary record."""
+    current, unmapped, mapped = None, False, False
+    candidates = 0
+    accepted = []
+    for row in alignments.fetch(until_eof=True):
+        if current is not None and row.query_name != current:
+            if unmapped:
+                candidates += 1
+                if not mapped:
+                    accepted.append(current)
+                    if len(accepted) == 10000:
+                        index.add(accepted)
+                        accepted = []
+            unmapped, mapped = False, False
+        current = row.query_name
+        unmapped = unmapped or row.is_unmapped
+        mapped = mapped or not row.is_unmapped
+    if current is not None and unmapped:
+        candidates += 1
+        if not mapped:
+            accepted.append(current)
+    index.add(accepted)
+    return candidates
+
+
+def extract(sam, fastq, fasta, reads, stats, name_memory_mb=256,
+            selection_method="two-pass", samtools="samtools", threads=1):
     # Imports stay local: Snakemake can validate configuration without pysam.
     import pysam
     if type(name_memory_mb) is not int or name_memory_mb < 0:
         raise ValueError("name_memory_mb must be a non-negative integer")
+    if selection_method not in ("two-pass", "collate"):
+        raise ValueError("selection_method must be two-pass or collate")
+    if type(threads) is not int or threads < 1:
+        raise ValueError("threads must be a positive integer")
     fasta, reads, stats = map(Path, (fasta, reads, stats))
     for path in (fasta, reads, stats):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -160,14 +253,18 @@ def extract(sam, fastq, fasta, reads, stats, name_memory_mb=256):
             db.execute("PRAGMA synchronous=OFF")
             db.execute("PRAGMA cache_size=-32768")
             index = _CandidateNames(db, name_memory_mb * 1024 * 1024)
-            with pysam.AlignmentFile(str(sam), "r", check_sq=False) as alignments:
-                for batch in _batches(row.query_name for row in alignments.fetch(until_eof=True) if row.is_unmapped):
-                    index.add(batch)
-            candidates = index.count()
-            if candidates:
+            if selection_method == "collate":
+                with _collated_alignments(sam, directory, samtools, threads) as alignments:
+                    candidates = _collect_collated(index, alignments)
+            else:
                 with pysam.AlignmentFile(str(sam), "r", check_sq=False) as alignments:
-                    for batch in _batches(row.query_name for row in alignments.fetch(until_eof=True) if not row.is_unmapped):
-                        index.remove(batch)
+                    for batch in _batches(row.query_name for row in alignments.fetch(until_eof=True) if row.is_unmapped):
+                        index.add(batch)
+                candidates = index.count()
+                if candidates:
+                    with pysam.AlignmentFile(str(sam), "r", check_sq=False) as alignments:
+                        for batch in _batches(row.query_name for row in alignments.fetch(until_eof=True) if not row.is_unmapped):
+                            index.remove(batch)
             unmapped = index.count()
             total, selected = 0, 0
             with pysam.FastxFile(str(fastq)) as source, fasta.open("w") as output, reads.open("w", newline="") as table:
@@ -279,6 +376,10 @@ def main():
         extraction.add_argument("--" + name, type=Path, required=True)
     extraction.add_argument("--name-memory-mb", type=int, default=256,
                             help="Candidate-name memory budget in MiB; 0 forces disk-backed batched lookup")
+    extraction.add_argument("--selection-method", choices=("two-pass", "collate"), default="two-pass")
+    extraction.add_argument("--samtools", default="samtools", help="Samtools executable for collate selection")
+    extraction.add_argument("--threads", type=int, default=1,
+                            help="CPU budget for collate plus Python; extra compression threads = max(0, N-2)")
     annotation = sub.add_parser("annotate")
     for name in ("blast", "headers", "reads", "extraction-stats", "output", "hsps", "stats"):
         annotation.add_argument("--" + name, type=Path, required=True)

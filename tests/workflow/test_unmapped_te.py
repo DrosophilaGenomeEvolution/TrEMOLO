@@ -9,10 +9,64 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "lib/python/workflow"))
-from unmapped_te import extract, annotate, resolve_parameters, MATCH_COLUMNS, HSP_COLUMNS, _CandidateNames
+from unmapped_te import (extract, annotate, resolve_parameters, MATCH_COLUMNS, HSP_COLUMNS,
+                        _CandidateNames, resolve_extraction_parameters)
 
 
 class UnmappedTETests(unittest.TestCase):
+    def bundled_samtools(self, root):
+        wrapper = root / "samtools"
+        wrapper.write_text("#!" + sys.executable + "\nimport sys,pysam\n"
+                           "getattr(pysam.samtools,sys.argv[1])(*sys.argv[2:],catch_stdout=False)\n")
+        wrapper.chmod(0o755)
+        return str(wrapper)
+
+    def test_collate_matches_two_pass_with_all_alignment_types_and_both_backends(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sam = root / "reads.sam"
+            header = "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:100\n"
+            rows = [("late", 4), ("secondary", 256), ("supplementary", 4), ("early", 4),
+                    ("primary", 0), ("secondary", 4), ("supplementary", 2048), ("early", 4)]
+            sam.write_text(header + "".join(
+                f"{name}\t{flag}\t" + ("*\t0\t0\t*" if flag == 4 else "chr1\t1\t60\t4M") +
+                "\t*\t0\t0\tTTTT\tIIII\n" for name, flag in rows))
+            fastq = root / "reads.fastq.gz"
+            with gzip.open(fastq, "wt") as handle:
+                for name in ("early", "secondary", "late", "supplementary", "primary"):
+                    handle.write(f"@{name}\nACGT\n+\nIIII\n")
+            baseline = root / "baseline"
+            extract(sam, fastq, baseline / "out.fa", baseline / "reads.tsv", baseline / "stats.json")
+            wrapper = self.bundled_samtools(root)
+            for budget in (256, 0):
+                out = root / str(budget)
+                extract(sam, fastq, out / "out.fa", out / "reads.tsv", out / "stats.json",
+                        selection_method="collate", samtools=wrapper, threads=4, name_memory_mb=budget)
+                for name in ("out.fa", "reads.tsv", "stats.json"):
+                    self.assertEqual((baseline / name).read_bytes(), (out / name).read_bytes())
+                self.assertFalse(list(out.glob(".unmapped-*")))
+
+    def test_collate_failure_surfaces_stderr_and_cleans_scratch_space(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "broken-samtools"
+            wrapper.write_text("#!" + sys.executable + "\nimport sys\n"
+                               "sys.stderr.write('injected collate failure\\n')\nsys.exit(7)\n")
+            wrapper.chmod(0o755)
+            with self.assertRaisesRegex(RuntimeError, "exit code 7.*injected collate failure"):
+                extract(root / "reads.sam", root / "reads.fastq", root / "out.fa", root / "reads.tsv",
+                        root / "stats.json", selection_method="collate", samtools=str(wrapper))
+            self.assertFalse((root / "stats.json").exists())
+            self.assertFalse(list(root.glob(".unmapped-*")))
+
+    def test_extraction_configuration_validation(self):
+        for parameters in ({"METHOD": "unknown"}, {"NAME_MEMORY_MB": -1},
+                           {"NAME_MEMORY_MB": True}, {"SAMTOOLS": ""}, {"TYPO": 1}, []):
+            with self.subTest(parameters=parameters), self.assertRaises(ValueError):
+                resolve_extraction_parameters(parameters)
+        self.assertEqual(resolve_extraction_parameters()["METHOD"], "two-pass")
+        self.assertEqual(resolve_extraction_parameters({"METHOD": "collate"})["METHOD"], "collate")
+
     def test_memory_and_disk_extraction_match_with_early_mappings_and_duplicate_sam_records(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

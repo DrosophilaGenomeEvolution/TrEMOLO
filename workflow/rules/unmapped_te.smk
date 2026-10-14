@@ -39,7 +39,10 @@ rule extract_unmapped_reads:
         stats=UNMAPPED_TE_EXTRACTION,
     params:
         mapping_validation=validate_unmapped_mapping,
-    threads: 1
+        method=UNMAPPED_EXTRACTION_PARAMS["METHOD"],
+        name_memory_mb=UNMAPPED_EXTRACTION_PARAMS["NAME_MEMORY_MB"],
+        samtools=UNMAPPED_EXTRACTION_PARAMS["SAMTOOLS"],
+    threads: THREADS if UNMAPPED_EXTRACTION_PARAMS["METHOD"] == "collate" else 1
     resources:
         mem_mb=1024,
     log:
@@ -48,7 +51,9 @@ rule extract_unmapped_reads:
         f"{WORKDIR}/benchmarks/extract_unmapped_reads.tsv",
     shell:
         "python3 {input.script:q} extract --sam {input.sam:q} --fastq {input.fastq:q} "
-        "--fasta {output.fasta:q} --reads {output.reads:q} --stats {output.stats:q} > {log:q} 2>&1"
+        "--fasta {output.fasta:q} --reads {output.reads:q} --stats {output.stats:q} "
+        "--selection-method {params.method:q} --name-memory-mb {params.name_memory_mb} "
+        "--samtools {params.samtools:q} --threads {threads} > {log:q} 2>&1"
 
 
 rule blast_te_against_unmapped_reads:
