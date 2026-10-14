@@ -1,4 +1,6 @@
 import csv
+import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -171,6 +173,60 @@ class GfaTests(unittest.TestCase):
             self.assertEqual(set(walks), {("reference", "chr1"), ("reference", "chr2")})
             with (root / "out/excluded-events.tsv").open() as handle:
                 self.assertEqual(len(list(csv.DictReader(handle, delimiter="\t"))), 2)
+
+    def test_te_filter_keeps_entire_locus_when_only_an_alternative_matches(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1, selected_tes={"C"})
+            _, walks = self.inspect(root / "out/te-graph.gfa")
+            self.assertEqual(walks[("level_1", "chr1")][0], "AAAAAACCGGTT")
+            self.assertEqual(walks[("level_2", "chr1")][0], "AAAGTCCCGGTT")
+            self.assertEqual(walks[("level_3", "chr1")][0], "AAGGGGCCGGTT")
+            self.assertEqual(manifest["counts"]["selected_loci"], 1)
+            self.assertEqual(manifest["counts"]["representatives"], 3)
+            with (root / "out/sequence-alternatives.tsv").open() as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+            excluded = [r for r in rows if r["event_id"] == "e2"]
+            self.assertEqual({r["status"] for r in excluded}, {"excluded_by_te_filter"})
+            self.assertEqual({r["node_id"] for r in excluded}, {"."})
+
+    def test_te_filter_matches_primary_label_without_representative_of_that_family(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            infos = Path(inputs[0]["te_infos"])
+            infos.write_text(infos.read_text().replace("A|e1", "D|e1"))
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1, selected_tes={"D"})
+            self.assertEqual(manifest["counts"]["representatives"], 3)
+            self.assertEqual(manifest["selected_tes"], ["D"])
+
+    def test_te_filter_no_matches_leaves_reference_and_empty_selection_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1, selected_tes={"D"})
+            self.assertEqual(manifest["counts"]["representatives"], 0)
+            _, walks = self.inspect(root / "out/te-graph.gfa")
+            self.assertEqual(set(walks), {("reference", "chr1"), ("reference", "chr2")})
+            with self.assertRaisesRegex(ValueError, "at least one name"):
+                build(ref, db, inputs, root / "out", selected_tes=set())
+
+    def test_cli_accepts_file_or_comma_list_with_identical_results(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            input_file = root / "inputs.json"
+            input_file.write_text(json.dumps(inputs))
+            names_file = root / "TE_names.txt"
+            names_file.write_text("C\nD\n\n")
+            for suffix, option in (("csv", ["--te-names", "C,D"]),
+                                   ("file", ["--te-names-file", str(names_file)])):
+                result = subprocess.run([sys.executable, str(ROOT / "lib/python/locus/build_te_gfa.py"),
+                    "--reference", str(ref), "--te-database", str(db), "--inputs", str(input_file),
+                    "--output", str(root / suffix), "--min-aligned-bp", "1", *option], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((root / "csv/te-graph.gfa").read_bytes(), (root / "file/te-graph.gfa").read_bytes())
 
 
 if __name__ == "__main__":

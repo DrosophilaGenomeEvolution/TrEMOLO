@@ -22,6 +22,17 @@ when preparing the run. `INPUT/te_headers.tsv` restores the original TE labels
 from the internal BLAST identifiers. Old analyses missing `SEQUENCE_PROVENANCE.tsv`
 must rerun insertion extraction before this command can use their channels.
 
+To select TE names, add either `--te-names 'roo,copia,I-element'` or
+`--te-names-file /path/TE_names.txt` (one exact original TE name per line).
+Without either option, all loci remain eligible. A locus is retained if its
+reported primary label or any qualifying alternative matches a selected name.
+All supported family representatives at that locus remain in the graph,
+including those absent from the selection. Existing ambiguity and alignment
+filters still apply. Other loci leave the reference sequence unchanged; their
+sequence evidence is preserved with `excluded_by_te_filter` where applicable.
+The tables also record `locus_selected`/`selected`, and the manifest records
+the name selection and selected locus count. An empty list is rejected.
+
 For explicit input files, use `--inputs inputs.json` instead of `--run`:
 
 ```json

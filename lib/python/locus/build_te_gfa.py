@@ -169,7 +169,11 @@ def collect(inputs, database, min_identity, min_coverage, min_aligned_bp):
 
 
 def build(reference, te_database, inputs, output, reference_name="reference", locus_window=0,
-          min_identity=80, min_coverage=80, min_aligned_bp=100):
+          min_identity=80, min_coverage=80, min_aligned_bp=100, selected_tes=None):
+    if selected_tes is not None:
+        selected_tes = set(selected_tes)
+        if not selected_tes:
+            raise ValueError("TE selection must contain at least one name")
     if locus_window < 0 or min_aligned_bp < 1 or not all(
         math.isfinite(v) and 0 <= v <= 100 for v in (min_identity, min_coverage)):
         raise ValueError("Invalid window or alignment thresholds")
@@ -217,6 +221,13 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
         for row in rows:
             if row["status"] == "eligible" and len(families_by_digest[row["insertion_sha256"]]) > 1:
                 row["status"] = "ambiguous_or_composite_annotation"
+        locus_families = {call["te_call"].rpartition("|")[0] for call in members}
+        locus_families.update(row["family"] for row in rows if row["status"] != "below_threshold")
+        selected = selected_tes is None or bool(locus_families & selected_tes)
+        for row in rows:
+            row["locus_selected"] = "yes" if selected else "no"
+            if not selected and row["status"] == "eligible":
+                row["status"] = "excluded_by_te_filter"
         grouped = defaultdict(list)
         for row in rows:
             if row["status"] == "eligible":
@@ -235,11 +246,12 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
         representatives.sort(key=rank)
         for level, row in enumerate(representatives, 1):
             row["level"] = level
-        by_chrom[chrom].append((position, representatives))
+        if selected:
+            by_chrom[chrom].append((position, representatives))
         locus_rows.append(dict(locus_id=locus, chrom=chrom, position=position,
             anchor_min=position, anchor_max=max(anchor(c) for c in members),
             status="exact_anchor" if len({anchor(c) for c in members}) == 1 else "provisional_anchor",
-            alternatives=len(representatives)))
+            alternatives=len(representatives), selected="yes" if selected else "no"))
     lines = [f"H\tVN:Z:1.1\tRS:Z:{reference_name}"]
     node = 0
     walk_rows = []
@@ -288,18 +300,20 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
     (output / "te-graph.gfa").write_text("\n".join(lines) + "\n", encoding="ascii")
     columns = ("locus_id", "sample_id", "event_id", "channel", "query_id", "read_id", "sequence_origin",
                "insertion_sha256", "family", "strand", "bitscore", "coverage", "identity", "support_reads",
-               "status", "node_id", "level")
+               "status", "node_id", "level", "locus_selected")
     write_tsv(output / "sequence-alternatives.tsv", columns,
               ({k: r[k] for k in columns} for r in sorted(candidates, key=lambda r: (r["locus_id"], rank(r)))))
-    write_tsv(output / "loci.tsv", ("locus_id", "chrom", "position", "anchor_min", "anchor_max", "status", "alternatives"), locus_rows)
+    write_tsv(output / "loci.tsv", ("locus_id", "chrom", "position", "anchor_min", "anchor_max", "status", "alternatives", "selected"), locus_rows)
     write_tsv(output / "excluded-events.tsv", ("sample_id", "event_id", "reason"), exclusions)
     write_tsv(output / "walks.tsv", ("sample", "chrom", "length", "interpretation"), walk_rows)
-    manifest = dict(schema_version="0.1.0", reference_name=reference_name,
+    manifest = dict(schema_version="0.2.0", reference_name=reference_name,
+        selected_tes=sorted(selected_tes) if selected_tes is not None else None,
         construction="family_representatives_synthetic_levels", locus_window=locus_window,
         ranking=["collinear_nonoverlapping_bitscore_sum", "coverage", "identity", "family_read_support", "identifier"],
         thresholds=dict(identity=min_identity, coverage=min_coverage, aligned_bp=min_aligned_bp),
         inputs=[dict(path=str(Path(p).resolve()), sha256=file_sha256(p)) for p in [reference, te_database] + paths],
-        counts=dict(nodes=node, loci=len(locus_rows), representatives=sum(r["status"] == "representative" for r in candidates)))
+        counts=dict(nodes=node, loci=len(locus_rows), selected_loci=sum(r["selected"] == "yes" for r in locus_rows),
+                    representatives=sum(r["status"] == "representative" for r in candidates)))
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
 
@@ -317,10 +331,19 @@ def main():
     parser.add_argument("--min-identity", type=float, default=80)
     parser.add_argument("--min-coverage", type=float, default=80)
     parser.add_argument("--min-aligned-bp", type=int, default=100)
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--te-names", help="Comma-separated original TE names; retains entire matching loci")
+    selection.add_argument("--te-names-file", type=Path, help="File with one original TE name per line")
     args = parser.parse_args()
     inputs = [run_input(value) for value in args.run] if args.run else json.loads(args.inputs.read_text())
+    selected_tes = None
+    if args.te_names is not None:
+        selected_tes = {name.strip() for name in args.te_names.split(",") if name.strip()}
+    elif args.te_names_file is not None:
+        selected_tes = {name.strip() for name in args.te_names_file.read_text().splitlines() if name.strip()}
     manifest = build(args.reference, args.te_database, inputs, args.output,
-                     args.reference_name, args.locus_window, args.min_identity, args.min_coverage, args.min_aligned_bp)
+                     args.reference_name, args.locus_window, args.min_identity, args.min_coverage,
+                     args.min_aligned_bp, selected_tes)
     print(json.dumps(manifest["counts"]))
 
 
