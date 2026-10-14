@@ -48,6 +48,24 @@ en conservant les identifiants dans une table de correspondance. Les noms du FAS
 sont des identifiants techniques pour éviter les ambiguïtés d'en-tête BLAST.
 Les identifiants sélectionnés doivent être uniques dans le FASTQ.
 
+L'extraction utilise un index d'identifiants en mémoire avec un budget estimé de
+256 MiB. Si ce budget est dépassé, elle bascule sur une base SQLite temporaire
+avec opérations par lots, sans conserver tous les noms en mémoire. Les lots SQL
+contiennent au plus 900 noms ; les lots FASTQ du repli sur disque sont limités à
+1 000 reads ou environ
+4 MiB de données Python, hors cas d'un read individuel plus grand. Dans le cas
+en mémoire, les reads sont traités directement, sans copier les séquences des
+reads non candidats. Le CLI `extract --name-memory-mb N` permet d'ajuster ce budget ; `0` force
+le traitement sur disque.
+
+Deux parcours du SAM restent nécessaires pour exclure tout read ayant aussi un
+alignement mappé, quel que soit l'ordre des enregistrements, sans stocker tous les
+noms mappés. Le second parcours est omis si aucun candidat non mappé n'existe.
+Le FASTQ est parcouru une fois ; les séquences, leur ordre, les identifiants de
+sortie et les statistiques restent identiques à l'extraction précédente.
+Cette étape reste mono-thread ; l'optimisation réduit les recherches SQL et les
+copies de séquences. Le BLAST suivant utilise les threads du workflow.
+
 La banque TE est alignée par `blastn -task blastn` sur une base des reads non
 mappés. Le nombre maximal de sujets est fixé au nombre de reads sélectionnés,
 pour éviter la limite implicite de 500 sujets. Les HSP sont regroupés avec le

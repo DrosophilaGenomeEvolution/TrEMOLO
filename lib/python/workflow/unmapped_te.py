@@ -6,6 +6,7 @@ import json
 import math
 import re
 import sqlite3
+import sys
 import tempfile
 from pathlib import Path
 
@@ -57,44 +58,161 @@ def write_table(path, header, rows):
         writer.writerows(rows)
 
 
-def extract(sam, fastq, fasta, reads, stats):
+class _CandidateNames:
+    """Bounded in-memory index, spilling to a disposable SQLite database."""
+
+    def __init__(self, database, memory_bytes):
+        self.database = database
+        self.memory_bytes = memory_bytes
+        self.names = {}
+        self.estimated_bytes = 0
+
+    def add(self, names):
+        if self.names is None:
+            self.database.executemany("INSERT OR IGNORE INTO reads(name) VALUES (?)", ((n,) for n in names))
+            return
+        for index, name in enumerate(names):
+            if name in self.names:
+                continue
+            self.names[name] = False
+            # Conservative allowance for dictionary slots in addition to strings.
+            self.estimated_bytes += sys.getsizeof(name) + 96
+            if self.estimated_bytes > self.memory_bytes:
+                self.database.execute("CREATE TABLE reads (name TEXT PRIMARY KEY, found INTEGER DEFAULT 0) WITHOUT ROWID")
+                self.database.executemany("INSERT INTO reads(name) VALUES (?)", ((n,) for n in self.names))
+                self.names = None
+                self.database.executemany("INSERT OR IGNORE INTO reads(name) VALUES (?)",
+                                          ((n,) for n in names[index + 1:]))
+                break
+
+    def count(self, missing=False):
+        if self.names is not None:
+            return sum(not found for found in self.names.values()) if missing else len(self.names)
+        clause = " WHERE found = 0" if missing else ""
+        return self.database.execute("SELECT COUNT(*) FROM reads" + clause).fetchone()[0]
+
+    def remove(self, names):
+        if self.names is not None:
+            for name in names:
+                self.names.pop(name, None)
+            return
+        for batch in _batches(names, 900):
+            placeholders = ",".join("?" for _ in batch)
+            self.database.execute("DELETE FROM reads WHERE name IN (" + placeholders + ")", batch)
+
+    def lookup(self, names):
+        if self.names is not None:
+            return {name: self.names[name] for name in names if name in self.names}
+        result = {}
+        for batch in _batches(names, 900):
+            placeholders = ",".join("?" for _ in batch)
+            result.update(self.database.execute("SELECT name, found FROM reads WHERE name IN (" + placeholders + ")", batch))
+        return result
+
+    def mark_found(self, names):
+        if self.names is not None:
+            for name in names:
+                self.names[name] = True
+        else:
+            self.database.executemany("UPDATE reads SET found = 1 WHERE name = ?", ((n,) for n in names))
+
+
+def _batches(items, size=10000):
+    batch = []
+    for item in items:
+        batch.append(item)
+        if len(batch) == size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
+
+
+def _fastq_batches(source):
+    """Bound record count and sequence storage, including very long reads."""
+    batch, size = [], 0
+    for record in source:
+        name, sequence = record.name, record.sequence
+        batch.append((name, sequence))
+        size += sys.getsizeof(name) + sys.getsizeof(sequence) + 96
+        if len(batch) >= 1000 or size >= 4 * 1024 * 1024:
+            yield batch
+            batch, size = [], 0
+    if batch:
+        yield batch
+
+
+def extract(sam, fastq, fasta, reads, stats, name_memory_mb=256):
     # Imports stay local: Snakemake can validate configuration without pysam.
     import pysam
+    if type(name_memory_mb) is not int or name_memory_mb < 0:
+        raise ValueError("name_memory_mb must be a non-negative integer")
     fasta, reads, stats = map(Path, (fasta, reads, stats))
     for path in (fasta, reads, stats):
         path.parent.mkdir(parents=True, exist_ok=True)
-    # Disk-backed names keep memory bounded on large populations. Two SAM passes
-    # avoid storing all mapped names, which usually dominate the dataset.
+    # Two SAM passes preserve arbitrary alignment ordering without storing all
+    # mapped names. Only candidate identifiers occupy the bounded memory index.
     with tempfile.TemporaryDirectory(prefix=".unmapped-", dir=str(fasta.parent)) as directory:
         with sqlite3.connect(str(Path(directory) / "names.sqlite")) as db:
-            db.execute("CREATE TABLE reads (name TEXT PRIMARY KEY, found INTEGER DEFAULT 0)")
+            # This database is scratch space, deleted even after an extraction
+            # error. Durability/journaling would only add unnecessary disk I/O.
+            db.execute("PRAGMA journal_mode=OFF")
+            db.execute("PRAGMA synchronous=OFF")
+            db.execute("PRAGMA cache_size=-32768")
+            index = _CandidateNames(db, name_memory_mb * 1024 * 1024)
             with pysam.AlignmentFile(str(sam), "r", check_sq=False) as alignments:
-                db.executemany("INSERT OR IGNORE INTO reads(name) VALUES (?)",
-                               ((row.query_name,) for row in alignments.fetch(until_eof=True) if row.is_unmapped))
-            candidates = db.execute("SELECT COUNT(*) FROM reads").fetchone()[0]
-            with pysam.AlignmentFile(str(sam), "r", check_sq=False) as alignments:
-                db.executemany("DELETE FROM reads WHERE name = ?",
-                               ((row.query_name,) for row in alignments.fetch(until_eof=True) if not row.is_unmapped))
-            unmapped = db.execute("SELECT COUNT(*) FROM reads").fetchone()[0]
+                for batch in _batches(row.query_name for row in alignments.fetch(until_eof=True) if row.is_unmapped):
+                    index.add(batch)
+            candidates = index.count()
+            if candidates:
+                with pysam.AlignmentFile(str(sam), "r", check_sq=False) as alignments:
+                    for batch in _batches(row.query_name for row in alignments.fetch(until_eof=True) if not row.is_unmapped):
+                        index.remove(batch)
+            unmapped = index.count()
             total, selected = 0, 0
             with pysam.FastxFile(str(fastq)) as source, fasta.open("w") as output, reads.open("w", newline="") as table:
                 writer = csv.writer(table, delimiter="\t", lineterminator="\n")
                 writer.writerow(READ_COLUMNS)
-                for record in source:
-                    total += 1
-                    candidate = db.execute("SELECT found FROM reads WHERE name = ?", (record.name,)).fetchone()
-                    if candidate is None:
-                        continue
-                    if candidate[0]:
-                        raise ValueError("Duplicate unmapped read identifier in FASTQ: " + record.name)
-                    if not record.sequence:
-                        raise ValueError("Empty unmapped read: " + record.name)
+
+                def emit(name, sequence):
+                    nonlocal selected
+                    if not sequence:
+                        raise ValueError("Empty unmapped read: " + name)
                     selected += 1
                     query_id = "unmapped_{:012d}".format(selected)
-                    output.write(">{}\n{}\n".format(query_id, record.sequence))
-                    writer.writerow((query_id, record.name, len(record.sequence)))
-                    db.execute("UPDATE reads SET found = 1 WHERE name = ?", (record.name,))
-            missing = db.execute("SELECT COUNT(*) FROM reads WHERE found = 0").fetchone()[0]
+                    output.write(">{}\n{}\n".format(query_id, sequence))
+                    writer.writerow((query_id, name, len(sequence)))
+
+                if not unmapped:
+                    total = sum(1 for _ in source)
+                elif index.names is not None:
+                    # One dictionary lookup per record. Only selected sequences
+                    # are copied from the parser, with no per-record SQL or batches.
+                    for record in source:
+                        total += 1
+                        name = record.name
+                        found = index.names.get(name)
+                        if found is None:
+                            continue
+                        if found:
+                            raise ValueError("Duplicate unmapped read identifier in FASTQ: " + name)
+                        emit(name, record.sequence)
+                        index.names[name] = True
+                else:
+                    for batch in _fastq_batches(source):
+                        total += len(batch)
+                        found = index.lookup(name for name, _ in batch)
+                        emitted = []
+                        for name, sequence in batch:
+                            if name not in found:
+                                continue
+                            if found[name]:
+                                raise ValueError("Duplicate unmapped read identifier in FASTQ: " + name)
+                            emit(name, sequence)
+                            found[name] = True
+                            emitted.append(name)
+                        index.mark_found(emitted)
+            missing = index.count(missing=True)
             if missing:
                 raise ValueError("{} unmapped SAM identifiers absent from original reads".format(missing))
     summary = dict(total_reads=total, unmapped_candidates=candidates,
@@ -159,6 +277,8 @@ def main():
     extraction = sub.add_parser("extract")
     for name in ("sam", "fastq", "fasta", "reads", "stats"):
         extraction.add_argument("--" + name, type=Path, required=True)
+    extraction.add_argument("--name-memory-mb", type=int, default=256,
+                            help="Candidate-name memory budget in MiB; 0 forces disk-backed batched lookup")
     annotation = sub.add_parser("annotate")
     for name in ("blast", "headers", "reads", "extraction-stats", "output", "hsps", "stats"):
         annotation.add_argument("--" + name, type=Path, required=True)

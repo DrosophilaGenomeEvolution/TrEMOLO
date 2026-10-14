@@ -1,6 +1,7 @@
 import csv
 import gzip
 import json
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -8,10 +9,74 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "lib/python/workflow"))
-from unmapped_te import extract, annotate, resolve_parameters, MATCH_COLUMNS, HSP_COLUMNS
+from unmapped_te import extract, annotate, resolve_parameters, MATCH_COLUMNS, HSP_COLUMNS, _CandidateNames
 
 
 class UnmappedTETests(unittest.TestCase):
+    def test_memory_and_disk_extraction_match_with_early_mappings_and_duplicate_sam_records(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sam = root / "reads.sam"
+            sam.write_text("@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:100\n"
+                "mixed\t256\tchr1\t1\t60\t4M\t*\t0\t0\tAAAA\tIIII\n"
+                "mixed\t4\t*\t0\t0\t*\t*\t0\t0\tAAAA\tIIII\n"
+                "q\t4\t*\t0\t0\t*\t*\t0\t0\tTTTT\tIIII\n" +
+                "q\t4\t*\t0\t0\t*\t*\t0\t0\tTTTT\tIIII\n")
+            fastq = root / "reads.fastq"
+            fastq.write_text("@mixed\nAAAA\n+\nIIII\n@q\nACGT\n+\nIIII\n")
+            results = []
+            for budget in (256, 0):
+                out = root / str(budget)
+                summary = extract(sam, fastq, out / "out.fa", out / "reads.tsv", out / "stats.json", name_memory_mb=budget)
+                results.append((summary, (out / "out.fa").read_bytes(), (out / "reads.tsv").read_bytes()))
+            self.assertEqual(results[0], results[1])
+            self.assertEqual(results[0][0]["unmapped_candidates"], 2)
+            self.assertEqual(results[0][0]["unmapped_reads"], 1)
+
+    def test_candidate_index_spill_preserves_names_and_uses_no_sql_in_memory(self):
+        with sqlite3.connect(":memory:") as db:
+            statements = []
+            db.set_trace_callback(statements.append)
+            index = _CandidateNames(db, 1024)
+            index.add(["q", "q", "r"])
+            index.remove(["unrelated"])
+            self.assertEqual(index.lookup(["q", "missing"]), {"q": False})
+            self.assertEqual(index.count(), 2)
+            self.assertEqual(statements, [])
+            index.add(["long-name-" + str(i) for i in range(100)])
+            self.assertIsNone(index.names)
+            self.assertEqual(index.count(), 102)
+            index.remove(["r", "unknown"])
+            index.mark_found(["q"])
+            self.assertEqual(index.lookup(["q", "r"]), {"q": 1})
+            self.assertEqual(index.count(missing=True), 100)
+
+    def test_duplicate_selected_reads_across_fastq_batches_are_rejected_in_both_backends(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sam = root / "reads.sam"
+            sam.write_text("@HD\tVN:1.6\nq\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\tIIII\n")
+            fastq = root / "reads.fastq"
+            fastq.write_text("@q\nACGT\n+\nIIII\n" + "@other\nACGT\n+\nIIII\n" * 1000 + "@q\nACGT\n+\nIIII\n")
+            for budget in (256, 0):
+                with self.subTest(budget=budget), self.assertRaisesRegex(ValueError, "Duplicate"):
+                    extract(sam, fastq, root / "out.fa", root / "reads.tsv", root / "stats.json", name_memory_mb=budget)
+
+    def test_missing_reads_and_empty_candidates_in_both_backends(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sam = root / "reads.sam"
+            fastq = root / "reads.fastq"
+            fastq.write_text("@other\nACGT\n+\nIIII\n")
+            for budget in (256, 0):
+                sam.write_text("@HD\tVN:1.6\nq\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\tIIII\n")
+                with self.assertRaisesRegex(ValueError, "absent"):
+                    extract(sam, fastq, root / "out.fa", root / "reads.tsv", root / "stats.json", name_memory_mb=budget)
+                sam.write_text("@HD\tVN:1.6\n")
+                result = extract(sam, fastq, root / "out.fa", root / "reads.tsv", root / "stats.json", name_memory_mb=budget)
+                self.assertEqual(result["unmapped_reads"], 0)
+                self.assertEqual((root / "out.fa").read_text(), "")
+
     def test_parameter_validation(self):
         for values in ({"MIN_PIDENT": True}, {"MIN_PIDENT": 101},
                        {"MIN_ALIGNED_BP": 0}, {"MIN_CHAIN_GAP": 1.5},
