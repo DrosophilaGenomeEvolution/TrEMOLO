@@ -51,6 +51,16 @@ names. Invalid patterns or patterns matching no reference sequence fail before
 output files are written. Input-reference consistency is still checked against
 the complete reference before applying this export filter.
 
+Alternatively, add `--only-called-chromosomes` to retain only reference sequences
+with at least one call in the input `TE_INFOS.bed` files. In a cohort this uses
+the union across runs. These are the chromosomes present in the BED, regardless
+of the later sequence-quality or TE-name filters. A chromosome with only deletion
+calls can therefore retain its reference walk, although this exporter still does
+not encode deletion variants. Reference contigs absent from every BED contribute
+no segments, links or walks. The flag can be combined with `--chrom-regex` to
+take their intersection. If no reference sequence remains, the command stops
+before writing output files. The manifest records this option.
+
 For explicit input files, use `--inputs inputs.json` instead of `--run`:
 
 ```json

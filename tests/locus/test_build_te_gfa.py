@@ -12,6 +12,46 @@ from build_te_gfa import best_chain, build, reverse_complement, run_input
 
 
 class GfaTests(unittest.TestCase):
+    def test_only_called_chromosomes_keeps_bed_chromosomes_before_sequence_filters(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=100,
+                             only_called_chromosomes=True)
+            _, walks = self.inspect(root / "out/te-graph.gfa")
+            self.assertEqual(set(walks), {("reference", "chr1")})
+            self.assertEqual(manifest["chromosomes"], ["chr1"])
+            self.assertTrue(manifest["only_called_chromosomes"])
+
+    def test_only_called_chromosomes_uses_union_of_runs_and_includes_deletion_calls(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            second = root / "second.bed"
+            original = Path(inputs[0]["te_infos"]).read_text().splitlines()
+            fields = original[1].split("\t")
+            fields[0], fields[1], fields[2], fields[9], fields[14] = "chr2", "1", "2", "1", "DEL"
+            second.write_text(original[0] + "\n" + "\t".join(fields) + "\n")
+            inputs.append(dict(sample_id="second", te_infos=str(second), channels=[]))
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1,
+                             only_called_chromosomes=True)
+            self.assertEqual(manifest["chromosomes"], ["chr1", "chr2"])
+            _, walks = self.inspect(root / "out/te-graph.gfa")
+            self.assertIn(("reference", "chr2"), walks)
+
+    def test_only_called_chromosomes_empty_bed_and_regex_intersection_fail_before_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            with self.assertRaisesRegex(ValueError, "No reference chromosomes have calls"):
+                build(ref, db, inputs, root / "out", only_called_chromosomes=True, chrom_regex="^chr2$")
+            self.assertFalse((root / "out").exists())
+            infos = Path(inputs[0]["te_infos"])
+            infos.write_text(infos.read_text().splitlines()[0] + "\n")
+            with self.assertRaisesRegex(ValueError, "No reference chromosomes have calls"):
+                build(ref, db, inputs, root / "out", only_called_chromosomes=True)
+            self.assertFalse((root / "out").exists())
+
     def test_chromosome_filter_removes_reference_only_contigs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -57,7 +97,8 @@ class GfaTests(unittest.TestCase):
             input_file.write_text(json.dumps(inputs))
             result = subprocess.run([sys.executable, str(ROOT / "lib/python/locus/build_te_gfa.py"),
                 "--reference", str(ref), "--te-database", str(db), "--inputs", str(input_file),
-                "--output", str(root / "out"), "--min-aligned-bp", "1", "--chrom-regex", "^chr1$"],
+                "--output", str(root / "out"), "--min-aligned-bp", "1", "--chrom-regex", "^chr1$",
+                "--only-called-chromosomes"],
                 capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             _, walks = self.inspect(root / "out/te-graph.gfa")

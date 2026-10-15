@@ -173,7 +173,8 @@ def collect(inputs, database, min_identity, min_coverage, min_aligned_bp, chromo
 
 
 def build(reference, te_database, inputs, output, reference_name="reference", locus_window=0,
-          min_identity=80, min_coverage=80, min_aligned_bp=100, selected_tes=None, chrom_regex=None):
+          min_identity=80, min_coverage=80, min_aligned_bp=100, selected_tes=None, chrom_regex=None,
+          only_called_chromosomes=False):
     try:
         chrom_pattern = re.compile(chrom_regex) if chrom_regex is not None else None
     except re.error as error:
@@ -195,11 +196,19 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
         genome = {chrom: sequence for chrom, sequence in genome.items() if chrom_pattern.search(chrom)}
         if not genome:
             raise ValueError("Chromosome regex matches no reference sequences")
+    if only_called_chromosomes:
+        called_chromosomes = {
+            call["chrom"] for spec in inputs
+            for call in read_calls(InputRun(spec["sample_id"], Path(spec["te_infos"])))
+        }
+        genome = {chrom: sequence for chrom, sequence in genome.items() if chrom in called_chromosomes}
+        if not genome:
+            raise ValueError("No reference chromosomes have calls in TE_INFOS.bed after chromosome filtering")
     for chrom in genome:
         if re.fullmatch(r"[A-Za-z0-9_.:-]+", chrom) is None:
             raise ValueError("Invalid chromosome name for GFA: " + chrom)
     calls, candidates, exclusions, paths = collect(inputs, database, min_identity, min_coverage, min_aligned_bp,
-                                                  set(genome) if chrom_pattern is not None else None)
+                                                  set(genome) if chrom_pattern is not None or only_called_chromosomes else None)
     paths.extend(Path(spec["reference"]) for spec in inputs if spec.get("reference"))
     destinations = {Path(output).resolve() / name for name in (
         "te-graph.gfa", "sequence-alternatives.tsv", "loci.tsv", "excluded-events.tsv", "walks.tsv", "manifest.json")}
@@ -319,8 +328,9 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
     write_tsv(output / "loci.tsv", ("locus_id", "chrom", "position", "anchor_min", "anchor_max", "status", "alternatives", "selected"), locus_rows)
     write_tsv(output / "excluded-events.tsv", ("sample_id", "event_id", "reason"), exclusions)
     write_tsv(output / "walks.tsv", ("sample", "chrom", "length", "interpretation"), walk_rows)
-    manifest = dict(schema_version="0.3.0", reference_name=reference_name,
+    manifest = dict(schema_version="0.4.0", reference_name=reference_name,
         chrom_regex=chrom_regex, chromosomes=list(genome),
+        only_called_chromosomes=only_called_chromosomes,
         selected_tes=sorted(selected_tes) if selected_tes is not None else None,
         construction="family_representatives_synthetic_levels", locus_window=locus_window,
         ranking=["collinear_nonoverlapping_bitscore_sum", "coverage", "identity", "family_read_support", "identifier"],
@@ -342,6 +352,8 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--reference-name", default="reference")
     parser.add_argument("--chrom-regex", help="Python regex searched on reference sequence names; default keeps all")
+    parser.add_argument("--only-called-chromosomes", action="store_true",
+                        help="Keep only chromosomes with at least one TE_INFOS.bed call across the input runs")
     parser.add_argument("--locus-window", type=int, default=0)
     parser.add_argument("--min-identity", type=float, default=80)
     parser.add_argument("--min-coverage", type=float, default=80)
@@ -358,7 +370,7 @@ def main():
         selected_tes = {name.strip() for name in args.te_names_file.read_text().splitlines() if name.strip()}
     manifest = build(args.reference, args.te_database, inputs, args.output,
                      args.reference_name, args.locus_window, args.min_identity, args.min_coverage,
-                     args.min_aligned_bp, selected_tes, args.chrom_regex)
+                     args.min_aligned_bp, selected_tes, args.chrom_regex, args.only_called_chromosomes)
     print(json.dumps(manifest["counts"]))
 
 
