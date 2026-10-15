@@ -1,0 +1,412 @@
+{
+  "schema_version": "1.0.0",
+  "run": null,
+  "graphs": {
+    "ZAM": {
+      "source": "/home/mourdas/Documents/9-WORK/GFA-ZAM",
+      "settings": {
+        "reference_name": "dm6",
+        "construction": "family_representatives_synthetic_levels",
+        "locus_window": 0,
+        "thresholds": {
+          "identity": 80,
+          "coverage": 80,
+          "aligned_bp": 100
+        },
+        "selected_tes": [
+          "ZAM"
+        ],
+        "chrom_regex": null,
+        "only_called_chromosomes": false
+      },
+      "recorded_inputs": [
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/dm6_32.fasta",
+          "sha256": "a67db45591cc740475213e892635451c500290d64d947ea48312269b0ed0bdbb"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/canonical_TE.fa",
+          "sha256": "ed9dd9bff92926775e608cd5a55bbc11670439a7835ad454cecd597bf1c21c5c"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/TE_INFOS.bed",
+          "sha256": "2321ce8376c63e3cb22688111b359744c0e05521161bebfed4ceb6a0e97cd5ec"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/INPUT/te_headers.tsv",
+          "sha256": "d6b39b193d093a9cbf729a034b60d883480f4ac885ac8c3f2090965c7095e2a0"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bln",
+          "sha256": "2bbfcf721105bcc429e365133bfc622f4ecac6d4ccb718ad9b84c634a93f3891"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SEQUENCE_PROVENANCE.tsv",
+          "sha256": "04e008572dab3f9a95ece21907a7a5af2ec793dc0dc064cb3116d85af8b64a1b"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.insertions.fasta",
+          "sha256": "b4c6bc852dc6ca2ad962dffb292bc48fcf762823d48439a168f9a2d82972ff77"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TE_DETECTION/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/VARIANT_CALLING/SEQUENCE_PROVENANCE.tsv",
+          "sha256": "d0efb1ea35347eac21f4764999d438ff9cbfbfa040e5cb7474f926a10db98be6"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.insertions.fasta",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/dm6_32.fasta",
+          "sha256": "a67db45591cc740475213e892635451c500290d64d947ea48312269b0ed0bdbb"
+        }
+      ],
+      "outputs": {
+        "te-graph.gfa": {
+          "sha256": "f667bc8b3b8eb117c3ce979006430476ff80658afcd53cbe02b741960c1191eb"
+        },
+        "sequence-alternatives.tsv": {
+          "sha256": "d5bd4a6251eaf33c85db10a50ceaebb525ae99a3fa90460e083315ac91f9b4c9",
+          "header": [
+            "locus_id",
+            "sample_id",
+            "event_id",
+            "channel",
+            "query_id",
+            "read_id",
+            "sequence_origin",
+            "insertion_sha256",
+            "family",
+            "strand",
+            "bitscore",
+            "coverage",
+            "identity",
+            "support_reads",
+            "status",
+            "node_id",
+            "level",
+            "locus_selected"
+          ],
+          "rows": 71622,
+          "semantic_sha256": "345994645b9333f2366b0324b1769659e09afbabfdd8f19c99e1ad6c5d6945c1"
+        },
+        "loci.tsv": {
+          "sha256": "5a42743fe7d5452fe78e5486f864a3249406e565672856370ff832e0f30a0079",
+          "header": [
+            "locus_id",
+            "chrom",
+            "position",
+            "anchor_min",
+            "anchor_max",
+            "status",
+            "alternatives",
+            "selected"
+          ],
+          "rows": 2532,
+          "semantic_sha256": "ac88e5a1d5afe70f29a4b46880526942baaa260910a281d6feb922b8310a4f73"
+        },
+        "excluded-events.tsv": {
+          "sha256": "a4d8caa8046f56d635980da34cc2db18aff4ba59d93e7084dec4c230f4965e12",
+          "header": [
+            "sample_id",
+            "event_id",
+            "reason"
+          ],
+          "rows": 0,
+          "semantic_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "walks.tsv": {
+          "sha256": "8954976474cdba80f3ac89a97baa617a0d45b1094b89ddcf9e03cd83996e534f",
+          "header": [
+            "sample",
+            "chrom",
+            "length",
+            "interpretation"
+          ],
+          "rows": 1878,
+          "semantic_sha256": "fbbb67e8e14e8d21a3f552077fae68a6cb91088d94c7d69a1a2728e6e0c63a0f"
+        }
+      }
+    },
+    "gtwin": {
+      "source": "/home/mourdas/Documents/9-WORK/GFA-gtwin",
+      "settings": {
+        "reference_name": "dm6",
+        "construction": "family_representatives_synthetic_levels",
+        "locus_window": 0,
+        "thresholds": {
+          "identity": 80,
+          "coverage": 80,
+          "aligned_bp": 100
+        },
+        "selected_tes": [
+          "gtwin"
+        ],
+        "chrom_regex": null,
+        "only_called_chromosomes": false
+      },
+      "recorded_inputs": [
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/dm6_32.fasta",
+          "sha256": "a67db45591cc740475213e892635451c500290d64d947ea48312269b0ed0bdbb"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/canonical_TE.fa",
+          "sha256": "ed9dd9bff92926775e608cd5a55bbc11670439a7835ad454cecd597bf1c21c5c"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/TE_INFOS.bed",
+          "sha256": "2321ce8376c63e3cb22688111b359744c0e05521161bebfed4ceb6a0e97cd5ec"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/INPUT/te_headers.tsv",
+          "sha256": "d6b39b193d093a9cbf729a034b60d883480f4ac885ac8c3f2090965c7095e2a0"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bln",
+          "sha256": "2bbfcf721105bcc429e365133bfc622f4ecac6d4ccb718ad9b84c634a93f3891"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SEQUENCE_PROVENANCE.tsv",
+          "sha256": "04e008572dab3f9a95ece21907a7a5af2ec793dc0dc064cb3116d85af8b64a1b"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.insertions.fasta",
+          "sha256": "b4c6bc852dc6ca2ad962dffb292bc48fcf762823d48439a168f9a2d82972ff77"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TE_DETECTION/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/VARIANT_CALLING/SEQUENCE_PROVENANCE.tsv",
+          "sha256": "d0efb1ea35347eac21f4764999d438ff9cbfbfa040e5cb7474f926a10db98be6"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.insertions.fasta",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/dm6_32.fasta",
+          "sha256": "a67db45591cc740475213e892635451c500290d64d947ea48312269b0ed0bdbb"
+        }
+      ],
+      "outputs": {
+        "te-graph.gfa": {
+          "sha256": "ed8a73c3873fad160d1a603125fe22bb85f3c855861693d20469a26ecb67b93c"
+        },
+        "sequence-alternatives.tsv": {
+          "sha256": "71163b6a478098dbc10e3963ddca3907c00a00f4e7597bc95dcb1c817dd2621d",
+          "header": [
+            "locus_id",
+            "sample_id",
+            "event_id",
+            "channel",
+            "query_id",
+            "read_id",
+            "sequence_origin",
+            "insertion_sha256",
+            "family",
+            "strand",
+            "bitscore",
+            "coverage",
+            "identity",
+            "support_reads",
+            "status",
+            "node_id",
+            "level",
+            "locus_selected"
+          ],
+          "rows": 71622,
+          "semantic_sha256": "bf310dea5efa29b537f6d5ad9037a2652555100d951965023197c2a5cce4a343"
+        },
+        "loci.tsv": {
+          "sha256": "d7d57d41d95e70701b3fb482b3273999acf94c3f8e75074f65e8cd13281a1723",
+          "header": [
+            "locus_id",
+            "chrom",
+            "position",
+            "anchor_min",
+            "anchor_max",
+            "status",
+            "alternatives",
+            "selected"
+          ],
+          "rows": 2532,
+          "semantic_sha256": "3d1a88cd984d9f96f23bb0a46760ea92b113e0bbe9befe02079812de11beea33"
+        },
+        "excluded-events.tsv": {
+          "sha256": "a4d8caa8046f56d635980da34cc2db18aff4ba59d93e7084dec4c230f4965e12",
+          "header": [
+            "sample_id",
+            "event_id",
+            "reason"
+          ],
+          "rows": 0,
+          "semantic_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "walks.tsv": {
+          "sha256": "38dc05bbef852f9399ec5561868958a55642a88714221ade4fe8fe34116b54c1",
+          "header": [
+            "sample",
+            "chrom",
+            "length",
+            "interpretation"
+          ],
+          "rows": 1877,
+          "semantic_sha256": "11edb1c6ad605830e3234391750e491fdaa0ae1f538c0f9229cf30634f4e9433"
+        }
+      }
+    },
+    "ZAM-gtwin": {
+      "source": "/home/mourdas/Documents/9-WORK/GFA-ZAM-gtwin",
+      "settings": {
+        "reference_name": "dm6",
+        "construction": "family_representatives_synthetic_levels",
+        "locus_window": 0,
+        "thresholds": {
+          "identity": 80,
+          "coverage": 80,
+          "aligned_bp": 100
+        },
+        "selected_tes": [
+          "ZAM",
+          "gtwin"
+        ],
+        "chrom_regex": null,
+        "only_called_chromosomes": false
+      },
+      "recorded_inputs": [
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/dm6_32.fasta",
+          "sha256": "a67db45591cc740475213e892635451c500290d64d947ea48312269b0ed0bdbb"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/canonical_TE.fa",
+          "sha256": "ed9dd9bff92926775e608cd5a55bbc11670439a7835ad454cecd597bf1c21c5c"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/TE_INFOS.bed",
+          "sha256": "2321ce8376c63e3cb22688111b359744c0e05521161bebfed4ceb6a0e97cd5ec"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/INPUT/te_headers.tsv",
+          "sha256": "d6b39b193d093a9cbf729a034b60d883480f4ac885ac8c3f2090965c7095e2a0"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bln",
+          "sha256": "2bbfcf721105bcc429e365133bfc622f4ecac6d4ccb718ad9b84c634a93f3891"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SEQUENCE_PROVENANCE.tsv",
+          "sha256": "04e008572dab3f9a95ece21907a7a5af2ec793dc0dc064cb3116d85af8b64a1b"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.insertions.fasta",
+          "sha256": "b4c6bc852dc6ca2ad962dffb292bc48fcf762823d48439a168f9a2d82972ff77"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/TE_DETECTION/BLAST_SEQUENCE_INDEL_vs_DBTE.bln",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/VARIANT_CALLING/SEQUENCE_PROVENANCE.tsv",
+          "sha256": "d0efb1ea35347eac21f4764999d438ff9cbfbfa040e5cb7474f926a10db98be6"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/work_dm6vsG73LR_migrated/OUTSIDER/VARIANT_CALLING/SEQUENCE_INDEL.insertions.fasta",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "/scratch/mohamed/1-VR_WORK/dm6vsG73LR/dm6_32.fasta",
+          "sha256": "a67db45591cc740475213e892635451c500290d64d947ea48312269b0ed0bdbb"
+        }
+      ],
+      "outputs": {
+        "te-graph.gfa": {
+          "sha256": "83b77d5b827d71b295ea2dd4e46f39c882dec73262495882ede59289bf5f6179"
+        },
+        "sequence-alternatives.tsv": {
+          "sha256": "994b592ab9c903228f92a150728d6f262cf3f912b9d43a5c64be723cda312a47",
+          "header": [
+            "locus_id",
+            "sample_id",
+            "event_id",
+            "channel",
+            "query_id",
+            "read_id",
+            "sequence_origin",
+            "insertion_sha256",
+            "family",
+            "strand",
+            "bitscore",
+            "coverage",
+            "identity",
+            "support_reads",
+            "status",
+            "node_id",
+            "level",
+            "locus_selected"
+          ],
+          "rows": 71622,
+          "semantic_sha256": "e10a515463f9ca62283459741b3a33e07d3f946997a21cb37b3e9fe9cfdbbb07"
+        },
+        "loci.tsv": {
+          "sha256": "6c7fc7f35d42787869248e721169ea7a0a346e378490ffa87438af0766a2e029",
+          "header": [
+            "locus_id",
+            "chrom",
+            "position",
+            "anchor_min",
+            "anchor_max",
+            "status",
+            "alternatives",
+            "selected"
+          ],
+          "rows": 2532,
+          "semantic_sha256": "4207dd34c33a2b6116d6fb6035e129e4edcce00857ada34e6dd4f10964d5ae92"
+        },
+        "excluded-events.tsv": {
+          "sha256": "a4d8caa8046f56d635980da34cc2db18aff4ba59d93e7084dec4c230f4965e12",
+          "header": [
+            "sample_id",
+            "event_id",
+            "reason"
+          ],
+          "rows": 0,
+          "semantic_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "walks.tsv": {
+          "sha256": "11aedd99f944c0f4ec2645ca2ad9813c01a5a2a48202813ba3373857258a1b27",
+          "header": [
+            "sample",
+            "chrom",
+            "length",
+            "interpretation"
+          ],
+          "rows": 1880,
+          "semantic_sha256": "9856e8a99fd4811df85bac3759d51d118a956054644450874b27951208e38ed5"
+        }
+      }
+    }
+  },
+  "inputs": {},
+  "configuration": null,
+  "tool_versions": null,
+  "command": null,
+  "reproducibility": {
+    "complete": false,
+    "missing": [
+      "run",
+      "configuration",
+      "tool_versions",
+      "inputs",
+      "command"
+    ],
+    "scope": "available_outputs_only"
+  }
+}
