@@ -13,6 +13,7 @@ from pathlib import Path
 
 from build_cohort_model import anchor, cluster_calls, event_class
 from build_locus_model import InputRun, file_sha256, read_calls, stable_id, write_tsv
+from gfa_summary import summarize, write_summary
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "workflow"))
 from te_candidate_provenance import load_evidence
@@ -174,7 +175,7 @@ def collect(inputs, database, min_identity, min_coverage, min_aligned_bp, chromo
 
 def build(reference, te_database, inputs, output, reference_name="reference", locus_window=0,
           min_identity=80, min_coverage=80, min_aligned_bp=100, selected_tes=None, chrom_regex=None,
-          only_called_chromosomes=False):
+          only_called_chromosomes=True):
     try:
         chrom_pattern = re.compile(chrom_regex) if chrom_regex is not None else None
     except re.error as error:
@@ -211,7 +212,8 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
                                                   set(genome) if chrom_pattern is not None or only_called_chromosomes else None)
     paths.extend(Path(spec["reference"]) for spec in inputs if spec.get("reference"))
     destinations = {Path(output).resolve() / name for name in (
-        "te-graph.gfa", "sequence-alternatives.tsv", "loci.tsv", "excluded-events.tsv", "walks.tsv", "manifest.json")}
+        "te-graph.gfa", "sequence-alternatives.tsv", "loci.tsv", "excluded-events.tsv", "walks.tsv", "manifest.json",
+        "summary.json", "summary.html", "call-representation.tsv")}
     if any(Path(p).resolve() in destinations for p in [reference, te_database] + paths):
         raise ValueError("Output would overwrite an input file")
     by_event = defaultdict(list)
@@ -276,6 +278,7 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
             alternatives=len(representatives), selected="yes" if selected else "no"))
     lines = [f"H\tVN:Z:1.1\tRS:Z:{reference_name}"]
     node = 0
+    link_count = 0
     walk_rows = []
     for chrom, sequence in genome.items():
         segments, backbone, choices = [], [], []
@@ -317,6 +320,7 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
             walk_rows.append(dict(sample=sample, chrom=chrom, length=dna_length,
                                   interpretation="reference" if sample == reference_name else "synthetic_unphased_level"))
         lines.extend(f"L\t{a}\t{ao}\t{b}\t{bo}\t0M" for a, ao, b, bo in sorted(links))
+        link_count += len(links)
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     (output / "te-graph.gfa").write_text("\n".join(lines) + "\n", encoding="ascii")
@@ -328,6 +332,8 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
     write_tsv(output / "loci.tsv", ("locus_id", "chrom", "position", "anchor_min", "anchor_max", "status", "alternatives", "selected"), locus_rows)
     write_tsv(output / "excluded-events.tsv", ("sample_id", "event_id", "reason"), exclusions)
     write_tsv(output / "walks.tsv", ("sample", "chrom", "length", "interpretation"), walk_rows)
+    summary, call_rows = summarize(inputs, candidates, locus_rows, exclusions, walk_rows, node, link_count)
+    write_summary(output, summary, call_rows)
     manifest = dict(schema_version="0.4.0", reference_name=reference_name,
         chrom_regex=chrom_regex, chromosomes=list(genome),
         only_called_chromosomes=only_called_chromosomes,
@@ -337,7 +343,9 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
         thresholds=dict(identity=min_identity, coverage=min_coverage, aligned_bp=min_aligned_bp),
         inputs=[dict(path=str(Path(p).resolve()), sha256=file_sha256(p)) for p in [reference, te_database] + paths],
         counts=dict(nodes=node, loci=len(locus_rows), selected_loci=sum(r["selected"] == "yes" for r in locus_rows),
-                    representatives=sum(r["status"] == "representative" for r in candidates)))
+                    representatives=sum(r["status"] == "representative" for r in candidates),
+                    input_calls=summary["calls"]["total"], represented_calls=summary["calls"]["represented"],
+                    excluded_calls=summary["calls"]["excluded"]), representation_summary="summary.json")
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
 
@@ -351,9 +359,13 @@ def main():
     source.add_argument("--run", action="append", help="SAMPLE=/path/to/analysis; repeat for a cohort")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--reference-name", default="reference")
-    parser.add_argument("--chrom-regex", help="Python regex searched on reference sequence names; default keeps all")
-    parser.add_argument("--only-called-chromosomes", action="store_true",
-                        help="Keep only chromosomes with at least one TE_INFOS.bed call across the input runs")
+    parser.add_argument("--chrom-regex", help="Additional Python regex searched on reference sequence names")
+    chromosome_scope = parser.add_mutually_exclusive_group()
+    chromosome_scope.add_argument("--all-reference-chromosomes", dest="only_called_chromosomes", action="store_false",
+                                 help="Include reference chromosomes absent from TE_INFOS.bed; still applies --chrom-regex")
+    chromosome_scope.add_argument("--only-called-chromosomes", dest="only_called_chromosomes", action="store_true",
+                                 help=argparse.SUPPRESS)
+    parser.set_defaults(only_called_chromosomes=True)
     parser.add_argument("--locus-window", type=int, default=0)
     parser.add_argument("--min-identity", type=float, default=80)
     parser.add_argument("--min-coverage", type=float, default=80)
@@ -372,6 +384,10 @@ def main():
                      args.reference_name, args.locus_window, args.min_identity, args.min_coverage,
                      args.min_aligned_bp, selected_tes, args.chrom_regex, args.only_called_chromosomes)
     print(json.dumps(manifest["counts"]))
+    counts = manifest["counts"]
+    print(f"BED calls: {counts['represented_calls']}/{counts['input_calls']} represented; "
+          f"{counts['excluded_calls']} excluded. Family representatives: {counts['representatives']}.")
+    print(f"Representation details: {args.output / 'summary.html'}")
 
 
 if __name__ == "__main__":

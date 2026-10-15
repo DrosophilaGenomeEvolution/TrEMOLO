@@ -42,8 +42,8 @@ To keep only the main dm6 chromosomes, add:
 This is a Python regular expression searched on the FASTA sequence name alone,
 without its description or following tabular columns. Use `^` and `$` for exact
 names. Unlike `CHROM_KEEP`, commas are not converted into alternatives: use `|`.
-Without the option, every reference chromosome/contig is retained, including those
-without TE calls. With it, excluded chromosomes contribute no segments, links,
+Without the regex, chromosome selection follows the BED-presence default below.
+Chromosomes excluded by the regex contribute no segments, links,
 walks, loci or sequence candidates. Their BED events are recorded in
 `excluded-events.tsv` with reason `excluded_by_chrom_filter`. Chromosome and TE
 name filters can be combined. The manifest records the regex and retained sequence
@@ -51,15 +51,18 @@ names. Invalid patterns or patterns matching no reference sequence fail before
 output files are written. Input-reference consistency is still checked against
 the complete reference before applying this export filter.
 
-Alternatively, add `--only-called-chromosomes` to retain only reference sequences
-with at least one call in the input `TE_INFOS.bed` files. In a cohort this uses
+By default, retain only reference sequences with at least one call in the input
+`TE_INFOS.bed` files. In a cohort this uses
 the union across runs. These are the chromosomes present in the BED, regardless
 of the later sequence-quality or TE-name filters. A chromosome with only deletion
 calls can therefore retain its reference walk, although this exporter still does
 not encode deletion variants. Reference contigs absent from every BED contribute
-no segments, links or walks. The flag can be combined with `--chrom-regex` to
-take their intersection. If no reference sequence remains, the command stops
-before writing output files. The manifest records this option.
+no segments, links or walks. Add `--all-reference-chromosomes` to disable this
+restriction and include contigs absent from the BED. The chromosome regex still
+applies if supplied. If no reference sequence remains, the command stops before
+writing output files. The manifest records `only_called_chromosomes` as true by
+default and false with the opt-out. The previous explicit
+`--only-called-chromosomes` spelling is still accepted for compatibility.
 
 For explicit input files, use `--inputs inputs.json` instead of `--run`:
 
@@ -131,7 +134,7 @@ locus. TE family and orientation do not determine locus grouping. Conflicting
 orientations within one family are simplified to the selected representative
 and remain visible in the sequence table.
 
-The reference walk reconstructs every supplied chromosome exactly. At level 1,
+The reference walk reconstructs every retained chromosome exactly. At level 1,
 each represented locus uses its highest-scoring family. At level 2 it uses its
 second family, and so on. After the last alternative at a locus, higher levels
 retain that last choice. Levels are generated per chromosome; chromosomes with
@@ -155,6 +158,33 @@ exposes insertions. There is no special SWAP record in GFA.
 - `excluded-events.tsv`: unsupported events and insertions lacking usable evidence.
 - `walks.tsv`: reference/synthetic interpretation and walk lengths.
 - `manifest.json`: input checksums, thresholds, ranking and graph counts.
+- `summary.html` and `summary.json`: human-readable and machine-readable
+  representation balance. These distinguish input calls, loci and family nodes.
+- `call-representation.tsv`: one row per original BED call, with outcome,
+  represented families/nodes and whether its reported primary family is retained.
+
+An input call counts as represented if one of its eligible sequences contributes
+to a retained family at its locus. Its own sequence may be the node representative
+(`own_sequence`), or another call's sequence may represent the same family
+(`same_locus_family`). Several calls can share a node, and one call can contribute
+to several alternatives. A represented call whose BED primary family is absent
+from its represented families is explicitly counted as `alternative_family_only`.
+Each excluded call has one outcome: explicit unsupported/chromosome/no-evidence
+exclusions take precedence, then TE selection, annotation ambiguity and alignment
+thresholds. The sequence table retains the finer evidence-level outcomes.
+
+The command prints the call balance and the HTML location. To add a balance to
+an existing graph directory without rebuilding the graph:
+
+```bash
+python3 lib/python/locus/gfa_summary.py --graph-dir /path/GFA \
+  --sample pool=/path/analysis/TE_INFOS.bed
+```
+
+Repeat `--sample` for every original input run. Without these source BED files,
+the summary still reports graph/locus/sequence counts but explicitly marks
+call-level counts unavailable. It does not infer a BED call count from candidate
+rows. This standalone summary does not change the main Quarto report.
 
 The record structure follows the local Savanache full-GFA requirements and the
 [GFA specification](https://gfa-spec.github.io/GFA-spec/GFA1.html).

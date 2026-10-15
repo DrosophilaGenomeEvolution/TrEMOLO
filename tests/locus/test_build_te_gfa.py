@@ -16,8 +16,7 @@ class GfaTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             ref, db, inputs, _, _ = self.fixture(root)
-            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=100,
-                             only_called_chromosomes=True)
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=100)
             _, walks = self.inspect(root / "out/te-graph.gfa")
             self.assertEqual(set(walks), {("reference", "chr1")})
             self.assertEqual(manifest["chromosomes"], ["chr1"])
@@ -69,7 +68,8 @@ class GfaTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             ref, db, inputs, _, _ = self.fixture(root)
-            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1, chrom_regex="^chr2$")
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1, chrom_regex="^chr2$",
+                             only_called_chromosomes=False)
             _, walks = self.inspect(root / "out/te-graph.gfa")
             self.assertEqual(set(walks), {("reference", "chr2")})
             self.assertEqual(manifest["counts"]["loci"], 0)
@@ -103,6 +103,27 @@ class GfaTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             _, walks = self.inspect(root / "out/te-graph.gfa")
             self.assertEqual({chrom for sample, chrom in walks}, {"chr1"})
+
+    def test_cli_defaults_to_bed_chromosomes_and_opt_out_respects_regex(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            input_file = root / "inputs.json"
+            input_file.write_text(json.dumps(inputs))
+            for name, options, expected in (
+                ("default", [], {"chr1"}),
+                ("all", ["--all-reference-chromosomes"], {"chr1", "chr2"}),
+                ("all-filtered", ["--all-reference-chromosomes", "--chrom-regex", "^chr1$"], {"chr1"}),
+            ):
+                out = root / name
+                result = subprocess.run([sys.executable, str(ROOT / "lib/python/locus/build_te_gfa.py"),
+                    "--reference", str(ref), "--te-database", str(db), "--inputs", str(input_file),
+                    "--output", str(out), "--min-aligned-bp", "1", *options], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                _, walks = self.inspect(out / "te-graph.gfa")
+                self.assertEqual({chrom for sample, chrom in walks}, expected)
+                manifest = json.loads((out / "manifest.json").read_text())
+                self.assertEqual(manifest["only_called_chromosomes"], name == "default")
 
     def fixture(self, root):
         ref, db, infos, seq, origin, blast = [root / n for n in
@@ -155,7 +176,7 @@ class GfaTests(unittest.TestCase):
             root = Path(directory)
             ref, db, inputs, _, _ = self.fixture(root)
             output = root / "out"
-            build(ref, db, inputs, output, min_aligned_bp=1)
+            build(ref, db, inputs, output, min_aligned_bp=1, only_called_chromosomes=False)
             segments, walks = self.inspect(output / "te-graph.gfa")
             self.assertEqual(walks[("reference", "chr1")][0], "AACCGGTT")
             self.assertEqual(walks[("reference", "chr2")][0], "TTAA")
@@ -170,7 +191,7 @@ class GfaTests(unittest.TestCase):
             self.assertEqual(sum(r["status"] == "same_family_alternative" for r in rows), 1)
             self.assertEqual(next(r for r in rows if r["sequence_origin"] == "vcf_reported")["support_reads"], "0")
             before = {p.name: p.read_bytes() for p in output.iterdir()}
-            build(ref, db, inputs, output, min_aligned_bp=1)
+            build(ref, db, inputs, output, min_aligned_bp=1, only_called_chromosomes=False)
             self.assertEqual(before, {p.name: p.read_bytes() for p in output.iterdir()})
 
     def test_same_sequence_multiple_families_are_excluded(self):
@@ -262,7 +283,7 @@ class GfaTests(unittest.TestCase):
             Path(inputs[0]["channels"][0]["insertion_fasta"]).write_text("")
             build(ref, db, inputs, root / "out", min_aligned_bp=1)
             _, walks = self.inspect(root / "out/te-graph.gfa")
-            self.assertEqual(set(walks), {("reference", "chr1"), ("reference", "chr2")})
+            self.assertEqual(set(walks), {("reference", "chr1")})
             with (root / "out/excluded-events.tsv").open() as handle:
                 self.assertEqual(len(list(csv.DictReader(handle, delimiter="\t"))), 2)
 
@@ -300,7 +321,7 @@ class GfaTests(unittest.TestCase):
             manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1, selected_tes={"D"})
             self.assertEqual(manifest["counts"]["representatives"], 0)
             _, walks = self.inspect(root / "out/te-graph.gfa")
-            self.assertEqual(set(walks), {("reference", "chr1"), ("reference", "chr2")})
+            self.assertEqual(set(walks), {("reference", "chr1")})
             with self.assertRaisesRegex(ValueError, "at least one name"):
                 build(ref, db, inputs, root / "out", selected_tes=set())
 
