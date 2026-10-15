@@ -218,6 +218,9 @@ insertion sequences; see [column descriptions and limitations](docs/te-call-cand
 A reference-backed TE insertion GFA can be built as an explicit post-processing
 step, with representatives ranked by BLAST bitscore and synthetic walks by level.
 See [inputs, selection rules and output files](docs/te-gfa.md).
+Each graph build includes an HTML/JSON representation balance and per-call
+outcomes. See also [real-run regression capture](docs/real-run-regression.md)
+and the [functional release candidate notes](docs/release-notes-functional-candidate.md).
 
 TrEMOLO uses [Snakemake](https://snakemake-wrappers.readthedocs.io/en/stable/) to perform its analyses. You have then first to provide your parameters in a *.yaml* file (see an example in the *config.yaml* file). Parameters are :
 
