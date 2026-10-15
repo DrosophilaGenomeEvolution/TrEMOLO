@@ -105,7 +105,7 @@ def run_input(value):
     return spec
 
 
-def collect(inputs, database, min_identity, min_coverage, min_aligned_bp):
+def collect(inputs, database, min_identity, min_coverage, min_aligned_bp, chromosomes=None):
     calls, candidates, exclusions, used_paths = [], [], [], []
     seen_samples = set()
     for spec in inputs:
@@ -121,6 +121,9 @@ def collect(inputs, database, min_identity, min_coverage, min_aligned_bp):
             if not event or event in accepted:
                 raise ValueError(f"{path}: missing or duplicate event ID: {event}")
             accepted[event] = call
+            if chromosomes is not None and call["chrom"] not in chromosomes:
+                exclusions.append(dict(sample_id=sample, event_id=event, reason="excluded_by_chrom_filter"))
+                continue
             if event_class(call["event_type"]) == "insertion":
                 calls.append(call)
             else:
@@ -137,7 +140,8 @@ def collect(inputs, database, min_identity, min_coverage, min_aligned_bp):
             paths = {key: Path(channel[key]) for key in ("alignment", "provenance", "insertion_fasta")}
             used_paths.extend(paths.values())
             sequences = read_fasta(paths["insertion_fasta"], allow_empty=True)
-            events = {e for e, c in accepted.items() if event_class(c["event_type"]) == "insertion"}
+            events = {e for e, c in accepted.items() if event_class(c["event_type"]) == "insertion"
+                      and (chromosomes is None or c["chrom"] in chromosomes)}
             evidence = load_evidence([(label, paths["alignment"])], [(label, paths["provenance"])],
                                      [(label, paths["insertion_fasta"])], events)
             grouped = defaultdict(list)
@@ -169,7 +173,11 @@ def collect(inputs, database, min_identity, min_coverage, min_aligned_bp):
 
 
 def build(reference, te_database, inputs, output, reference_name="reference", locus_window=0,
-          min_identity=80, min_coverage=80, min_aligned_bp=100, selected_tes=None):
+          min_identity=80, min_coverage=80, min_aligned_bp=100, selected_tes=None, chrom_regex=None):
+    try:
+        chrom_pattern = re.compile(chrom_regex) if chrom_regex is not None else None
+    except re.error as error:
+        raise ValueError(f"Invalid chromosome regex: {error}") from error
     if selected_tes is not None:
         selected_tes = set(selected_tes)
         if not selected_tes:
@@ -183,10 +191,15 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
     for spec in inputs:
         if spec.get("reference") and read_fasta(spec["reference"]) != genome:
             raise ValueError("Input run uses a different reference: " + spec["sample_id"])
+    if chrom_pattern is not None:
+        genome = {chrom: sequence for chrom, sequence in genome.items() if chrom_pattern.search(chrom)}
+        if not genome:
+            raise ValueError("Chromosome regex matches no reference sequences")
     for chrom in genome:
         if re.fullmatch(r"[A-Za-z0-9_.:-]+", chrom) is None:
             raise ValueError("Invalid chromosome name for GFA: " + chrom)
-    calls, candidates, exclusions, paths = collect(inputs, database, min_identity, min_coverage, min_aligned_bp)
+    calls, candidates, exclusions, paths = collect(inputs, database, min_identity, min_coverage, min_aligned_bp,
+                                                  set(genome) if chrom_pattern is not None else None)
     paths.extend(Path(spec["reference"]) for spec in inputs if spec.get("reference"))
     destinations = {Path(output).resolve() / name for name in (
         "te-graph.gfa", "sequence-alternatives.tsv", "loci.tsv", "excluded-events.tsv", "walks.tsv", "manifest.json")}
@@ -306,7 +319,8 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
     write_tsv(output / "loci.tsv", ("locus_id", "chrom", "position", "anchor_min", "anchor_max", "status", "alternatives", "selected"), locus_rows)
     write_tsv(output / "excluded-events.tsv", ("sample_id", "event_id", "reason"), exclusions)
     write_tsv(output / "walks.tsv", ("sample", "chrom", "length", "interpretation"), walk_rows)
-    manifest = dict(schema_version="0.2.0", reference_name=reference_name,
+    manifest = dict(schema_version="0.3.0", reference_name=reference_name,
+        chrom_regex=chrom_regex, chromosomes=list(genome),
         selected_tes=sorted(selected_tes) if selected_tes is not None else None,
         construction="family_representatives_synthetic_levels", locus_window=locus_window,
         ranking=["collinear_nonoverlapping_bitscore_sum", "coverage", "identity", "family_read_support", "identifier"],
@@ -327,6 +341,7 @@ def main():
     source.add_argument("--run", action="append", help="SAMPLE=/path/to/analysis; repeat for a cohort")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--reference-name", default="reference")
+    parser.add_argument("--chrom-regex", help="Python regex searched on reference sequence names; default keeps all")
     parser.add_argument("--locus-window", type=int, default=0)
     parser.add_argument("--min-identity", type=float, default=80)
     parser.add_argument("--min-coverage", type=float, default=80)
@@ -343,7 +358,7 @@ def main():
         selected_tes = {name.strip() for name in args.te_names_file.read_text().splitlines() if name.strip()}
     manifest = build(args.reference, args.te_database, inputs, args.output,
                      args.reference_name, args.locus_window, args.min_identity, args.min_coverage,
-                     args.min_aligned_bp, selected_tes)
+                     args.min_aligned_bp, selected_tes, args.chrom_regex)
     print(json.dumps(manifest["counts"]))
 
 

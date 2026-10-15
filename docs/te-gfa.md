@@ -33,6 +33,24 @@ sequence evidence is preserved with `excluded_by_te_filter` where applicable.
 The tables also record `locus_selected`/`selected`, and the manifest records
 the name selection and selected locus count. An empty list is rejected.
 
+To keep only the main dm6 chromosomes, add:
+
+```bash
+--chrom-regex '^([23][RL]|[X4Y])$'
+```
+
+This is a Python regular expression searched on the FASTA sequence name alone,
+without its description or following tabular columns. Use `^` and `$` for exact
+names. Unlike `CHROM_KEEP`, commas are not converted into alternatives: use `|`.
+Without the option, every reference chromosome/contig is retained, including those
+without TE calls. With it, excluded chromosomes contribute no segments, links,
+walks, loci or sequence candidates. Their BED events are recorded in
+`excluded-events.tsv` with reason `excluded_by_chrom_filter`. Chromosome and TE
+name filters can be combined. The manifest records the regex and retained sequence
+names. Invalid patterns or patterns matching no reference sequence fail before
+output files are written. Input-reference consistency is still checked against
+the complete reference before applying this export filter.
+
 For explicit input files, use `--inputs inputs.json` instead of `--run`:
 
 ```json

@@ -12,6 +12,57 @@ from build_te_gfa import best_chain, build, reverse_complement, run_input
 
 
 class GfaTests(unittest.TestCase):
+    def test_chromosome_filter_removes_reference_only_contigs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            inputs[0]["reference"] = str(ref)
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1,
+                             chrom_regex="^chr1$", selected_tes={"C"})
+            _, walks = self.inspect(root / "out/te-graph.gfa")
+            self.assertEqual({chrom for sample, chrom in walks}, {"chr1"})
+            self.assertEqual(manifest["chromosomes"], ["chr1"])
+            self.assertEqual(manifest["chrom_regex"], "^chr1$")
+            self.assertEqual(manifest["counts"]["representatives"], 3)
+
+    def test_chromosome_filter_excludes_calls_and_candidates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            manifest = build(ref, db, inputs, root / "out", min_aligned_bp=1, chrom_regex="^chr2$")
+            _, walks = self.inspect(root / "out/te-graph.gfa")
+            self.assertEqual(set(walks), {("reference", "chr2")})
+            self.assertEqual(manifest["counts"]["loci"], 0)
+            with (root / "out/sequence-alternatives.tsv").open() as handle:
+                self.assertEqual(list(csv.DictReader(handle, delimiter="\t")), [])
+            with (root / "out/excluded-events.tsv").open() as handle:
+                exclusions = list(csv.DictReader(handle, delimiter="\t"))
+            self.assertEqual({r["event_id"] for r in exclusions}, {"e1", "e2"})
+            self.assertEqual({r["reason"] for r in exclusions}, {"excluded_by_chrom_filter"})
+
+    def test_chromosome_filter_rejects_invalid_or_empty_matches_before_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            for pattern, reason in (("[", "Invalid chromosome regex"), ("^missing$", "matches no reference")):
+                with self.subTest(pattern=pattern), self.assertRaisesRegex(ValueError, reason):
+                    build(ref, db, inputs, root / "out", chrom_regex=pattern)
+                self.assertFalse((root / "out").exists())
+
+    def test_cli_chromosome_filter(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ref, db, inputs, _, _ = self.fixture(root)
+            input_file = root / "inputs.json"
+            input_file.write_text(json.dumps(inputs))
+            result = subprocess.run([sys.executable, str(ROOT / "lib/python/locus/build_te_gfa.py"),
+                "--reference", str(ref), "--te-database", str(db), "--inputs", str(input_file),
+                "--output", str(root / "out"), "--min-aligned-bp", "1", "--chrom-regex", "^chr1$"],
+                capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            _, walks = self.inspect(root / "out/te-graph.gfa")
+            self.assertEqual({chrom for sample, chrom in walks}, {"chr1"})
+
     def fixture(self, root):
         ref, db, infos, seq, origin, blast = [root / n for n in
             ("ref.fa", "db.fa", "TE_INFOS.bed", "ins.fa", "origin.tsv", "hits.bln")]
