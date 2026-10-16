@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import csv
+import json
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -9,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "lib/python/modules"))
-from build_insertion_structure_report import build, build_events  # noqa: E402
+from build_insertion_structure_report import build, build_events, write_browser_data  # noqa: E402
 
 
 TE_HEADER = (
@@ -25,6 +28,84 @@ CANDIDATE_HEADER = (
 
 
 class BuildInsertionStructureReportTests(unittest.TestCase):
+    def read_chunk(self, output, relative):
+        text = (output / relative).read_text()
+        prefix = f"window.trmStructureChunks[{json.dumps(relative)}]="
+        self.assertTrue(text.startswith(prefix))
+        return json.loads(text[len(prefix):-2])
+
+    def test_browser_chunks_preserve_evidence_and_keep_it_out_of_quarto(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = self.run_build(root)
+            output = root / "report"
+            self.assertEqual(json.loads((output / "report-data.json").read_text()), data)
+            qmd = (output / "report.qmd").read_text()
+            bootstrap = json.loads(qmd.split('<script id="structure-report-data" type="application/json">')[1].split('</script>')[0])
+            self.assertNotIn("hsps", bootstrap)
+            self.assertNotIn("structures", bootstrap)
+            self.assertLess(len(qmd), 100_000)
+            self.assertNotIn(data["structures"][0]["query_id"], qmd)
+            rows = [row for path in bootstrap["index_files"]
+                    for row in self.read_chunk(output, path)["rows"]]
+            index = dict(zip(bootstrap["index_columns"], rows[0]))
+            self.assertEqual(index["families"], ["copia", "low", "roo"])
+            payload = self.read_chunk(output, index["evidence_file"])[index["query_id"]]
+            self.assertEqual(payload["hsps"], data["hsps"])
+            self.assertEqual(payload["matches"], data["matches"])
+            self.assertEqual(payload["components"], data["components"])
+            self.assertEqual(payload["structure"], data["structures"][0])
+            # A rebuild cannot overwrite chunks still referenced by older HTML.
+            rebuilt = write_browser_data(output, data, chunk_size=1)
+            self.assertNotEqual(rebuilt["index_files"], bootstrap["index_files"])
+            self.assertTrue((output / bootstrap["index_files"][0]).is_file())
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is needed for the browser harness")
+    def test_offline_loading_pagination_global_filters_and_missing_chunks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            blast, sizes, queries, infos, candidates = self.fixture(root)
+            base_blast = blast.read_text()
+            base_query = queries.read_text().split("\t")[0]
+            blast.write_text(base_blast * 20 + "".join(base_blast.replace(base_query, f"2L:<INS>:{100+i}:{101+i}:event{i+1}:1:IMPRECISE:1") for i in range(1, 251)))
+            queries.write_text("".join(f"2L:<INS>:{100+i}:{101+i}:event{i+1}:1:IMPRECISE:1\t1000\n" for i in range(251)))
+            build(blast, sizes, queries, root / "report", infos, candidates,
+                  90, 50, 50, 0.2,
+                  ROOT / "modules/2-MODULE_TE_BLAST/report.qmd",
+                  ROOT / "modules/2-MODULE_TE_BLAST/report.css",
+                  ROOT / "modules/2-MODULE_TE_BLAST/report.js", "test")
+            result = subprocess.run(["node", str(ROOT / "tests/modules/test_structure_report_browser.js"),
+                                     str(root / "report")], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_index_chunks_keep_all_queries_without_alignments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            blast, sizes, queries, infos, candidates = self.fixture(root)
+            blast.write_text("")
+            queries.write_text("".join(f"2L:<INS>:{i}:{i+1}:event{i}:1:IMPRECISE:1\t1000\n"
+                                       for i in range(2001)))
+            data = build(blast, sizes, queries, root / "report", infos, candidates,
+                         90, 50, 50, 0.2,
+                         ROOT / "modules/2-MODULE_TE_BLAST/report.qmd",
+                         ROOT / "modules/2-MODULE_TE_BLAST/report.css",
+                         ROOT / "modules/2-MODULE_TE_BLAST/report.js", "test")
+            output = root / "report"
+            bootstrap = write_browser_data(output, data)
+            self.assertEqual(len(bootstrap["index_files"]), 2)
+            self.assertEqual(bootstrap["event_files"], [])
+            rows = [dict(zip(bootstrap["index_columns"], row))
+                    for path in bootstrap["index_files"]
+                    for row in self.read_chunk(output, path)["rows"]]
+            self.assertEqual({row["query_id"] for row in rows},
+                             {row["query_id"] for row in data["structures"]})
+            self.assertTrue(all(row["classification"] == "no_match" for row in rows))
+            self.assertTrue(all(row["match_count"] == 0 for row in rows))
+            for row in (rows[0], rows[-1]):
+                evidence = self.read_chunk(output, row["evidence_file"])[row["query_id"]]
+                self.assertEqual(evidence["hsps"], [])
+                self.assertEqual(evidence["structure"]["query_id"], row["query_id"])
+
     def test_restored_names_match_raw_blast_subjects(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -11,6 +11,7 @@ import math
 import os
 import tempfile
 import sys
+import uuid
 from collections import defaultdict
 from pathlib import Path
 from typing import Iterable, Optional
@@ -556,6 +557,88 @@ def public_row(row: dict, columns: tuple[str, ...]) -> dict:
     return {column: row[column] for column in columns}
 
 
+def write_json(path: Path, value: object, prefix: str = "", suffix: str = "\n") -> None:
+    """Stream large exports instead of allocating a second, serialized copy."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(prefix)
+            json.dump(value, handle, ensure_ascii=True, separators=(",", ":"))
+            handle.write(suffix)
+        temporary.replace(path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def write_browser_data(output: Path, data: dict, chunk_size: int = 200) -> dict:
+    """Keep Quarto input small; evidence is loaded only for the visible page.
+
+    Script chunks also work over file://, without fetch, a server or a network.
+    A fresh directory prevents old HTML from accidentally reading new evidence.
+    """
+    if chunk_size < 1:
+        raise ValueError("chunk_size must be positive")
+    directory = Path("report-assets") / uuid.uuid4().hex
+    grouped = {}
+    for key, field in (("matches", "query_id"), ("hsps", "query_id"),
+                       ("components", "structure_id")):
+        rows = defaultdict(list)
+        for row in data[key]:
+            rows[row[field]].append(row)
+        grouped[key] = rows
+
+    def chunk(name: str, payload: dict) -> str:
+        relative = (directory / name).as_posix()
+        write_json(output / relative, payload,
+                   f"window.trmStructureChunks[{json.dumps(relative)}]=", ";\n")
+        return relative
+
+    columns = list(STRUCTURE_COLUMNS[:-1]) + ["families", "match_count", "evidence_file"]
+    index_files = []
+    index_rows = []
+    for start in range(0, len(data["structures"]), chunk_size):
+        evidence = {}
+        batch = data["structures"][start:start + chunk_size]
+        evidence_file = (directory / f"evidence-{start // chunk_size}.js").as_posix()
+        for structure in batch:
+            query_id = structure["query_id"]
+            matches = grouped["matches"].get(query_id, [])
+            components = grouped["components"].get(structure["structure_id"], [])
+            evidence[query_id] = {
+                "structure": structure, "matches": matches,
+                "hsps": grouped["hsps"].get(query_id, []), "components": components,
+            }
+            families = {row["subject_te"] for row in matches}
+            families.update(row["te_name"] for row in components)
+            if structure["reported_te"] not in ("", "."):
+                families.add(structure["reported_te"])
+            index_rows.append([structure[key] for key in STRUCTURE_COLUMNS[:-1]]
+                              + [sorted(families), len(matches), evidence_file])
+        chunk(f"evidence-{start // chunk_size}.js", evidence)
+        # Index chunks contain no HSPs and use columnar rows to reduce disk size.
+        if len(index_rows) >= 2000:
+            index_files.append(chunk(f"index-{len(index_files)}.js", {"rows": index_rows}))
+            index_rows = []
+    if index_rows:
+        index_files.append(chunk(f"index-{len(index_files)}.js", {"rows": index_rows}))
+    event_files = []
+    event_rows = []
+    for event in data["events"]:
+        if event["multi_component_queries"] > 0:
+            event_rows.append(event)
+            if len(event_rows) == 2000:
+                event_files.append(chunk(f"events-{len(event_files)}.js", {"events": event_rows}))
+                event_rows = []
+    if event_rows:
+        event_files.append(chunk(f"events-{len(event_files)}.js", {"events": event_rows}))
+    return {key: data[key] for key in ("schema_version", "report", "summary")} | {
+        "index_columns": columns, "index_files": index_files, "event_files": event_files,
+    }
+
+
 def render_qmd(template: str, style: str, script: str, data: dict) -> str:
     replacements = {
         "<!-- STRUCTURE_REPORT_STYLE -->": f"<style>\n{style}\n</style>",
@@ -700,13 +783,11 @@ def build(
         output / "manifest.json",
         json.dumps(manifest_data, indent=2, sort_keys=True) + "\n",
     )
-    atomic_write_text(
-        output / "report-data.json",
-        json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-    )
+    write_json(output / "report-data.json", data)
+    browser_data = write_browser_data(output, data)
     atomic_write_text(
         output / "report.qmd",
-        render_qmd(template.read_text(), style.read_text(), script.read_text(), data),
+        render_qmd(template.read_text(), style.read_text(), script.read_text(), browser_data),
     )
     return data
 

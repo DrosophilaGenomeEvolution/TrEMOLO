@@ -2,35 +2,100 @@
   "use strict";
 
   const data = JSON.parse(document.getElementById("structure-report-data").textContent);
-  const structures = data.structures || [];
-  const events = data.events || [];
-  const components = data.components || [];
-  const matches = data.matches || [];
-  const hsps = data.hsps || [];
+  const structures = [];
+  const events = [];
   const $ = (id) => document.getElementById(id);
   const integer = new Intl.NumberFormat();
   const decimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-  const matchesByQuery = groupBy(matches, "query_id");
-  const hspsByQuery = groupBy(hsps, "query_id");
-  const componentsByStructure = groupBy(components, "structure_id");
-  const familiesByQuery = new Map();
+  const pageSize = 50;
+  let structurePage = 1;
+  let eventPage = 1;
+  let selection = [];
+  let renderVersion = 0;
+  const pendingChunks = new Map();
+  const chunkCache = new Map();
+  let searchTimer;
+  window.trmStructureChunks = Object.create(null);
 
-  structures.forEach((structure) => {
-    const families = new Set();
-    if (structure.reported_te && structure.reported_te !== ".") families.add(structure.reported_te);
-    (matchesByQuery.get(structure.query_id) || []).forEach((match) => families.add(match.subject_te));
-    (componentsByStructure.get(structure.structure_id) || []).forEach((component) => families.add(component.te_name));
-    familiesByQuery.set(structure.query_id, [...families].sort(collator.compare));
-  });
-
-  function groupBy(rows, field) {
-    const grouped = new Map();
-    rows.forEach((row) => {
-      if (!grouped.has(row[field])) grouped.set(row[field], []);
-      grouped.get(row[field]).push(row);
+  function loadChunk(path, cache = false) {
+    if (chunkCache.has(path)) {
+      const value = chunkCache.get(path);
+      chunkCache.delete(path);
+      chunkCache.set(path, value);
+      return Promise.resolve(value);
+    }
+    if (pendingChunks.has(path)) return pendingChunks.get(path);
+    const promise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      const timeout = setTimeout(() => finish(new Error(`Timed out loading ${path}`)), 60000);
+      function finish(error) {
+        clearTimeout(timeout);
+        script.remove();
+        const value = window.trmStructureChunks[path];
+        delete window.trmStructureChunks[path];
+        if (error || value === undefined) {
+          reject(error || new Error(`Invalid report data: ${path}`));
+          return;
+        }
+        if (cache) {
+          chunkCache.set(path, value);
+          while (chunkCache.size > 8) chunkCache.delete(chunkCache.keys().next().value);
+        }
+        resolve(value);
+      }
+      script.onload = () => finish();
+      script.onerror = () => finish(new Error(`Cannot load ${path}. Keep report-assets/ beside the HTML report.`));
+      script.src = path;
+      document.head.appendChild(script);
     });
-    return grouped;
+    pendingChunks.set(path, promise);
+    promise.then(() => pendingChunks.delete(path), () => pendingChunks.delete(path));
+    return promise;
+  }
+
+  function showError(error) {
+    $("trm-structure-status").textContent = `Report data error: ${error.message}`;
+    $("trm-structure-status").setAttribute("role", "alert");
+  }
+
+  function paginate(id, page, count, changePage) {
+    const target = typeof id === "string" ? $(id) : id;
+    const pages = Math.max(1, Math.ceil(count / pageSize));
+    target.replaceChildren();
+    function button(text, number, disabled = false) {
+      const node = element("button", "trm-structure-button", text);
+      node.type = "button";
+      node.disabled = disabled;
+      if (number === page && /^\d+$/.test(text)) node.setAttribute("aria-current", "page");
+      node.addEventListener("click", () => changePage(number));
+      target.appendChild(node);
+    }
+    button("Previous", page - 1, page <= 1);
+    const numbers = new Set([1, pages]);
+    for (let n = Math.max(1, page - 2); n <= Math.min(pages, page + 2); n++) numbers.add(n);
+    let previous = 0;
+    [...numbers].sort((a, b) => a - b).forEach((number) => {
+      if (previous && number > previous + 1) target.appendChild(element("span", "", "…"));
+      button(String(number), number);
+      previous = number;
+    });
+    button("Next", page + 1, page >= pages);
+    const jump = element("input");
+    jump.type = "number";
+    jump.min = "1";
+    jump.max = String(pages);
+    jump.value = String(page);
+    jump.setAttribute("aria-label", "Go to page");
+    const go = element("button", "trm-structure-button", "Go to page");
+    go.type = "button";
+    const submit = () => {
+      const value = Number(jump.value);
+      if (Number.isInteger(value) && value >= 1 && value <= pages) changePage(value);
+    };
+    go.addEventListener("click", submit);
+    jump.addEventListener("keydown", (event) => { if (event.key === "Enter") submit(); });
+    target.append(element("span", "", `Page ${page} / ${pages} · ${integer.format(count)} results`), jump, go);
   }
 
   function element(name, className, text) {
@@ -98,7 +163,7 @@
     appendOptions("trm-structure-chrom", [...new Set(structures.map((row) => row.chrom))].sort(collator.compare));
     appendOptions(
       "trm-structure-te",
-      [...new Set(structures.flatMap((row) => familiesByQuery.get(row.query_id) || []))].sort(collator.compare),
+      [...new Set(structures.flatMap((row) => row.families || []))].sort(collator.compare),
     );
     appendOptions("trm-structure-class", [...new Set(structures.map((row) => row.classification))].sort(collator.compare));
     [
@@ -107,9 +172,12 @@
       "trm-structure-class",
       "trm-structure-final",
       "trm-structure-min-components",
-      "trm-structure-search",
       "trm-structure-sort",
     ].forEach((id) => $(id).addEventListener("input", renderLandscape));
+    $("trm-structure-search").addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(renderLandscape, 200);
+    });
     $("trm-structure-reset").addEventListener("click", resetFilters);
   }
 
@@ -129,8 +197,8 @@
   }
 
   function signalOrder(first, second) {
-    const firstMatches = (matchesByQuery.get(first.query_id) || []).length;
-    const secondMatches = (matchesByQuery.get(second.query_id) || []).length;
+    const firstMatches = first.match_count;
+    const secondMatches = second.match_count;
     return Number(second.component_count) - Number(first.component_count)
       || Number(second.alternative_matches) - Number(first.alternative_matches)
       || Number(second.retained_matches) - Number(first.retained_matches)
@@ -149,7 +217,7 @@
     const order = $("trm-structure-sort").value;
     const rows = structures.filter((row) => {
       if (chrom && row.chrom !== chrom) return false;
-      if (te && !(familiesByQuery.get(row.query_id) || []).includes(te)) return false;
+      if (te && !(row.families || []).includes(te)) return false;
       if (classification && row.classification !== classification) return false;
       if (finalCall && row.final_call !== finalCall) return false;
       if (Number(row.component_count) < minimum) return false;
@@ -157,7 +225,7 @@
         const haystack = [
           row.chrom, row.locus_start, row.locus_end, row.event_id, row.query_id,
           row.structure_id, row.reported_te, row.classification,
-          ...(familiesByQuery.get(row.query_id) || []),
+          ...(row.families || []),
         ].join(" ").toLocaleLowerCase();
         if (!haystack.includes(search)) return false;
       }
@@ -190,12 +258,13 @@
     return "No TE signal";
   }
 
-  function createStructureCard(structure) {
-    const queryMatches = (matchesByQuery.get(structure.query_id) || []).slice()
+  function createStructureCard(structure, evidence) {
+    structure = { ...structure, ...evidence.structure };
+    const queryMatches = evidence.matches.slice()
       .sort((a, b) => Number(a.query_start) - Number(b.query_start) || Number(b.bitscore_sum) - Number(a.bitscore_sum));
-    const queryComponents = (componentsByStructure.get(structure.structure_id) || []).slice()
+    const queryComponents = evidence.components.slice()
       .sort((a, b) => Number(a.rank) - Number(b.rank));
-    const queryHsps = hspsByQuery.get(structure.query_id) || [];
+    const queryHsps = evidence.hsps;
     const card = element("article", `trm-structure-item trm-class-${structure.classification}`);
     card.id = `structure-${structure.structure_id}`;
     card.setAttribute("role", "listitem");
@@ -327,6 +396,19 @@
     return { wrap, body };
   }
 
+  function renderTableRows(table, rows, createRow) {
+    const navigation = element("nav", "trm-structure-pages");
+    navigation.setAttribute("aria-label", "Evidence pages");
+    table.wrap.appendChild(navigation);
+    function draw(page) {
+      table.body.replaceChildren();
+      rows.slice((page - 1) * pageSize, page * pageSize)
+        .forEach((row) => table.body.appendChild(createRow(row)));
+      paginate(navigation, page, rows.length, draw);
+    }
+    draw(1);
+  }
+
   function renderDetails(target, structure, queryMatches, queryHsps) {
     target.appendChild(detailFacts(structure));
     target.appendChild(element("h4", "", "Normalized TE matches"));
@@ -335,7 +417,7 @@
         "TE", "Query segments", "Strand", "Query coverage", "Consensus coverage",
         "Identity", "HSPs", "Bitscore", "E-value", "Status", "Assignment", "Filter reason",
       ]);
-      queryMatches.forEach((row) => {
+      renderTableRows(matchTable, queryMatches, (row) => {
         const tr = document.createElement("tr");
         [
           row.subject_te,
@@ -352,7 +434,7 @@
           row.filter_reasons === "." ? "—" : label(row.filter_reasons),
         ].forEach((value) => appendCell(tr, value));
         if (row.status === "rejected") tr.className = "trm-st-rejected-row";
-        matchTable.body.appendChild(tr);
+        return tr;
       });
       target.appendChild(matchTable.wrap);
     } else {
@@ -366,7 +448,7 @@
         "TE", "Query interval", "Consensus interval", "Strand", "Aligned bp",
         "Identity", "Bitscore", "E-value", "Retained", "Filter reason",
       ]);
-      queryHsps.forEach((row) => {
+      renderTableRows(hspTable, queryHsps, (row) => {
         const tr = document.createElement("tr");
         [
           row.subject_te,
@@ -380,7 +462,7 @@
           row.retained,
           row.filter_reasons === "." ? "—" : label(row.filter_reasons),
         ].forEach((value) => appendCell(tr, value));
-        hspTable.body.appendChild(tr);
+        return tr;
       });
       raw.appendChild(hspTable.wrap);
     } else {
@@ -390,12 +472,43 @@
   }
 
   function renderLandscape() {
-    const rows = filteredStructures();
-    $("trm-structure-filter-note").textContent = `${integer.format(rows.length)} / ${integer.format(structures.length)} insertion structures visible`;
-    $("trm-structure-empty").hidden = rows.length !== 0;
+    clearTimeout(searchTimer);
+    selection = filteredStructures();
+    structurePage = 1;
+    renderStructurePage().catch(showError);
+  }
+
+  async function renderStructurePage() {
+    const version = ++renderVersion;
+    const rows = selection.slice((structurePage - 1) * pageSize, structurePage * pageSize);
+    $("trm-structure-filter-note").textContent = `${integer.format(selection.length)} / ${integer.format(structures.length)} insertion structures match · ${rows.length} on this page`;
+    $("trm-structure-empty").hidden = selection.length !== 0;
+    $("trm-structure-gallery").replaceChildren();
+    $("trm-structure-status").textContent = "Loading page evidence…";
+    paginate("trm-structure-pages", structurePage, selection.length, (page) => {
+      structurePage = page;
+      renderStructurePage().catch(showError);
+    });
+    const files = [...new Set(rows.map((row) => row.evidence_file))];
+    const evidence = new Map();
+    // Bound concurrent disk reads even when sorting scatters queries across chunks.
+    let next = 0;
+    try {
+      await Promise.all(Array.from({ length: Math.min(4, files.length) }, async () => {
+        while (next < files.length && version === renderVersion) {
+          const file = files[next++];
+          evidence.set(file, await loadChunk(file, true));
+        }
+      }));
+    } catch (error) {
+      if (version === renderVersion) throw error;
+      return;
+    }
+    if (version !== renderVersion) return;
     const fragment = document.createDocumentFragment();
-    rows.forEach((row) => fragment.appendChild(createStructureCard(row)));
+    rows.forEach((row) => fragment.appendChild(createStructureCard(row, evidence.get(row.evidence_file)[row.query_id])));
     $("trm-structure-gallery").replaceChildren(fragment);
+    $("trm-structure-status").textContent = "";
   }
 
   function focusEvent(eventId) {
@@ -410,10 +523,15 @@
 
   function renderEvents() {
     const body = $("trm-event-body");
+    body.replaceChildren();
     const candidates = events
       .filter((event) => Number(event.multi_component_queries) > 0)
       .sort((a, b) => Number(b.multi_family_queries) - Number(a.multi_family_queries) || Number(b.multi_component_queries) - Number(a.multi_component_queries) || genomicOrder(a, b));
-    candidates.forEach((event) => {
+    paginate("trm-event-pages", eventPage, candidates.length, (page) => {
+      eventPage = page;
+      renderEvents();
+    });
+    candidates.slice((eventPage - 1) * pageSize, eventPage * pageSize).forEach((event) => {
       const tr = document.createElement("tr");
       [
         `${event.chrom}:${integer.format(event.locus_start)}`,
@@ -446,8 +564,30 @@
     }
   }
 
-  renderSummary();
-  populateFilters();
-  renderLandscape();
-  renderEvents();
+  async function initialize() {
+    renderSummary();
+    $("trm-structure-filters").disabled = true;
+    $("trm-structure-reset").disabled = true;
+    let completed = 0;
+    for (const path of data.index_files) {
+      const chunk = await loadChunk(path);
+      chunk.rows.forEach((values) => {
+        const row = {};
+        data.index_columns.forEach((key, index) => { row[key] = values[index]; });
+        structures.push(row);
+      });
+      $("trm-structure-status").textContent = `Loading sequence index: ${++completed} / ${data.index_files.length}`;
+    }
+    for (const path of data.event_files) {
+      const chunk = await loadChunk(path);
+      chunk.events.forEach((row) => events.push(row));
+    }
+    populateFilters();
+    $("trm-structure-filters").disabled = false;
+    $("trm-structure-reset").disabled = false;
+    renderLandscape();
+    renderEvents();
+  }
+
+  initialize().catch(showError);
 })();

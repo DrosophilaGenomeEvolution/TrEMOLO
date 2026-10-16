@@ -409,3 +409,8 @@ body { color: var(--trm-st-ink); }
   .trm-structure-item { break-inside: avoid; box-shadow: none; }
   .trm-structure-details { display: none; }
 }
+.trm-structure-toolbar { border: 0; min-width: 0; }
+.trm-structure-pages { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0; }
+.trm-structure-pages input { width: 6rem; }
+.trm-structure-pages [aria-current="page"] { font-weight: bold; outline: 2px solid currentColor; }
+.trm-structure-pages button:disabled { opacity: .5; cursor: default; }
