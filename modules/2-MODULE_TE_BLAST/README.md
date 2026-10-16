@@ -48,6 +48,7 @@ STRUCTURE_REPORT/
   insertion-events.tsv
   manifest.json
   report-data.json
+  report-assets/
   report.qmd
   report.html
   index.html
@@ -76,16 +77,28 @@ Event classifications distinguish:
 These labels remain hypotheses. A composite or nested biological allele should
 only be promoted after read/assembly evidence confirms linkage and breakpoints.
 
-The report is a self-contained Quarto HTML file. Its primary view is a
-scrollable structure landscape: every insertion sequence remains available,
+The report is an offline Quarto HTML bundle. **Keep `report-assets/` beside
+`report.html` or `index.html` when copying or sharing it.** Open either HTML
+file directly; no server or network connection is needed. Quarto renders only
+the document shell, instead of parsing all BLAST evidence as one large string.
+The sequence index is split into script chunks and evidence is loaded on demand
+with a bounded cache. The complete `report-data.json` export is streamed to disk
+and is not read by Quarto or the browser.
+
+Its primary view is a paginated structure landscape: every insertion sequence remains available,
 while coordinate-scaled TE components, orientations, consensus coverage and
 identity are visible directly on each card. Multi-component and
 alternative-rich structures appear first by default without hiding the other
 sequences. Chromosome, TE family, classification, final-call, component-count
 and free-text filters can narrow the landscape. Each card exposes normalized
-matches and raw BLAST HSPs on demand, including rejection reasons.
+matches and raw BLAST HSPs on demand, including rejection reasons. Structure
+and event views show 50 entries per page, with previous/next buttons, page
+numbers and a direct page selector. Filters and ordering cover the complete
+sequence index, including sequences without a retained match.
 
-The historical Node server, global repository symlink, 500 MB monolithic JSON
-and CDN dependencies are no longer used.
+The historical Node server, global repository symlink and CDN dependencies are
+no longer used. Normalization still holds alignment records in Python memory;
+this change removes the oversized Quarto input and the unbounded HTML gallery,
+without changing scientific thresholds or discarding evidence.
 The refactored Singularity definition includes Quarto; with an older image,
 run the wrapper from a host installation of Quarto instead.
