@@ -634,7 +634,10 @@ def write_browser_data(output: Path, data: dict, chunk_size: int = 200) -> dict:
                 event_rows = []
     if event_rows:
         event_files.append(chunk(f"events-{len(event_files)}.js", {"events": event_rows}))
-    return {key: data[key] for key in ("schema_version", "report", "summary")} | {
+    return {
+        "schema_version": data["schema_version"],
+        "report": data["report"],
+        "summary": data["summary"],
         "index_columns": columns, "index_files": index_files, "event_files": event_files,
     }
 
