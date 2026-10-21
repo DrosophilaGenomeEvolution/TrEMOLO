@@ -12,6 +12,7 @@ WORKDIR = DATA.get("WORK_DIRECTORY", "").strip() or "TrEMOLO_OUTPUT"
 PIPELINE_ROOT = Path(workflow.basedir).resolve().parent
 sys.path.insert(0, str(PIPELINE_ROOT / "lib/python/workflow"))
 from window_parameters import resolve_windows
+from chromosome_filter import compile_chromosome_filter
 from unmapped_te import resolve_parameters as resolve_unmapped_parameters
 from unmapped_te import resolve_extraction_parameters
 WINDOWS = resolve_windows(config.get("PARAMS", {}).get("WINDOWS"))

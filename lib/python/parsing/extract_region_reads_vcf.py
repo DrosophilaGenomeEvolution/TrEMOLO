@@ -98,6 +98,14 @@ parser.add_argument("--max-len-seq", dest='max_len_seq', type=int, default=-1,
 
 parser.add_argument("--caller", choices=("auto", "sniffles1", "sniffles2"), default="auto")
 args = parser.parse_args()
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "workflow"))
+from chromosome_filter import compile_chromosome_filter, validate_vcf_chromosomes
+try:
+    chromosome_filter = compile_chromosome_filter(args.chrom)
+    validate_vcf_chromosomes(args.vcf_file, chromosome_filter)
+except ValueError as error:
+    parser.error(str(error))
 from sniffles_vcf import is_sniffles2, extract_read_names
 if args.caller == "sniffles2" or (args.caller == "auto" and is_sniffles2(args.vcf_file)):
     extract_read_names(args)
@@ -110,11 +118,7 @@ os.system("mkdir -p " + repRegion)
 
 #check if an element of the array is at least part of the value
 def regexInList(value, liste):
-    for index, pattern in enumerate(liste):
-        if re.search(pattern, value):
-            return True
-
-    return False
+    return chromosome_filter.search(value) is not None
 
 
 listId = None
@@ -126,7 +130,7 @@ file = open(args.vcf_file, "r")
 
 #regexInList(chrom, chromList)
 typeList   = args.type.split(",")#NOT KEEP THIS
-chromList  = args.chrom.split(",")#KEEP ON
+chromList  = args.chrom
 
 print("[" + str(sys.argv[0]) + "]", "exclude type : ", typeList)
 print("[" + str(sys.argv[0]) + "]", "chromosome liste : ", chromList)

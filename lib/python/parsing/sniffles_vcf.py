@@ -6,6 +6,9 @@ insertion breakpoint used by the downstream BAM/BED code. Do not subtract one.
 
 import re
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "workflow"))
+from chromosome_filter import compile_chromosome_filter, validate_vcf_chromosomes
 
 
 def is_sniffles2(path):
@@ -69,10 +72,11 @@ def records(path):
 def selected(record, args):
     excluded = {value.strip("<>") for value in args.type.split(",")}
     return (record["kind"] not in excluded and
-            any(re.search(pattern, record["chrom"]) for pattern in args.chrom.split(",")))
+            compile_chromosome_filter(args.chrom).search(record["chrom"]) is not None)
 
 
 def extract_sequences(args):
+    validate_vcf_chromosomes(args.vcf_file, compile_chromosome_filter(args.chrom))
     count = 0
     skipped = 0
     with open(args.fasta_out, "w") as output:
@@ -97,6 +101,7 @@ def extract_sequences(args):
 
 
 def extract_read_names(args):
+    validate_vcf_chromosomes(args.vcf_file, compile_chromosome_filter(args.chrom))
     ids = set(Path(args.id_sv).read_text().splitlines()) if args.id_sv else None
     directory = Path(args.directory_name)
     directory.mkdir(parents=True, exist_ok=True)

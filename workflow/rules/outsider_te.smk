@@ -87,6 +87,11 @@ OUTSIDER_TIME_LIMIT = (
     else 0
 )
 OUTSIDER_CHROM_KEEP = OUTSIDER_TE_PARAMS.get("CHROM_KEEP", ".")
+try:
+    compile_chromosome_filter(OUTSIDER_CHROM_KEEP)
+except (ValueError, TypeError) as error:
+    raise ValueError(f"PARAMS.OUTSIDER_VARIANT.TE_DETECTION.CHROM_KEEP: {error}")
+CHROMOSOME_FILTER_SCRIPT = str(PIPELINE_ROOT / "lib/python/workflow/chromosome_filter.py")
 OUTSIDER_GET_SEQ_OPTIONS = OUTSIDER_TE_PARAMS.get("GET_SEQ_REPORT_OPTION", "-m 1000")
 OUTSIDER_BLAST_FILTER = OUTSIDER_PARAMS.get(
     "PARS_BLN_OPTION", "--min-size-percent 90 --min-pident 90 -k 'INS|DEL'"
@@ -268,6 +273,7 @@ rule extract_outsider_sniffles_sequences:
         vcf=SV_VCF,
         parser=str(PIPELINE_ROOT / "lib/python/parsing/get_seq_vcf.py"),
         adapter=str(PIPELINE_ROOT / "lib/python/parsing/sniffles_vcf.py"),
+        chromosome_filter=CHROMOSOME_FILTER_SCRIPT,
         reads_script=str(PIPELINE_ROOT / "lib/python/parsing/parse_bam_found_ins.py"),
         alignment_helper=str(PIPELINE_ROOT / "lib/python/workflow/genomic_alignment.py"),
         bam=MAPPING_BAM,
@@ -681,6 +687,7 @@ rule classify_outsider_hard_clipped_te:
 
 rule merge_outsider_te_evidence:
     input:
+        chromosome_filter=CHROMOSOME_FILTER_SCRIPT,
         sniffles=OUTSIDER_SNIFFLES_BED,
         direct=OUTSIDER_INS_BED,
         soft=OUTSIDER_SOFT_BED,
@@ -715,7 +722,6 @@ rule merge_outsider_te_evidence:
         """
         set -eu
         mkdir -p {OUTSIDER_MERGE_DIR} {WORKDIR}/INTERNAL
-        chrom_keep=$(printf '%s' {params.chrom:q} | tr ',' '|')
         : > {output.sniffles_cluster:q}
         : > {output.direct_cluster:q}
         : > {output.direct_ids:q}
@@ -728,13 +734,13 @@ rule merge_outsider_te_evidence:
         : > {output.hard_only:q}
 
         if test -s {input.sniffles:q}; then
-            bedtools sort -i {input.sniffles:q} | grep -E "$chrom_keep" \
+            bedtools sort -i {input.sniffles:q} | python3 {input.chromosome_filter:q} --regex {params.chrom:q} \
                 | bedtools cluster -d {params.cluster_distance} \
                 | awk 'BEGIN {{te=""; cluster=""}} {{split($4,a,"|"); if (cluster==$7 && a[1]==te) {{te=a[1]; cluster=$7}} else {{print; te=a[1]; cluster=$7}}}}' \
                 | cut -f 1-6 > {output.sniffles_cluster:q}
         fi
         if test -s {input.direct:q}; then
-            bedtools sort -i {input.direct:q} | grep -E "$chrom_keep" \
+            bedtools sort -i {input.direct:q} | python3 {input.chromosome_filter:q} --regex {params.chrom:q} \
                 | bedtools cluster -d {params.cluster_distance} \
                 | awk 'BEGIN {{te=""; cluster=""}} {{split($4,a,"|"); if (cluster==$7 && a[1]==te) {{te=a[1]; cluster=$7}} else {{print; te=a[1]; cluster=$7}}}}' \
                 | cut -f 1-6 > {output.direct_cluster:q}
@@ -750,7 +756,7 @@ rule merge_outsider_te_evidence:
         fi
 
         if test -s {input.soft:q}; then
-            bedtools sort -i {input.soft:q} | grep -E "$chrom_keep" \
+            bedtools sort -i {input.soft:q} | python3 {input.chromosome_filter:q} --regex {params.chrom:q} \
                 | bedtools cluster -d {params.cluster_distance} \
                 | awk 'BEGIN {{te=""; cluster=""}} {{split($4,a,"|"); if (cluster==$7 && a[1]==te) {{te=a[1]; cluster=$7}} else {{print; te=a[1]; cluster=$7}}}}' \
                 | cut -f 1-6 > {output.soft_cluster:q}
@@ -771,7 +777,7 @@ rule merge_outsider_te_evidence:
         fi
 
         if test -s {input.hard:q}; then
-            bedtools sort -i {input.hard:q} | grep -E "$chrom_keep" \
+            bedtools sort -i {input.hard:q} | python3 {input.chromosome_filter:q} --regex {params.chrom:q} \
                 | bedtools cluster -d {params.cluster_distance} \
                 | awk 'BEGIN {{te=""; cluster=""}} {{split($4,a,"|"); if (cluster==$7 && a[1]==te) {{te=a[1]; cluster=$7}} else {{print; te=a[1]; cluster=$7}}}}' \
                 | cut -f 1-6 > {output.hard_cluster:q}
@@ -793,14 +799,14 @@ rule merge_outsider_te_evidence:
         fi
         if test -s {output.hard_cluster:q}; then
             grep -w -v -f {output.hard_ids:q} {output.hard_cluster:q} \
-                | grep -E "$chrom_keep" > {output.hard_only:q} || true
+                | python3 {input.chromosome_filter:q} --regex {params.chrom:q} > {output.hard_only:q} || true
         fi
 
         : > {output.merged:q}
         for evidence in {output.sniffles_cluster:q} {output.direct_only:q} \
             {output.soft_only:q} {output.hard_only:q}; do
             if test -s "$evidence"; then
-                grep -E "$chrom_keep" "$evidence" >> {output.merged:q} || true
+                python3 {input.chromosome_filter:q} --regex {params.chrom:q} --input "$evidence" >> {output.merged:q}
             fi
         done
         cp {output.merged:q} {output.merged_copy:q}

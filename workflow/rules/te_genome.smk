@@ -40,10 +40,10 @@ def te_genome_parameter(name, default, value_type, minimum=None, maximum=None):
     return converted
 
 
-TE_GENOME_CHROM_REGEX = str(TE_GENOME_PARAMS.get("CHROM_KEEP", ".")).replace(",", "|")
+TE_GENOME_CHROM_REGEX = TE_GENOME_PARAMS.get("CHROM_KEEP", ".")
 try:
-    re.compile(TE_GENOME_CHROM_REGEX)
-except re.error as error:
+    compile_chromosome_filter(TE_GENOME_CHROM_REGEX)
+except (ValueError, TypeError) as error:
     raise ValueError(f"PARAMS.TE_GENOME.CHROM_KEEP is not a valid regular expression: {error}")
 
 TE_GENOME_MIN_PIDENT = te_genome_parameter("MIN_PIDENT", 65.0, float, 0, 100)
@@ -153,6 +153,7 @@ rule blast_te_against_genome_target:
 rule annotate_te_genome_target:
     input:
         script=str(TE_GENOME_ANNOTATOR),
+        chromosome_filter=CHROMOSOME_FILTER_SCRIPT,
         blast=TE_GENOME_BLAST,
         te_headers=f"{WORKDIR}/INPUT/te_headers.tsv",
     output:

@@ -66,6 +66,9 @@ import sys
 import os
 import re
 import argparse
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "workflow"))
+from chromosome_filter import compile_chromosome_filter, validate_vcf_chromosomes
 
 parser = argparse.ArgumentParser(description="Get the sequences report for INDEL in vcf file (format VCFv4.3)")
 
@@ -101,6 +104,11 @@ parser.add_argument("-i", "--idrs", default=False, action='store_true',
 # print("usage example : python3 get_seq_vcf.py file.vcf outpout.fasta \n" )
 parser.add_argument("--caller", choices=("auto", "sniffles1", "sniffles2"), default="auto")
 args = parser.parse_args()
+try:
+    chromosome_filter = compile_chromosome_filter(args.chrom)
+    validate_vcf_chromosomes(args.vcf_file, chromosome_filter)
+except ValueError as error:
+    parser.error(str(error))
 from sniffles_vcf import is_sniffles2, extract_sequences
 if args.caller == "sniffles2" or (args.caller == "auto" and is_sniffles2(args.vcf_file)):
     extract_sequences(args)
@@ -113,7 +121,7 @@ file = open(args.vcf_file, "r")
 file_fasta  = open(args.fasta_out, "w")
 
 type_list   = args.type.split(",")#NOT KEEP THIS
-chrom_list  = args.chrom.split(",")#KEEP ONLY
+chrom_list  = args.chrom
 min_len_seq = args.min_len_seq
 max_len_seq = args.max_len_seq
 keep_seq_N  = args.keep
@@ -125,11 +133,7 @@ print("[" + str(sys.argv[0]) + "] : regex contig list : ", chrom_list)
 
 #check if an element of the array is at least part of the value
 def regex_in_list(value, liste):
-    for index, pattern in enumerate(liste):
-        if re.search(pattern, value):
-            return True
-
-    return False
+    return chromosome_filter.search(value) is not None
 
 line = file.readline()
 ##Sniffles
@@ -150,7 +154,7 @@ if line :
     while line and line[:2] == "##":
         #line.split("=")[2].split(",")[1] == chrom
         if "contig=" in line:
-            contig = line.split("=")[2].split(",")[0]
+            contig = re.search(r"##contig=<ID=([^,>]+)", line).group(1)
             contigs_vcf_org.append(contig)
 
             if regex_in_list(contig, chrom_list):
@@ -160,7 +164,7 @@ if line :
 
 
     print("[" + str(sys.argv[0]) + "] : contig keeping = " + str(contig_vcf))
-    if len(contig_vcf) == 0:
+    if contigs_vcf_org and len(contig_vcf) == 0:
         print("[" + str(sys.argv[0]) + "] : ERROR your regex chrom d'osnt match with any chromosome in your vcf file")
         print("[" + str(sys.argv[0]) + "] : ERROR please change your regex (-c option) > regex=" + str(args.chrom) + " :: list=" + str(chrom_list))
         print("[" + str(sys.argv[0]) + "] : ERROR your regex must match on " + str(contigs_vcf_org))

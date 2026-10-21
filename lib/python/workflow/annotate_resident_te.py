@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import quote
+from chromosome_filter import compile_chromosome_filter
 
 
 BLAST_COLUMNS = (
@@ -920,8 +921,8 @@ def main() -> int:
     if not 0 < args.ambiguity_overlap <= 1:
         parser.error("ambiguity-overlap must be in (0, 1]")
     try:
-        chrom_pattern = re.compile(args.chrom_regex)
-    except re.error as error:
+        chrom_pattern = compile_chromosome_filter(args.chrom_regex)
+    except ValueError as error:
         parser.error(f"invalid chrom-regex: {error}")
 
     fragments = read_fragments(
