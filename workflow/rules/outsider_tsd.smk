@@ -110,6 +110,8 @@ rule call_outsider_tsd:
         f"{WORKDIR}/benchmarks/outsider_call_tsd.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin call_outsider_tsd "OUTSIDER: identifying target-site duplications" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {OUTSIDER_TSD_DIR}
         python3 {input.script:q} -t {threads} \

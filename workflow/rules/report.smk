@@ -130,6 +130,8 @@ rule prepare_quarto_report:
         f"{WORKDIR}/log/prepare_quarto_report.log",
     shell:
         r"""
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin prepare_quarto_report "REPORT: preparing summaries and interactive views" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {params.work_directory:q}/REPORT {params.log_dir:q}
         python3 {input.builder:q} \
@@ -179,6 +181,8 @@ rule render_quarto_report:
         f"{WORKDIR}/log/render_quarto_report.log",
     shell:
         r"""
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin render_quarto_report "REPORT: rendering the HTML report" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {params.report_dir:q}/.quarto-cache {params.log_dir:q}
         if ! command -v {params.quarto:q} >/dev/null 2>&1; then

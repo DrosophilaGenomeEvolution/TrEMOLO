@@ -86,6 +86,8 @@ rule integrate_outsider_te_into_genome:
         f"{WORKDIR}/benchmarks/outsider_integrate_te.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin integrate_outsider_te_into_genome "INTEGRATION: reconstructing genomes with retained insertions" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {OUTSIDER_INTEGRATION_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
         python3 {input.script:q} \
@@ -175,6 +177,8 @@ rule lift_outsider_flanks_to_reference:
         f"{WORKDIR}/benchmarks/outsider_liftoff.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin lift_outsider_flanks_to_reference "INTEGRATION: projecting insertion flanks onto the reference" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {OUTSIDER_LIFT_DIR} {output.intermediates:q}
         if test -s {input.annotation:q}; then

@@ -178,6 +178,8 @@ rule count_insider_empty_site_reads:
         f"{WORKDIR}/benchmarks/insider_count_empty_sites.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin count_insider_empty_site_reads "INSIDER: counting empty-site read evidence" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {INSIDER_MAPPING_TO_REF_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
         python3 {input.script:q} --size-window {params.size_window} --breakpoint-distance {params.breakpoint_distance} \
@@ -236,6 +238,8 @@ rule summarize_insider_frequency:
         f"{WORKDIR}/benchmarks/insider_summarize_frequency.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin summarize_insider_frequency "INSIDER: aggregating frequency estimates" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {INSIDER_FREQUENCY_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
         python3 {input.script:q} --depth-margin {params.depth} {input.candidates:q} \

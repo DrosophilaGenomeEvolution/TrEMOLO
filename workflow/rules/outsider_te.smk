@@ -148,6 +148,8 @@ rule find_outsider_alignment_candidates:
         f"{WORKDIR}/benchmarks/outsider_find_alignment_candidates.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin find_outsider_alignment_candidates "OUTSIDER: extracting CIGAR insertions and clipped candidates" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {OUTSIDER_INS_DIR} {OUTSIDER_SOFT_DIR} {OUTSIDER_HARD_DIR}
         python3 {params.script:q} {input.bam:q} \
@@ -190,6 +192,8 @@ rule cluster_outsider_alignment_insertions:
         f"{WORKDIR}/benchmarks/outsider_cluster_insertions.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin cluster_outsider_alignment_insertions "OUTSIDER: grouping insertion candidates and recording provenance" {WORKDIR:q} {log:q}
         set -euo pipefail
         bedtools sort -i {input.insertions:q} | bedtools cluster -d {params.distance} \
             > {output.clustered:q} 2> {log:q}
@@ -218,6 +222,8 @@ rule blast_outsider_alignment_insertions:
         f"{WORKDIR}/benchmarks/outsider_blast_alignment_insertions.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin blast_outsider_alignment_insertions "OUTSIDER: matching CIGAR insertion sequences to TEs" {WORKDIR:q} {log:q}
         if test -s {input.query:q}; then
             blastn -num_threads {threads} -db {input.database:q} \
                 -query {input.query:q} -outfmt 6 -out {output.blast:q} \
@@ -305,12 +311,16 @@ rule extract_outsider_sniffles_sequences:
         f"{WORKDIR}/benchmarks/outsider_extract_sniffles_sequences.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin extract_outsider_sniffles_sequences "OUTSIDER: extracting Sniffles insertion sequences" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {OUTSIDER_TE_DIR}
+        trm_step "Reading {params.caller} VCF and applying chromosome-name and sequence filters"
         python3 {params.extract_script:q} {params.options} --caller {params.caller:q} -c {params.chrom:q} \
             {input.vcf:q} {output.raw:q} > {log:q} 2>&1
         awk 'BEGIN {{OFS="\t"}} substr($0,1,1)==">" {{split($0,a,":"); header=substr(a[1],2) OFS a[3] OFS a[4] OFS substr($0,2); next}} {{print header,length($0),$0}}' \
             {output.raw:q} | awk '/INS|DEL/' > {output.variants:q}
+        trm_step "Recovering read insertions at VCF events and recording their provenance"
         python3 {params.reads_script:q} -r {output.read_counts:q} \
             --max_distance {params.match_window} --fetch-window {params.fetch_window} \
             --flank-size {params.read_flank} \
@@ -342,6 +352,8 @@ rule blast_outsider_sniffles_sequences:
         f"{WORKDIR}/benchmarks/outsider_blast_sniffles.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin blast_outsider_sniffles_sequences "OUTSIDER: matching Sniffles sequences to TEs" {WORKDIR:q} {log:q}
         if test -s {input.query:q}; then
             blastn -num_threads {threads} -db {input.database:q} \
                 -query {input.query:q} -outfmt 6 -out {output.blast:q} \
@@ -412,6 +424,8 @@ rule prepare_outsider_soft_clipped_sequences:
         f"{WORKDIR}/benchmarks/outsider_prepare_soft_clipped.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin prepare_outsider_soft_clipped_sequences "OUTSIDER: preparing soft-clipped sequences" {WORKDIR:q} {log:q}
         set -euo pipefail
         max_size=$(awk -v padding={params.padding} 'substr($0,1,1)!=">" && length($0)>max {{max=length($0)}} END {{print max+padding}}' {input.database:q})
         : > {output.variants:q}
@@ -473,6 +487,8 @@ rule blast_outsider_soft_clipped_sequences:
         f"{WORKDIR}/benchmarks/outsider_blast_soft_clipped.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin blast_outsider_soft_clipped_sequences "OUTSIDER: matching soft-clipped sequences to TEs" {WORKDIR:q} {log:q}
         set -euo pipefail
         : > {output.blast:q}
         : > {output.all_blast:q}
@@ -599,7 +615,10 @@ rule prepare_outsider_hard_clipped_sequences:
         f"{WORKDIR}/benchmarks/outsider_prepare_hard_clipped.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin prepare_outsider_hard_clipped_sequences "OUTSIDER: preparing hard-clipped sequences" {WORKDIR:q} {log:q}
         set -euo pipefail
+        trm_step "Recovering requested hard-clipped fragments from extracted reads"
         max_size=$(awk -v padding={params.padding} 'substr($0,1,1)!=">" && length($0)>max {{max=length($0)}} END {{print max+padding}}' {input.database:q})
         : > {output.reads_fasta:q}
         : > {output.reads_index:q}
@@ -610,6 +629,7 @@ rule prepare_outsider_hard_clipped_sequences:
             --reads-index {output.reads_index:q} --variants {output.variants:q} \
             --max-size "$max_size" --include-alignment-flags > {log:q} 2>&1
         : > {output.variants:q}.clustered
+        trm_step "Grouping hard-clipped candidates and writing sequence provenance"
         if test -s {output.variants:q}; then
             bedtools sort -i {output.variants:q} | bedtools cluster -d {params.distance} \
                 > {output.variants:q}.clustered
@@ -638,6 +658,8 @@ rule blast_outsider_hard_clipped_sequences:
         f"{WORKDIR}/benchmarks/outsider_blast_hard_clipped.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin blast_outsider_hard_clipped_sequences "OUTSIDER: matching hard-clipped sequences to TEs" {WORKDIR:q} {log:q}
         set -euo pipefail
         : > {output.blast:q}
         if test -s {input.fasta:q}; then
@@ -720,7 +742,10 @@ rule merge_outsider_te_evidence:
         f"{WORKDIR}/benchmarks/outsider_merge_te.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin merge_outsider_te_evidence "OUTSIDER: merging TE evidence channels" {WORKDIR:q} {log:q}
         set -eu
+        trm_step "Filtering chromosome names and clustering the four evidence channels"
         mkdir -p {OUTSIDER_MERGE_DIR} {WORKDIR}/INTERNAL
         : > {output.sniffles_cluster:q}
         : > {output.direct_cluster:q}
@@ -802,6 +827,7 @@ rule merge_outsider_te_evidence:
                 | python3 {input.chromosome_filter:q} --regex {params.chrom:q} > {output.hard_only:q} || true
         fi
 
+        trm_step "Combining retained evidence into the OUTSIDER call table"
         : > {output.merged:q}
         for evidence in {output.sniffles_cluster:q} {output.direct_only:q} \
             {output.soft_only:q} {output.hard_only:q}; do

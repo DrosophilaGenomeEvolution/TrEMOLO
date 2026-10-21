@@ -229,6 +229,8 @@ rule count_outsider_frequency_reads:
         f"{WORKDIR}/benchmarks/outsider_count_frequency_reads.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin count_outsider_frequency_reads "OUTSIDER: counting read evidence for frequencies" {WORKDIR:q} {log:q}
         set -euo pipefail
         python3 {input.script:q} --per-size {params.size_percent} --window {params.window} \
             --threads {threads} {input.bam:q} {input.calls:q} \
@@ -299,6 +301,8 @@ rule summarize_outsider_frequency:
         f"{WORKDIR}/benchmarks/outsider_summarize_frequency.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin summarize_outsider_frequency "OUTSIDER: aggregating frequency estimates" {WORKDIR:q} {log:q}
         set -euo pipefail
         python3 {input.script:q} {input.counts:q} \
             {input.sniffles_support:q} {input.direct_support:q} \

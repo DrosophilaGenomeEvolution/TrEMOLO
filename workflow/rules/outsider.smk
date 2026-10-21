@@ -84,6 +84,8 @@ rule map_reads_outsider:
         f"{WORKDIR}/benchmarks/minimap2_mapping.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin map_reads_outsider "OUTSIDER: mapping reads to the genome" {WORKDIR:q} {log:q}
         minimap2 -ax {params.preset} -t {threads} {params.options} \
             {input.index:q} {input.reads:q} > {output.sam:q} 2> {log:q}
         test -s {output.sam:q}
@@ -110,13 +112,18 @@ rule prepare_bam_outsider:
         f"{WORKDIR}/benchmarks/samtools.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin prepare_bam_outsider "OUTSIDER: preparing the mapping BAM" {WORKDIR:q} {log:q}
         set -euo pipefail
         view_bam={output.bam:q}.view.bam
         sorted_bam={output.bam:q}.sorted.bam
+        trm_step "Converting mapped SAM records to BAM"
         samtools view -h --threads {threads} {params.view} -F 4 -b \
             {input.sam:q} -o "$view_bam" 2> {log:q}
+        trm_step "Sorting genomic alignments"
         samtools sort --threads {threads} {params.sort} "$view_bam" \
             -o "$sorted_bam" 2>> {log:q}
+        trm_step "Adding reference tags and collecting mapping statistics"
         samtools calmd --threads {threads} {params.calmd} -b "$sorted_bam" \
             {input.genome:q} > {output.bam:q} 2>> {log:q}
         samtools stats -@ {threads} {output.bam:q} \
@@ -148,6 +155,8 @@ rule call_sniffles_outsider:
         f"{WORKDIR}/benchmarks/sniffles.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin call_sniffles_outsider "OUTSIDER: calling structural variants" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {OUTSIDER_VARIANT_DIR}
         python3 {input.script:q} --caller {params.caller:q} \

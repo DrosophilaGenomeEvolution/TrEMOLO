@@ -50,10 +50,14 @@ rule extract_unmapped_reads:
     benchmark:
         f"{WORKDIR}/benchmarks/extract_unmapped_reads.tsv",
     shell:
-        "python3 {input.script:q} extract --sam {input.sam:q} --fastq {input.fastq:q} "
-        "--fasta {output.fasta:q} --reads {output.reads:q} --stats {output.stats:q} "
-        "--selection-method {params.method:q} --name-memory-mb {params.name_memory_mb} "
-        "--samtools {params.samtools:q} --threads {threads} > {log:q} 2>&1"
+        """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin extract_unmapped_reads "UNMAPPED: selecting unmapped reads ({params.method}) and recovering FASTQ sequences" {WORKDIR:q} {log:q}
+        python3 {input.script:q} extract --sam {input.sam:q} --fastq {input.fastq:q} \
+            --fasta {output.fasta:q} --reads {output.reads:q} --stats {output.stats:q} \
+            --selection-method {params.method:q} --name-memory-mb {params.name_memory_mb} \
+            --samtools {params.samtools:q} --threads {threads} > {log:q} 2>&1
+        """
 
 
 rule blast_te_against_unmapped_reads:
@@ -75,6 +79,8 @@ rule blast_te_against_unmapped_reads:
         f"{WORKDIR}/benchmarks/blast_te_against_unmapped_reads.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin blast_te_against_unmapped_reads "UNMAPPED: matching TE sequences to unmapped reads" {WORKDIR:q} {log:q}
         set -euo pipefail
         if test -s {input.fasta:q}; then
             mkdir -p {UNMAPPED_TE_DIR}/BLAST_DB
@@ -116,6 +122,8 @@ rule annotate_unmapped_te:
         f"{WORKDIR}/benchmarks/annotate_unmapped_te.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin annotate_unmapped_te "UNMAPPED: building the TE catalogue" {WORKDIR:q} {log:q}
         set -euo pipefail
         python3 {input.script:q} annotate --blast {input.blast:q} --reads {input.reads:q} \
             --extraction-stats {input.extraction:q} --headers {input.headers:q} \

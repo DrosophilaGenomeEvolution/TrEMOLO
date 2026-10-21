@@ -65,6 +65,8 @@ rule map_assembly_insider:
         f"{WORKDIR}/benchmarks/insider_minimap2.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin map_assembly_insider "INSIDER: aligning the assembly to the reference" {WORKDIR:q} {log:q}
         mkdir -p {INSIDER_VARIANT_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
         minimap2 -ax {params.preset} -t {threads} {params.options} \
             {input.reference:q} {input.genome:q} > {output.sam:q} 2> {log:q}
@@ -178,6 +180,8 @@ rule merge_and_annotate_insider_variants:
         f"{WORKDIR}/benchmarks/insider_filter_gaps.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin merge_and_annotate_insider_variants "INSIDER: merging structural variant candidates" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {INSIDER_VARIANT_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
         cat {input.between:q} {input.within:q} > {output.bed:q}
@@ -219,6 +223,8 @@ rule extract_insider_sv_sequences:
         f"{WORKDIR}/benchmarks/insider_extract_sv_sequences.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin extract_insider_sv_sequences "INSIDER: extracting variant sequences" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {params.directory:q} {WORKDIR}/log {WORKDIR}/benchmarks
         : > {log:q}
@@ -357,12 +363,15 @@ rule blast_insider_sv_against_te:
         f"{WORKDIR}/benchmarks/insider_blast_te.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin blast_insider_sv_against_te "INSIDER: matching variant sequences to TEs" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
         : > {log:q}
         : > {output.insertion:q}
         : > {output.deletion:q}
         if test -s {input.insertion:q}; then
+            trm_step "Matching INSIDER insertion sequences to the TE database"
             blastn -num_threads {threads} -db {input.database:q} \
                 -query {input.insertion:q} -outfmt 6 -out {output.insertion:q} \
                 2>> {log:q}
@@ -370,6 +379,7 @@ rule blast_insider_sv_against_te:
             printf 'No INSIDER insertion sequence; BLAST skipped.\n' >> {log:q}
         fi
         if test -s {input.deletion:q}; then
+            trm_step "Matching INSIDER deletion sequences to the TE database"
             blastn -num_threads {threads} -db {input.database:q} \
                 -query {input.deletion:q} -outfmt 6 -out {output.deletion:q} \
                 2>> {log:q}
@@ -401,6 +411,8 @@ rule classify_insider_te:
         f"{WORKDIR}/benchmarks/insider_classify_te.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin classify_insider_te "INSIDER: classifying TE candidates" {WORKDIR:q} {log:q}
         set -euo pipefail
         python3 {input.script:q} {params.options} \
             --combine_name {output.insertion_combine:q} \

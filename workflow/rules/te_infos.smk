@@ -92,6 +92,8 @@ rule build_te_infos:
         f"{WORKDIR}/benchmarks/build_te_infos.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin build_te_infos "RESULTS: building the final TE call table" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
         python3 {input.script:q} --deletion-exclusion-window {params.deletion_window} \
@@ -147,6 +149,8 @@ rule build_te_call_candidates:
         f"{WORKDIR}/benchmarks/build_te_call_candidates.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin build_te_call_candidates "RESULTS: recording alternative TE candidates and their evidence" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {WORKDIR}/log {WORKDIR}/benchmarks
         python3 {input.script:q} --te-infos {input.te_infos:q} \

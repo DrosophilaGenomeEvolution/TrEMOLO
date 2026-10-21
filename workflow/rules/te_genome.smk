@@ -141,6 +141,8 @@ rule blast_te_against_genome_target:
         f"{WORKDIR}/benchmarks/te_genome_{{target}}_blast.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin blast_te_against_genome_target "RESIDENT: matching TEs to assembly {wildcards.target}" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {TE_GENOME_ROOT}/{wildcards.target} {WORKDIR}/log {WORKDIR}/benchmarks
         blastn -task blastn -num_threads {threads} -evalue {params.max_evalue} \
@@ -184,6 +186,8 @@ rule annotate_te_genome_target:
         f"{WORKDIR}/benchmarks/te_genome_{{target}}_annotate.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin annotate_te_genome_target "RESIDENT: annotating TE copies in {wildcards.target}" {WORKDIR:q} {log:q}
         set -euo pipefail
         python3 {input.script:q} {input.blast:q} {input.te_headers:q} \
             --target {wildcards.target:q} --chrom-regex {params.chrom_regex:q} \

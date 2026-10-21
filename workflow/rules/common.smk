@@ -23,6 +23,8 @@ rule prepare_inputs:
         f"{WORKDIR}/benchmarks/prepare_inputs.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin prepare_inputs "Preparing inputs and recording checksums" {WORKDIR:q} {log:q}
         mkdir -p {WORKDIR}/log
         python3 {params.script:q} \
             --genome {input.genome:q} \

@@ -65,6 +65,8 @@ rule call_insider_tsd:
         f"{WORKDIR}/benchmarks/insider_call_tsd.tsv",
     shell:
         """
+        source {WORKFLOW_LOG_HELPER:q}
+        trm_begin call_insider_tsd "INSIDER: identifying target-site duplications" {WORKDIR:q} {log:q}
         set -euo pipefail
         mkdir -p {INSIDER_TSD_DIR} {WORKDIR}/log {WORKDIR}/benchmarks
         python3 {input.script:q} -t {threads} \
