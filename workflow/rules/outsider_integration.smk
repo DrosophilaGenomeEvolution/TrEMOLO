@@ -51,7 +51,7 @@ if type(OUTSIDER_LIFT_FLANK) is not int or OUTSIDER_LIFT_FLANK <= 0:
 if type(OUTSIDER_LIFT_MAX_GAP) is not int or OUTSIDER_LIFT_MAX_GAP < 0:
     raise ValueError("PARAMS.OUTSIDER_VARIANT.LIFT_OFF.MAX_GAP must be >= 0")
 LIFTOFF_EXECUTABLE = config.get("TOOLS", {}).get("LIFTOFF", "liftoff")
-OUTSIDER_INTEGRATION_ALLOW_PARTIAL = OUTSIDER_CHOICES.get("INTEGRATION_ALLOW_PARTIAL", False)
+OUTSIDER_INTEGRATION_ALLOW_PARTIAL = OUTSIDER_CHOICES.get("INTEGRATION_ALLOW_PARTIAL", True)
 if type(OUTSIDER_INTEGRATION_ALLOW_PARTIAL) is not bool:
     raise ValueError("CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL must be a boolean")
 
@@ -76,7 +76,7 @@ rule integrate_outsider_te_into_genome:
         observed_public=OUTSIDER_OBSERVED_PUBLIC_BED,
         audit=OUTSIDER_INTEGRATION_AUDIT,
     params:
-        partial="--allow-partial" if OUTSIDER_INTEGRATION_ALLOW_PARTIAL else "",
+        partial="--allow-partial" if OUTSIDER_INTEGRATION_ALLOW_PARTIAL else "--strict",
     threads: 1
     resources:
         mem_mb=4096,

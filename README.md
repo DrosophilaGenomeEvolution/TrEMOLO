@@ -252,7 +252,7 @@ CHOICE:
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles1"    # sniffles1, sniffles2; sniffles is the legacy alias
         INTEGRATE_TE_TO_GENOME: True # (True, False) Re-build the assembly with the OUTSIDER integrated in
-        INTEGRATION_ALLOW_PARTIAL: False # fail if an eligible INS cannot be integrated
+        INTEGRATION_ALLOW_PARTIAL: True # warn and skip rejected INS; False enables strict failure
         CLIPPED_READS: False # (True, False) Processing of clipped reads (SOFT, HARD)
     INTERMEDIATE_FILE: True     # Conserve the intermediate analyses files to process them latter.
 
@@ -304,9 +304,12 @@ rejected or excluded event explicit. Only INS events are added; DEL events are
 excluded because their sequence is already present in the input assembly.
 Observed sequences exclude the read flanks used for BLAST/TSD. Alternatives
 at the same site are concatenated intentionally for this population
-representation. An unresolved INS fails integration by default. Set
-`CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL: true` only to explicitly
-accept a partial reconstruction; the report shows eligible, integrated,
+representation. An unresolved INS is skipped with a warning by default; valid
+insertions are reconstructed and the integration step succeeds. Set
+`CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL: false` to fail instead of
+accepting a partial reconstruction. The standalone integration script uses the
+same default; `--strict` enables failure and `--allow-partial` remains supported.
+The report shows eligible, integrated,
 rejected and excluded counts. If INSIDER is also enabled, the two flanks of each
 integrated insertion are projected to the reference with Liftoff; concordant
 calls are written to `POS_TE_OUTSIDER_ON_REF.bed`, while uncertain mappings and

@@ -116,7 +116,6 @@ class OutsiderIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             args = self.fixture(Path(directory))
             args.direct_fasta.write_text("")
-            args.allow_partial = True
 
             self.assertEqual(build_integration(args), 1)
 
@@ -131,6 +130,26 @@ class OutsiderIntegrationTests(unittest.TestCase):
             )
             self.assertEqual(len(args.canonical_bed.read_text().splitlines()), 1)
 
+    def test_default_cli_warns_and_publishes_valid_insertions_for_out_of_bounds_call(self):
+        for options in ([], ["--allow-partial"]):
+            with self.subTest(options=options), tempfile.TemporaryDirectory() as directory:
+                args = self.fixture(Path(directory))
+                args.sniffles_calls.write_text(
+                    args.sniffles_calls.read_text().replace("<INS>:2:2:", "<INS>:9:9:")
+                )
+                command = [sys.executable, str(ROOT / "lib/python/workflow/integrate_outsider_te.py")]
+                for key, value in vars(args).items():
+                    command.extend(["--" + key.replace("_", "-"), str(value)])
+                result = subprocess.run(command + options, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("WARNING: Partial OUTSIDER reconstruction", result.stderr)
+                self.assertIn("breakpoint is outside chr1", result.stderr)
+                self.assertIn("breakpoint_out_of_bounds", args.audit.read_text())
+                self.assertIn("1 integrated, 1 rejected", result.stderr)
+                self.assertTrue(args.canonical_genome.exists())
+                self.assertTrue(args.observed_genome.exists())
+                self.assertEqual(len(args.observed_bed.read_text().splitlines()), 1)
+
     def test_strict_cli_fails_and_keeps_audit_without_publishing_genomes(self):
         with tempfile.TemporaryDirectory() as directory:
             args = self.fixture(Path(directory))
@@ -138,6 +157,7 @@ class OutsiderIntegrationTests(unittest.TestCase):
             command = [sys.executable, str(ROOT / "lib/python/workflow/integrate_outsider_te.py")]
             for key, value in vars(args).items():
                 command.extend(["--" + key.replace("_", "-"), str(value)])
+            command.append("--strict")
             result = subprocess.run(command, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("2 eligible, 1 integrated, 1 rejected", result.stderr)
@@ -174,6 +194,7 @@ class OutsiderIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             args = self.fixture(Path(directory))
             args.direct_fasta.write_text(args.direct_fasta.read_text().replace("CCC", ""))
+            args.allow_partial = False
             with self.assertRaisesRegex(ValueError, "Incomplete OUTSIDER integration"):
                 build_integration(args)
             self.assertIn("empty_insertion_sequence", args.audit.read_text())

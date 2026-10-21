@@ -404,11 +404,14 @@ def build(args):
         "partial" if rejected else "complete"), file=sys.stderr)
     if errors:
         for error in errors:
-            print("Rejected OUTSIDER integration: {}".format(error), file=sys.stderr)
-        if not getattr(args, "allow_partial", False):
+            print("WARNING: Rejected OUTSIDER integration: {}".format(error), file=sys.stderr)
+        if not getattr(args, "allow_partial", True):
             raise ValueError("Incomplete OUTSIDER integration: {} insertion(s) rejected; "
                              "see the integration audit. Use --allow-partial only to explicitly "
                              "accept a partial reconstruction.".format(rejected))
+        print("WARNING: Partial OUTSIDER reconstruction: {} insertion(s) rejected; "
+              "continuing with {} valid insertion(s). See {}. Use --strict to fail "
+              "on rejected insertions.".format(rejected, len(insertions), args.audit), file=sys.stderr)
 
     canonical_genome, canonical_positions = integrate(genome, insertions, "canonical")
     observed_genome, observed_positions = integrate(genome, insertions, "observed")
@@ -430,7 +433,12 @@ def parse_args(argv=None):
     parser.add_argument("--direct-calls", type=Path, required=True)
     parser.add_argument("--sniffles-fasta", type=Path, required=True, help="Insertion-only Sniffles FASTA")
     parser.add_argument("--direct-fasta", type=Path, required=True, help="Insertion-only direct FASTA")
-    parser.add_argument("--allow-partial", action="store_true", help="Explicitly allow rejected INS calls in the reconstruction")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--allow-partial", dest="allow_partial", action="store_true",
+                      help="Continue with valid insertions and warn about rejected calls (default)")
+    mode.add_argument("--strict", dest="allow_partial", action="store_false",
+                      help="Fail instead of publishing a reconstruction with rejected INS calls")
+    parser.set_defaults(allow_partial=True)
     parser.add_argument("--canonical-genome", type=Path, required=True)
     parser.add_argument("--observed-genome", type=Path, required=True)
     parser.add_argument("--canonical-bed", type=Path, required=True)

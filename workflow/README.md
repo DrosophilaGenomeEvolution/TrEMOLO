@@ -201,9 +201,13 @@ OUTSIDER genome integration adds only INS events. The companion
 `SV_INS_CLUST.insertions.fasta` and `SEQUENCE_INDEL.insertions.fasta` contain
 sequences without read flanks; the original candidate FASTAs retain flanks for
 classification and TSD detection. DEL events are excluded and audited. Same-site
-alternatives remain concatenated to represent the population. Integration fails
-on unresolved INS by default; `CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL`
-must be explicitly true to accept a partial result. The report shows the counts
+alternatives remain concatenated to represent the population. Integration skips
+unresolved INS with warnings and succeeds with the valid insertions by default.
+Set `CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL: false` for strict failure
+before genome outputs are published. The standalone script provides `--strict`
+for the same behavior; `--allow-partial` is optional and retains compatibility.
+Existing configurations that explicitly set the option to false remain strict.
+The report shows the counts
 and rejection reasons. Liftoff flanks exclude inserted bases and projected BED
 boundaries account for forward and reverse mappings. See
 `docs/decisions/0018-population-genome-integration-corrections.md`.

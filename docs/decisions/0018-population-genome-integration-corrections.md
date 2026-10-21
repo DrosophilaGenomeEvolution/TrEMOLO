@@ -45,11 +45,14 @@ the flank and projected strands. Public BED schemas are unchanged.
 
 ## Completeness
 
-An eligible INS rejected during sequence resolution now fails the step before
-publishing genome outputs. Audit and counts are written before failure; Snakemake
-may remove declared audit outputs of a failed job, while rejection details remain
-in its log. An explicit `CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL: true`
-adds `--allow-partial`, retaining the previous partial-output ability. Report
+An eligible INS rejected during sequence resolution is audited and skipped with
+a warning by default; reconstruction continues with valid insertions and exits
+successfully. Set `CHOICE.OUTSIDER_VARIANT.INTEGRATION_ALLOW_PARTIAL: false` to
+fail before publishing genome outputs. The standalone script defaults to partial
+reconstruction too; `--strict` enables failure and `--allow-partial` remains an
+optional compatibility flag. Audit and counts are written before strict failure;
+Snakemake may remove declared audit outputs of a failed job, while rejection
+details remain in its log. Report
 schema 1.4.0 adds an integration summary, counts and rejection reasons. Expected
 insertions exclude intentionally excluded DEL events.
 
