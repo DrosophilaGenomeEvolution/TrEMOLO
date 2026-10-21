@@ -5,6 +5,37 @@ sequences and the TE database. It is designed to expose competing TE matches,
 possible composite insertions and possible repeated or nested structures
 without silently converting them into confirmed biological components.
 
+## Real-data example
+
+![TE-family filter set to gtwin, with the adjacent composite gypsy event on X and nested copia event on 3R](img/insertion-structure-real-example.png)
+
+This screenshot shows two adjacent cards from the real-data report
+`ouput_module2/index.html`, with **TE family = `gtwin`** and the default
+**Most informative first** ordering. The filter controls and selected cards
+are grouped into one excerpt for readability.
+
+- **Upper card — `X:23,378,824–23,378,825 · TrEMOLO.INS.37319`:**
+  the reported TE is `gypsy`, while the 19,352 bp query contains provisional
+  `Circe`, `invader1` and `gypsy` components. The report labels it
+  `composite candidate`; five normalized matches summarize 18 raw BLAST HSPs.
+- **Lower card — `3R:13,773,657–13,773,658 · TrEMOLO.INS.28271`:**
+  the reported TE is `copia`, while the 11,320 bp query contains provisional
+  `copia`, `gtwin` and `Doc` components. The report labels it `nested candidate`;
+  three normalized matches summarize 13 raw BLAST HSPs.
+
+The family filter includes queries with a matching family among their evidence,
+including rejected matches. In the upper card, the `gtwin` match is rejected,
+so it is available under **Evidence details** but does not appear among the
+three provisional components. In the lower card, `gtwin` is a component.
+
+The bars show positions within each insertion sequence; split blocks preserve
+separate aligned intervals. The `+` and `−` signs indicate orientation. The
+percentages below each component report TE consensus coverage and alignment
+identity. `Reported call` means the event is present in `TE_INFOS.bed`; it does
+not validate every proposed component. Composite and nested classifications
+remain hypotheses requiring independent confirmation of linkage and
+breakpoints. The screenshot is shared with the repository's main README.
+
 ## Run
 
 ```bash

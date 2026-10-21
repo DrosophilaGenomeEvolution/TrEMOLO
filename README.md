@@ -540,6 +540,14 @@ multi-TE structures. Evidence is aggregated by TrEMOLO event and linked to
 `TE_INFOS.bed` and `TE_CALL_CANDIDATES.tsv`. See the
 [structure module documentation](modules/2-MODULE_TE_BLAST/README.md).
 
+![Module 2: gtwin-filtered examples showing Circe, invader1 and gypsy at an X event, and copia, gtwin and Doc at a 3R event](modules/2-MODULE_TE_BLAST/img/insertion-structure-real-example.png)
+
+Real-data examples with the TE-family filter set to `gtwin`: `TrEMOLO.INS.37319`
+shows a composite candidate with `Circe`, `invader1` and `gypsy`, while
+`TrEMOLO.INS.28271` shows a nested candidate with `copia`, `gtwin` and `Doc`.
+These are provisional structures, not confirmed biological alleles. See the
+[example interpretation](modules/2-MODULE_TE_BLAST/README.md#real-data-example).
+
 Both modules are launched with `./module build <number> ...`; neither requires
 R, external JavaScript/CDN assets or a persistent Node server.
 
