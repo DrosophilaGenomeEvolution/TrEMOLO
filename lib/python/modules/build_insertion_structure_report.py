@@ -20,7 +20,8 @@ from typing import Iterable, Optional
 PIPELINE_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PIPELINE_ROOT / "lib/python/workflow"))
 from te_candidate_provenance import read_provenance, read_sequences
-SCHEMA_VERSION = "1.1.0"
+from genomic_alignment import ALIGNMENT_COLUMNS, alignment_metadata
+SCHEMA_VERSION = "1.2.0"
 HSP_COLUMNS = (
     "hsp_id", "query_id", "event_id", "chrom", "locus_start", "locus_end",
     "subject_te", "pident", "alignment_length", "mismatch", "gapopen",
@@ -729,16 +730,18 @@ def build(
             if fasta_path.is_file():
                 insertion_hashes.update(read_sequences(fasta_path))
     provenance_rows = []
+    unknown_alignment = alignment_metadata()
     for structure in structures:
         query_id = structure["query_id"]
         origin = origins.get(query_id, {})
         digest, length = insertion_hashes.get(query_id, (".", "."))
         structure.update(read_id=origin.get("read_id", "."), sequence_origin=origin.get("sequence_origin", "unknown"),
                          insertion_sha256=digest, insertion_length=length)
+        structure.update({key: origin.get(key, unknown_alignment[key]) for key in ALIGNMENT_COLUMNS})
         provenance_rows.append({key: structure[key] for key in (
-            "query_id", "event_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length")})
+            "query_id", "event_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length") + ALIGNMENT_COLUMNS})
     write_tsv(output / "insertion-sequence-provenance.tsv",
-              ("query_id", "event_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length"), provenance_rows)
+              ("query_id", "event_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length") + ALIGNMENT_COLUMNS, provenance_rows)
     classification_counts: dict[str, int] = defaultdict(int)
     for row in structures:
         classification_counts[row["classification"]] += 1

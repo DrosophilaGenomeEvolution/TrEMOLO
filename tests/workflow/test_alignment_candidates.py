@@ -1,5 +1,6 @@
 """Boundary, grouping, and worker-error tests independent of the historical oracle."""
 import io
+import csv
 import subprocess
 import sys
 import tempfile
@@ -33,8 +34,26 @@ class ClusterFormattingTests(unittest.TestCase):
         self.assertEqual(len(sizes.getvalue().splitlines()), 3)
         provenance = io.StringIO()
         format_insertions(iter(rows), io.StringIO(), io.StringIO(), io.StringIO(), provenance=provenance)
-        self.assertIn("\ta\tread_sequence\n", provenance.getvalue())
-        self.assertIn("\tc\tread_sequence\n", provenance.getvalue())
+        self.assertIn("\ta\tread_sequence\t.\tunknown\n", provenance.getvalue())
+        self.assertIn("\tc\tread_sequence\t.\tunknown\n", provenance.getvalue())
+
+    def test_direct_and_hard_flags_belong_to_the_emitted_record(self):
+        # The same read name appears with distinct alignment statuses. Do not
+        # resolve flags by read name; preserve the existing first-record choice.
+        rows = [['chr1', '10', '11', 'same', 'AAA', '4', '4', '3', str(flag), '1']
+                for flag in (256, 0, 2048)]
+        provenance = io.StringIO()
+        format_insertions(iter(rows), io.StringIO(), io.StringIO(), io.StringIO(), provenance=provenance)
+        records = list(csv.DictReader(io.StringIO(provenance.getvalue()), delimiter='\t'))
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]['genomic_alignment_status'], 'secondary')
+        self.assertEqual(records[0]['genomic_alignment_flag'], '256')
+        provenance = io.StringIO()
+        format_hard(iter([['chr1', '10', '11', 'same', 'AAA', 'L', '3', str(flag), '1']
+                          for flag in (0, 256, 2048, 2304)]), io.StringIO(), provenance)
+        records = list(csv.DictReader(io.StringIO(provenance.getvalue()), delimiter='\t'))
+        self.assertEqual([r['genomic_alignment_status'] for r in records],
+                         ['primary', 'secondary', 'supplementary', 'secondary_and_supplementary'])
 
     def test_hard_singletons_first_and_last_are_retained(self):
         fasta = io.StringIO()
@@ -63,6 +82,36 @@ class ClusterFormattingTests(unittest.TestCase):
 
 @unittest.skipIf(pysam is None, 'requires scientific container with pysam')
 class AlignmentExtractionTests(unittest.TestCase):
+    def test_sniffles_keeps_each_alignment_flag_for_the_same_read(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bam = root / 'input.bam'
+            header = {'HD': {'VN': '1.6', 'SO': 'coordinate'}, 'SQ': [{'SN': 'chr1', 'LN': 1000}]}
+            with pysam.AlignmentFile(str(bam), 'wb', header=header) as output:
+                for flag in (0, 256, 2048, 2304):
+                    read = pysam.AlignedSegment()
+                    read.query_name = 'same-read'
+                    read.flag = flag
+                    read.mapping_quality = 0  # MAPQ must not decide SAM status.
+                    read.reference_id = 0
+                    read.reference_start = 10
+                    read.cigartuples = [(0, 10), (1, 40), (0, 5)]
+                    read.query_sequence = 'A' * 10 + 'C' * 40 + 'G' * 5
+                    output.write(read)
+            pysam.index(str(bam))
+            query = 'chr1:<INS>:20:20:sniffles.INS.1:1:PRECISE'
+            (root / 'variants').write_text(f'chr1\t20\t20\t{query}\t40\t' + 'T' * 40 + '\n')
+            result = subprocess.run([sys.executable, str(ROOT / 'lib/python/parsing/parse_bam_found_ins.py'),
+                                     '--provenance', str(root / 'provenance.tsv'), str(bam), str(root / 'variants')],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with (root / 'provenance.tsv').open() as handle:
+                rows = list(csv.DictReader(handle, delimiter='\t'))
+            self.assertEqual([r['genomic_alignment_status'] for r in rows],
+                             ['primary', 'secondary', 'supplementary', 'secondary_and_supplementary', 'not_applicable'])
+            self.assertEqual([r['read_id'] for r in rows], ['same-read'] * 4 + ['.'])
+            self.assertEqual(rows[-1]['genomic_alignment_flag'], '.')
+
     def test_sniffles_companion_fasta_is_exact_cigar_insertion_with_truncated_flanks(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -88,13 +137,14 @@ class AlignmentExtractionTests(unittest.TestCase):
             self.assertEqual((root / 'insertions').read_text(), '>' + qseqid + ':1\n' + 'C' * 40 + '\n>' + qseqid + ':0\n' + 'T' * 40 + '\n')
             self.assertIn('A' * 5 + 'T' * 5 + 'C' * 40 + 'G' * 5, result.stdout)
 
-    def run_extraction(self, root, records, threads=2, no_clipped=False, chunk_size=0):
+    def run_extraction(self, root, records, threads=2, no_clipped=False, chunk_size=0, extra=()):
         bam = root / 'input.bam'
         header = {'HD': {'VN': '1.6', 'SO': 'coordinate'}, 'SQ': [{'SN': 'chr1', 'LN': 100000}]}
         with pysam.AlignmentFile(str(bam), 'wb', header=header) as output:
-            for name, start, cigar, sequence in records:
+            for name, start, cigar, sequence, *flags in records:
                 read = pysam.AlignedSegment()
                 read.query_name = name
+                read.flag = flags[0] if flags else 0
                 read.reference_id = 0
                 read.reference_start = start
                 read.mapping_quality = 60
@@ -108,7 +158,32 @@ class AlignmentExtractionTests(unittest.TestCase):
                    '--output-seq-tsd', str(root / 'tsd')]
         if no_clipped:
             command.append('--no-clipped')
+        command.extend(extra)
         return subprocess.run(command, capture_output=True, text=True, timeout=20)
+
+    def test_flag_capture_and_best_soft_provenance_do_not_change_candidates(self):
+        records = [('same', 100, [(4, 40), (0, 10), (1, 40), (0, 10)], 'A'*100, 256),
+                   ('same', 110, [(4, 50), (0, 10)], 'C'*60, 2048),
+                   ('primary', 300, [(0, 10), (1, 40), (0, 10)], 'G'*60, 0)]
+        with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+            roots = [Path(first), Path(second)]
+            old = self.run_extraction(roots[0], records)
+            new = self.run_extraction(roots[1], records, extra=(
+                '--include-alignment-flags', '--soft-provenance', str(roots[1]/'provenance.tsv')))
+            self.assertEqual(old.returncode, 0, old.stderr)
+            self.assertEqual(new.returncode, 0, new.stderr)
+            raw = [line.split('\t') for line in (roots[1]/'ins').read_text().splitlines()]
+            self.assertEqual([row[8] for row in raw], ['256', '0'])
+            self.assertEqual('\n'.join('\t'.join(row[:8]) for row in raw) + '\n',
+                             (roots[0]/'ins').read_text())
+            for name in ('soft', 'soft.bis', 'hard', 'tsd'):
+                self.assertEqual((roots[0]/name).read_bytes(), (roots[1]/name).read_bytes())
+            with (roots[1]/'provenance.tsv').open() as handle:
+                provenance = list(csv.DictReader(handle, delimiter='\t'))
+            self.assertEqual(len(provenance), 1)
+            self.assertEqual(provenance[0]['query_id'], 'chr1:<SOFT>:100:101:SOFT.0_0.L:2:PRECISE:0')
+            self.assertEqual(provenance[0]['genomic_alignment_status'], 'supplementary')
+            self.assertEqual(provenance[0]['genomic_alignment_flag'], '2048')
 
     def test_soft_grouping_hard_and_insertion_survive(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -186,7 +261,7 @@ class HardSequencePreparationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root/'reads.fastq').write_text('@b\nTTTTCCCC\n+\nIIIIIIII\n@a\nAAAAGGGG\n+\nIIIIIIII\n')
-            (root/'candidates').write_text('#header\nchr1\t10\t11\tHARD.0_0\ta\t6\t0\tL\t8\tSEQ\nchr1\t20\t21\tHARD.0_1\tb\t6\t0\tR\t8\tSEQ\n')
+            (root/'candidates').write_text('#header\nchr1\t10\t11\tHARD.0_0\ta\t6\t256\tL\t8\tSEQ\nchr1\t20\t21\tHARD.0_1\tb\t6\t2048\tR\t8\tSEQ\n')
             result = subprocess.run([sys.executable, str(ROOT/'lib/python/workflow/prepare_hard_clip_sequences.py'),
                 '--candidates', str(root/'candidates'), '--fastq', str(root/'reads.fastq'),
                 '--reads-fasta', str(root/'reads.fasta'), '--reads-index', str(root/'index'),
@@ -195,6 +270,14 @@ class HardSequencePreparationTests(unittest.TestCase):
             self.assertEqual((root/'variants').read_text(), 'chr1\t10\t11\ta\tAAGG\tL\t4\nchr1\t20\t21\tb\tTTCC\tR\t4\n')
             self.assertEqual((root/'index').read_text(), '1:b\n3:a\n')
             self.assertEqual((root/'reads.fasta').read_text(), '>b\nTTTTCCCC\n>a\nAAAAGGGG\n')
+            result = subprocess.run([sys.executable, str(ROOT/'lib/python/workflow/prepare_hard_clip_sequences.py'),
+                '--candidates', str(root/'candidates'), '--fastq', str(root/'reads.fastq'),
+                '--reads-fasta', str(root/'reads.fasta'), '--reads-index', str(root/'index'),
+                '--variants', str(root/'variants'), '--max-size', '4', '--include-alignment-flags'],
+                capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((root/'variants').read_text(),
+                             'chr1\t10\t11\ta\tAAGG\tL\t4\t256\nchr1\t20\t21\tb\tTTCC\tR\t4\t2048\n')
 
 
 if __name__ == '__main__':

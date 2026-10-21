@@ -78,9 +78,24 @@ class CandidateProvenanceTests(unittest.TestCase):
             self.assertEqual(report["candidates"][0]["ambiguity_type"],"same_sequence_annotation_ambiguity")
             self.assertEqual(report["candidates"][0]["evidence_fraction"],0.5)
             self.assertEqual(report["candidates"][0]["provenance_status"],"complete")
+            self.assertEqual(report["evidence"][0]["genomic_alignment_status"], "unknown")
             first = output.read_bytes(), evidence.read_bytes()
             build(infos,[("direct",counts)],output,[("direct",blast)],[("direct",origin)],[("direct",fasta)],evidence)
             self.assertEqual(first,(output.read_bytes(),evidence.read_bytes()))
+            # Upgrade only the metadata; annotation decisions/counts stay equal.
+            origin.write_text(origin.read_text().replace('sequence_origin\n',
+                'sequence_origin\tgenomic_alignment_flag\tgenomic_alignment_status\n').replace(
+                '\tread_sequence\n', '\tread_sequence\t256\tsecondary\n'))
+            build(infos,[("direct",counts)],output,[("direct",blast)],[("direct",origin)],[("direct",fasta)],evidence)
+            self.assertEqual(first[0], output.read_bytes())
+            updated = read_ambiguous_call_candidates(output,evidence)
+            self.assertTrue(all(row['genomic_alignment_status'] == 'secondary' for row in updated['evidence']))
+            # Old evidence exports without the two added columns remain readable.
+            with evidence.open() as handle:
+                rows = list(csv.reader(handle, delimiter='\t'))
+            with evidence.open('w', newline='') as handle:
+                csv.writer(handle, delimiter='\t').writerows(row[:-2] for row in rows)
+            self.assertEqual(len(read_ambiguous_call_candidates(output,evidence)['evidence']), 2)
 
 
 if __name__ == "__main__":

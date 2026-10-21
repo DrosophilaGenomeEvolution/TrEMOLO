@@ -98,6 +98,11 @@ rule prepare_quarto_report:
         benchmarks=report_benchmark_inputs,
         te_call_candidates=TE_CALL_CANDIDATES,
         te_candidate_evidence=TE_CALL_CANDIDATE_EVIDENCE,
+        sequence_provenance=([OUTSIDER_INS_PROVENANCE, OUTSIDER_SNIFFLES_PROVENANCE,
+                              OUTSIDER_SOFT_PROVENANCE, OUTSIDER_HARD_PROVENANCE]
+                             if TE_INFOS_WITH_OUTSIDER else []),
+        provenance_helper=str(PIPELINE_ROOT / "lib/python/workflow/te_candidate_provenance.py"),
+        alignment_helper=str(PIPELINE_ROOT / "lib/python/workflow/genomic_alignment.py"),
         genome_index=PREPARED_GENOME_INDEX,
         manifest=REPORT_INPUT_MANIFEST,
         mapping_stats=report_optional_input(MAPPING_STATS, TE_INFOS_WITH_OUTSIDER),
@@ -132,6 +137,7 @@ rule prepare_quarto_report:
             --benchmarks {input.benchmarks:q} \
             --te-call-candidates {input.te_call_candidates:q} \
             --te-candidate-evidence {input.te_candidate_evidence:q} \
+            --sequence-provenance {input.sequence_provenance:q} \
             --genome-index {input.genome_index:q} \
             --input-manifest {input.manifest:q} \
             --mapping-stats {input.mapping_stats:q} \

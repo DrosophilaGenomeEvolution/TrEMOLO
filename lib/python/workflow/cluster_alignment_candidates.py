@@ -4,13 +4,14 @@ import argparse
 import csv
 from itertools import groupby
 from pathlib import Path
+from genomic_alignment import ALIGNMENT_COLUMNS, alignment_metadata
 
 
 def format_insertions(rows, fasta, positions, sizes, insertion_fasta=None, flank_size=0, provenance=None):
     writer = None
     if provenance is not None:
         writer = csv.writer(provenance, delimiter="\t", lineterminator="\n")
-        writer.writerow(("query_id", "event_id", "read_id", "sequence_origin"))
+        writer.writerow(("query_id", "event_id", "read_id", "sequence_origin") + ALIGNMENT_COLUMNS)
     for cluster_id, cluster_rows in groupby(rows, key=lambda row: row[-1]):
         records = []
         seen = set()
@@ -25,7 +26,8 @@ def format_insertions(rows, fasta, positions, sizes, insertion_fasta=None, flank
             header = f"{prefix}:{support}:IMPRECISE:{number}"
             fasta.write(f">{header}\n{row[4]}\n")
             if writer is not None:
-                writer.writerow((header, f"TrEMOLO.INS.{cluster_id}", row[3], "read_sequence"))
+                metadata = alignment_metadata(row[8] if len(row) == 10 else None)
+                writer.writerow((header, f"TrEMOLO.INS.{cluster_id}", row[3], "read_sequence", *(metadata[key] for key in ALIGNMENT_COLUMNS)))
             if insertion_fasta is not None:
                 # count_read is the query position immediately after the CIGAR I.
                 # A read can start within flank_size bases of the insertion.
@@ -39,13 +41,21 @@ def format_insertions(rows, fasta, positions, sizes, insertion_fasta=None, flank
             positions.write(f"{prefix}:{number}:{row[3]}:{row[6]}:{row[7]}:{int(row[6])+int(row[7])}\n")
 
 
-def format_hard(rows, fasta):
+def format_hard(rows, fasta, provenance=None):
+    writer = None
+    if provenance is not None:
+        writer = csv.writer(provenance, delimiter="\t", lineterminator="\n")
+        writer.writerow(("query_id", "event_id", "read_id", "sequence_origin") + ALIGNMENT_COLUMNS)
     for cluster_id, cluster_rows in groupby(rows, key=lambda row: row[-1]):
         records = list(cluster_rows)
         first = records[0]
         prefix = f"{first[0]}:<HARD>:{first[1]}:{first[2]}:HARD.{cluster_id}.{first[5]}"
         for number, row in enumerate(records):
-            fasta.write(f">{prefix}:{len(records)}:IMPRECISE:{number}\n{row[4]}\n")
+            query = f"{prefix}:{len(records)}:IMPRECISE:{number}"
+            fasta.write(f">{query}\n{row[4]}\n")
+            if writer is not None:
+                metadata = alignment_metadata(row[7] if len(row) == 9 else None)
+                writer.writerow((query, f"HARD.{cluster_id}.{first[5]}", row[3], "read_sequence", *(metadata[key] for key in ALIGNMENT_COLUMNS)))
 
 
 def main():
@@ -64,7 +74,11 @@ def main():
     with args.input.open() as source, args.fasta.open("w") as fasta:
         rows = (line.rstrip("\n").split("\t") for line in source if line.strip())
         if args.kind == "hard":
-            format_hard(rows, fasta)
+            if args.provenance is None:
+                format_hard(rows, fasta)
+            else:
+                with args.provenance.open("w", newline="") as provenance:
+                    format_hard(rows, fasta, provenance)
         else:
             if args.positions is None or args.sizes is None:
                 parser.error("ins requires --positions and --sizes")

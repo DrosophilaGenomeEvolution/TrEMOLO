@@ -119,13 +119,24 @@ The filters below update the call charts and the call table. Downloading exports
 </section>
 ```
 
+The **Source genomic alignments** column counts extracted query sequences by
+the SAM status of the genomic alignment used to extract them: primary (neither
+0x100 nor 0x800), secondary (0x100), supplementary (0x800), or both when both
+flags are set. These are source-query counts across extraction channels, not
+unique-read counts, independent alignments, allele frequencies or support for
+each TE hit. One event can contain several statuses; the same read can contribute
+through several alignments or channels. VCF-reported sequences have no single
+source alignment (`not applicable`); INSIDER assembly calls are also not applicable.
+`Unknown` means the metadata were not recorded. These statuses are not BLAST-hit
+ranks, are not inferred from MAPQ, and do not change TE selection or frequencies.
+
 ```{=html}
 <div class="trm-table-wrap">
   <table class="trm-table">
     <thead><tr>
       <th>Source</th><th>Chromosome</th><th>Position</th><th>TE family</th>
       <th>Event ID</th><th>Type</th><th>Strand</th><th>TSD</th>
-      <th>Identity</th><th>Coverage</th><th>TE size</th><th>Frequency</th><th>SV size</th>
+      <th>Identity</th><th>Coverage</th><th>TE size</th><th>Frequency</th><th>SV size</th><th>Source genomic alignments (queries)</th>
     </tr></thead>
     <tbody id="trm-call-table-body"></tbody>
   </table>

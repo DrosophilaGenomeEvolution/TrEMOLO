@@ -277,6 +277,7 @@
       element("p", "trm-structure-query", `${integer.format(structure.query_length)} bp insertion sequence · ${structure.query_id}`),
     );
     identity.appendChild(element("p", "trm-structure-query", `Origin: ${structure.sequence_origin || "unknown"} · read: ${structure.read_id || "."} · insertion: ${structure.insertion_length ?? "."} bp`));
+    identity.appendChild(element("p", "trm-structure-query", `Source genomic alignment: ${label(structure.genomic_alignment_status || "unknown")} · SAM flag: ${structure.genomic_alignment_flag ?? "."}`));
     const badges = element("div", "trm-structure-badges");
     badges.appendChild(badge(label(structure.classification), `trm-badge-${structure.classification}`));
     if (structure.final_call === "yes") badges.appendChild(badge("reported call", "trm-badge-final"));
@@ -368,6 +369,7 @@
     const facts = [
       ["Structure ID", structure.structure_id],
       ["Query ID", structure.query_id],
+      ["Source genomic alignment", `${label(structure.genomic_alignment_status || "unknown")} · SAM flag ${structure.genomic_alignment_flag ?? "."}`],
       ["Reported TE", structure.reported_te === "." ? "Not a final call" : structure.reported_te],
       ["Interpretation", label(structure.interpretation)],
       ["Retained matches", structure.retained_matches],

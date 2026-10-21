@@ -14,9 +14,10 @@ import tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Iterable, Optional
+from te_candidate_provenance import read_provenance, EVIDENCE_COLUMNS
 
 
-REPORT_SCHEMA_VERSION = "1.6.0"
+REPORT_SCHEMA_VERSION = "1.7.0"
 TE_INFO_COLUMNS = (
     "chrom",
     "start",
@@ -505,11 +506,7 @@ def read_ambiguous_call_candidates(path: Optional[Path], evidence_path: Optional
             "maximum_candidates": max((len(rows) for rows in grouped.values()), default=0),
         },
         "candidates": candidates,
-        "evidence": read_tsv_rows([evidence_path], (
-            "candidate_group_id", "event_id", "evidence_channel", "query_id", "read_id",
-            "sequence_origin", "insertion_sha256", "insertion_length", "candidate_te",
-            "query_start", "query_end", "te_start", "te_end", "strand", "identity",
-            "aligned_bp", "evalue", "bitscore", "relation_types")) if evidence_path else [],
+        "evidence": read_tsv_rows([evidence_path], EVIDENCE_COLUMNS[:-2], EVIDENCE_COLUMNS) if evidence_path else [],
     }
 
 
@@ -656,8 +653,18 @@ def build_report_data(
     benchmark_paths: Optional[list[Path]] = None,
     integration_audit_path: Optional[Path] = None,
     candidate_evidence_path: Optional[Path] = None,
+    sequence_provenance_paths: Optional[list[Path]] = None,
 ) -> dict:
     calls = read_te_infos(te_infos)
+    # Read the small TSV sidecars, never BAMs. Counts describe extracted queries,
+    # not unique reads, independent alignments or support for a particular TE hit.
+    outsider_events = {call["event_id"] for call in calls if call["source"] == "OUTSIDER"}
+    alignment_counts = defaultdict(Counter)
+    for path in sequence_provenance_paths or []:
+        for origin in read_provenance(path, outsider_events).values():
+            alignment_counts[origin["event_id"]][origin["genomic_alignment_status"]] += 1
+    for call in calls:
+        call["genomic_alignment_counts"] = dict(sorted(alignment_counts[call["event_id"]].items()))
     chromosomes = read_fasta_index(genome_index)
     chromosome_lengths = {row["chrom"]: row["length"] for row in chromosomes}
     calls_per_chromosome = Counter(call["chrom"] for call in calls)
@@ -807,6 +814,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resident-partial-coverage", type=float, default=20.0)
     parser.add_argument("--te-call-candidates", type=Path)
     parser.add_argument("--te-candidate-evidence", type=Path)
+    parser.add_argument("--sequence-provenance", type=Path, nargs="*", default=[])
     parser.add_argument("--benchmarks", type=Path, nargs="*", default=[])
     args = parser.parse_args()
     if args.locus_window < 0:
@@ -840,6 +848,7 @@ def main() -> None:
         },
         call_candidates_path=args.te_call_candidates,
         candidate_evidence_path=args.te_candidate_evidence,
+        sequence_provenance_paths=args.sequence_provenance,
         benchmark_paths=args.benchmarks,
         integration_audit_path=optional_path(args.integration_audit),
     )

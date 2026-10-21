@@ -3,6 +3,9 @@ import os
 import sys
 import argparse
 import csv
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "workflow"))
+from genomic_alignment import ALIGNMENT_COLUMNS, alignment_metadata
 
 
 parser = argparse.ArgumentParser(description="parse bam file to get sequence of insertion, at specific position in bed file", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -40,7 +43,7 @@ rd_num_file  = args.rd_num
 provenance = None
 if args.provenance is not None:
     provenance = csv.writer(args.provenance, delimiter="\t", lineterminator="\n")
-    provenance.writerow(("query_id", "event_id", "read_id", "sequence_origin"))
+    provenance.writerow(("query_id", "event_id", "read_id", "sequence_origin") + ALIGNMENT_COLUMNS)
 flank_size = args.flank_size
 
 min_size_percent = args.min_size_percent
@@ -99,7 +102,8 @@ for line in befile:
                     print(">" + name + ":" + str(number_read_support))
                     print(seq_vr)
                     if provenance is not None:
-                        provenance.writerow((name + ":" + str(number_read_support), name.split(":")[4], read.query_name, "read_sequence"))
+                        metadata = alignment_metadata(read.flag)
+                        provenance.writerow((name + ":" + str(number_read_support), name.split(":")[4], read.query_name, "read_sequence", *(metadata[key] for key in ALIGNMENT_COLUMNS)))
                     if args.insertion_fasta is not None:
                         args.insertion_fasta.write('>' + name + ':' + str(number_read_support) + '\n' + seq_te_tsd + '\n')
                     number_read_support += 1
@@ -117,7 +121,8 @@ for line in befile:
     if provenance is not None:
         # This VCF allele is not necessarily the last scanned read's sequence.
         # Sniffles 2 may have constructed it from several reads.
-        provenance.writerow((name + ":0", name.split(":")[4], ".", "vcf_reported"))
+        metadata = alignment_metadata(sequence_origin="vcf_reported")
+        provenance.writerow((name + ":0", name.split(":")[4], ".", "vcf_reported", *(metadata[key] for key in ALIGNMENT_COLUMNS)))
     if args.insertion_fasta is not None:
         args.insertion_fasta.write('>' + name + ':0\n' + bed_seq.strip() + '\n')
 

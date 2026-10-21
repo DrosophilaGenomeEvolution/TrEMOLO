@@ -121,6 +121,7 @@ rule build_te_call_candidates:
     input:
         script=str(PIPELINE_ROOT / "lib/python/workflow/build_te_call_candidates.py"),
         helper=str(PIPELINE_ROOT / "lib/python/workflow/te_candidate_provenance.py"),
+        alignment_helper=str(PIPELINE_ROOT / "lib/python/workflow/genomic_alignment.py"),
         te_infos=INTERNAL_TE_INFOS,
         outsider_direct=te_infos_input(
             OUTSIDER_INS_READ_COUNTS, TE_INFOS_WITH_OUTSIDER

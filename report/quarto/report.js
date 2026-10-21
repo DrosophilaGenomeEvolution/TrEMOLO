@@ -534,6 +534,14 @@
     ]);
   }
 
+  function genomicAlignmentSummary(call) {
+    if (call.source === "INSIDER") return "Not applicable (assembly call)";
+    const counts = Object.entries(call.genomic_alignment_counts || {});
+    return counts.length
+      ? counts.map(([status, count]) => `${status.replaceAll("_", " ")}: ${count}`).join("; ")
+      : "Unknown (no source metadata)";
+  }
+
   function renderTable() {
     const body = $("trm-call-table-body");
     body.replaceChildren();
@@ -560,6 +568,7 @@
       appendTextCell(row, valueOrDash(call.te_size));
       appendTextCell(row, valueOrDash(call.display_frequency, "%"));
       appendTextCell(row, valueOrDash(call.sv_size));
+      appendTextCell(row, genomicAlignmentSummary(call));
       body.appendChild(row);
     });
     $("trm-page-status").textContent = state.filtered.length ? `Page ${state.page + 1} / ${pages}` : "No result";
@@ -579,10 +588,10 @@
   }
 
   function downloadCalls() {
-    const columns = ["source", "chrom", "start", "end", "anchor", "family", "event_id", "event_type", "strand", "tsd", "identity", "coverage", "te_size", "display_frequency", "sv_size", "tremolo_id"];
+    const columns = ["source", "chrom", "start", "end", "anchor", "family", "event_id", "event_type", "strand", "tsd", "identity", "coverage", "te_size", "display_frequency", "sv_size", "tremolo_id", "source_genomic_alignments"];
     const lines = [columns.join("\t")];
     state.filtered.forEach((call) => {
-      lines.push(columns.map((column) => call[column] === null || call[column] === undefined ? "." : String(call[column]).replace(/[\t\r\n]/g, " ")).join("\t"));
+      lines.push(columns.map((column) => column === "source_genomic_alignments" ? genomicAlignmentSummary(call) : call[column] === null || call[column] === undefined ? "." : String(call[column]).replace(/[\t\r\n]/g, " ")).join("\t"));
     });
     const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/tab-separated-values;charset=utf-8" });
     const link = document.createElement("a");
@@ -684,7 +693,7 @@
         }
         records.forEach((item) => {
           const line = document.createElement("p");
-          line.textContent = `${item.query_id} · read ${item.read_id} · ${item.sequence_origin} · query [${item.query_start}, ${item.query_end}) · TE [${item.te_start}, ${item.te_end}) ${item.strand} · identity ${item.identity}% · insertion ${item.insertion_length} bp · SHA256 ${item.insertion_sha256}`;
+          line.textContent = `${item.query_id} · read ${item.read_id} · ${item.sequence_origin} · source genomic alignment ${item.genomic_alignment_status || (item.sequence_origin === "vcf_reported" ? "not_applicable" : "unknown")} (SAM flag ${item.genomic_alignment_flag ?? "."}) · query [${item.query_start}, ${item.query_end}) · TE [${item.te_start}, ${item.te_end}) ${item.strand} · identity ${item.identity}% · insertion ${item.insertion_length} bp · SHA256 ${item.insertion_sha256}`;
           details.appendChild(line);
         });
       });
@@ -701,7 +710,7 @@
     if (!evidenceDownload.dataset.bound) {
       evidenceDownload.dataset.bound = "yes";
       evidenceDownload.addEventListener("click", () => {
-      const columns = ["candidate_group_id", "event_id", "evidence_channel", "query_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length", "candidate_te", "query_start", "query_end", "te_start", "te_end", "strand", "identity", "aligned_bp", "evalue", "bitscore", "relation_types"];
+      const columns = ["candidate_group_id", "event_id", "evidence_channel", "query_id", "read_id", "sequence_origin", "insertion_sha256", "insertion_length", "candidate_te", "query_start", "query_end", "te_start", "te_end", "strand", "identity", "aligned_bp", "evalue", "bitscore", "relation_types", "genomic_alignment_flag", "genomic_alignment_status"];
       const content = [columns.join("\t"), ...candidateEvidence.map((item) => columns.map((column) => candidateTsvCell(item[column])).join("\t"))].join("\n") + "\n";
       const link = document.createElement("a");
       link.href = URL.createObjectURL(new Blob([content], { type: "text/tab-separated-values;charset=utf-8" }));

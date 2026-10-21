@@ -13,6 +13,7 @@ def main():
     parser.add_argument('--reads-index', type=Path, required=True)
     parser.add_argument('--variants', type=Path, required=True)
     parser.add_argument('--max-size', type=int, required=True)
+    parser.add_argument('--include-alignment-flags', action='store_true')
     args = parser.parse_args()
     candidates = []
     by_read = {}
@@ -44,7 +45,10 @@ def main():
             if number not in fragments:
                 raise ValueError(f'Hard-clipped read {row[4]} is missing from extracted FASTQ')
             sequence, size = fragments[number]
-            output.write('\t'.join([row[0], row[1], row[2], row[4], sequence, row[7], str(size)]) + '\n')
+            fields = [row[0], row[1], row[2], row[4], sequence, row[7], str(size)]
+            if args.include_alignment_flags:
+                fields.append(row[6])
+            output.write('\t'.join(fields) + '\n')
 
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@ const candidates = Array.from({ length: 251 }, (_, i) => ({
   evidence_fraction: 0.5, candidate_group_id: `group${i}`,
 }));
 nodes["tremolo-report-data"] = { textContent: JSON.stringify({
-  calls: candidates.map((c) => ({ ...c, family: "A" })),
+  calls: candidates.map((c) => ({ ...c, family: "A", genomic_alignment_counts: { primary: 2, supplementary: 1 } })),
   ambiguous_calls: { available: true, candidates },
 }) };
 for (const id of ["trm-call-table-body", "trm-filter-count", "trm-page-status", "trm-page-previous", "trm-page-next",
@@ -39,6 +39,12 @@ const api = context.testReport;
 api.renderTable();
 api.renderAmbiguousCalls();
 assert.equal(nodes["trm-call-table-body"].children.length, 50);
+assert.equal(nodes["trm-call-table-body"].children[0].children[13].textContent, "primary: 2; supplementary: 1");
+api.state.filtered[0].source = "INSIDER";
+api.renderTable();
+assert.equal(nodes["trm-call-table-body"].children[0].children[13].textContent, "Not applicable (assembly call)");
+api.state.filtered[0].source = "OUTSIDER";
+api.renderTable();
 assert.equal(nodes["trm-ambiguous-call-table-body"].children.length, 50);
 
 for (const prefix of ["trm-page", "trm-ambiguous-page"]) {

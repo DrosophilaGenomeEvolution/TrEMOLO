@@ -98,6 +98,8 @@ function jump(node, page) {
   assert.equal(nodes["trm-event-body"].children.length, 50);
   assert.equal(requests.filter((p) => p.includes("evidence-")).length, 1);
   assert.match(nodes["trm-structure-filter-note"].textContent, /251 \/ 251/);
+  assert.match(gallery.children[0].children[0].children[0].children.at(-1).textContent,
+               /Source genomic alignment: secondary · SAM flag: 256/);
   const initialDetails = gallery.children[0].children.at(-1);
   initialDetails.open = true;
   initialDetails.fire("toggle");

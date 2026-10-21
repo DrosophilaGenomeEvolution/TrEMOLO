@@ -4,12 +4,13 @@ import hashlib
 import math
 from collections import defaultdict
 from pathlib import Path
+from genomic_alignment import ALIGNMENT_COLUMNS, alignment_metadata
 
 SUMMARY_COLUMNS = ("query_count", "sequence_count", "read_count", "vcf_query_count", "provenance_status", "relation_types")
 EVIDENCE_COLUMNS = ("candidate_group_id", "event_id", "evidence_channel", "query_id", "read_id",
                     "sequence_origin", "insertion_sha256", "insertion_length", "candidate_te",
                     "query_start", "query_end", "te_start", "te_end", "strand", "identity",
-                    "aligned_bp", "evalue", "bitscore", "relation_types")
+                    "aligned_bp", "evalue", "bitscore", "relation_types") + ALIGNMENT_COLUMNS
 PROVENANCE_COLUMNS = ("query_id", "event_id", "read_id", "sequence_origin")
 
 
@@ -17,7 +18,8 @@ def read_provenance(path, events=None):
     result = {}
     with Path(path).open(newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
-        if tuple(reader.fieldnames or ()) != PROVENANCE_COLUMNS:
+        header = tuple(reader.fieldnames or ())
+        if header not in (PROVENANCE_COLUMNS, PROVENANCE_COLUMNS + ALIGNMENT_COLUMNS):
             raise ValueError("Invalid sequence provenance header: " + str(path))
         for row in reader:
             if events is not None and row["event_id"] not in events:
@@ -30,6 +32,10 @@ def read_provenance(path, events=None):
                 raise ValueError("A VCF allele cannot be assigned to a scanned read")
             if row["sequence_origin"] == "read_sequence" and row["read_id"] in ("", "."):
                 raise ValueError("A read sequence must have its source read identifier")
+            metadata = alignment_metadata(row.get("genomic_alignment_flag"), row["sequence_origin"])
+            if "genomic_alignment_status" in row and row["genomic_alignment_status"] != metadata["genomic_alignment_status"]:
+                raise ValueError("Genomic alignment status disagrees with SAM flag")
+            row.update(metadata)
             result[row["query_id"]] = row
     return result
 
@@ -64,6 +70,7 @@ def load_evidence(alignments, provenances, fastas, events=None):
     provenance = {c: read_provenance(p, events) for c, p in provenances if str(p) != "/dev/null"}
     sequences = {c: read_sequences(p, events) for c, p in fastas if str(p) != "/dev/null"}
     by_event = defaultdict(list)
+    unknown_alignment = alignment_metadata()
     for channel, path in alignments:
         if str(path) == "/dev/null":
             continue
@@ -94,6 +101,7 @@ def load_evidence(alignments, provenances, fastas, events=None):
                     raise ValueError("Missing declared insertion sequence: " + query)
                 by_event[parts[4]].append(dict(event_id=parts[4], evidence_channel=channel, query_id=query,
                     read_id=origin["read_id"] if origin else ".", sequence_origin=origin["sequence_origin"] if origin else "unknown",
+                    **{key: (origin or unknown_alignment)[key] for key in ALIGNMENT_COLUMNS},
                     insertion_sha256=digest, insertion_length=length, candidate_te=family,
                     query_start=min(q1,q2)-1, query_end=max(q1,q2), te_start=min(s1,s2)-1, te_end=max(s1,s2),
                     strand="+" if (q2-q1)*(s2-s1) >= 0 else "-", identity=identity,

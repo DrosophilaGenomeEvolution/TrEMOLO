@@ -28,6 +28,28 @@ CANDIDATE_HEADER = (
 
 
 class BuildInsertionStructureReportTests(unittest.TestCase):
+    def test_source_genomic_flags_reach_module_data_and_provenance_export(self):
+        for flag, status, origin, read in (("0", "primary", "read_sequence", "same"),
+                ("256", "secondary", "read_sequence", "same"),
+                ("2048", "supplementary", "read_sequence", "same"),
+                ("2304", "secondary_and_supplementary", "read_sequence", "same"),
+                (".", "unknown", "read_sequence", "same"),
+                (".", "not_applicable", "vcf_reported", ".")):
+            with self.subTest(flag=flag), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                path = root / 'OUTSIDER/TrEMOLO_SV_TE/INS/SEQUENCE_PROVENANCE.tsv'
+                path.parent.mkdir(parents=True)
+                path.write_text('query_id\tevent_id\tread_id\tsequence_origin\tgenomic_alignment_flag\tgenomic_alignment_status\n'
+                    f'2L:<INS>:100:101:event1:1:IMPRECISE:1\tevent1\t{read}\t{origin}\t{flag}\t{status}\n')
+                data = self.run_build(root)
+                self.assertEqual(data['structures'][0]['genomic_alignment_flag'], flag)
+                self.assertEqual(data['structures'][0]['genomic_alignment_status'], status)
+                with (root / 'report/insertion-sequence-provenance.tsv').open() as handle:
+                    exported = list(csv.DictReader(handle, delimiter='\t'))
+                self.assertEqual(exported[0]['genomic_alignment_status'], status)
+                self.assertEqual(data['summary']['retained_matches'], 2)
+                self.assertEqual(data['summary']['components'], 2)
+
     def read_chunk(self, output, relative):
         text = (output / relative).read_text()
         prefix = f"window.trmStructureChunks[{json.dumps(relative)}]="
@@ -67,6 +89,10 @@ class BuildInsertionStructureReportTests(unittest.TestCase):
             blast, sizes, queries, infos, candidates = self.fixture(root)
             base_blast = blast.read_text()
             base_query = queries.read_text().split("\t")[0]
+            provenance = root / 'OUTSIDER/TrEMOLO_SV_TE/INS/SEQUENCE_PROVENANCE.tsv'
+            provenance.parent.mkdir(parents=True)
+            provenance.write_text('query_id\tevent_id\tread_id\tsequence_origin\tgenomic_alignment_flag\tgenomic_alignment_status\n'
+                                  f'{base_query}\tevent1\tsource-read\tread_sequence\t256\tsecondary\n')
             blast.write_text(base_blast * 20 + "".join(base_blast.replace(base_query, f"2L:<INS>:{100+i}:{101+i}:event{i+1}:1:IMPRECISE:1") for i in range(1, 251)))
             queries.write_text("".join(f"2L:<INS>:{100+i}:{101+i}:event{i+1}:1:IMPRECISE:1\t1000\n" for i in range(251)))
             build(blast, sizes, queries, root / "report", infos, candidates,

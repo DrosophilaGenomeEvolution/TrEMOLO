@@ -32,6 +32,32 @@ HEADER = (
 
 
 class BuildQuartoReportTests(unittest.TestCase):
+    def test_call_alignment_summary_preserves_mixed_query_statuses_and_unknowns(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            infos, index, manifest, mapping, vcf = self.fixture(root)
+            origins = self.write(root, "provenance.tsv",
+                "query_id\tevent_id\tread_id\tsequence_origin\tgenomic_alignment_flag\tgenomic_alignment_status\n"
+                "q1\tout.1\tsame-read\tread_sequence\t0\tprimary\n"
+                "q2\tout.1\tsame-read\tread_sequence\t256\tsecondary\n"
+                "q3\tout.1\tsame-read\tread_sequence\t2048\tsupplementary\n"
+                "q4\tout.1\t.\tvcf_reported\t.\tnot_applicable\n"
+                "ignored\tunreported\tr\tread_sequence\t0\tprimary\n")
+            args = dict(te_infos=infos, genome_index=index, manifest_path=manifest,
+                        mapping_stats_path=mapping, sv_vcf_path=vcf,
+                        enabled_sources=["INSIDER", "OUTSIDER"], title="test",
+                        author="", work_directory=str(root), locus_window=100)
+            before = build_report_data(**args)
+            after = build_report_data(**args, sequence_provenance_paths=[origins])
+            self.assertEqual(after['calls'][0]['genomic_alignment_counts'],
+                             {'not_applicable': 1, 'primary': 1, 'secondary': 1, 'supplementary': 1})
+            self.assertEqual(after['calls'][1]['genomic_alignment_counts'], {})
+            self.assertEqual(after['calls'][2]['genomic_alignment_counts'], {})
+            for old, new in zip(before['calls'], after['calls']):
+                self.assertEqual({k: v for k, v in old.items() if k != 'genomic_alignment_counts'},
+                                 {k: v for k, v in new.items() if k != 'genomic_alignment_counts'})
+            self.assertEqual(before['summary'], after['summary'])
+
     def test_workflow_author_argument_accepts_empty_and_named_authors(self):
         from snakemake.utils import format as format_command
         # Exercise the actual rule's shell argument: quoting an empty string

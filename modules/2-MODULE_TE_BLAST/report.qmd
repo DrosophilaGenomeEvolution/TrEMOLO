@@ -45,10 +45,78 @@ only narrow this landscape when a specific question needs to be tested.
   <button id="trm-structure-reset" type="button" class="trm-structure-button">Reset filters</button>
 </div>
 <div class="trm-structure-legend" aria-label="Structure map legend">
-  <span><i class="trm-legend-retained"></i>Provisional component</span>
-  <span><i class="trm-legend-rejected"></i>Rejected candidate shown when no component remains</span>
+  <span><i class="trm-legend-retained"></i>C1, C2…: provisional components (filled segments)</span>
+  <span><strong>Alt</strong>: retained alternative (white fill, dashed outline)</span>
+  <span><i class="trm-legend-rejected"></i>Candidate: rejected match (faded, dashed; shown when no component remains)</span>
   <span>Click <strong>Evidence details</strong> for normalized matches and raw HSPs.</span>
 </div>
+<p class="trm-structure-muted">
+Segment colours are arbitrary but deterministic: the same exact TE name always
+gets the same hue. They do not encode biological family classification,
+orientation, BLAST identity, coverage or confidence. Different names can share
+a hue; read the TE labels rather than inferring a relationship from colour.
+</p>
+<details class="trm-structure-note">
+  <summary>How to read evidence, structure labels and card borders</summary>
+  <p>A normalized match groups BLAST HSPs for one query sequence, one TE name
+  and one orientation. HSP means high-scoring segment pair: a local alignment.
+  The map uses insertion-sequence coordinates; the +/− label gives orientation,
+  and the displayed percentages give consensus coverage and BLAST identity.</p>
+  <dl>
+    <dt>Provisional component · filled segment, C1, C2…</dt>
+    <dd>A match that passes the filters and is selected in descending summed
+    bitscore order (then consensus coverage and TE name), subject to the allowed
+    overlap with every already selected match. Overlap is measured on aligned
+    query segments relative to the shorter aligned length. Component numbers
+    follow query coordinates, not score rank. This is a candidate annotation,
+    not a validated biological TE component.</dd>
+    <dt>Retained alternative · Alt, white fill and dashed outline</dt>
+    <dd>A match that passes the filters but is not selected as a component
+    because it exceeds the overlap limit with a previously selected match.
+    It may have the same TE name in another orientation. Up to three are drawn;
+    all normalized matches remain available in Evidence details. This map status
+    is separate from the known_alternative assignment imported from the pipeline.</dd>
+    <dt>Rejected candidate · Candidate, faded dashed segment</dt>
+    <dd>A normalized match that fails one or more filters, such as usable-HSP,
+    identity, aligned-length or consensus-coverage requirements. When no component
+    remains, up to three rejected matches are drawn by summed bitscore. Filter
+    reasons and all raw HSPs remain in Evidence details; rejection does not prove
+    that the insertion contains no TE.</dd>
+    <dt>single_candidate · turquoise card border</dt>
+    <dd>Exactly one provisional component is selected. It need not cover a
+    complete TE or the whole insertion sequence.</dd>
+    <dt>composite_candidate · orange card border</dt>
+    <dd>At least two provisional components are selected, with no component's
+    overall query interval containing another's. They need not have different TE
+    names. This coordinate pattern alone does not establish a composite allele.</dd>
+    <dt>nested_candidate · orange card border</dt>
+    <dd>At least two provisional components are selected and one component's
+    overall query interval contains another's. Overall intervals can contain
+    gaps between aligned segments, so this heuristic does not prove a nested
+    biological insertion.</dd>
+    <dt>unresolved · ochre card border</dt>
+    <dd>BLAST matches exist, but none qualifies as a provisional component.</dd>
+    <dt>no_match · grey card border</dt>
+    <dd>No BLAST HSP is present for this query in the supplied input. This is not
+    proof of TE absence.</dd>
+    <dt>reported call · badge</dt>
+    <dd>The query's event occurs in TE_INFOS.bed, when that file is supplied.
+    This does not validate the proposed structure or every displayed match;
+    the reported TE name may differ from the selected components.</dd>
+  </dl>
+  <p>Card-border colours indicate the structure category, independently of TE
+  segment hues. These reconstructions remain hypotheses: validate read/assembly
+  alignments, linkage and breakpoints before interpreting them as biological
+  composite or nested alleles.</p>
+  <p><strong>Source genomic alignment</strong> is the SAM status of the exact
+  read-to-genome record used to extract this query: primary (neither 0x100 nor
+  0x800), secondary (0x100), supplementary (0x800), or both flags. The raw SAM
+  flag is also shown. This is not the rank of the BLAST hit or a confidence
+  score. A read can have several genomic alignments with different statuses.
+  VCF-reported sequences have no single source alignment (not applicable).
+  Unknown means no flag was recorded, including older outputs; it is never
+  inferred from the read name or MAPQ. No BAM rescan is performed by this report.</p>
+</details>
 <div id="trm-structure-gallery" class="trm-structure-gallery" role="list"></div>
 <nav id="trm-structure-pages" class="trm-structure-pages" aria-label="Structure pages"></nav>
 <p id="trm-structure-empty" class="trm-structure-empty" hidden>No structure matches the current filters.</p>

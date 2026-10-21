@@ -32,6 +32,8 @@ OUTSIDER_SV_SIZE = f"{OUTSIDER_INS_DIR}/SV_SIZE.tsv"
 
 OUTSIDER_SOFT_VCF = f"{OUTSIDER_SOFT_DIR}/SV_SOFT.vcf"
 OUTSIDER_SOFT_VCF_ALL = OUTSIDER_SOFT_VCF + ".bis"
+OUTSIDER_SOFT_PROVENANCE = f"{OUTSIDER_SOFT_DIR}/SEQUENCE_PROVENANCE.tsv"
+OUTSIDER_HARD_PROVENANCE = f"{OUTSIDER_HARD_DIR}/SEQUENCE_PROVENANCE.tsv"
 OUTSIDER_HARD_VCF = f"{OUTSIDER_HARD_DIR}/SV_HARD.tr_vcf"
 OUTSIDER_SOFT_SV_BED = f"{OUTSIDER_SOFT_DIR}/SV_SOFT.bed"
 OUTSIDER_SOFT_FASTA = f"{OUTSIDER_SOFT_DIR}/SV_SOFT.fasta"
@@ -117,12 +119,14 @@ rule find_outsider_alignment_candidates:
         bam=MAPPING_BAM,
         bai=MAPPING_BAM + ".bai",
         script=str(PIPELINE_ROOT / "lib/python/parsing/find_all_type_ins.py"),
+        alignment_helper=str(PIPELINE_ROOT / "lib/python/workflow/genomic_alignment.py"),
     output:
         insertions=OUTSIDER_INS_RAW,
         tsd=OUTSIDER_INS_TSD,
         soft=OUTSIDER_SOFT_VCF,
         soft_all=OUTSIDER_SOFT_VCF_ALL,
         hard=OUTSIDER_HARD_VCF,
+        soft_provenance=OUTSIDER_SOFT_PROVENANCE,
     params:
         window=WINDOWS["OUTSIDER_SOFT_CLIP_WINDOW"],
         script=str(PIPELINE_ROOT / "lib/python/parsing/find_all_type_ins.py"),
@@ -150,6 +154,7 @@ rule find_outsider_alignment_candidates:
             --output-soft {output.soft:q} \
             --output-hard {output.hard:q} \
             --output-ins {output.insertions:q} {params.clipped} \
+            --include-alignment-flags --soft-provenance {output.soft_provenance:q} \
             > {log:q} 2>&1
         test -f {output.insertions:q}
         touch {output.soft:q} {output.soft_all:q} {output.hard:q}
@@ -160,6 +165,7 @@ rule cluster_outsider_alignment_insertions:
     input:
         insertions=OUTSIDER_INS_RAW,
         script=str(PIPELINE_ROOT / "lib/python/workflow/cluster_alignment_candidates.py"),
+        alignment_helper=str(PIPELINE_ROOT / "lib/python/workflow/genomic_alignment.py"),
     output:
         clustered=OUTSIDER_INS_CLUSTERED,
         fasta=OUTSIDER_INS_FASTA,
@@ -262,6 +268,8 @@ rule extract_outsider_sniffles_sequences:
         vcf=SV_VCF,
         parser=str(PIPELINE_ROOT / "lib/python/parsing/get_seq_vcf.py"),
         adapter=str(PIPELINE_ROOT / "lib/python/parsing/sniffles_vcf.py"),
+        reads_script=str(PIPELINE_ROOT / "lib/python/parsing/parse_bam_found_ins.py"),
+        alignment_helper=str(PIPELINE_ROOT / "lib/python/workflow/genomic_alignment.py"),
         bam=MAPPING_BAM,
         bai=MAPPING_BAM + ".bai",
         direct_sizes=OUTSIDER_INS_SIZE_BASE,
@@ -566,11 +574,13 @@ rule prepare_outsider_hard_clipped_sequences:
         database=PREPARED_TE_DATABASE,
         cluster_script=str(PIPELINE_ROOT / "lib/python/workflow/cluster_alignment_candidates.py"),
         extract_script=str(PIPELINE_ROOT / "lib/python/workflow/prepare_hard_clip_sequences.py"),
+        alignment_helper=str(PIPELINE_ROOT / "lib/python/workflow/genomic_alignment.py"),
     output:
         reads_fasta=OUTSIDER_HARD_READS_FASTA,
         reads_index=OUTSIDER_HARD_READS_FASTA_INDEX,
         variants=OUTSIDER_HARD_RAW_BED,
         fasta=OUTSIDER_HARD_FASTA,
+        provenance=OUTSIDER_HARD_PROVENANCE,
     params:
         padding=WINDOWS["OUTSIDER_CLIPPED_SEQUENCE_PADDING"],
         distance=WINDOWS["OUTSIDER_HARD_CLIP_CLUSTER_DISTANCE"],
@@ -592,14 +602,15 @@ rule prepare_outsider_hard_clipped_sequences:
         python3 {input.extract_script:q} --candidates {input.candidates:q} \
             --fastq {input.fastq:q} --reads-fasta {output.reads_fasta:q} \
             --reads-index {output.reads_index:q} --variants {output.variants:q} \
-            --max-size "$max_size" > {log:q} 2>&1
+            --max-size "$max_size" --include-alignment-flags > {log:q} 2>&1
+        : > {output.variants:q}.clustered
         if test -s {output.variants:q}; then
             bedtools sort -i {output.variants:q} | bedtools cluster -d {params.distance} \
                 > {output.variants:q}.clustered
-            python3 {input.cluster_script:q} hard --input {output.variants:q}.clustered \
-                --fasta {output.fasta:q} >> {log:q} 2>&1
-            rm -f {output.variants:q}.clustered
         fi
+        python3 {input.cluster_script:q} hard --input {output.variants:q}.clustered \
+            --fasta {output.fasta:q} --provenance {output.provenance:q} >> {log:q} 2>&1
+        rm -f {output.variants:q}.clustered
         """
 
 

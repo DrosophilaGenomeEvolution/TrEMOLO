@@ -1,5 +1,6 @@
 """Extract CIGAR insertions and clipped evidence with deterministic, balanced BAM jobs."""
 import argparse
+import csv
 import logging
 import multiprocessing
 import os
@@ -10,6 +11,8 @@ import tempfile
 import time
 
 import pysam
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "workflow"))
+from genomic_alignment import ALIGNMENT_COLUMNS, alignment_metadata
 
 
 def parse_args():
@@ -19,6 +22,8 @@ def parse_args():
     parser.add_argument('--output-ins', default='INS.txt')
     parser.add_argument('--output-hard', default='HARD.txt')
     parser.add_argument('--output-seq-tsd')
+    parser.add_argument('--include-alignment-flags', action='store_true', help='Append source SAM flag to insertion BED rows')
+    parser.add_argument('--soft-provenance', help='Write provenance of the selected left/right soft-clipped sequences')
     parser.add_argument('--no-clipped', action='store_true')
     parser.add_argument('--time-limit', type=int, default=0, help='Maximum elapsed hours; 0 disables the limit')
     parser.add_argument('-t', '--threads', type=int, default=4)
@@ -76,7 +81,10 @@ def process_region(task):
                     left = max(count_read-length-args.flank_size, 0)
                     right = min(count_read+args.flank_size, len(sequence))
                     fragment = sequence[left:right]
-                    write_row(ins, [chrom, position, position+1, name, fragment, count_read, count_real, length])
+                    fields = [chrom, position, position+1, name, fragment, count_read, count_real, length]
+                    if args.include_alignment_flags:
+                        fields.append(read.flag)
+                    write_row(ins, fields)
                     if args.output_seq_tsd:
                         flanks = sequence[left:left+args.flank_size] + '|' + fragment + '|' + sequence[right-args.flank_size:right]
                         write_row(tsd, [chrom, position, name, flanks, fragment, count_read, count_real, length])
@@ -106,7 +114,7 @@ def process_region(task):
     return counts
 
 
-def merge_soft(parts, output, all_output, chrom_index, window):
+def merge_soft(parts, output, all_output, chrom_index, window, provenance=None):
     # Group after ordered block merging, so boundary reads and cluster IDs are
     # identical for any chunk size or worker count. Buckets avoid global scans.
     clusters = []
@@ -126,13 +134,13 @@ def merge_soft(parts, output, all_output, chrom_index, window):
                 else:
                     index = len(clusters)
                     cluster = {'chrom': row[0], 'position': position, 'id': f'SOFT.{chrom_index}_{index}',
-                               'L': ['NONE', '0', 'NONE'], 'R': ['NONE', '0', 'NONE'],
+                               'L': ['NONE', '0', 'NONE', '.'], 'R': ['NONE', '0', 'NONE', '.'],
                                'reads_L': {}, 'reads_R': {}, 'support': 0}
                     clusters.append(cluster)
                     buckets.setdefault(bucket, []).append(index)
                 side = row[7]
                 if int(row[8]) > int(cluster[side][1]):
-                    cluster[side] = [row[4], row[8], row[9]]
+                    cluster[side] = [row[4], row[8], row[9], row[6]]
                 cluster['reads_' + side][row[4] + ':' + row[9]] = None
                 cluster['support'] += 1
                 row[3] = cluster['id']
@@ -145,6 +153,17 @@ def merge_soft(parts, output, all_output, chrom_index, window):
                           'RS_LEFT=' + ','.join(cluster['reads_L']),
                           'RS_RIGHT=' + ','.join(cluster['reads_R']),
                           'NB_RS=' + str(cluster['support'])])
+        if provenance is not None:
+            for side in ('L', 'R'):
+                best = cluster[side]
+                if best[2] == 'NONE':
+                    continue
+                # Match the existing AWK query header, including its support count.
+                support = len(','.join(cluster['reads_' + side]).split(','))
+                event = cluster['id'] + '.' + side
+                query = f"{cluster['chrom']}:<SOFT>:{cluster['position']}:{cluster['position']+1}:{event}:{support}:PRECISE:0"
+                metadata = alignment_metadata(best[3])
+                provenance.writerow((query, event, best[0], 'read_sequence', *(metadata[key] for key in ALIGNMENT_COLUMNS)))
 
 
 def main():
@@ -185,9 +204,15 @@ def main():
                         'soft_all': args.output_soft + '.bis', 'hard': args.output_hard}
         if args.output_seq_tsd:
             output_paths['tsd'] = args.output_seq_tsd
+        if args.soft_provenance:
+            output_paths['soft_provenance'] = args.soft_provenance
         from contextlib import ExitStack
         with ExitStack() as stack:
             outputs = {key: stack.enter_context((scratch / ('final.' + key)).open('w')) for key in output_paths}
+            provenance = None
+            if args.soft_provenance:
+                provenance = csv.writer(outputs['soft_provenance'], delimiter='\t', lineterminator='\n')
+                provenance.writerow(('query_id', 'event_id', 'read_id', 'sequence_origin') + ALIGNMENT_COLUMNS)
             if not args.no_clipped:
                 write_row(outputs['soft_all'], ['#REF', 'START', 'END', 'ID', 'ID_READ', 'POS_REAL_READ', 'FLAG', 'SIDE', 'SIZE_SEQ', 'SEQ'])
                 write_row(outputs['hard'], ['#REF', 'START', 'END', 'ID', 'ID_READ', 'POS_REAL_READ', 'FLAG', 'SIDE', 'SIZE_SEQ', 'SEQ'])
@@ -198,7 +223,7 @@ def main():
                             with (scratch / f'{key}.{task[0]}').open() as source:
                                 shutil.copyfileobj(source, outputs[key])
                 if not args.no_clipped:
-                    merge_soft([scratch / f'soft.{task[0]}' for task in current], outputs['soft'], outputs['soft_all'], chrom_index, args.window)
+                    merge_soft([scratch / f'soft.{task[0]}' for task in current], outputs['soft'], outputs['soft_all'], chrom_index, args.window, provenance)
                     hard_index = 0
                     for task in current:
                         with (scratch / f'hard.{task[0]}').open() as source:
