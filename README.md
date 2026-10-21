@@ -205,6 +205,12 @@ This option is disabled since Singularity Hub is for the moment in read-only. We
 
 # Configuration of the parameter file<a name="configuration"></a>
 
+In the refactored workflow, `CHROM_KEEP` always searches the chromosome name
+alone. For exact main dm6 chromosomes, use
+`CHROM_KEEP: '^([23][RL]|[X4Y])$'`; descriptions, whitespace and other BED columns
+are not searched. See [chromosome filtering](docs/chromosome-filtering.md) for
+parameter scopes, regex syntax and compatibility with older comma-separated lists.
+
 The migrated workflow can also catalogue TE matches in reads with no genomic
 alignment using `CHOICE.PIPELINE.UNMAPPED_TE: true` (disabled by default).
 Results are written under `UNMAPPED_TE/`, with original TE labels and coordinates

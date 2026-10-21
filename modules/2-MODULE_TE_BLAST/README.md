@@ -23,6 +23,12 @@ The default output is `WORK_DIRECTORY/MODULE_TE_BLAST`. The module consumes:
   alleles. The cards show this origin; `insertion-sequence-provenance.tsv` retains
   it with insertion hashes. Unknown origins remain explicit. See
   [candidate provenance](../../docs/te-call-candidates.md).
+  When available, the same sidecars retain the raw SAM flag and primary,
+  secondary or supplementary status of the exact source genomic alignment.
+  The cards and `insertion-sequence-provenance.tsv` expose this metadata;
+  VCF-reported sequences are not applicable and missing older flags are unknown.
+  This is independent of BLAST-hit ranking. The module never scans BAM files
+  to recover missing flags.
 
 Scientific thresholds can be passed after the output directory:
 

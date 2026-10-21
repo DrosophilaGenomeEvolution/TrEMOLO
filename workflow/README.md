@@ -1,6 +1,10 @@
 # Refactored workflow
 
 This directory contains the incremental replacement for the legacy `run.snk`.
+`CHROM_KEEP` searches chromosome identifiers only, consistently across VCF,
+BED and resident-annotation stages; see [chromosome filters](../docs/chromosome-filtering.md).
+Major jobs also emit concise phase/error messages to the console and
+`WORK_DIRECTORY/log/progress.log`; see [workflow progress](../docs/workflow-progress.md).
 It currently prepares immutable inputs and contains migrated OUTSIDER variant
 calling, TE detection, frequency, and TSD rules, plus INSIDER structural-
 variant calling, TE detection, empty-site frequency, and TSD rules. It also

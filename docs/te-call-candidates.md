@@ -77,6 +77,7 @@ signifie pas qu'ils passent les seuils de classification du TE.
 | `query_id` | En-tête exact de la séquence utilisée comme requête BLAST. |
 | `read_id` | Read d'origine, ou `.` s'il n'est pas attribuable. |
 | `sequence_origin` | `read_sequence`, `vcf_reported` ou `unknown`. |
+| `genomic_alignment_flag`, `genomic_alignment_status` | Flag SAM et statut de l'alignement read–génome ayant fourni cette requête, et non du hit BLAST. Ces colonnes sont ajoutées à la fin de la table. |
 | `insertion_sha256`, `insertion_length` | Empreinte et longueur de l'insertion seule, sans flancs, ou `.` sans cette information. L'empreinte respecte l'orientation de la séquence extraite ; aucun complément inverse n'est fusionné implicitement. |
 | `candidate_te` | Nom original de la famille alignée. |
 | `query_start`, `query_end` | Bornes du HSP sur la requête BLAST, 0-based, fin exclue. Cette requête peut contenir des flancs : ces coordonnées ne sont pas celles du FASTQ complet ni celles de l'insertion seule. |
@@ -88,12 +89,59 @@ signifie pas qu'ils passent les seuils de classification du TE.
 ## Origine des séquences et rapports
 
 Les extracteurs écrivent `SEQUENCE_PROVENANCE.tsv` près de leurs FASTA, avec
-`query_id`, `event_id`, `read_id`, `sequence_origin`.
+`query_id`, `event_id`, `read_id`, `sequence_origin`, `genomic_alignment_flag`
+et `genomic_alignment_status`. Les anciennes tables à quatre colonnes restent
+acceptées : leur statut est `unknown` pour un read et `not_applicable` pour une
+séquence VCF. Un flag manquant n'est jamais déduit du nom de read ni du MAPQ.
 Une insertion CIGAR est associée au read effectivement utilisé. La séquence
 rapportée par le VCF est marquée `vcf_reported` avec `read_id=.` : Sniffles 2 peut
 produire un consensus et une identité de read ne peut pas être déduite du dernier
 alignement parcouru. Les anciens fichiers `RD_NUMBER.txt` ne remplacent pas cette
 nouvelle table de provenance.
+
+### Alignement génomique à l'origine de la séquence
+
+Le statut est celui de **l'enregistrement SAM/BAM effectivement utilisé** pour
+extraire la séquence, même si plusieurs enregistrements portent le même nom de
+read :
+
+- `primary` : ni le bit `0x100` ni le bit `0x800` n'est positionné ;
+- `secondary` : bit `0x100` ;
+- `supplementary` : bit `0x800` (alignement supplémentaire, distinct d'un secondaire) ;
+- `secondary_and_supplementary` : les deux bits sont positionnés ;
+- `unmapped` : bit `0x4`, conservé explicitement s'il est rencontré ;
+- `unknown` : aucun flag disponible, notamment pour les résultats antérieurs ;
+- `not_applicable` : séquence rapportée par le VCF, sans alignement source unique.
+
+Les insertions CIGAR directes et les insertions extraites près des événements
+Sniffles gardent le flag de leur enregistrement source. Pour les soft clips,
+la provenance suit exactement le représentant gauche/droit déjà choisi, y
+compris le premier en cas d'égalité de longueur. Pour les hard clips récupérés
+dans le FASTQ, elle garde le flag du candidat génomique qui a demandé cette
+extraction. Les choix de représentants, les séquences, les appels TE et les
+fréquences ne changent pas. En mode refondu, le flag est ajouté après les huit
+colonnes historiques du BED des insertions directes et après les sept colonnes
+historiques du BED des fragments HARD, afin de traverser le clustering sans
+rechercher un alignement à partir du seul nom de read.
+
+Le REPORT principal ajoute **Source genomic alignments (queries)** : un décompte
+des requêtes extraites par statut pour chaque événement OUTSIDER, tous canaux
+confondus. Plusieurs statuts peuvent coexister ; le même alignement/read peut
+être compté via plusieurs requêtes ou canaux. Ce n'est ni un nombre de reads
+uniques, ni un nombre d'alignements indépendants, ni le support de chaque famille
+TE affichée. Des requêtes du même événement sans hit TE retenu peuvent aussi
+figurer dans ce décompte. Une origine INSIDER assemblage est affichée comme non
+applicable. Le module 2 et les preuves détaillées des appels ambigus affichent
+le statut et le flag par requête ; `insertion-sequence-provenance.tsv` les conserve.
+
+Sur une nouvelle analyse, le coût ajouté se limite à copier le flag pendant les
+lectures/extractions existantes et à écrire/lire les tables de provenance.
+Il n'y a ni étape d'alignement/BLAST supplémentaire, ni nouveau parcours du BAM.
+Les rapports ne relisent jamais les BAM pour compléter un flag manquant. Aucun
+gain ou pourcentage de surcoût sur données réelles n'a été mesuré pour cet ajout.
+Pour d'anciens résultats, afficher `unknown` est possible sans recalcul ; obtenir
+des flags absents exige de relancer les extracteurs concernés et leurs sorties
+dépendantes, ce qui n'est pas une opération gratuite.
 
 Le REPORT principal expose la relation, les comptes de séquences/reads, l'état de
 provenance, les HSP consultables et le téléchargement des deux tables. Le module
