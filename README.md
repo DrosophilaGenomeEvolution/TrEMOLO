@@ -1,6 +1,6 @@
 # TrEMOLO
 
-<img src="images/TrEMOLO9.png" alt="TrEMOLO logo">
+<img src="images/TrEMOLO11.2.png" alt="TrEMOLO logo" width="800">
 
 **Transposable Elements MOvement detection using LOng reads**
 
@@ -14,6 +14,9 @@ The supported entry point is `workflow/Snakefile`. Read the
 [beta release notes](docs/release-notes-functional-candidate.md) before migrating
 from 2.x: corrected evidence extraction and integration intentionally change
 some scientific results. Use a fresh output directory.
+
+[How TrEMOLO works and which strategy to choose](#how-tremolo-works) ·
+[Quick start](#quick-start) · [Modules](#modules) · [GFA](#build-a-gfa)
 
 ## Quick start
 
@@ -65,6 +68,53 @@ threads for individual jobs.
 Optional features have independent settings. See the
 [configuration reference](docs/configuration.md), [workflow targets](workflow/README.md)
 and [documentation index](docs/README.md).
+
+## How TrEMOLO works
+
+### Which strategy should I use?
+
+TrEMOLO supports two complementary strategies. Both require a TE sequence database:
+
+- **Strategy 1 — OUTSIDER only:** map long reads directly to a reference assembly
+  supplied as `DATA.GENOME`. This requires reads and a suitable mapping reference,
+  without first assembling the sequenced sample.
+- **Strategy 2 — INSIDER and OUTSIDER:** compare the sample assembly
+  (`DATA.GENOME`) to a reference (`DATA.REFERENCE`) with INSIDER, then map the
+  sample reads to their own assembly with OUTSIDER. The two branches capture
+  complementary variation relative to these assemblies.
+
+![Two TrEMOLO strategies: reads mapped to a reference, or combined assembly comparison and read mapping](images/HOW-WORKING-TrEMOLO/16.png)
+
+An insertion-rich read can be difficult to align directly to a reference lacking
+those insertions. A sample assembly can provide a closer mapping target, while
+INSIDER identifies TE-associated differences between that assembly and the
+reference. The diagram below illustrates why combining the two branches can
+recover evidence missed by direct read-to-reference mapping. The alignment
+scores shown are illustrative, not a list of current workflow defaults.
+
+![Why a sample assembly can improve read mapping and complement INSIDER detection with OUTSIDER evidence](images/HOW-WORKING-TrEMOLO/17.png)
+
+### Examples with simulated data
+
+The best strategy depends on the sample, reference and assembly quality. These
+original simulated examples illustrate two contexts; they are not benchmarks
+of the current beta or a guarantee that one strategy always performs better.
+
+#### Context 1: the combined strategy performs better
+
+![Simulated context 1 comparing the reference, sample assembly and TE insertion evidence](images/HOW-WORKING-TrEMOLO/18.png)
+
+![Simulated context 1 results favouring strategy 2, combining INSIDER and OUTSIDER](images/HOW-WORKING-TrEMOLO/19.png)
+
+#### Context 2: direct read-to-reference mapping performs better
+
+![Simulated context 2 comparing the reference, sample assembly and TE insertion evidence](images/HOW-WORKING-TrEMOLO/20.png)
+
+![Simulated context 2 results favouring strategy 1, using OUTSIDER alone](images/HOW-WORKING-TrEMOLO/21.png)
+
+Use the [minimal OUTSIDER or combined configurations](examples/config) to select
+one of these strategies. For frequency estimates and missing calls, see
+[interpreting results](docs/interpreting-results.md).
 
 ## Version and reproducibility
 
@@ -180,8 +230,7 @@ application compatibility are not included in the beta's validated scope.
 ## Other utilities
 
 [Assembly correction utilities](docs/assembly-correction.md) reorder and orient
-assembly blocks with audited base retention. Historical strategy diagrams are
-available under [images/HOW-WORKING-TrEMOLO](images/HOW-WORKING-TrEMOLO).
+assembly blocks with audited base retention.
 
 ## Citation and licence
 
