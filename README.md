@@ -1,6 +1,6 @@
 # TrEMOLO
 
-<img src="images/TrEMOLO11.2.png" alt="TrEMOLO logo" width="800">
+<img src="images/Logo-TrEMOLO-v3.png" alt="TrEMOLO v3 logo" width="800">
 
 **Transposable Elements MOvement detection using LOng reads**
 
