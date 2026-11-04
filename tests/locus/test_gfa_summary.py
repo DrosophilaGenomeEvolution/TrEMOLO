@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "lib/python/locus"))
 from gfa_summary import refresh
 from build_te_gfa import build
-import test_build_te_gfa as fixtures
+from tests.locus import test_build_te_gfa as fixtures
 
 
 class GfaSummaryTests(unittest.TestCase):

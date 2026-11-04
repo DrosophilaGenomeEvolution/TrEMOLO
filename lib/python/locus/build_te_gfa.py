@@ -16,6 +16,8 @@ from build_locus_model import InputRun, file_sha256, read_calls, stable_id, writ
 from gfa_summary import summarize, write_summary
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "workflow"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tremolo_version import banner
 from te_candidate_provenance import load_evidence
 from restore_te_names import read_names
 
@@ -352,6 +354,7 @@ def build(reference, te_database, inputs, output, reference_name="reference", lo
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--version", action="version", version=banner())
     parser.add_argument("--reference", required=True, type=Path)
     parser.add_argument("--te-database", required=True, type=Path)
     source = parser.add_mutually_exclusive_group(required=True)
@@ -374,6 +377,7 @@ def main():
     selection.add_argument("--te-names", help="Comma-separated original TE names; retains entire matching loci")
     selection.add_argument("--te-names-file", type=Path, help="File with one original TE name per line")
     args = parser.parse_args()
+    print(banner(), file=sys.stderr)
     inputs = [run_input(value) for value in args.run] if args.run else json.loads(args.inputs.read_text())
     selected_tes = None
     if args.te_names is not None:

@@ -11,6 +11,11 @@ CHOICES = config.get("CHOICE", {}).get("PIPELINE", {})
 WORKDIR = DATA.get("WORK_DIRECTORY", "").strip() or "TrEMOLO_OUTPUT"
 PIPELINE_ROOT = Path(workflow.basedir).resolve().parent
 WORKFLOW_LOG_HELPER = str(PIPELINE_ROOT / "lib/bash/workflow_logging.sh")
+sys.path.insert(0, str(PIPELINE_ROOT / "lib/python"))
+from tremolo_version import version_info, banner
+from snakemake.logging import logger
+RUN_VERSION = version_info()
+logger.info(banner(RUN_VERSION))
 sys.path.insert(0, str(PIPELINE_ROOT / "lib/python/workflow"))
 from window_parameters import resolve_windows
 from chromosome_filter import compile_chromosome_filter
@@ -150,3 +155,10 @@ if CHOICES.get("REPORT"):
 rule all:
     input:
         DEFAULT_TARGETS,
+
+
+onstart:
+    import json
+    version_path = Path(WORKDIR) / "log" / "run-version.json"
+    version_path.parent.mkdir(parents=True, exist_ok=True)
+    version_path.write_text(json.dumps(RUN_VERSION, indent=2) + "\n")

@@ -6,14 +6,18 @@ PIPELINE_ROOT="$(cd "$(dirname "$0")" && pwd)"
 usage() {
     cat <<'EOF'
 Usage:
+  module --version
   module build 1 -i MANIFEST -g REFERENCE_FASTA [-o OUTPUT]
   module build 2 WORK_DIRECTORY [OUTPUT_DIRECTORY] [threshold options]
 
-Both modules now generate self-contained Quarto HTML reports. A persistent
-Node server is no longer required.
+Module 1 generates a self-contained HTML; module 2 needs report-assets/ beside it.
+A persistent Node server is no longer required.
 EOF
 }
 
+if [[ "${1:-}" == "--version" ]]; then
+    exec python3 "$PIPELINE_ROOT/lib/python/tremolo_version.py"
+fi
 if [[ $# -lt 2 ]]; then
     usage >&2
     exit 2
@@ -33,6 +37,8 @@ if [[ "$COMMAND" != "build" ]]; then
     usage >&2
     exit 2
 fi
+
+python3 "$PIPELINE_ROOT/lib/python/tremolo_version.py" >&2
 
 case "$MODULE_NUMBER" in
     1)
