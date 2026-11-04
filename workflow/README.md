@@ -1,6 +1,11 @@
 # Refactored workflow
 
-This directory contains the incremental replacement for the legacy `run.snk`.
+This is the supported workflow for **3.0.0-beta.1**, replacing legacy `run.snk`.
+Startup displays the version, full source commit and modified-checkout state.
+Actual execution writes the latest identity to `WORK_DIRECTORY/log/run-version.json`;
+dry runs only display it. See [release status](../docs/release-notes-functional-candidate.md).
+For first use, start with the [quick start](../README.md#quick-start) or
+[minimal configurations](../examples/config).
 `CHROM_KEEP` searches chromosome identifiers only, consistently across VCF,
 BED and resident-annotation stages; see [chromosome filters](../docs/chromosome-filtering.md).
 Major jobs also emit concise phase/error messages to the console and

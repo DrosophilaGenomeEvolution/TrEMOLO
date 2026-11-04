@@ -5,44 +5,29 @@ sequences and the TE database. It is designed to expose competing TE matches,
 possible composite insertions and possible repeated or nested structures
 without silently converting them into confirmed biological components.
 
-## Real-data example
-
-![TE-family filter set to gtwin, with the adjacent composite gypsy event on X and nested copia event on 3R](img/insertion-structure-real-example.png)
-
-This screenshot shows two adjacent cards from the real-data report
-`ouput_module2/index.html`, with **TE family = `gtwin`** and the default
-**Most informative first** ordering. The filter controls and selected cards
-are grouped into one excerpt for readability.
-
-- **Upper card — `X:23,378,824–23,378,825 · TrEMOLO.INS.37319`:**
-  the reported TE is `gypsy`, while the 19,352 bp query contains provisional
-  `Circe`, `invader1` and `gypsy` components. The report labels it
-  `composite candidate`; five normalized matches summarize 18 raw BLAST HSPs.
-- **Lower card — `3R:13,773,657–13,773,658 · TrEMOLO.INS.28271`:**
-  the reported TE is `copia`, while the 11,320 bp query contains provisional
-  `copia`, `gtwin` and `Doc` components. The report labels it `nested candidate`;
-  three normalized matches summarize 13 raw BLAST HSPs.
-
-The family filter includes queries with a matching family among their evidence,
-including rejected matches. In the upper card, the `gtwin` match is rejected,
-so it is available under **Evidence details** but does not appear among the
-three provisional components. In the lower card, `gtwin` is a component.
-
-The bars show positions within each insertion sequence; split blocks preserve
-separate aligned intervals. The `+` and `−` signs indicate orientation. The
-percentages below each component report TE consensus coverage and alignment
-identity. `Reported call` means the event is present in `TE_INFOS.bed`; it does
-not validate every proposed component. Composite and nested classifications
-remain hypotheses requiring independent confirmation of linkage and
-breakpoints. The screenshot is shared with the repository's main README.
-
 ## Run
+
+From the **parent of the TrEMOLO checkout**, after running the workflow:
+
+```bash
+singularity exec TrEMOLO-3.simg TrEMOLO/module build 2 \
+  work_refactor_test STRUCTURE_REPORT
+```
+
+Open `STRUCTURE_REPORT/report.html` or `index.html`. Share the **whole output
+directory**, including `report-assets/`. Python 3 and Quarto must be available;
+no Node server is needed. `TrEMOLO/module --version` identifies the source checkout.
+
+The native command below runs from the checkout root:
 
 ```bash
 ./module build 2 WORK_DIRECTORY [OUTPUT_DIRECTORY]
 ```
 
-The default output is `WORK_DIRECTORY/MODULE_TE_BLAST`. The module consumes:
+The default output is `WORK_DIRECTORY/MODULE_TE_BLAST`. The current wrapper
+explores the **direct CIGAR insertion channel** (`INS/SV_INS_CLUST`); it does not
+collect every Sniffles/SOFT/HARD channel into this report. Its scope differs from
+the GFA exporter. The module consumes:
 
 - `OUTSIDER/TrEMOLO_SV_TE/INS/SV_INS_CLUST.bln`;
 - `OUTSIDER/TrEMOLO_SV_TE/INS/SV_SIZE.tsv`;
@@ -73,6 +58,37 @@ Scientific thresholds can be passed after the output directory:
 
 All raw HSPs are preserved regardless of thresholds. Thresholds only determine
 the normalized match status and the provisional component proposal.
+
+## Real-data example
+
+![TE-family filter set to gtwin, with the adjacent composite gypsy event on X and nested copia event on 3R](img/insertion-structure-real-example.png)
+
+This screenshot shows two adjacent cards from the real-data report
+`STRUCTURE_REPORT/index.html`, with **TE family = `gtwin`** and the default
+**Most informative first** ordering. The filter controls and selected cards
+are grouped into one excerpt for readability.
+
+- **Upper card — `X:23,378,824–23,378,825 · TrEMOLO.INS.37319`:**
+  the reported TE is `gypsy`, while the 19,352 bp query contains provisional
+  `Circe`, `invader1` and `gypsy` components. The report labels it
+  `composite candidate`; five normalized matches summarize 18 raw BLAST HSPs.
+- **Lower card — `3R:13,773,657–13,773,658 · TrEMOLO.INS.28271`:**
+  the reported TE is `copia`, while the 11,320 bp query contains provisional
+  `copia`, `gtwin` and `Doc` components. The report labels it `nested candidate`;
+  three normalized matches summarize 13 raw BLAST HSPs.
+
+The family filter includes queries with a matching family among their evidence,
+including rejected matches. In the upper card, the `gtwin` match is rejected,
+so it is available under **Evidence details** but does not appear among the
+three provisional components. In the lower card, `gtwin` is a component.
+
+The bars show positions within each insertion sequence; split blocks preserve
+separate aligned intervals. The `+` and `−` signs indicate orientation. The
+percentages below each component report TE consensus coverage and alignment
+identity. `Reported call` means the event is present in `TE_INFOS.bed`; it does
+not validate every proposed component. Composite and nested classifications
+remain hypotheses requiring independent confirmation of linkage and
+breakpoints. The screenshot is shared with the repository's main README.
 
 ## Outputs
 
@@ -139,3 +155,17 @@ this change removes the oversized Quarto input and the unbounded HTML gallery,
 without changing scientific thresholds or discarding evidence.
 The refactored Singularity definition includes Quarto; with an older image,
 run the wrapper from a host installation of Quarto instead.
+
+
+## Troubleshooting
+
+- Required `.bln` or size table missing: run OUTSIDER direct TE detection first;
+  a final BED alone cannot reconstruct the raw insertion alignments.
+- Missing Quarto: use the current image or put `quarto` on PATH. The standalone
+  wrapper does not read `TOOLS.QUARTO` from pipeline YAML.
+- Evidence does not load after sharing: copy `report-assets/` with the HTML and
+  preserve its relative location.
+- A filtered family is absent from displayed components: the family filter also
+  searches rejected evidence; inspect **Evidence details** for its status.
+- Older runs show unknown read origin/flags: the module uses existing sidecars;
+  it does not recover these fields by scanning BAM files.

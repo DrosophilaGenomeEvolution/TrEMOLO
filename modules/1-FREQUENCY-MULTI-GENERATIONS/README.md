@@ -4,6 +4,27 @@ This module compares TE allele frequencies across samples, generations or
 timepoints. Version 2 builds the normalized TrEMOLO locus model first and never
 turns a missing call into frequency zero.
 
+## Quick example with bundled data
+
+From the **parent of the TrEMOLO checkout**, with a current scientific image:
+
+```bash
+singularity exec TrEMOLO-3.simg TrEMOLO/module build 1 \
+  -i TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/samples.tsv \
+  -g TrEMOLO/modules/1-FREQUENCY-MULTI-GENERATIONS/test/ref.fasta \
+  -o POPULATION_REPORT
+```
+
+Open `POPULATION_REPORT/report.html`. The HTML is self-contained and can be
+shared alone. Python 3, Quarto and `sha256sum` must be available in the execution
+environment. `TrEMOLO/module --version` identifies the source checkout.
+
+All input BED files must use the **same reference coordinates**. The reference
+checksum binds the output model to the supplied FASTA; it does not independently
+validate the reference used to create each BED. A locus window defines provisional
+groups, not proof of a shared biological allele. See
+[interpreting results](../../docs/interpreting-results.md).
+
 ## Recommended sample manifest
 
 Use a tab-separated file with one row per sample or replicate:
@@ -28,6 +49,8 @@ The historical list format remains accepted:
 It cannot describe replicates and should only be used for compatibility.
 
 ## Run
+
+The native command below runs from the checkout root.
 
 ```bash
 ./module build 1 \
@@ -84,3 +107,15 @@ The Quarto report is self-contained, uses no R, CDN, pandas or Node server, and
 retains interactive chromosome, TE, trend and observation-count filters.
 The refactored Singularity definition includes Quarto; with an older image,
 run the wrapper from a host installation of Quarto instead.
+
+
+## Troubleshooting
+
+- Missing Quarto: execute the wrapper inside the current image; setting
+  `TOOLS.QUARTO` in pipeline YAML does not configure this standalone wrapper,
+  which calls `quarto` on PATH.
+- Missing input: TSV paths are relative to the manifest, while `-g` and `-o`
+  are relative to the command working directory.
+- Unexpected missing observations: missing calls stay missing; inspect the
+  input tables, reference compatibility and locus window before interpreting
+  trajectories. See [frequency semantics](../../docs/frequency-tables.md).

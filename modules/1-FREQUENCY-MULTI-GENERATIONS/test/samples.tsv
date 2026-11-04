@@ -1,0 +1,7 @@
+sample_id	timepoint	replicate	te_infos
+G11	11	1	work_directory_G11/TE_INFOS.bed
+G17	17	1	work_directory_G17/TE_INFOS.bed
+G31	31	1	work_directory_G31/TE_INFOS.bed
+G73	73	1	work_directory_G73/TE_INFOS.bed
+G88	88	1	work_directory_G88/TE_INFOS.bed
+G100	100	1	work_directory_G100/TE_INFOS.bed

@@ -5,6 +5,9 @@ reported insertion events and their raw insertion/read evidence. It does not
 construct consensus sequences. This first version supports OUTSIDER direct
 and Sniffles insertion channels; other events are recorded as excluded.
 It is an explicit post-processing command, not yet an automatic Snakemake target.
+The CLI prints source version/commit to stderr; `--version` prints identity without
+requiring analysis inputs. See [interpretation](interpreting-results.md) and
+[beta validation status](release-notes-functional-candidate.md).
 
 ```bash
 python3 lib/python/locus/build_te_gfa.py \

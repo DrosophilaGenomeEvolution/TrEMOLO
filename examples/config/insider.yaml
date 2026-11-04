@@ -1,0 +1,21 @@
+# Replace paths before running. All paths are interpreted from the command working directory.
+DATA:
+  GENOME: /absolute/path/assembly.fasta
+  TE_DB: /absolute/path/original_TE_database.fasta
+  WORK_DIRECTORY: /absolute/path/new_insider_output
+  REFERENCE: /absolute/path/reference.fasta
+
+CHOICE:
+  PIPELINE:
+    INSIDER_VARIANT: true
+    OUTSIDER_VARIANT: false
+    TE_GENOME: false
+    UNMAPPED_TE: false
+    REPORT: true
+
+TOOLS:
+  QUARTO: /opt/quarto/bin/quarto
+  LIFTOFF: /opt/conda/envs/liftoff_env/bin/liftoff
+
+PARAMS:
+  THREADS: 8
