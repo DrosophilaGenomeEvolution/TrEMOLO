@@ -66,3 +66,50 @@ change ni les comptes, ni les fréquences, ni les identifiants calculés.
 `SV_SIZE.tsv`, situé dans le même répertoire, est un intermédiaire de tailles
 à deux colonnes (`qseqid`, taille en bases), sans en-tête ; ce n'est pas une
 table de fréquence.
+
+
+## Vue fréquence × profondeur dans le rapport
+
+Le rapport principal ajoute un nuage de points **Frequency versus local depth** :
+la profondeur en abscisse et la fréquence affichée en ordonnée. Les filtres du
+rapport s'appliquent au graphique. L'axe de profondeur peut être linéaire ou
+logarithmique. Deux repères ajustables (initialement 10 reads et 50 %) comptent
+les appels dans les quatre combinaisons fréquence/profondeur élevée ou faible.
+Ces repères sont des aides exploratoires, pas des seuils de confiance validés.
+
+Chaque point donne au survol le TE, l'événement, les coordonnées, le support du
+TE, le dénominateur et la méthode. La table des appels et son export TSV
+conservent aussi ces informations. Le graphique fréquence/position existant
+inclut désormais la profondeur dans ses infobulles.
+
+- **OUTSIDER** : le rapport sélectionne la même ligne PRECISE, ou la même ligne
+  brute de repli, que `TE_INFOS.bed`. Il utilise `total_reads` pour une fréquence
+  avec clipping et `total_reads_without_clipped` pour une fréquence sans clipping.
+  Le support est celui de la présence du TE ; pour une DEL, il ne s'agit donc
+  pas du nombre de reads soutenant la délétion. Ces comptes peuvent être ajustés
+  par les règles historiques et ne sont pas une profondeur BAM brute.
+- **INSIDER** : `total_depth` de `DEPTH_TE_INSIDER.csv` est la moyenne entière des
+  profondeurs échantillonnées aux deux flancs. Le support est `read_support`.
+  La correspondance utilise les noms de TE restaurés et les identifiants des
+  événements, sans utiliser les positions affinées par TSD pour la jointure.
+
+Une fréquence sans profondeur correspondante reste disponible dans les autres
+vues. Elle n'est pas placée artificiellement à profondeur zéro. Les estimations
+à profondeur nulle, les comptes invalides, les fréquences hors de [0, 100] et
+les données dont la fréquence ou le chromosome ne correspondent pas sont exclus
+du nuage et explicités dans `frequency_depth_status`. Aucun dénominateur n'est
+reconstruit à partir de la fréquence. Les fréquences et fichiers scientifiques
+ne sont pas modifiés par cette vue.
+
+Cette profondeur décrit le support local de l'estimation. Elle ne mesure pas
+un enrichissement relatif à une profondeur génomique de référence. Les méthodes
+INSIDER et OUTSIDER diffèrent ; utiliser le filtre Source pour les examiner
+séparément. Le champ `Coverage` déjà présent dans la table décrit l'alignement
+au consensus TE et ne doit pas être confondu avec la profondeur de reads.
+
+Pour régénérer cette vue sur une analyse existante, lancer la cible `report`
+avec le même fichier de configuration et le workflow mis à jour. Les tables de
+fréquence sont des dépendances déclarées du rapport ; aucun nouveau comptage BAM
+n'est nécessaire si elles existent déjà. En appel direct au générateur Python,
+fournir `--outsider-frequency`, `--outsider-frequency-precise`,
+`--insider-frequency` et `--te-headers` pour les branches disponibles.

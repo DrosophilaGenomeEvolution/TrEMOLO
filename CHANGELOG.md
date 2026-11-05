@@ -10,6 +10,8 @@ Proposed beta; no publication date or release tag assigned.
 - Add resident TE and unmapped-read catalogues, explicit candidate provenance,
   configurable windows and Sniffles 2 support.
 - Replace module report interfaces and add reference-backed insertion GFA export.
+- Add an interactive frequency-versus-depth report view with matched support
+  counts, linear/log scales and adjustable guides; preserve original frequencies.
 - Identify the version, source commit and modified-checkout state at startup.
 - Reorganize user documentation, minimal configurations and interpretation guides.
 

@@ -13,6 +13,13 @@ at observed timepoints. Every input must use the same reference coordinate
 system; supplying one reference FASTA assigns a checksum but does not prove
 that all input BED files actually use that reference.
 
+Use the report's **Frequency versus local depth** plot to distinguish a high
+frequency based on few reads from one supported by a larger denominator. The
+adjustable guides do not establish statistical confidence. OUTSIDER uses an
+adjusted read denominator; INSIDER uses mean flanking depth. These are local
+support measures, not genome-wide enrichment. Missing and zero-depth estimates
+are explicitly omitted from that plot.
+
 Read-derived frequency estimates depend on the detection channel and support
 rules. See [frequency columns and INS/DEL semantics](frequency-tables.md).
 Candidate evidence fractions are shares of retained evidence, not biological

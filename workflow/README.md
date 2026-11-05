@@ -249,7 +249,12 @@ snakemake --snakefile TrEMOLO/workflow/Snakefile \
 It produces `REPORT/report-data.json`, the generated `REPORT/report.qmd`, and a
 single self-contained `REPORT/report.html`. The report has interactive source,
 type, chromosome, family, TSD and frequency filters; genome and family views;
-the complete call table; and an explicitly provisional nearby-call view. It
+the complete call table; and an explicitly provisional nearby-call view.
+A frequency-versus-local-depth scatter plot distinguishes high-frequency calls
+with little read support from estimates with larger denominators. It includes
+linear/log depth scales, adjustable depth/frequency guides and source-aware
+counts in tooltips and TSV exports. Depth sidecars are declared dependencies;
+see [depth definitions and exclusions](../docs/frequency-tables.md). It
 also exposes ambiguous variable-call candidates, the resident-copy tiers, a
 browser-only threshold calibration view, and all alternative TE assignments
 when `TE_GENOME` is enabled. A separate execution-time view displays measured job durations from declared
