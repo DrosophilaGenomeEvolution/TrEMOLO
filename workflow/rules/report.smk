@@ -103,6 +103,12 @@ rule prepare_quarto_report:
                              if TE_INFOS_WITH_OUTSIDER else []),
         provenance_helper=str(PIPELINE_ROOT / "lib/python/workflow/te_candidate_provenance.py"),
         alignment_helper=str(PIPELINE_ROOT / "lib/python/workflow/genomic_alignment.py"),
+        frequency_depth_helper=str(PIPELINE_ROOT / "lib/python/workflow/report_frequency_depth.py"),
+        frequency_selection_helper=str(PIPELINE_ROOT / "lib/python/workflow/build_te_infos.py"),
+        te_headers=f"{WORKDIR}/INPUT/te_headers.tsv",
+        outsider_frequency=report_optional_input(OUTSIDER_FREQUENCY, TE_INFOS_WITH_OUTSIDER),
+        outsider_frequency_precise=report_optional_input(OUTSIDER_FREQUENCY_PRECISE, TE_INFOS_WITH_OUTSIDER),
+        insider_frequency=report_optional_input(INSIDER_FREQUENCY, TE_INFOS_WITH_INSIDER_FREQUENCY),
         genome_index=PREPARED_GENOME_INDEX,
         manifest=REPORT_INPUT_MANIFEST,
         mapping_stats=report_optional_input(MAPPING_STATS, TE_INFOS_WITH_OUTSIDER),
@@ -140,6 +146,10 @@ rule prepare_quarto_report:
             --te-call-candidates {input.te_call_candidates:q} \
             --te-candidate-evidence {input.te_candidate_evidence:q} \
             --sequence-provenance {input.sequence_provenance:q} \
+            --outsider-frequency {input.outsider_frequency:q} \
+            --outsider-frequency-precise {input.outsider_frequency_precise:q} \
+            --insider-frequency {input.insider_frequency:q} \
+            --te-headers {input.te_headers:q} \
             --genome-index {input.genome_index:q} \
             --input-manifest {input.manifest:q} \
             --mapping-stats {input.mapping_stats:q} \

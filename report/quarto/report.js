@@ -125,6 +125,9 @@
     ["source", "type", "chrom", "family", "tsd", "frequency"].forEach((key) => {
       $(`trm-filter-${key}`).addEventListener("change", applyFilters);
     });
+    ["trm-depth-scale", "trm-depth-guide", "trm-depth-frequency-guide"].forEach((id) => {
+      $(id).addEventListener("input", renderFrequencyDepthChart);
+    });
     $("trm-filter-search").addEventListener("input", applyFilters);
     $("trm-reset-filters").addEventListener("click", resetFilters);
     $("trm-download-calls").addEventListener("click", downloadCalls);
@@ -449,7 +452,81 @@
         `${call.event_type} · ${call.source} · strand ${call.strand}`,
         `${call.chrom}:${formatInteger.format(call.start)}`,
         `frequency ${valueOrDash(call.display_frequency, "%")}`,
+        depthDetails(call),
       ].join("\n");
+      point.appendChild(title);
+      svg.appendChild(point);
+    });
+    target.replaceChildren(svg);
+  }
+
+  function depthDetails(call) {
+    if (call.frequency_depth === null || call.frequency_depth === undefined) {
+      return `depth unavailable (${call.frequency_depth_status || "unavailable"})`;
+    }
+    return `depth ${valueOrDash(call.frequency_depth)} reads; TE-present support ${valueOrDash(call.frequency_support_reads)}; ${call.frequency_depth_method}; ${call.frequency_depth_table}; ${call.frequency_depth_status}`;
+  }
+
+  function renderFrequencyDepthChart() {
+    const target = $("trm-frequency-depth-chart");
+    const eligible = state.filtered.filter((call) => call.frequency_depth_status === "matched"
+      && Number.isFinite(call.frequency_depth) && call.frequency_depth > 0
+      && Number.isFinite(call.display_frequency) && call.display_frequency >= 0 && call.display_frequency <= 100);
+    const withFrequency = state.filtered.filter((call) => Number.isFinite(call.display_frequency));
+    const omitted = withFrequency.length - eligible.length;
+    const numberOrDefault = (id, fallback) => {
+      const raw = $(id).value;
+      return raw !== "" && Number.isFinite(Number(raw)) ? Number(raw) : fallback;
+    };
+    const depthGuide = Math.max(1, numberOrDefault("trm-depth-guide", 10));
+    const frequencyGuide = Math.min(100, Math.max(0, numberOrDefault("trm-depth-frequency-guide", 50)));
+    const quadrants = [0, 0, 0, 0];
+    eligible.forEach((call) => {
+      const highFrequency = call.display_frequency >= frequencyGuide;
+      const highDepth = call.frequency_depth >= depthGuide;
+      quadrants[(highFrequency ? 0 : 2) + (highDepth ? 0 : 1)] += 1;
+    });
+    $("trm-depth-summary").textContent = `${eligible.length} plotted · ${omitted} frequency estimates omitted (missing/zero/invalid depth or inconsistent evidence) · ${state.filtered.length - withFrequency.length} without frequency. Guides: frequency ≥ ${frequencyGuide}%, depth ≥ ${depthGuide} reads. High frequency / high depth: ${quadrants[0]}; high frequency / low depth: ${quadrants[1]}; low frequency / high depth: ${quadrants[2]}; low frequency / low depth: ${quadrants[3]}.`;
+    if (!eligible.length) return emptyChart(target, "No positive, matching depth for the frequency estimates in this selection");
+    const width = 1100, height = 420;
+    const margin = { top: 22, right: 25, bottom: 54, left: 72 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const logarithmic = $("trm-depth-scale").value === "log";
+    let observedMaximum = depthGuide;
+    eligible.forEach((call) => { observedMaximum = Math.max(observedMaximum, call.frequency_depth); });
+    const minimum = logarithmic ? 1 : 0;
+    const maximum = Math.max(2, observedMaximum * 1.05);
+    const transform = logarithmic ? Math.log10 : (value) => value;
+    const x = (value) => margin.left + plotWidth * (transform(value) - transform(minimum)) / (transform(maximum) - transform(minimum));
+    const y = (value) => margin.top + plotHeight * (1 - value / 100);
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "TE frequency versus local depth" });
+    [0, 25, 50, 75, 100].forEach((value) => {
+      svg.appendChild(svgElement("line", { x1: margin.left, x2: width - margin.right, y1: y(value), y2: y(value), class: "trm-scatter-grid" }));
+      const label = svgElement("text", { x: margin.left - 12, y: y(value) + 4, class: "trm-scatter-axis-label", "text-anchor": "end" });
+      label.textContent = `${value}%`;
+      svg.appendChild(label);
+    });
+    for (let i = 0; i <= 5; i += 1) {
+      const value = logarithmic ? 10 ** (Math.log10(maximum) * i / 5) : maximum * i / 5;
+      const tick = x(value);
+      svg.appendChild(svgElement("line", { x1: tick, x2: tick, y1: margin.top, y2: height - margin.bottom, class: "trm-scatter-grid trm-scatter-grid-vertical" }));
+      const label = svgElement("text", { x: tick, y: height - margin.bottom + 22, class: "trm-scatter-axis-label", "text-anchor": "middle" });
+      label.textContent = formatDecimal.format(value);
+      svg.appendChild(label);
+    }
+    svg.appendChild(svgElement("line", { x1: x(depthGuide), x2: x(depthGuide), y1: margin.top, y2: height - margin.bottom, class: "trm-depth-guide" }));
+    svg.appendChild(svgElement("line", { x1: margin.left, x2: width - margin.right, y1: y(frequencyGuide), y2: y(frequencyGuide), class: "trm-depth-guide" }));
+    const xTitle = svgElement("text", { x: margin.left + plotWidth / 2, y: height - 8, class: "trm-scatter-axis-title", "text-anchor": "middle" });
+    xTitle.textContent = `Frequency depth (reads; ${logarithmic ? "logarithmic" : "linear"} scale)`;
+    const yTitle = svgElement("text", { x: 17, y: margin.top + plotHeight / 2, class: "trm-scatter-axis-title", "text-anchor": "middle", transform: `rotate(-90 17 ${margin.top + plotHeight / 2})` });
+    yTitle.textContent = "TE frequency (%)";
+    svg.append(xTitle, yTitle);
+    eligible.forEach((call) => {
+      const point = svgElement("circle", { cx: x(call.frequency_depth), cy: y(call.display_frequency), r: 5,
+        fill: call.source === "INSIDER" ? "#6f5bd3" : "#087f78", class: "trm-frequency-depth-point trm-frequency-position-point", tabindex: "0" });
+      const title = svgElement("title");
+      title.textContent = `${call.family} · ${call.event_id}\n${call.source} · ${call.event_type} · ${call.chrom}:${call.start}\nfrequency ${valueOrDash(call.display_frequency, "%")}\n${depthDetails(call)}`;
       point.appendChild(title);
       svg.appendChild(point);
     });
@@ -569,6 +646,7 @@
       appendTextCell(row, valueOrDash(call.display_frequency, "%"));
       appendTextCell(row, valueOrDash(call.sv_size));
       appendTextCell(row, genomicAlignmentSummary(call));
+      appendTextCell(row, valueOrDash(call.frequency_depth)).title = depthDetails(call);
       body.appendChild(row);
     });
     $("trm-page-status").textContent = state.filtered.length ? `Page ${state.page + 1} / ${pages}` : "No result";
@@ -588,7 +666,7 @@
   }
 
   function downloadCalls() {
-    const columns = ["source", "chrom", "start", "end", "anchor", "family", "event_id", "event_type", "strand", "tsd", "identity", "coverage", "te_size", "display_frequency", "sv_size", "tremolo_id", "source_genomic_alignments"];
+    const columns = ["source", "chrom", "start", "end", "anchor", "family", "event_id", "event_type", "strand", "tsd", "identity", "coverage", "te_size", "display_frequency", "sv_size", "tremolo_id", "source_genomic_alignments", "frequency_depth", "frequency_support_reads", "frequency_depth_method", "frequency_depth_table", "frequency_depth_status"];
     const lines = [columns.join("\t")];
     state.filtered.forEach((call) => {
       lines.push(columns.map((column) => column === "source_genomic_alignments" ? genomicAlignmentSummary(call) : call[column] === null || call[column] === undefined ? "." : String(call[column]).replace(/[\t\r\n]/g, " ")).join("\t"));
@@ -1116,6 +1194,7 @@
     renderFrequencyChart();
     renderGenomeChart();
     renderFrequencyPositionChart();
+    renderFrequencyDepthChart();
     renderEvidence();
     renderTable();
   }

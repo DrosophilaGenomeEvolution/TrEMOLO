@@ -15,9 +15,10 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Iterable, Optional
 from te_candidate_provenance import read_provenance, EVIDENCE_COLUMNS
+from report_frequency_depth import attach_frequency_depth
 
 
-REPORT_SCHEMA_VERSION = "1.7.0"
+REPORT_SCHEMA_VERSION = "1.8.0"
 TE_INFO_COLUMNS = (
     "chrom",
     "start",
@@ -654,8 +655,14 @@ def build_report_data(
     integration_audit_path: Optional[Path] = None,
     candidate_evidence_path: Optional[Path] = None,
     sequence_provenance_paths: Optional[list[Path]] = None,
+    outsider_frequency_path: Optional[Path] = None,
+    outsider_frequency_precise_path: Optional[Path] = None,
+    insider_frequency_path: Optional[Path] = None,
+    te_headers_path: Optional[Path] = None,
 ) -> dict:
     calls = read_te_infos(te_infos)
+    attach_frequency_depth(calls, outsider_frequency_path, outsider_frequency_precise_path,
+                           insider_frequency_path, te_headers_path)
     # Read the small TSV sidecars, never BAMs. Counts describe extracted queries,
     # not unique reads, independent alignments or support for a particular TE hit.
     outsider_events = {call["event_id"] for call in calls if call["source"] == "OUTSIDER"}
@@ -793,6 +800,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mapping-stats", default="")
     parser.add_argument("--sv-vcf", default="")
     parser.add_argument("--integration-audit", default="")
+    parser.add_argument("--outsider-frequency", default="")
+    parser.add_argument("--outsider-frequency-precise", default="")
+    parser.add_argument("--insider-frequency", default="")
+    parser.add_argument("--te-headers", default="")
     parser.add_argument("--template", type=Path, required=True)
     parser.add_argument("--style", type=Path, required=True)
     parser.add_argument("--script", type=Path, required=True)
@@ -851,6 +862,10 @@ def main() -> None:
         sequence_provenance_paths=args.sequence_provenance,
         benchmark_paths=args.benchmarks,
         integration_audit_path=optional_path(args.integration_audit),
+        outsider_frequency_path=optional_path(args.outsider_frequency),
+        outsider_frequency_precise_path=optional_path(args.outsider_frequency_precise),
+        insider_frequency_path=optional_path(args.insider_frequency),
+        te_headers_path=optional_path(args.te_headers),
     )
     json_text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     source = render_source(

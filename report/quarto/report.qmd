@@ -95,6 +95,29 @@ lang: en
 </section>
 ```
 
+```{=html}
+<section class="trm-panel">
+  <div class="trm-panel-heading">
+    <div><p class="trm-kicker">Read support</p><h3>Frequency versus local depth</h3></div>
+  </div>
+  <div class="trm-depth-controls">
+    <label class="trm-chart-control">Depth axis
+      <select id="trm-depth-scale"><option value="linear">Linear</option><option value="log">Logarithmic</option></select>
+    </label>
+    <label class="trm-chart-control">Depth guide (reads)
+      <input id="trm-depth-guide" type="number" min="1" step="1" value="10">
+    </label>
+    <label class="trm-chart-control">Frequency guide (%)
+      <input id="trm-depth-frequency-guide" type="number" min="0" max="100" step="1" value="50">
+    </label>
+  </div>
+  <p class="trm-caption trm-caption-left">x: depth used by the frequency estimate · y: displayed TE frequency (%) · teal: OUTSIDER · purple: INSIDER. All call filters apply. Hover or focus a point for counts, source and position.</p>
+  <p id="trm-depth-summary" class="trm-caption trm-caption-left" aria-live="polite"></p>
+  <div id="trm-frequency-depth-chart" class="trm-chart trm-frequency-position-chart"></div>
+  <p class="trm-caption trm-caption-left">OUTSIDER: adjusted read denominator from the same raw/precise table selected for the reported frequency. INSIDER: integer mean of sampled flanking depths. These are different estimators, not raw genome-wide coverage or fold enrichment. Guides are adjustable visual aids, not confidence thresholds. Missing, zero-depth, inconsistent and out-of-range estimates are omitted from this plot and retained in the call export.</p>
+</section>
+```
+
 # Explore calls
 
 The filters below update the call charts and the call table. Downloading exports the current selection as a TSV file without modifying the pipeline outputs.
@@ -136,7 +159,7 @@ ranks, are not inferred from MAPQ, and do not change TE selection or frequencies
     <thead><tr>
       <th>Source</th><th>Chromosome</th><th>Position</th><th>TE family</th>
       <th>Event ID</th><th>Type</th><th>Strand</th><th>TSD</th>
-      <th>Identity</th><th>Coverage</th><th>TE size</th><th>Frequency</th><th>SV size</th><th>Source genomic alignments (queries)</th>
+      <th>Identity</th><th>Coverage</th><th>TE size</th><th>Frequency</th><th>SV size</th><th>Source genomic alignments (queries)</th><th>Frequency depth (reads)</th>
     </tr></thead>
     <tbody id="trm-call-table-body"></tbody>
   </table>
