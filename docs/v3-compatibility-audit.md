@@ -115,3 +115,21 @@ Paths containing whitespace are not reliably supported: some existing shell
 fragments interpolate paths without quoting (including optional input arguments
 in `common.smk`). The getting-started documentation now specifies paths without
 spaces. Fixing this throughout all scientific rules remains separate work.
+
+
+## Gzip FASTQ follow-up — 2026-11-10
+
+After the snapshot above, input preparation was updated to decompress gzip
+reads automatically when OUTSIDER clipped-read analysis requires `samtools fqidx`.
+Other inputs remain linked. Detection uses the gzip signature, preparation is
+streamed and published atomically, and the original input hash is preserved in
+the manifest alongside `sample_preparation`.
+
+Validation of this subsequent working checkout: **248 container tests pass**.
+A new full gzip run with clipped reads and UNMAPPED_TE enabled completes all
+74 steps. Alignment provenance, integration, report semantics and JavaScript
+interactions pass; `TE_INFOS.bed` is byte-identical to the uncompressed Sniffles 1
+fixture result (529 calls). The post-run dry run reports `Nothing to be done`.
+Outputs/configuration/logs are in `/tmp/tremolo-gzip-audit/` (`fixed-clipped`).
+The earlier machine-readable snapshot is retained as historical evidence and
+its source fingerprints predate this gzip change.

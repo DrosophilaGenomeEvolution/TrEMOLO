@@ -4,6 +4,7 @@ rule prepare_inputs:
         te_database=TE_DATABASE,
         reference=REFERENCE if REFERENCE else [],
         sample=SAMPLE if SAMPLE else [],
+        script=str(PREPARE_INPUTS_SCRIPT),
     output:
         done=f"{WORKDIR}/.inputs.prepared",
         manifest=f"{WORKDIR}/input_manifest.json",
@@ -14,7 +15,8 @@ rule prepare_inputs:
         te_headers=f"{WORKDIR}/INPUT/te_headers.tsv",
     params:
         output=WORKDIR,
-        script=str(PREPARE_INPUTS_SCRIPT),
+        decompress_sample=("--decompress-sample" if CHOICES.get("OUTSIDER_VARIANT")
+                           and OUTSIDER_CHOICES.get("CLIPPED_READS", False) else ""),
         reference=(f"--reference {REFERENCE}" if REFERENCE else ""),
         sample=(f"--sample {SAMPLE}" if SAMPLE else ""),
     log:
@@ -26,11 +28,12 @@ rule prepare_inputs:
         source {WORKFLOW_LOG_HELPER:q}
         trm_begin prepare_inputs "Preparing inputs and recording checksums" {WORKDIR:q} {log:q}
         mkdir -p {WORKDIR}/log
-        python3 {params.script:q} \
+        python3 {input.script:q} \
             --genome {input.genome:q} \
             --te-database {input.te_database:q} \
             {params.reference} \
             {params.sample} \
+            {params.decompress_sample} \
             --output {params.output:q} > {log:q} 2>&1
         """
 

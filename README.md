@@ -61,39 +61,40 @@ threads for individual jobs.
 
 ## Run with your own data
 
-For a first OUTSIDER analysis (reads mapped to an assembly), save the following
-as `my-analysis.yaml`. Replace the four absolute paths. Use paths without spaces
+### First OUTSIDER analysis (reads mapped to an assembly)
+
+Save the following configuration as `my-analysis.yaml`. Replace the four absolute paths. Use paths without spaces
 (some workflow shell commands still require this). `GENOME` is the assembly
 used for read mapping; it can be a reference assembly or your sample assembly.
 The preset below is for Oxford Nanopore reads.
 
 ```yaml
 DATA:
-  GENOME: /absolute/path/assembly.fasta
-  SAMPLE: /absolute/path/reads.fastq.gz
-  TE_DB: /absolute/path/original_TE_database.fasta
-  WORK_DIRECTORY: /absolute/path/new_outsider_output
+  GENOME: /absolute/path/assembly.fasta # Assembly used as the read-mapping target (FASTA)
+  SAMPLE: /absolute/path/reads.fastq.gz # Sample long reads (FASTQ or gzipped FASTQ)
+  TE_DB: /absolute/path/original_TE_database.fasta # TE sequence database (multi-FASTA)
+  WORK_DIRECTORY: /absolute/path/new_outsider_output # New directory for all analysis outputs
 
 CHOICE:
   PIPELINE:
-    OUTSIDER_VARIANT: true
-    INSIDER_VARIANT: false
-    TE_GENOME: false
-    UNMAPPED_TE: false
-    REPORT: true
+    OUTSIDER_VARIANT: true # Detect TE-associated variation using read mappings
+    INSIDER_VARIANT: false # Assembly comparison disabled; enabling it requires DATA.REFERENCE
+    TE_GENOME: false # Optional catalogue of resident TEs in the assembly
+    UNMAPPED_TE: true # Search unmapped reads for TE matches; requires DATA.SAMPLE
+    REPORT: true # Generate the interactive HTML report and offline help
   OUTSIDER_VARIANT:
-    CALL_SV: sniffles1
-    CLIPPED_READS: false
-    INTEGRATE_TE_TO_GENOME: false
+    CALL_SV: sniffles1 # Structural-variant caller: sniffles1 or sniffles2
+    CLIPPED_READS: false # Set true to include soft/hard-clipped read evidence
+    INTEGRATE_TE_TO_GENOME: false # Optional reconstruction with detected insertions
 
 PARAMS:
-  THREADS: 8
+  THREADS: 8 # Threads requested per job; total allocation is limited by --cores
   OUTSIDER_VARIANT:
     MINIMAP2:
-      PRESET_OPTION: map-ont
+      PRESET_OPTION: map-ont # Minimap2 preset for Oxford Nanopore reads
 
 TOOLS:
-  QUARTO: /opt/quarto/bin/quarto
+  QUARTO: /opt/quarto/bin/quarto # Report renderer inside the current container
 ```
 
 From the directory containing `TrEMOLO/`, the image and `my-analysis.yaml`,
@@ -123,6 +124,12 @@ Merge settings into the existing YAML sections; do not repeat a top-level key
 such as `DATA`, `CHOICE` or `PARAMS`. Use YAML booleans `true`/`false` without
 quotes, and spaces for indentation. INSIDER-only runs have no read-based
 empty-site frequency estimate; that estimate requires OUTSIDER mapping evidence.
+
+Gzipped FASTQ inputs are accepted directly. With `CLIPPED_READS: true`, input
+preparation automatically decompresses gzip reads into `WORK_DIRECTORY/INPUT/reads.fastq`
+for indexing; allow disk space for the uncompressed file. The original input is
+preserved. Without clipped-read analysis, reads remain linked to the input.
+
 For other sequencing technologies, choose the matching Minimap2 preset before
 running. See the [configuration reference](docs/configuration.md) for thresholds,
 integration, genomic windows and executable overrides.

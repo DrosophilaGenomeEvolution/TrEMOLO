@@ -4,6 +4,10 @@
 
 Proposed beta; no publication date or release tag assigned.
 
+- Automatically decompress gzip FASTQ inputs during preparation when OUTSIDER
+  clipped-read analysis requires random-access indexing; preserve source files
+  and record the preparation method in the input manifest.
+
 - Remove the 2.x generated workflow (`run.snk`, `rules.snk`, `template.snk`)
   and its private `env.sh`; retain shared scientific helpers and historical oracles.
 - Retire SVIM and caller-disabled OUTSIDER modes; document the compatibility audit.

@@ -5,9 +5,12 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import hashlib
 import json
 import os
+import shutil
+import tempfile
 from pathlib import Path
 
 
@@ -50,12 +53,37 @@ def relative_symlink(source: Path, destination: Path) -> None:
     destination.symlink_to(os.path.relpath(source.resolve(), destination.parent.resolve()))
 
 
+def prepare_sample(source: Path, destination: Path, decompress: bool) -> dict:
+    # Detect the stream rather than trusting a filename or a symlink suffix.
+    with source.open("rb") as handle:
+        compressed = handle.read(2) == b"\x1f\x8b"
+    method = "symlink"
+    if compressed and decompress:
+        # Never write through an existing symlink into the user's input. Publish
+        # only after the whole gzip stream (including its CRC) has been read.
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=destination.parent, prefix=".reads-", delete=False) as output:
+                temporary = Path(output.name)
+                with gzip.open(source, "rb") as reads:
+                    shutil.copyfileobj(reads, output, length=1024 * 1024)
+            os.replace(temporary, destination)
+        finally:
+            if temporary is not None and temporary.exists():
+                temporary.unlink()
+        method = "decompressed"
+    else:
+        relative_symlink(source, destination)
+    return {"source_compression": "gzip" if compressed else "none", "method": method}
+
+
 def prepare(
     genome: Path,
     te_database: Path,
     output: Path,
     reference: Path | None = None,
     sample: Path | None = None,
+    decompress_sample: bool = False,
 ) -> dict:
     inputs = {"genome": genome, "te_database": te_database}
     if reference is not None:
@@ -72,8 +100,9 @@ def prepare(
     relative_symlink(genome, input_directory / "genome.fasta")
     if reference is not None:
         relative_symlink(reference, input_directory / "reference.fasta")
+    sample_preparation = None
     if sample is not None:
-        relative_symlink(sample, input_directory / "reads.fastq")
+        sample_preparation = prepare_sample(sample, input_directory / "reads.fastq", decompress_sample)
 
     records = list(fasta_records(te_database))
     if not records:
@@ -96,6 +125,7 @@ def prepare(
 
     manifest = {
         "format_version": 1,
+        "sample_preparation": sample_preparation,
         "pseudonyms_used": needs_pseudonyms,
         "te_records": len(records),
         "inputs": {
@@ -121,9 +151,12 @@ def main() -> int:
     parser.add_argument("--te-database", required=True, type=Path)
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--sample", type=Path)
+    parser.add_argument("--decompress-sample", action="store_true",
+                        help="Decompress gzip reads for random-access FASTQ indexing")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    manifest = prepare(args.genome, args.te_database, args.output, args.reference, args.sample)
+    manifest = prepare(args.genome, args.te_database, args.output, args.reference, args.sample,
+                       decompress_sample=args.decompress_sample)
     print(
         f"Prepared {manifest['te_records']} TE records "
         f"(pseudonyms={manifest['pseudonyms_used']})"

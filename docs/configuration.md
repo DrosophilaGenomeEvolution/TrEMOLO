@@ -5,6 +5,15 @@ Paths in YAML are resolved from the execution working directory, not the YAML di
 Use a new output directory when changing pipeline versions or scientific settings.
 Use paths without spaces: some shell fragments still interpolate paths without quoting.
 
+`DATA.SAMPLE` accepts FASTQ and gzip-compressed FASTQ. If OUTSIDER and
+`CHOICE.OUTSIDER_VARIANT.CLIPPED_READS` are enabled, gzip reads are automatically
+decompressed into `WORK_DIRECTORY/INPUT/reads.fastq` before indexing. Compression
+is detected from the content, regardless of the filename. The original file is
+preserved; reserve space for an uncompressed copy in the output directory.
+Otherwise preparation uses a link without copying/decompressing the reads.
+`input_manifest.json` records the original input checksum and the preparation
+method under `sample_preparation`.
+
 For a complete copy-and-edit example and launch command, start with
 [Run with your own data](../README.md#run-with-your-own-data). The longer YAML
 below illustrates optional settings; it is not the minimum needed to run.
@@ -29,7 +38,9 @@ are not searched. See [chromosome filtering](chromosome-filtering.md) for
 parameter scopes, regex syntax and compatibility with older comma-separated lists.
 
 The migrated workflow can also catalogue TE matches in reads with no genomic
-alignment using `CHOICE.PIPELINE.UNMAPPED_TE: true` (disabled by default).
+alignment using `CHOICE.PIPELINE.UNMAPPED_TE: true`. The documented OUTSIDER
+and combined examples enable it. It requires `DATA.SAMPLE`; keep it false for
+assembly-only runs. When omitted, the workflow itself still defaults to false.
 Results are written under `UNMAPPED_TE/`, with original TE labels and coordinates
 within each read. See [configuration and column descriptions](unmapped-te.md).
 
@@ -65,6 +76,7 @@ CHOICE:
         OUTSIDER_VARIANT: True  # outsiders, TE not in the assembly - population variation
         INSIDER_VARIANT: True   # insiders, TE in the assembly
         TE_GENOME: False        # resident TE annotation across complete assemblies
+        UNMAPPED_TE: True       # Search unmapped reads for TE matches; requires DATA.SAMPLE
         REPORT: True            # for getting a report.html file with graphics
     OUTSIDER_VARIANT:
         CALL_SV: "sniffles1"    # sniffles1, sniffles2; sniffles is the legacy alias
