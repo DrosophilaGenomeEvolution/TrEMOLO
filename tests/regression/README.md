@@ -38,12 +38,12 @@ INSIDER/OUTSIDER call counts, chromosomes, TE families, event types, TSD count,
 output presence, and line counts. Use `--strict` to additionally require an
 exact `TE_INFOS.bed` SHA-256 checksum.
 
-During workflow migration, compare the refactored scientific intermediates to
+During workflow migration, compare the v3 scientific intermediates to
 the same oracle with:
 
 ```bash
 python3 tests/regression/check_variant_calling.py \
-  ../work_test ../work_refactor_test
+  ../work_test ../work_v3_test
 ```
 
 This comparison requires exact hashes for stable variant-calling and TE
@@ -75,7 +75,7 @@ contract.
 The Quarto report is checked as a lossless presentation of that final table:
 
 ```bash
-python3 tests/regression/check_quarto_report.py ../work_refactor_test
+python3 tests/regression/check_quarto_report.py ../work_v3_test
 ```
 
 This verifies every summary against `TE_INFOS.bed`, the embedded input checksum,
@@ -83,12 +83,12 @@ the interactive call and nearby-candidate views, and the absence of external
 script or stylesheet dependencies. The HTML is intentionally not compared byte
 for byte with the old R Markdown report because the interface has been replaced.
 
-The optional module refactor is validated after generating both standalone
-reports from the bundled population fixture and `work_refactor_test`:
+The optional module interfaces is validated after generating both standalone
+reports from the bundled population fixture and `work_v3_test`:
 
 ```bash
 python3 tests/regression/check_modules.py \
-  /tmp/tremolo-population-refactor \
+  /tmp/tremolo-population-v3 \
   /tmp/tremolo-structure-cli
 ```
 
@@ -104,12 +104,12 @@ that compatibility result are documented in
 
 Both pipelines completed in this reference run: 377 calls are labelled INSIDER
 and 57 are labelled OUTSIDER. The historical R Markdown report attempts an
-external `curl`; the refactored Quarto report does not perform network access.
+external `curl`; the v3 Quarto report does not perform network access.
 
 ## Clean end-to-end validation
 
 Run from the parent directory of the checkout. Copy
-`TrEMOLO/tests/workflow/refactor_config.yml` to a separate YAML file and change
+`TrEMOLO/tests/workflow/v3_config.yml` to a separate YAML file and change
 `DATA.WORK_DIRECTORY` to a new, empty output path. Keep the bundled input paths.
 The fixture enables INSIDER, OUTSIDER, resident annotation, genome integration,
 Liftoff, and the Quarto report.
@@ -166,3 +166,20 @@ candidate selection no longer preserves historical row drops or singleton
 suppression. Historical TSD byte oracles describe the earlier compatibility
 stage; see [decision 0021](../../docs/decisions/0021-tsd-selection-and-frequency-headers.md)
 for current validation and intentional differences.
+
+
+## Report exploration and offline help
+
+After regenerating a report, also check the actual JavaScript startup and filter
+interactions with its data (Node is a test dependency, not a report runtime):
+
+```bash
+node tests/regression/check_report_interactions.js /path/to/output/REPORT
+node tests/workflow/test_report_exploration.js
+python3 -m unittest tests.workflow.test_report_help
+```
+
+Keep `REPORT/report-help.html` with `REPORT/report.html` when sharing. The help
+page is a declared workflow output. Tests cover contextual anchors, exact
+highlighted terms, relation endpoint export, independent structure thresholds,
+detector counting, fixed heatmap colours and selected/baseline window counts.

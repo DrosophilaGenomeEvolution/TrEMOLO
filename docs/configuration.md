@@ -3,10 +3,26 @@
 Use the minimal examples in [examples/config](../examples/config) to start a new analysis.
 Paths in YAML are resolved from the execution working directory, not the YAML directory.
 Use a new output directory when changing pipeline versions or scientific settings.
+Use paths without spaces: some shell fragments still interpolate paths without quoting.
+
+For a complete copy-and-edit example and launch command, start with
+[Run with your own data](../README.md#run-with-your-own-data). The longer YAML
+below illustrates optional settings; it is not the minimum needed to run.
+
+| Mode | Enable under `CHOICE.PIPELINE` | Required `DATA` inputs |
+| --- | --- | --- |
+| OUTSIDER | `OUTSIDER_VARIANT: true` | `GENOME`, `TE_DB`, `SAMPLE` |
+| INSIDER | `INSIDER_VARIANT: true` | `GENOME`, `TE_DB`, `REFERENCE` |
+| Combined | Both variant branches | `GENOME`, `TE_DB`, `REFERENCE`, `SAMPLE` |
+| Resident catalogue only | `TE_GENOME: true`, both variant branches false | `GENOME`, `TE_DB` |
+
+Set `WORK_DIRECTORY` to a new output path and `REPORT: true` to generate HTML.
+For OUTSIDER, `GENOME` is the read-mapping assembly. For INSIDER, it is the
+sample assembly compared with `REFERENCE`. INSIDER empty-site frequency needs
+OUTSIDER read mappings; assembly-only runs do not estimate it.
 
 
-
-In the refactored workflow, `CHROM_KEEP` always searches the chromosome name
+In the v3 workflow, `CHROM_KEEP` always searches the chromosome name
 alone. For exact main dm6 chromosomes, use
 `CHROM_KEEP: '^([23][RL]|[X4Y])$'`; descriptions, whitespace and other BED columns
 are not searched. See [chromosome filtering](chromosome-filtering.md) for
@@ -39,10 +55,10 @@ DATA:
     TE_DB:           "/path/to/database_TE.fasta"      #Database of TE (a fasta file) [required]
     REFERENCE:       "/path/to/reference_file.fasta"   #reference genome (fasta file) only if INSIDER_VARIANT = True [optional]
     SAMPLE:          "/path/to/reads_file.fastq"       #long reads (a fastq[.gz] file) only if OUTSIDER_VARIANT = True [optional]
-    #At least, provide either REFERENCE or SAMPLE. Both can be provided
+    # REFERENCE and SAMPLE are required only by their enabled branches.
     WORK_DIRECTORY:  "/path/to/directory"         #name of output directory [optional, will be created as 'TrEMOLO_OUTPUT']
 
-#At least, you must provide either the reference file, or the fastq file or both
+# For a resident-only catalogue, neither REFERENCE nor SAMPLE is required.
 
 CHOICE:
     PIPELINE:
@@ -121,7 +137,7 @@ The Liftoff audit contains one row per integrated INS, including
 `rejected / no_mapped_flanks` when neither flank is found. These events remain
 in the reconstructed genomes and have no public projected reference position.
 
-The refactored workflow supports two Sniffles generations. Select one in YAML:
+The v3 workflow supports two Sniffles generations. Select one in YAML:
 
 ```yaml
 CHOICE:
@@ -144,7 +160,7 @@ available on PATH (or at its configured path) when OUTSIDER variant calling runs
 generate a report without an author.
 The container definition preserves Sniffles 1.0.12b and adds Sniffles 2.8.1 in
 an isolated Python 3.12 environment. Rebuild the image to obtain `sniffles2`.
-The historical `run.snk` is not extended: use `workflow/Snakefile` for this choice.
+Use `workflow/Snakefile` for this choice; the 2.x entry point has been removed.
 `OUTSIDER/VARIANT_CALLING/sniffles-run.json` records the actual version and command.
 Sniffles 2 uses `--input`, `--reference`, `--minsupport`, and `--output-rnames`;
 its REF/ALT sequences and supporting reads are normalized before TE analysis.
@@ -162,7 +178,11 @@ The main parameters are:
 - `SAMPLE` : File containing the reads used for the sample assembly.
 
 
-You can use **config_INSIDER.yaml** for only **INSIDER** analysis or **config_OUTSIDER.yaml** for only **OUTSIDER** analysis.
+Use [insider.yaml](../examples/config/insider.yaml) for assembly-only INSIDER,
+[outsider.yaml](../examples/config/outsider.yaml) for OUTSIDER, or
+[combined.yaml](../examples/config/combined.yaml) for both. These minimal v3
+examples are the recommended starting points; the root `config*.yaml` files
+retain historical settings.
 To analyse **INSIDER**, only the `REFERENCE` , the `GENOME`, the `TE_DB` and the `WORK_DIRECTORY` are required.
 To analyse **OUTSIDER**, only the `SAMPLE` , the `GENOME`, the `TE_DB` and the `WORK_DIRECTORY` are required.
 

@@ -36,7 +36,10 @@ def main():
         sequence = fields[4][1:]
         if length <= 1000 or set(sequence) <= {"N"}:
             continue
-        identifier = "sniffles.INS." + fields[2]
+        # Native caller/type IDs are preserved by the v3 adapter. Nonstandard
+        # IDs retain the legacy wrapper so the event type remains explicit.
+        identifier = (fields[2] if fields[2].startswith("Sniffles2.INS.")
+                      else "sniffles.INS." + fields[2])
         expected[identifier] = (fields[0], int(fields[1]), int(info["SUPPORT"]), sequence)
     observed = {}
     lines = (variant / "SEQUENCE_INDEL.fasta").read_text().splitlines()

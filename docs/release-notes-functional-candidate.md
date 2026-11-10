@@ -1,6 +1,6 @@
 # TrEMOLO 3.0.0-beta.1 — proposed release
 
-Status: beta release preparation, 2026-11-04. These notes do not publish a tag,
+Status: beta release preparation; validation updated 2026-11-10. These notes do not publish a tag,
 GitHub release or downloadable image. `VERSION` contains `3.0.0-beta.1`.
 
 The major version reflects the migrated workflow/report interfaces and
@@ -20,8 +20,10 @@ results match the historical migration oracle.
   prepared identifiers. Frequency tables now have documented headers.
 - Module commands build offline Quarto reports. Module 2 requires its adjacent
   `report-assets/`; the old Node server command is retired.
-- Freeze original analyses before migration; shared scripts mean this checkout's
-  `run.snk` is not a frozen 2.x implementation.
+- Freeze original analyses before migration. The 2.x workflow has been removed;
+  use Git history for previous implementations. SVIM and caller-disabled OUTSIDER
+  modes are retired; select Sniffles 1 or 2 explicitly. See the
+  [compatibility audit](v3-compatibility-audit.md).
 
 ## Available behavior
 
@@ -65,36 +67,48 @@ are still required to turn that snapshot into a reproducible full-run reference.
 The existing historical regression baseline remains separate and is not replaced.
 Tests cover graph reconstruction/orientation, family and chromosome filters,
 per-call summaries, row-order-independent comparisons and extraction equivalence.
-Full Snakemake execution must be checked in the intended container environment;
-the local development interpreter does not have Snakemake installed.
+Fresh full Snakemake execution now passes in the local scientific image for
+Sniffles 1, Sniffles 2 and a Sniffles 2 no-call run. All three include integration,
+Liftoff, resident annotation, unmapped reads and Quarto, and have an idle DAG after
+completion. The container suite passes all 245 tests without skips. See the
+[dated compatibility audit](v3-compatibility-audit.md) and its
+[machine-readable validation record](validation/2026-11-10-migration.json).
+This validates a modified working checkout, not a clean release commit or a
+fresh rebuild of the image.
 
 See [GFA outputs](te-gfa.md) and [real-run regression procedure](real-run-regression.md).
 
 
 ## Before publishing this beta
 
-- Run the complete tests in the intended scientific image and record its checksum.
-- Execute the current checkout on the bundled fixture with a fresh output directory;
+- [x] Run the complete tests in the intended scientific image and record its checksum.
+- [x] Execute the current checkout on the bundled fixture with a fresh output directory;
   run alignment, integration and report regression checks, then confirm an idle DAG.
-- Exercise Sniffles 2 and its no-call case when advertising that backend.
-- Preserve the real-data configuration, input hashes, tool versions and commands;
+- [x] Exercise Sniffles 2 and its no-call case when advertising that backend.
+- [ ] Preserve the real-data configuration, input hashes, tool versions and commands;
   the available dm6/G73 graph snapshot alone is not a full-run reference.
-- Keep complete Savanache visualization/index/SWAP compatibility outside the
+- [x] Keep complete Savanache visualization/index/SWAP compatibility outside the
   validated scope until its documented indexing limitation is resolved.
-- Record the tested source commit and publish the matching image and checksums.
+- [ ] Record the final reviewed source commit and publish the matching image and checksums.
   Create an annotated `v3.0.0-beta.1` tag only after reviewing the final release
   commit. No tag or release is created by updating these notes.
 
 ## Audit evidence available during preparation
 
-The available dm6/G73 GFA snapshot comparison and report pagination check pass.
-The existing fixture Quarto report passes its semantic checker (529 calls,
-58 families, 15 proximity groups); this is not evidence of a fresh execution of
-this release commit. Local full-suite execution is limited by missing host
-scientific dependencies and the local container runtime installation. The
-2026-09-11 clean-run record is historical and predates later corrections.
+Fresh 2026-11-10 validation supersedes the earlier agent-session container
+restriction. It produces 529 calls with Sniffles 1 and 526 with Sniffles 2,
+including the no-call case where other evidence channels remain active.
+Alignment provenance, integration, report semantics and JavaScript interactions
+pass; all three DAGs are idle after completion. The Sniffles 2 regression checker
+now expects the native caller IDs already preserved by the adapter.
 
+The dm6/G73 GFA snapshot comparison remains separate from these fresh fixture
+runs. The 2026-09-11 clean-run record is historical and predates later corrections.
+A fresh build from the current recipe and a clean release commit remain untested;
+some recipe dependencies are unpinned. Distribute the tested image or revalidate
+any newly built image before publishing its checksum.
 
+Earlier preparation checks (before the fresh container runs):
 Preparation checks for the documentation/version change: 46 focused tests ran
 successfully (one Snakemake-dependent test skipped), including source identity,
 archive fallback, module/GFA CLI version agreement, graph reconstruction,

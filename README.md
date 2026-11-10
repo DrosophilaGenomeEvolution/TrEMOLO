@@ -16,9 +16,14 @@ from 2.x: corrected evidence extraction and integration intentionally change
 some scientific results. Use a fresh output directory.
 
 [How TrEMOLO works and which strategy to choose](#how-tremolo-works) ·
-[Quick start](#quick-start) · [Modules](#modules) · [GFA](#build-a-gfa)
+[Quick start](#quick-start) · [Your data](#run-with-your-own-data) · [Modules](#modules) · [GFA](#build-a-gfa)
 
 ## Quick start
+
+Prerequisites: a Linux x86_64 machine with Singularity (or Apptainer) installed,
+Git, and access to the input/output directories. Building the image below needs
+administrator privileges and Internet access to download dependencies. Once a
+current image is available, running analyses does not need `sudo`.
 
 Use an image built from the current [Singularity recipe](Singularity).
 The local development image is named `TrEMOLO-3.simg`; that filename
@@ -27,7 +32,7 @@ and is not the recommended environment for this beta.
 
 The commands below run **from the directory containing the TrEMOLO checkout
 and the image**. They use the bundled small fixture. Start with a fresh
-`work_refactor_test` directory; do not remove an existing analysis to rerun it.
+`work_v3_test` directory; do not remove an existing analysis to rerun it.
 
 ```bash
 git clone https://github.com/DrosophilaGenomeEvolution/TrEMOLO.git
@@ -38,12 +43,13 @@ sudo singularity build TrEMOLO-3.simg TrEMOLO/Singularity
 singularity exec TrEMOLO-3.simg python3 TrEMOLO/lib/python/tremolo_version.py
 singularity exec TrEMOLO-3.simg snakemake \
   --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 all
 ```
 
-Open `work_refactor_test/REPORT/report.html` in a browser. It needs no server or
-network connection. Apptainer can replace `singularity` where installed.
+Open `work_v3_test/REPORT/report.html` in a browser. It needs no server or
+network connection. Keep `REPORT/report-help.html` beside the HTML when sharing
+to preserve contextual help links. Apptainer can replace `singularity` where installed.
 For data outside the container's default mounts, bind the relevant directory
 and use paths visible inside the container.
 
@@ -52,6 +58,79 @@ input/output paths and pass it with `--configfile`. YAML paths resolve from the
 working directory of the command. Prefer absolute paths for your own analyses.
 `--cores` limits the total scheduled CPU allocation; `PARAMS.THREADS` requests
 threads for individual jobs.
+
+## Run with your own data
+
+For a first OUTSIDER analysis (reads mapped to an assembly), save the following
+as `my-analysis.yaml`. Replace the four absolute paths. Use paths without spaces
+(some workflow shell commands still require this). `GENOME` is the assembly
+used for read mapping; it can be a reference assembly or your sample assembly.
+The preset below is for Oxford Nanopore reads.
+
+```yaml
+DATA:
+  GENOME: /absolute/path/assembly.fasta
+  SAMPLE: /absolute/path/reads.fastq.gz
+  TE_DB: /absolute/path/original_TE_database.fasta
+  WORK_DIRECTORY: /absolute/path/new_outsider_output
+
+CHOICE:
+  PIPELINE:
+    OUTSIDER_VARIANT: true
+    INSIDER_VARIANT: false
+    TE_GENOME: false
+    UNMAPPED_TE: false
+    REPORT: true
+  OUTSIDER_VARIANT:
+    CALL_SV: sniffles1
+    CLIPPED_READS: false
+    INTEGRATE_TE_TO_GENOME: false
+
+PARAMS:
+  THREADS: 8
+  OUTSIDER_VARIANT:
+    MINIMAP2:
+      PRESET_OPTION: map-ont
+
+TOOLS:
+  QUARTO: /opt/quarto/bin/quarto
+```
+
+From the directory containing `TrEMOLO/`, the image and `my-analysis.yaml`,
+preview the jobs, then run the same command without `--dry-run`:
+
+```bash
+singularity exec TrEMOLO-3.simg snakemake \
+  --snakefile TrEMOLO/workflow/Snakefile \
+  --configfile my-analysis.yaml --cores 8 --dry-run all
+```
+
+Open `/absolute/path/new_outsider_output/REPORT/report.html` when the run finishes;
+`TE_INFOS.bed` contains the variant-associated calls. To resume an interrupted
+analysis, rerun the same command without `--dry-run` and keep its output directory.
+Use a new directory for a different analysis, caller or scientific configuration.
+
+| Change you need | What to edit in the YAML |
+| --- | --- |
+| Compare assemblies only | Use [insider.yaml](examples/config/insider.yaml): add `DATA.REFERENCE`, enable `INSIDER_VARIANT`, disable `OUTSIDER_VARIANT`; reads are unnecessary |
+| Combine assembly comparison and read mapping | Use [combined.yaml](examples/config/combined.yaml): provide both `REFERENCE` and `SAMPLE`, enable both variant branches |
+| Use Sniffles 2 | Set `CHOICE.OUTSIDER_VARIANT.CALL_SV: sniffles2` |
+| Include clipped-read evidence | Set `CHOICE.OUTSIDER_VARIANT.CLIPPED_READS: true` |
+| Catalogue TEs already in the assembly | Set `CHOICE.PIPELINE.TE_GENOME: true`; its catalogue is separate from variant calls |
+| Keep only chosen chromosomes | Set `PARAMS.OUTSIDER_VARIANT.TE_DETECTION.CHROM_KEEP`, e.g. `'^([23][RL]|[X4Y])$'` for exact main dm6 names; resident annotation uses its own `PARAMS.TE_GENOME.CHROM_KEEP` |
+
+Merge settings into the existing YAML sections; do not repeat a top-level key
+such as `DATA`, `CHOICE` or `PARAMS`. Use YAML booleans `true`/`false` without
+quotes, and spaces for indentation. INSIDER-only runs have no read-based
+empty-site frequency estimate; that estimate requires OUTSIDER mapping evidence.
+For other sequencing technologies, choose the matching Minimap2 preset before
+running. See the [configuration reference](docs/configuration.md) for thresholds,
+integration, genomic windows and executable overrides.
+
+If your data are on a disk outside the default container mounts, add a bind:
+`singularity exec --bind /data:/data TrEMOLO-3.simg snakemake ...`.
+Use the same `/data/...` paths in the YAML. A dry run checks the job graph and
+input paths; the fixture run above also checks execution of the scientific tools.
 
 ## Choose an analysis
 
@@ -140,6 +219,8 @@ configuration, tool versions or the container image checksum. See
 
 ## Installation and requirements
 
+The current container was built and tested with **Singularity 3.8.5**.
+
 The current image includes the scientific stack, Sniffles 1 and 2, Liftoff and
 Quarto. Check the actual image before an analysis:
 
@@ -184,7 +265,7 @@ singularity exec TrEMOLO-3.simg TrEMOLO/module build 1 \
   -i samples.tsv -g reference.fasta -o POPULATION_REPORT
 
 singularity exec TrEMOLO-3.simg TrEMOLO/module build 2 \
-  work_refactor_test STRUCTURE_REPORT
+  work_v3_test STRUCTURE_REPORT
 ```
 
 - [Module 1: population frequency trajectories](modules/1-FREQUENCY-MULTI-GENERATIONS/README.md).
@@ -201,11 +282,11 @@ This is an explicit post-processing command, independent of the `all` target:
 
 ```bash
 singularity exec TrEMOLO-3.simg python3 TrEMOLO/lib/python/locus/build_te_gfa.py \
-  --reference work_refactor_test/INPUT/genome.fasta \
+  --reference work_v3_test/INPUT/genome.fasta \
   --te-database TrEMOLO/test/canonical_TE.fa \
   --reference-name fixture \
-  --run fixture=work_refactor_test \
-  --output work_refactor_test/GFA
+  --run fixture=work_v3_test \
+  --output work_v3_test/GFA
 ```
 
 Open `GFA/summary.html` to inspect represented and excluded calls. Supported
@@ -216,9 +297,10 @@ default. See [GFA selection, limitations and output files](docs/te-gfa.md).
 
 ## Migration and validation
 
-The historical `run.snk` remains for compatibility; it is not the supported beta
-entry point. Shared parsing scripts have changed, so running it from this
-checkout does not reproduce a frozen 2.x analysis.
+`workflow/Snakefile` is the sole workflow entry point in v3. The 2.x generated
+workflow and its shell environment have been removed; previous implementations
+remain available in Git history. See the [v3 compatibility audit](docs/v3-compatibility-audit.md)
+for coverage, retired options and validation limits.
 
 See [regression procedures](tests/regression/README.md),
 [historical migration validation](docs/migration-validation.md) and

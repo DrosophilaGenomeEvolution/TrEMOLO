@@ -1,0 +1,314 @@
+{
+  "date": "2026-11-10",
+  "source_head": "39f91cac490edf07251a18727f6e10ee4709b832",
+  "source_modified": true,
+  "image_sha256": "30d76b50770ddd407d6f5bba74986d60c3bb4e17d0901d845e54c0964fce684a",
+  "runtime_source_sha256": {
+    "VERSION": "e285ba482d5e888ada3997dd9cd09efd07ddd3f8ac5c95113c5940ec473afaf2",
+    "lib/bash/awk_not_cliping.sh": "df6a9944604c0708fae4ecf857566f75aa4d3ba84cfaef2692a0133283c9d27d",
+    "lib/bash/begin_load.sh": "a1a0ffe65b5d755d1b9eeec865751dfb89f5b432ed38ed735690bac852f25c6f",
+    "lib/bash/correction_genome_common.sh": "09af256bea39d84f880219c24ebc458eb6b99710e36baee030c0e57f0b26ffbf",
+    "lib/bash/correction_genome_transloc_diff_chrom.sh": "60999ff5f537d6c48bac98d707ec5e31f7352c3c16ad25a99ada8650b8728695",
+    "lib/bash/correction_genome_transloc_sim_chrom.sh": "26339633ce44efdc5e2c872703fc674fabd39c0204b64485fa457b8ae8102cbe",
+    "lib/bash/end_load.sh": "37d693df03dcff5fa9f44afd94e8e77d2b9559cad0b1b32f4a679b137f8736c1",
+    "lib/bash/get_seq_with_id.sh": "5381b810bf19a2c0f569d6e91a428d1c190db0ffc5b0ce320beb53ad871cc41c",
+    "lib/bash/load.sh": "4939d51daa74f44e0445f310cdcd971c0dc9d9480557504153f102a25f0efffe",
+    "lib/bash/workflow_logging.sh": "f6cbf2c12e3081087bb86811714c6b75d34d5bcf4d3aa8ff6f6c75e336ba1720",
+    "lib/python/TSD/getTSDgenome.py": "2d2669e86f3d18ea6cdf94e373b55603a7874f351260a43b42119d64b39c7bfb",
+    "lib/python/TSD/getTSDreads.py": "a4647619001c9365eca00db9662224afa3528f5f207c2e4f56400061f9389d5f",
+    "lib/python/TSD/utils.py": "a573a98182f277b590aedec693595d912ff43d95ad0e6d873c60f74651296a5b",
+    "lib/python/assemblitics/Assemblytics_uniq_anchor.py": "de22a2ba58cfb821efe91f232e31a263d09a05fdb21c29023f2c45c4e90959b7",
+    "lib/python/assemblitics/Assemblytics_within_alignment.py": "b14aa89d8405050de4ed9ccb357dfdb83feb6b87f99ae0a3573b8728232cbff0",
+    "lib/python/assemblitics/filter_gap_SVs.py": "fc22683f6b381b9b4f69f8a8be560164885f5e916e48a8608f6f6201965e78fd",
+    "lib/python/assemblitics/sam2delta.py": "7f6b7b9ce1698851a60714fb82a8b4aee774340fce993a806d1717ed4220c2d2",
+    "lib/python/build_rules.py": "297c34f8b6281e698631771604a27191a6072d6afdfeaf3ab8fdfeb299a2c2ef",
+    "lib/python/format_files/divideToChunks.py": "b66b16730f36076b24be6ef355b429c9ed38924e3f573f5c5e1aa9f477501fbf",
+    "lib/python/format_files/fasta_to_fasta.py": "360b75ee5b5191ca8a12af81a0b87e2ef077806d6b059c0d5255418fbc40f0e0",
+    "lib/python/format_files/fastq_to_fasta.py": "699c3bf8298c9792ce466906ecda5ee836c15308acb968f94227503c3d93fe53",
+    "lib/python/format_files/fastq_to_fastq.py": "a628098d3f33a7649cb34cb9f8e4e9694f768e172ef958c94b2727351d7fd269",
+    "lib/python/graphs/Biocircos_PrepareData.py": "41984182d8cdd57732e51175a21acd4141872995fe8c8183f3f920d3b962aa50",
+    "lib/python/graphs/conv_js_histo.py": "e0754a028847d87c84f1f2eedcd0d27f278e127510b9bf58a8285617419b6630",
+    "lib/python/graphs/conv_js_histo_grouped.py": "e9a5a4cf1f7d6e972552c431e2b743246da02a593452e7a8fdbe30d2f3f40a26",
+    "lib/python/graphs/conv_js_histo_grouped_ggplot.py": "a17e81e378367ce609a4c8e76120ccfaac8875ebc207193d0345a9dc8d42e413",
+    "lib/python/graphs/create_biocircosgenome.py": "45c608ea208dbe1ae30671b184fc245e265fa69cc5dbcb0e35083511934691a2",
+    "lib/python/locus/build_cohort_model.py": "19226c299b4b90e1a1772f98618e283dd1a25a2f2fc6acf00877d29a1951b8a0",
+    "lib/python/locus/build_locus_model.py": "d555b80f6e2f1cd5ed9b238172cb823c99fd4ce16f3eaf9486f399860c4a24de",
+    "lib/python/locus/build_te_gfa.py": "8e98426729a5034c889a8771f0502074c150c6d8c20990479be64918d42e56f4",
+    "lib/python/locus/gfa_summary.py": "9dfac8b5f3271f4f5a7c72f1d4f49adeaaf85d7b2de3a47d297e12aae7573070",
+    "lib/python/modules/__init__.py": "79a6d39c29a27536ccff6e3df943faf4965dc720d757541a973c9fd33975de08",
+    "lib/python/modules/build_insertion_structure_report.py": "f5f8756394a8c05ee0da1a33411b2abe8fb4e019ccb9896afb7df245fc3d842b",
+    "lib/python/modules/build_population_report.py": "19f62a4fd98754963bed22effe069b64453434ac50fbc297023edfca89d22e60",
+    "lib/python/others/replace.py": "a255c95fcb413483beb7f7d00cb6547b521b031c6b365563e9bb4049642db979",
+    "lib/python/others/replace_2.py": "e61897b86605603c631c2b23bb89558fb6441f6e92bb188bb2779dacee27fb9d",
+    "lib/python/parsing/extract_region_reads_vcf.py": "f8489792ff1480899cba16d59c167d84c8a076382a1b06c85127df0222d39aa9",
+    "lib/python/parsing/find_all_ins.py": "2df2daa92b50b451b6aa2dd3a1acf0dc599892810d11596aa3c4fc46f1048e60",
+    "lib/python/parsing/find_all_type_ins.py": "02b1ab89bb7b836066d23669488095c855c6f3f2aa68dc3da760b01edd91413b",
+    "lib/python/parsing/find_del.py": "e93dd074860244a85a0132540d8939590b81c8092e7512763a8737fd9ee7eecb",
+    "lib/python/parsing/find_deletions.py": "2ef2406b44206d49f106fc4c0c4e2c9b71f1b9e65fc3bea736ba9f4acd7617ee",
+    "lib/python/parsing/getFrequency.py": "8f21bc900edddd6c8854a3cd9c76a43f9a3930949f822e63e2fd04048793ec89",
+    "lib/python/parsing/get_seq_hard.py": "6ec0a7db438d5a0352cc9adbe1eec1605645c75a9867e3808fc98ec4e7d646b6",
+    "lib/python/parsing/get_seq_vcf.py": "b889a54ccbc92173cf708af511cc209eb80f554618f36fee0cd42f52b204d328",
+    "lib/python/parsing/global_position_all.py": "5e26a51449704cfc122ce70e0fcc505580d6ea4fe831431aaa0a3bfa84ec34fe",
+    "lib/python/parsing/global_position_expansion.py": "ae5a646e7d84d3ce29adfa6b4169189ec2781a94a11139d5ba057997b53ad03c",
+    "lib/python/parsing/global_sv.py": "826a71be42d646b964bc092c4a7987427a892980eb0e621552bcac6f72d745fd",
+    "lib/python/parsing/global_sv_id.py": "1da61fcf37625fa6fa9e497a186bf7ade65e17d62738068ef64778e7f2aeb6d0",
+    "lib/python/parsing/parse_bam_found_ins.py": "7e8e033586c23e60f791ae72bf9c73424b38f96659cce973cbf6503e87fc9212",
+    "lib/python/parsing/parse_blast_main.py": "a3059273b7079d6a6b7d7078fa1bc772a776e799c59fcb50f4114c6712f53828",
+    "lib/python/parsing/sniffles_vcf.py": "7c77e6b659babc996398b00399f7f993328cc73ecaee1323d6855df04a25f7a4",
+    "lib/python/tremolo_version.py": "bfcf1b3a654e2ca488b8680902ec56f4fd9a177bee7e998eb692802d041c754b",
+    "lib/python/vr_to_genome.py": "ee785172b5324f36e6920f3d860b21c605e9622a7012a0d640fa8bd21d9ba2e3",
+    "lib/python/workflow/annotate_resident_te.py": "02b14a40fba58cfac593f0ac16e1d308f7bb8ebc9ce406dab9b8a562d1f1744f",
+    "lib/python/workflow/build_quarto_report.py": "200eee95ed87786d96ff5f8f06aeadce05cfed6d8eb7335111a97e7892c3658e",
+    "lib/python/workflow/build_te_call_candidates.py": "1930100fb9e97f0e6f6d8baa45a585b87b7588f190dc7c8ee3395c4fd5c9d167",
+    "lib/python/workflow/build_te_infos.py": "246eee1c35af14d0b2f8bd7c6ded12d5828b0d11b0fa47900d997e3114ce056e",
+    "lib/python/workflow/chromosome_filter.py": "cfa33311acfa318871a0d2a8f9a2cbed326ba09f33d9673c4198424a6b7c3186",
+    "lib/python/workflow/cluster_alignment_candidates.py": "9b170f0a00a3049e593820b1c9d90d96a6fa548ec935ffde845baf606be3024c",
+    "lib/python/workflow/count_insider_empty_sites.py": "83555fa28197607c6e22616508f5601af087f6089c32a74adee6a606fb457247",
+    "lib/python/workflow/count_outsider_frequency.py": "ce4c43a650deebf61e8c9b3e74763d898fb355e1d5f92206e3004c829ca5e160",
+    "lib/python/workflow/genomic_alignment.py": "296f26e1338fa2ff2cc54841233b6dcffd8ccd6eb8b085bde27f45b336788520",
+    "lib/python/workflow/integrate_outsider_te.py": "52d794aef936b3d9ceb83286411b358f2dca26c657382902cf5a5c9aa1d34a69",
+    "lib/python/workflow/prepare_hard_clip_sequences.py": "2bc3d4ddd8ffe90b56b07203e8bf33da7d8539a7d187b0649d83909ab2286932",
+    "lib/python/workflow/prepare_inputs.py": "e056e8ad3e8ef501e83018b15d23ba7b77c5e5851d3cb121c2e7f2bf23468033",
+    "lib/python/workflow/prepare_insider_frequency.py": "11739e067f0fd638dfc02fb3c840e757a159c3317b00311c4069068d8dff1e74",
+    "lib/python/workflow/prepare_insider_tsd.py": "debb87cbf9b97e14260d1620607ff275abfef781cfb22686ce991d8704ad8f58",
+    "lib/python/workflow/prepare_outsider_liftoff.py": "11e709d03330ce625cb11a430bf39726732774a5c1ab17bd4bf82d399b1a78c9",
+    "lib/python/workflow/prepare_outsider_tsd.py": "34fb8cf123e2a22da553b635ebc168b0855406523d2c94ba50acfb40c2ae7a26",
+    "lib/python/workflow/report_frequency_depth.py": "227b2462dfcee0611549f7aa6981637903ee06f1e9402c173bca80b77a3578a0",
+    "lib/python/workflow/restore_te_names.py": "a80d1357749594d16c5bf7dadff81014382d5039926b92dfa799a6509aebc8e6",
+    "lib/python/workflow/run_sniffles.py": "4c620289fa463d28b92d0d1c4aa25afd6e74cdafee12444b223159b5ea155d5b",
+    "lib/python/workflow/summarize_insider_frequency.py": "d196947910fc5f5272ed0fbfc5eec3b9a524cd0b2d4bec50a6beec871e2ec720",
+    "lib/python/workflow/summarize_outsider_frequency.py": "f314dce7ad61ebfd536583a18cffcadd4ee5fc04c27b2bb3e0f5a3d4044ae76c",
+    "lib/python/workflow/summarize_outsider_liftoff.py": "611d49289c0fa23a0e71d30d1e6049222f2acd52cb194fa50639f5f603c76b16",
+    "lib/python/workflow/te_candidate_provenance.py": "06e784df49657d97841f15322b9a60312b09192312e9fe333429d4e4e64bcbff",
+    "lib/python/workflow/unmapped_te.py": "0391ac3797de2ebf6909a77d1bae257e263d98099e128d22373ae9460241768e",
+    "lib/python/workflow/window_parameters.py": "33b42c199159ac95246bfafada18965a3ba0ea13bc4f24a7c0fca1fa1695cb0b",
+    "lib/python/workflow/workflow_log_error.py": "3357424e44e9a110f75f4bb9606ff932a47606dad77e6dd100084604c0008035",
+    "module": "8b99c5c917a3696ccc98bab19af6601edb51059acf2db84a050d422a019611c1",
+    "modules/1-FREQUENCY-MULTI-GENERATIONS/buildFrequencyGenerations.sh": "91e9d48a288e8e620d4bdfbc2c69bade567e28ac944bfbc512d4f230773334e3",
+    "modules/1-FREQUENCY-MULTI-GENERATIONS/report.css": "f7db3829e8bd3ab474370dd7b42a8aaaf7e5389017f4de8798b70d37421c7f8a",
+    "modules/1-FREQUENCY-MULTI-GENERATIONS/report.js": "d54e2f238b7e8bb6682a13f7612a1f744e1f1ee7b3ead93c1b8ba5f2584252e7",
+    "modules/1-FREQUENCY-MULTI-GENERATIONS/report.qmd": "b3087a4d018ffd391bb644d748fd28d4b5aa0299b1da88460db44088cc5b21f3",
+    "modules/2-MODULE_TE_BLAST/report.css": "c48086465f94256cdd6e680e297f779807f2f077b8fa3871fe27281d1b89ea52",
+    "modules/2-MODULE_TE_BLAST/report.js": "a50e32f0268b24cf3f316cc84adb96e0ebddc9131616aa137a53ecf1e7f36607",
+    "modules/2-MODULE_TE_BLAST/report.qmd": "5293c02e39e549ef4ba298c931cf429c0d3c536520b6274aa16dbe6f9724d585",
+    "modules/2-MODULE_TE_BLAST/server/scripts/buildData.sh": "05803ba3c53c926f0d0651c653c11a176bb3043cc6e702f61a72d03019914893",
+    "report/quarto/report-help.html": "e6d0afeb6d899fc7a4695bb8205f456c79547f142f127bf8b0838d609c5c8e05",
+    "report/quarto/report.css": "99483727efb952bbb22b335ca159dd938dc5b2462ab4f1bb22ab1f9db24d0ed1",
+    "report/quarto/report.js": "5c5436bfe2630571b675afa7917d05c3493ed772148db94af36efd07700e765f",
+    "report/quarto/report.qmd": "dc169bdd50c32a3717921c95a20665e5c0339487601641d3d552f6d3c2df890a",
+    "workflow/Snakefile": "06a751247f748c52b71455129a9e371a1919174b712758430211404fc2d7a4dc",
+    "workflow/rules/common.smk": "90f74008d4e60b78f77c8b7072077007a46941ed258a2f4fe4eebead320e4531",
+    "workflow/rules/insider.smk": "d50d4c5e135cabb9f6d33f21c940ea039f69ecc227606ef0a7604ca021205458",
+    "workflow/rules/insider_frequency.smk": "78efa84d8096af608007ab42fe95630198f63c0dd380e083ba53367923427d0d",
+    "workflow/rules/insider_tsd.smk": "dfd4bdeaa9dac5db29f5b5c700d6b1ed52607f6148b9970a1e8beacbaac6015f",
+    "workflow/rules/outsider.smk": "a985ac6585f398413985d3e66550233440e32e45ee5dc2f8a962941bc93af532",
+    "workflow/rules/outsider_frequency.smk": "45975d91f7e975a76521bad2ad251e2dfdf6c85cdc8e65c8ba82d6a49b5e4634",
+    "workflow/rules/outsider_integration.smk": "20799ddb213278fdcb4c50238ee6b0721b8ab757b939d5990382f7e14c0212ea",
+    "workflow/rules/outsider_te.smk": "bc92e82b38f4d06eb34dfa7aab48693d29168cd615ff61c1c8f4fb73116f0a9b",
+    "workflow/rules/outsider_tsd.smk": "76cc3e05aca649edc0f793a8340f2180b6532886318be911673bae130547ac41",
+    "workflow/rules/report.smk": "59ddca589837bace87676700eb041f545e00dae9608fb96a1669ff6dba16b9c3",
+    "workflow/rules/te_database.smk": "c309507da06009d9ca061fcb3d27afd7090a455c50e12dedf0dc8d2f3bfc2fef",
+    "workflow/rules/te_genome.smk": "517c9d776ef317db4ebfb171e4495fd8524f1e4dd73e83c140b2fac7541fa326",
+    "workflow/rules/te_infos.smk": "4250a6028e7425d3aab12aab8abbb01822e7928b1501d6535757c6b177d5cd54",
+    "workflow/rules/te_names.smk": "5deb0209a9ad7ad42dfd1de14cb3fb5988cccd23b5076a5e869534754860958e",
+    "workflow/rules/unmapped_te.smk": "ecac4dc57d98fbc69f7cbdd7b49f059f889110fbc85ae337e37da53001f2f0c1"
+  },
+  "tools": [
+    {
+      "command": [
+        "snakemake",
+        "--version"
+      ],
+      "returncode": 0,
+      "output": "5.10.0\n"
+    },
+    {
+      "command": [
+        "python3",
+        "--version"
+      ],
+      "returncode": 0,
+      "output": "Python 3.8.10\n"
+    },
+    {
+      "command": [
+        "sniffles",
+        "--help"
+      ],
+      "returncode": 0,
+      "output": "\nUsage: sniffles [options] -m <sorted.bam> -v <output.vcf> \nVersion: 1.0.12\nContact: fritz.sedlazeck@gmail.com\n\nInput/Output:\n    -m <string>,  --mapped_reads <string>\n        (required)  Sorted bam File\n    -v <string>,  --vcf <string>\n        VCF output file name []\n    -b <string>,  --bedpe <string>\n         bedpe output file name []\n    --Ivcf <string>\n        Input VCF file name. Enable force calling []\n    --tmp_file <string>\n        path to temporary file otherwise Sniffles will use the current directory. []\n\nGeneral:\n    -s <int>,  --min_support <int>\n        Minimum number of reads that support a SV. [10]\n    --max_num_splits <int>\n        Maximum number of splits per read to be still taken into account. [7]\n    -d <int>,  --max_distance <int>\n        Maximum distance to group SV together. [1000]\n    -t <int>,  --threads <int>\n        Number of threads to use. [3]\n    -l <int>,  --min_length <int>\n        Minimum length of SV to be reported. [30]\n    -q <int>,  --minmapping_qual <int>\n        Minimum Mapping Quality. [20]\n    -n <int>,  --num_reads_report <int>\n        Report up to N reads that support the SV in the vcf file. -1: report all. [0]\n    -r <int>,  --min_seq_size <int>\n        Discard read if non of its segment is larger then this. [2000]\n    -z <int>,  --min_zmw <int>\n        Discard SV that are not supported by at least x zmws. This applies only for PacBio recognizable reads. [0]\n    --cs_string\n        Enables the scan of CS string instead of Cigar and MD.  [false]\n\nClustering/phasing and genotyping:\n    --genotype\n        Inactivated: Automatically true. [true]\n    --cluster\n        Enables Sniffles to phase SVs that occur on the same reads [false]\n    --cluster_support <int>\n        Minimum number of reads supporting clustering of SV. [1]\n    -f <float>,  --allelefreq <float>\n        Threshold on allele frequency (0-1).  [0]\n    --min_homo_af <float>\n        Threshold on allele frequency (0-1).  [0.8]\n    --min_het_af <float>\n        Threshold on allele frequency (0-1).  [0.3]\n\nAdvanced:\n    --report_BND\n        Dont report BND instead use Tra in vcf output.  [true]\n    --not_report_seq\n        Dont report sequences for indels in vcf output. (Beta version!)  [false]\n    --report-seq\n        Inactivated (see not_report_seq). [false]\n    --ignore_sd\n        Ignores the sd based filtering.  [false]\n    --ccs_reads\n        Preset CCS Pacbio setting. (Beta)  [false]\n    --report_str\n        Enables the report of str. (alpha testing)  [false]\n\nParameter estimation:\n    --skip_parameter_estimation\n        Enables the scan if only very few reads are present.  [false]\n    --del_ratio <float>\n        Estimated ration of deletions per read (0-1).  [0.0458369]\n    --ins_ratio <float>\n        Estimated ratio of insertions per read (0-1).  [0.049379]\n    --max_diff_per_window <int>\n        Maximum differences per 100bp. [50]\n    --max_dist_aln_events <int>\n        Maximum distance between alignment (indel) events. [4]\n\n"
+    },
+    {
+      "command": [
+        "sniffles2",
+        "--version"
+      ],
+      "returncode": 0,
+      "output": "Sniffles2, Version 2.8.1\n"
+    },
+    {
+      "command": [
+        "/opt/quarto/bin/quarto",
+        "--version"
+      ],
+      "returncode": 0,
+      "output": "1.9.36\n"
+    },
+    {
+      "command": [
+        "/opt/conda/envs/liftoff_env/bin/liftoff",
+        "--version"
+      ],
+      "returncode": 0,
+      "output": "v1.6.3\n"
+    },
+    {
+      "command": [
+        "minimap2",
+        "--version"
+      ],
+      "returncode": 0,
+      "output": "2.28-r1209\n"
+    },
+    {
+      "command": [
+        "samtools",
+        "--version"
+      ],
+      "returncode": 0,
+      "output": "samtools 1.20\nUsing htslib 1.20\nCopyright (C) 2024 Genome Research Ltd.\n\nSamtools compilation details:\n    Features:       build=Makefile curses=yes \n    CC:             gcc\n    CPPFLAGS:       \n    CFLAGS:         -g -Wall -O2\n    LDFLAGS:        \n    HTSDIR:         htslib-1.20\n    LIBS:           \n    CURSES_LIB:     -lcurses\n\nHTSlib compilation details:\n    Features:       build=Makefile libcurl=yes S3=no GCS=no libdeflate=no lzma=yes bzip2=yes plugins=no htscodecs=1.6.0\n    CC:             gcc\n    CPPFLAGS:       \n    CFLAGS:         -g -Wall -O2 -fvisibility=hidden\n    LDFLAGS:        -fvisibility=hidden\n\nHTSlib URL scheme handlers present:\n    built-in:\t preload, data, file\n    libcurl:\t imaps, pop3, http, smb, gopher, sftp, ftps, imap, smtp, smtps, rtsp, scp, ftp, telnet, rtmp, ldap, https, ldaps, smbs, tftp, pop3s, dict\n    crypt4gh-needed:\t crypt4gh\n    mem:\t mem\n"
+    },
+    {
+      "command": [
+        "blastn",
+        "-version"
+      ],
+      "returncode": 0,
+      "output": "blastn: 2.9.0+\n Package: blast 2.9.0, build Sep 30 2019 01:57:31\n"
+    }
+  ],
+  "unit_tests": {
+    "run": 245,
+    "skipped": 0,
+    "result": "passed"
+  },
+  "runs": [
+    {
+      "name": "sniffles1",
+      "configuration_yaml": "DATA:\n  REFERENCE: TrEMOLO/test/tmp_ref.fasta\n  GENOME: TrEMOLO/test/tmp_genome.fasta\n  SAMPLE: TrEMOLO/test/tmp_sample.fastq\n  WORK_DIRECTORY: /tmp/tremolo-audit-20261110/sniffles1\n  TE_DB: TrEMOLO/test/canonical_TE.fa\n\nCHOICE:\n  PIPELINE:\n    UNMAPPED_TE: true\n    OUTSIDER_VARIANT: true\n    INSIDER_VARIANT: true\n    TE_GENOME: true\n    REPORT: true\n  OUTSIDER_VARIANT:\n    CALL_SV: sniffles1\n    INTEGRATE_TE_TO_GENOME: true\n    CLIPPED_READS: true\nTOOLS:\n  LIFTOFF: /opt/conda/envs/liftoff_env/bin/liftoff\n  QUARTO: /opt/quarto/bin/quarto\n\nREPORT:\n  TITLE: TrEMOLO test report\n  AUTHOR: TrEMOLO regression suite\n  LOCUS_WINDOW: 100\n\nPARAMS:\n  # Genomic distances in bp; see docs/window-parameters.md\n  WINDOWS:\n    OUTSIDER_INSERTION_CLUSTER_DISTANCE: 50\n    OUTSIDER_SOFT_CLIP_WINDOW: 50\n    OUTSIDER_HARD_CLIP_CLUSTER_DISTANCE: 100\n    OUTSIDER_EVIDENCE_CLUSTER_DISTANCE: 100\n    OUTSIDER_EVIDENCE_MATCH_WINDOW: 100\n    OUTSIDER_SNIFFLES_READ_MATCH_WINDOW: 30\n    OUTSIDER_SNIFFLES_READ_FETCH_WINDOW: 1\n    OUTSIDER_SNIFFLES_READ_FLANK_SIZE: 30\n    OUTSIDER_CLIPPED_SEQUENCE_PADDING: 100\n    OUTSIDER_FREQUENCY_WINDOW: 50\n    OUTSIDER_FREQUENCY_REGION_MERGE_DISTANCE: 1\n    INSIDER_FREQUENCY_OUTER_MARGIN: 100\n    INSIDER_FREQUENCY_INNER_MARGIN: 5\n    INSIDER_FREQUENCY_DEPTH_MARGIN: 30\n    INSIDER_FREQUENCY_SIZE_WINDOW: 30\n    INSIDER_FREQUENCY_BREAKPOINT_DISTANCE: 30\n    TE_INFOS_DELETION_EXCLUSION_WINDOW: 30\n  THREADS: 8\n  TE_GENOME:\n    TARGETS: [GENOME]\n    CHROM_KEEP: \".\"\n    MIN_PIDENT: 65\n    MIN_ALIGNED_BP: 80\n    MAX_EVALUE: 1e-10\n    MIN_CHAIN_GAP: 200\n    MAX_GAP_FRACTION: 0.2\n    MAX_OVERLAP: 100\n    FULL_LENGTH_COVERAGE: 80\n    HIGH_CONFIDENCE_PIDENT: 80\n    PARTIAL_COVERAGE: 20\n    AMBIGUITY_OVERLAP: 0.8\n  OUTSIDER_VARIANT:\n    MINIMAP2:\n      PRESET_OPTION: map-ont\n      OPTION: ''\n    SAMTOOLS_VIEW:\n      PRESET_OPTION: ''\n    SAMTOOLS_SORT:\n      PRESET_OPTION: ''\n    SAMTOOLS_CALLMD:\n      PRESET_OPTION: ''\n    TSD:\n      SIZE_FLANK: 10\n    LIFT_OFF:\n      FLANK_SIZE: 100000\n      MAX_GAP: 20000\n    TE_DETECTION:\n      CHROM_KEEP: \"^[23][RL]_,^[X4Y]_\"\n      GET_SEQ_REPORT_OPTION: \"-m 1000\"\n      TIME_LIMIT: 0\n    PARS_BLN_OPTION: \"--min-size-percent 90 --min-pident 90 -k 'INS|DEL'\"\n",
+      "sniffles_sv_records": 286,
+      "final_te_calls": 529,
+      "te_infos_sha256": "bb28abd7db92af569b81e88c7abe5bedfd33ec8bf72432ab7344f2831f1f14ba",
+      "input_manifest": {
+        "format_version": 1,
+        "pseudonyms_used": false,
+        "te_records": 179,
+        "inputs": {
+          "genome": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_genome.fasta",
+            "sha256": "b61ed4d30583df117369deab9b29290a7ede3b7d1b48eae38e238746966e371e"
+          },
+          "reference": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_ref.fasta",
+            "sha256": "70b004dc9ed0c93149bbea0037c67da24caecddf46beba135f41979cd3bd295a"
+          },
+          "sample": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_sample.fastq",
+            "sha256": "0245dc2e2f398be7e45f41fa49b562ab6caff69f44f0c4a43411388ec6c17503"
+          },
+          "te_database": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/canonical_TE.fa",
+            "sha256": "211df982278f6d87866fe144ab88a9fee69e7772969f1d18981600b39c44f148"
+          }
+        },
+        "prepared": {
+          "genome": "INPUT/genome.fasta",
+          "reference": "INPUT/reference.fasta",
+          "sample": "INPUT/reads.fastq",
+          "te_database": "INPUT/te_database.fasta",
+          "te_headers": "INPUT/te_headers.tsv"
+        }
+      },
+      "idle_dag": true,
+      "completed_74_steps": true
+    },
+    {
+      "name": "sniffles2",
+      "configuration_yaml": "DATA:\n  REFERENCE: TrEMOLO/test/tmp_ref.fasta\n  GENOME: TrEMOLO/test/tmp_genome.fasta\n  SAMPLE: TrEMOLO/test/tmp_sample.fastq\n  WORK_DIRECTORY: /tmp/tremolo-audit-20261110/sniffles2\n  TE_DB: TrEMOLO/test/canonical_TE.fa\n\nCHOICE:\n  PIPELINE:\n    UNMAPPED_TE: true\n    OUTSIDER_VARIANT: true\n    INSIDER_VARIANT: true\n    TE_GENOME: true\n    REPORT: true\n  OUTSIDER_VARIANT:\n    CALL_SV: sniffles2\n    INTEGRATE_TE_TO_GENOME: true\n    CLIPPED_READS: true\nTOOLS:\n  LIFTOFF: /opt/conda/envs/liftoff_env/bin/liftoff\n  QUARTO: /opt/quarto/bin/quarto\n\nREPORT:\n  TITLE: TrEMOLO test report\n  AUTHOR: TrEMOLO regression suite\n  LOCUS_WINDOW: 100\n\nPARAMS:\n  # Genomic distances in bp; see docs/window-parameters.md\n  WINDOWS:\n    OUTSIDER_INSERTION_CLUSTER_DISTANCE: 50\n    OUTSIDER_SOFT_CLIP_WINDOW: 50\n    OUTSIDER_HARD_CLIP_CLUSTER_DISTANCE: 100\n    OUTSIDER_EVIDENCE_CLUSTER_DISTANCE: 100\n    OUTSIDER_EVIDENCE_MATCH_WINDOW: 100\n    OUTSIDER_SNIFFLES_READ_MATCH_WINDOW: 30\n    OUTSIDER_SNIFFLES_READ_FETCH_WINDOW: 1\n    OUTSIDER_SNIFFLES_READ_FLANK_SIZE: 30\n    OUTSIDER_CLIPPED_SEQUENCE_PADDING: 100\n    OUTSIDER_FREQUENCY_WINDOW: 50\n    OUTSIDER_FREQUENCY_REGION_MERGE_DISTANCE: 1\n    INSIDER_FREQUENCY_OUTER_MARGIN: 100\n    INSIDER_FREQUENCY_INNER_MARGIN: 5\n    INSIDER_FREQUENCY_DEPTH_MARGIN: 30\n    INSIDER_FREQUENCY_SIZE_WINDOW: 30\n    INSIDER_FREQUENCY_BREAKPOINT_DISTANCE: 30\n    TE_INFOS_DELETION_EXCLUSION_WINDOW: 30\n  THREADS: 8\n  TE_GENOME:\n    TARGETS: [GENOME]\n    CHROM_KEEP: \".\"\n    MIN_PIDENT: 65\n    MIN_ALIGNED_BP: 80\n    MAX_EVALUE: 1e-10\n    MIN_CHAIN_GAP: 200\n    MAX_GAP_FRACTION: 0.2\n    MAX_OVERLAP: 100\n    FULL_LENGTH_COVERAGE: 80\n    HIGH_CONFIDENCE_PIDENT: 80\n    PARTIAL_COVERAGE: 20\n    AMBIGUITY_OVERLAP: 0.8\n  OUTSIDER_VARIANT:\n    MINIMAP2:\n      PRESET_OPTION: map-ont\n      OPTION: ''\n    SAMTOOLS_VIEW:\n      PRESET_OPTION: ''\n    SAMTOOLS_SORT:\n      PRESET_OPTION: ''\n    SAMTOOLS_CALLMD:\n      PRESET_OPTION: ''\n    TSD:\n      SIZE_FLANK: 10\n    LIFT_OFF:\n      FLANK_SIZE: 100000\n      MAX_GAP: 20000\n    TE_DETECTION:\n      CHROM_KEEP: \"^[23][RL]_,^[X4Y]_\"\n      GET_SEQ_REPORT_OPTION: \"-m 1000\"\n      TIME_LIMIT: 0\n    PARS_BLN_OPTION: \"--min-size-percent 90 --min-pident 90 -k 'INS|DEL'\"\n",
+      "sniffles_sv_records": 49,
+      "final_te_calls": 526,
+      "te_infos_sha256": "24609d33bd76e9fc5c7731d9565c1c623a6b1e8d407cf1d3772caa1913ff5e1b",
+      "input_manifest": {
+        "format_version": 1,
+        "pseudonyms_used": false,
+        "te_records": 179,
+        "inputs": {
+          "genome": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_genome.fasta",
+            "sha256": "b61ed4d30583df117369deab9b29290a7ede3b7d1b48eae38e238746966e371e"
+          },
+          "reference": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_ref.fasta",
+            "sha256": "70b004dc9ed0c93149bbea0037c67da24caecddf46beba135f41979cd3bd295a"
+          },
+          "sample": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_sample.fastq",
+            "sha256": "0245dc2e2f398be7e45f41fa49b562ab6caff69f44f0c4a43411388ec6c17503"
+          },
+          "te_database": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/canonical_TE.fa",
+            "sha256": "211df982278f6d87866fe144ab88a9fee69e7772969f1d18981600b39c44f148"
+          }
+        },
+        "prepared": {
+          "genome": "INPUT/genome.fasta",
+          "reference": "INPUT/reference.fasta",
+          "sample": "INPUT/reads.fastq",
+          "te_database": "INPUT/te_database.fasta",
+          "te_headers": "INPUT/te_headers.tsv"
+        }
+      },
+      "idle_dag": true,
+      "completed_74_steps": true
+    },
+    {
+      "name": "sniffles2-empty",
+      "configuration_yaml": "DATA:\n  REFERENCE: TrEMOLO/test/tmp_ref.fasta\n  GENOME: TrEMOLO/test/tmp_genome.fasta\n  SAMPLE: TrEMOLO/test/tmp_sample.fastq\n  WORK_DIRECTORY: /tmp/tremolo-audit-20261110/sniffles2-empty\n  TE_DB: TrEMOLO/test/canonical_TE.fa\n\nCHOICE:\n  PIPELINE:\n    UNMAPPED_TE: true\n    OUTSIDER_VARIANT: true\n    INSIDER_VARIANT: true\n    TE_GENOME: true\n    REPORT: true\n  OUTSIDER_VARIANT:\n    CALL_SV: sniffles2\n    INTEGRATE_TE_TO_GENOME: true\n    CLIPPED_READS: true\nTOOLS:\n  LIFTOFF: /opt/conda/envs/liftoff_env/bin/liftoff\n  QUARTO: /opt/quarto/bin/quarto\n\nREPORT:\n  TITLE: TrEMOLO test report\n  AUTHOR: TrEMOLO regression suite\n  LOCUS_WINDOW: 100\n\nPARAMS:\n  # Genomic distances in bp; see docs/window-parameters.md\n  WINDOWS:\n    OUTSIDER_INSERTION_CLUSTER_DISTANCE: 50\n    OUTSIDER_SOFT_CLIP_WINDOW: 50\n    OUTSIDER_HARD_CLIP_CLUSTER_DISTANCE: 100\n    OUTSIDER_EVIDENCE_CLUSTER_DISTANCE: 100\n    OUTSIDER_EVIDENCE_MATCH_WINDOW: 100\n    OUTSIDER_SNIFFLES_READ_MATCH_WINDOW: 30\n    OUTSIDER_SNIFFLES_READ_FETCH_WINDOW: 1\n    OUTSIDER_SNIFFLES_READ_FLANK_SIZE: 30\n    OUTSIDER_CLIPPED_SEQUENCE_PADDING: 100\n    OUTSIDER_FREQUENCY_WINDOW: 50\n    OUTSIDER_FREQUENCY_REGION_MERGE_DISTANCE: 1\n    INSIDER_FREQUENCY_OUTER_MARGIN: 100\n    INSIDER_FREQUENCY_INNER_MARGIN: 5\n    INSIDER_FREQUENCY_DEPTH_MARGIN: 30\n    INSIDER_FREQUENCY_SIZE_WINDOW: 30\n    INSIDER_FREQUENCY_BREAKPOINT_DISTANCE: 30\n    TE_INFOS_DELETION_EXCLUSION_WINDOW: 30\n  THREADS: 8\n  TE_GENOME:\n    TARGETS: [GENOME]\n    CHROM_KEEP: \".\"\n    MIN_PIDENT: 65\n    MIN_ALIGNED_BP: 80\n    MAX_EVALUE: 1e-10\n    MIN_CHAIN_GAP: 200\n    MAX_GAP_FRACTION: 0.2\n    MAX_OVERLAP: 100\n    FULL_LENGTH_COVERAGE: 80\n    HIGH_CONFIDENCE_PIDENT: 80\n    PARTIAL_COVERAGE: 20\n    AMBIGUITY_OVERLAP: 0.8\n  OUTSIDER_VARIANT:\n    SNIFFLES:\n      MIN_SUPPORT: 1000000\n    MINIMAP2:\n      PRESET_OPTION: map-ont\n      OPTION: ''\n    SAMTOOLS_VIEW:\n      PRESET_OPTION: ''\n    SAMTOOLS_SORT:\n      PRESET_OPTION: ''\n    SAMTOOLS_CALLMD:\n      PRESET_OPTION: ''\n    TSD:\n      SIZE_FLANK: 10\n    LIFT_OFF:\n      FLANK_SIZE: 100000\n      MAX_GAP: 20000\n    TE_DETECTION:\n      CHROM_KEEP: \"^[23][RL]_,^[X4Y]_\"\n      GET_SEQ_REPORT_OPTION: \"-m 1000\"\n      TIME_LIMIT: 0\n    PARS_BLN_OPTION: \"--min-size-percent 90 --min-pident 90 -k 'INS|DEL'\"\n",
+      "sniffles_sv_records": 0,
+      "final_te_calls": 526,
+      "te_infos_sha256": "24609d33bd76e9fc5c7731d9565c1c623a6b1e8d407cf1d3772caa1913ff5e1b",
+      "input_manifest": {
+        "format_version": 1,
+        "pseudonyms_used": false,
+        "te_records": 179,
+        "inputs": {
+          "genome": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_genome.fasta",
+            "sha256": "b61ed4d30583df117369deab9b29290a7ede3b7d1b48eae38e238746966e371e"
+          },
+          "reference": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_ref.fasta",
+            "sha256": "70b004dc9ed0c93149bbea0037c67da24caecddf46beba135f41979cd3bd295a"
+          },
+          "sample": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/tmp_sample.fastq",
+            "sha256": "0245dc2e2f398be7e45f41fa49b562ab6caff69f44f0c4a43411388ec6c17503"
+          },
+          "te_database": {
+            "path": "/home/mourdas/Documents/5-GIT/TrEMOLO/test/canonical_TE.fa",
+            "sha256": "211df982278f6d87866fe144ab88a9fee69e7772969f1d18981600b39c44f148"
+          }
+        },
+        "prepared": {
+          "genome": "INPUT/genome.fasta",
+          "reference": "INPUT/reference.fasta",
+          "sample": "INPUT/reads.fastq",
+          "te_database": "INPUT/te_database.fasta",
+          "te_headers": "INPUT/te_headers.tsv"
+        }
+      },
+      "idle_dag": true,
+      "completed_74_steps": true
+    }
+  ]
+}
