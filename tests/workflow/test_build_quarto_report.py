@@ -279,6 +279,9 @@ class BuildQuartoReportTests(unittest.TestCase):
             self.assertEqual(value["summary"]["tiers"], {"degraded_relic": 1, "full_length": 1})
             self.assertEqual(value["summary"]["fragment_status"], {"accepted": 1, "rejected:identity": 1})
             self.assertEqual(value["summary"]["relation_types"], {"nested_candidate": 1})
+            self.assertEqual(value["relations"][0]["source_copy_id"], "TC1")
+            self.assertEqual(value["relations"][0]["target_copy_id"], "TC2")
+            self.assertEqual(value["relations"][0]["relation"], "nested_candidate")
             self.assertEqual(value["copies"][0]["te_candidates"], ["copia", "roo"])
             self.assertEqual(
                 [candidate["assignment"] for candidate in value["copies"][0]["candidates"]],

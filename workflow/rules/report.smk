@@ -2,6 +2,7 @@ REPORT_DIR = f"{WORKDIR}/REPORT"
 REPORT_DATA = f"{REPORT_DIR}/report-data.json"
 REPORT_SOURCE = f"{REPORT_DIR}/report.qmd"
 REPORT_HTML = f"{REPORT_DIR}/report.html"
+REPORT_HELP = f"{REPORT_DIR}/report-help.html"
 REPORT_OPTIONS = config.get("REPORT", {})
 REPORT_TITLE = REPORT_OPTIONS.get("TITLE", "TrEMOLO analysis report")
 REPORT_AUTHOR = REPORT_OPTIONS.get("AUTHOR") or ""
@@ -119,12 +120,14 @@ rule prepare_quarto_report:
         resident_fragments=REPORT_RESIDENT_FRAGMENTS,
         resident_relations=REPORT_RESIDENT_RELATIONS,
         builder=str(REPORT_BUILDER),
+        help_page=str(PIPELINE_ROOT / "report/quarto/report-help.html"),
         template=str(REPORT_TEMPLATE),
         style=str(REPORT_STYLE),
         script=str(REPORT_SCRIPT),
     output:
         data=REPORT_DATA,
         source=REPORT_SOURCE,
+        help=REPORT_HELP,
     params:
         title=REPORT_TITLE,
         author=REPORT_AUTHOR,
@@ -169,6 +172,8 @@ rule prepare_quarto_report:
             --script {input.script:q} \
             --output-qmd {output.source:q} \
             --output-json {output.data:q} \
+            --help-page {input.help_page:q} \
+            --output-help {output.help:q} \
             --title {params.title:q} \
             --author={params.author:q} \
             --work-directory {params.work_directory:q} \
@@ -181,6 +186,7 @@ rule render_quarto_report:
     input:
         source=REPORT_SOURCE,
         data=REPORT_DATA,
+        help=REPORT_HELP,
     output:
         html=REPORT_HTML,
     params:

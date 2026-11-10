@@ -70,3 +70,50 @@ reconstructed genomes.
 Do not combine these coordinate systems without an explicit conversion.
 Nearby calls and nonzero locus windows define provisional groups; proximity
 alone does not establish a shared biological locus.
+
+
+## Resident consensus coverage and reporting tiers
+
+Consensus coverage is `100 × union of aligned consensus intervals / database TE
+sequence length`; overlapping intervals count once. For a 5,000 bp consensus,
+1,000 covered bp means 20% coverage, regardless of read depth. Identity measures
+matching bases in the alignments and is a separate quantity.
+
+The interactive preview first assigns full-length when both its coverage and
+identity thresholds are met. Otherwise, coverage at or above the partial
+threshold assigns partial; remaining copies are degraded/relic. Thus a
+high-coverage but lower-identity copy can be partial too. These are reporting
+tiers, not experimentally confirmed activity or structural completeness.
+The discovery filters constrain the evidence already available; the preview
+sliders do not rerun discovery. Cards show all reported copies, independently
+of resident-table filters.
+
+The chromosome overview uses a shared base-pair scale, with actual reference
+lengths beside each bar and exact bp values on hover. Its scale stays fixed
+when filtering calls. Unknown lengths are labelled explicitly; dashed bars
+show observed spans rather than claiming a chromosome length.
+
+
+## Contextual report help and exploration
+
+`REPORT/report-help.html` explains exact labels including `accepted`,
+`nested_candidate`, `same_family_overlap` and `overlap_candidate`. Contextual links
+in the report open the matching section. Share this companion beside the main HTML.
+
+The detector summary counts final `TE_INFOS.bed` rows by detector and event type;
+Sniffles VCF totals remain separate because they describe raw SVs before TE
+annotation. HARD/SOFT channel calls are counted separately from INS/DEL columns.
+
+The additional Magma heatmap counts call anchors in adjustable genomic windows,
+using all reported calls for a fixed colour maximum. Blue outlines identify
+windows losing calls to the active call filters. Tooltips show selected and
+baseline counts by INSIDER/OUTSIDER source. Empty windows do not establish absence
+or callability. Terminal insertions at chromosome length are assigned to the
+last window. A display safeguard increases window width if necessary; the actual
+width is always reported. The individual-call chromosome plot is unchanged.
+
+Structure preview sliders apply to both endpoints of already reported relations,
+using primary-match identity and consensus coverage. At 0%/0% there is no extra
+threshold. They do not rerun discovery, select alternative primary labels or
+regroup copies. The fixed global relation summary remains visible, and this
+preview is independent of the call and resident-table filters.

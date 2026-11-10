@@ -7,7 +7,8 @@ Outputs depend on enabled branches. Start with these files:
 | `TE_INFOS.bed` | Final variant-associated calls; 15-column legacy-compatible schema |
 | `TE_CALL_CANDIDATES.tsv` | Alternative TE annotations for ambiguous reported calls |
 | `TE_CALL_CANDIDATE_EVIDENCE.tsv` | Candidate sequence/read evidence and provenance |
-| `REPORT/report.html` | Self-contained main report |
+| `REPORT/report.html` | Main report with embedded data/scripts |
+| `REPORT/report-help.html` | Offline help companion; keep beside the main HTML for contextual links |
 | `PUBLIC/` | Detailed exports with original TE names; internal calculation files retain prepared IDs |
 | `input_manifest.json`, `INPUT/te_headers.tsv` | Input checksums and original TE header mapping |
 | `log/progress.log`, `log/run-version.json` | Workflow progress and source identity for the latest execution |

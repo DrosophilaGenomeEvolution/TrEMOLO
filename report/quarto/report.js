@@ -37,6 +37,7 @@
   const $ = (id) => document.getElementById(id);
   const formatInteger = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
   const formatDecimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 });
+  const formatPercent = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
   function valueOrDash(value, suffix = "") {
     return value === null || value === undefined ? "—" : `${formatDecimal.format(value)}${suffix}`;
@@ -45,6 +46,7 @@
   function appendTextCell(row, value) {
     const cell = document.createElement("td");
     cell.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
+    cell.title = cell.textContent;
     row.appendChild(cell);
     return cell;
   }
@@ -128,6 +130,7 @@
     ["trm-depth-scale", "trm-depth-guide", "trm-depth-frequency-guide"].forEach((id) => {
       $(id).addEventListener("input", renderFrequencyDepthChart);
     });
+    $("trm-heatmap-window").addEventListener("change", renderGenomeHeatmap);
     $("trm-filter-search").addEventListener("input", applyFilters);
     $("trm-reset-filters").addEventListener("click", resetFilters);
     $("trm-download-calls").addEventListener("click", downloadCalls);
@@ -524,7 +527,7 @@
     svg.append(xTitle, yTitle);
     eligible.forEach((call) => {
       const point = svgElement("circle", { cx: x(call.frequency_depth), cy: y(call.display_frequency), r: 5,
-        fill: call.source === "INSIDER" ? "#6f5bd3" : "#087f78", class: "trm-frequency-depth-point trm-frequency-position-point", tabindex: "0" });
+        fill: call.source === "INSIDER" ? "var(--trm-insider)" : "var(--trm-outsider)", class: "trm-frequency-depth-point trm-frequency-position-point", tabindex: "0" });
       const title = svgElement("title");
       title.textContent = `${call.family} · ${call.event_id}\n${call.source} · ${call.event_type} · ${call.chrom}:${call.start}\nfrequency ${valueOrDash(call.display_frequency, "%")}\n${depthDetails(call)}`;
       point.appendChild(title);
@@ -533,37 +536,251 @@
     target.replaceChildren(svg);
   }
 
+  function detectorLabel(call) {
+    if (call.source === "OUTSIDER" && /^sniffles(?:[. _-]|\d)/i.test(call.event_id || "")) return "Sniffles";
+    if (call.source === "OUTSIDER" && /^(?:TrEMOLO|HARD|SOFT)[. _-]/i.test(call.event_id || "")) return "TrEMOLO";
+    if (call.source === "INSIDER" && /^Assemblytics/i.test(call.event_id || "")) return "Assemblytics";
+    return "Other / unknown";
+  }
+
+  function detectorEvent(call) {
+    const type = String(call.event_type || "").toUpperCase();
+    if (type.startsWith("SOFT")) return "SOFT";
+    if (type.startsWith("HARD")) return "HARD";
+    if (type.startsWith("INS") || type.includes("EXPANSION")) return "Insertions";
+    if (type.startsWith("DEL") || type.includes("CONTRACTION")) return "Deletions";
+    return "Other";
+  }
+
+  function detectorCounts(rows) {
+    const counts = new Map();
+    rows.forEach((call) => {
+      const label = detectorLabel(call);
+      if (!counts.has(label)) counts.set(label, { Insertions: 0, Deletions: 0, SOFT: 0, HARD: 0, Other: 0, Total: 0 });
+      counts.get(label)[detectorEvent(call)] += 1;
+      counts.get(label).Total += 1;
+    });
+    return counts;
+  }
+
+  function renderDetectorSummary() {
+    const baseline = detectorCounts(calls), selected = detectorCounts(state.filtered);
+    const body = $("trm-detector-table-body");
+    body.replaceChildren();
+    ["Sniffles", "TrEMOLO", "Assemblytics", "Other / unknown"].forEach((detector) => {
+      const all = baseline.get(detector);
+      if (!all) return;
+      const row = document.createElement("tr");
+      appendTextCell(row, detector);
+      ["Insertions", "Deletions", "SOFT", "HARD", "Other", "Total"].forEach((kind) => {
+        appendTextCell(row, `${formatInteger.format((selected.get(detector) || {})[kind] || 0)} / ${formatInteger.format(all[kind])}`);
+      });
+      body.appendChild(row);
+    });
+    $("trm-detector-note").textContent = `${formatInteger.format(state.filtered.length)} selected / ${formatInteger.format(calls.length)} reported TE calls. Each cell shows selected / all; final call rows, not unique loci. SOFT/HARD channels are separate from insertion/deletion columns.`;
+    const raw = $("trm-raw-sv-summary");
+    raw.replaceChildren();
+    if (!data.sv_counts_available) {
+      raw.textContent = "Raw Sniffles VCF counts unavailable in this report.";
+    } else {
+      const counts = data.sv_counts || {};
+      const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      raw.append(summaryCard("Raw Sniffles VCF", formatInteger.format(total), "all SV records before TE annotation; independent of call filters"),
+        summaryCard("Raw INS / DEL", `${formatInteger.format(counts.INS || 0)} / ${formatInteger.format(counts.DEL || 0)}`, "Do not add raw SV counts to reported TE calls"));
+    }
+  }
+
+  const MAGMA = ["#000004", "#140e36", "#3b0f70", "#641a80", "#8c2981", "#b73779", "#de4968", "#f7705c", "#fe9f6d", "#fecf92", "#fcfdbf"];
+  function magmaColor(value, maximum) {
+    if (!value) return "var(--trm-heatmap-empty)";
+    const position = Math.min(1, value / Math.max(1, maximum)) * (MAGMA.length - 1);
+    const low = Math.floor(position), high = Math.min(MAGMA.length - 1, low + 1), fraction = position - low;
+    const rgb = [1, 3, 5].map((offset) => Math.round(parseInt(MAGMA[low].slice(offset, offset + 2), 16) * (1 - fraction) + parseInt(MAGMA[high].slice(offset, offset + 2), 16) * fraction));
+    return `rgb(${rgb.join(",")})`;
+  }
+
+  function buildHeatmap(requestedSize) {
+    const byChrom = new Map();
+    calls.forEach((call) => {
+      if (!byChrom.has(call.chrom)) byChrom.set(call.chrom, []);
+      byChrom.get(call.chrom).push(call);
+    });
+    const lengths = new Map((data.chromosome_summary || []).map((item) => [item.chrom, item.length]));
+    const spans = [];
+    byChrom.forEach((rows, chrom) => {
+      let observed = 1;
+      rows.forEach((call) => { observed = Math.max(observed, call.anchor + 1); });
+      spans.push({ chrom, length: lengths.get(chrom) || observed, known: Boolean(lengths.get(chrom)), rows });
+    });
+    spans.sort((a, b) => a.chrom.localeCompare(b.chrom, undefined, { numeric: true }));
+    let size = Math.max(1, requestedSize);
+    // Bound DOM size on large assemblies; disclose the actual window size in UI.
+    while (spans.reduce((sum, item) => sum + Math.ceil(item.length / size), 0) > 20000 && spans.length < 20000) size *= 2;
+    const selected = new Set(state.filtered);
+    let maximum = 1;
+    const chromosomes = spans.map((item) => {
+      const bins = Array.from({ length: Math.ceil(item.length / size) }, (_, i) => ({
+        chrom: item.chrom, start: i * size, end: Math.min(item.length, (i + 1) * size),
+        baseline: { INSIDER: 0, OUTSIDER: 0, UNKNOWN: 0 }, selected: { INSIDER: 0, OUTSIDER: 0, UNKNOWN: 0 }, all: 0, kept: 0,
+      }));
+      item.rows.forEach((call) => {
+        // A terminal insertion at chromosome length belongs to the final window.
+        if (!Number.isFinite(call.anchor) || call.anchor < 0 || call.anchor > item.length) return;
+        const bin = bins[Math.min(bins.length - 1, Math.floor(call.anchor / size))];
+        const source = call.source === "INSIDER" || call.source === "OUTSIDER" ? call.source : "UNKNOWN";
+        bin.baseline[source] += 1; bin.all += 1;
+        if (selected.has(call)) { bin.selected[source] += 1; bin.kept += 1; }
+        maximum = Math.max(maximum, bin.all);
+      });
+      return { ...item, bins };
+    });
+    return { chromosomes, size, maximum };
+  }
+
+  function showWindowTooltip(event, bin, point) {
+    const tooltip = $("trm-heatmap-tooltip");
+    tooltip.replaceChildren();
+    const heading = document.createElement("strong");
+    heading.textContent = `${bin.chrom}:${formatInteger.format(bin.start)}–${formatInteger.format(bin.end)} bp`;
+    tooltip.appendChild(heading);
+    const total = document.createElement("p");
+    total.textContent = `${bin.kept} selected / ${bin.all} reported calls · ${bin.all - bin.kept} excluded by filters`;
+    tooltip.appendChild(total);
+    ["INSIDER", "OUTSIDER", "UNKNOWN"].forEach((source) => {
+      if (source === "UNKNOWN" && !bin.baseline.UNKNOWN) return;
+      const line = document.createElement("div");
+      line.textContent = `${source}: ${bin.selected[source]} selected / ${bin.baseline[source]} before filtering`;
+      tooltip.appendChild(line);
+    });
+    tooltip.hidden = false;
+    const bounds = point.getBoundingClientRect();
+    const x = Number.isFinite(event.clientX) ? event.clientX : bounds.left;
+    const y = Number.isFinite(event.clientY) ? event.clientY : bounds.bottom;
+    tooltip.style.left = `${Math.max(8, Math.min(window.innerWidth - tooltip.offsetWidth - 12, x + 14))}px`;
+    tooltip.style.top = `${Math.max(8, Math.min(window.innerHeight - tooltip.offsetHeight - 12, y + 14))}px`;
+  }
+
+  function renderGenomeHeatmap() {
+    const target = $("trm-genome-heatmap");
+    $("trm-heatmap-tooltip").hidden = true;
+    const requested = Number($("trm-heatmap-window").value) || 1000000;
+    const model = buildHeatmap(requested);
+    if (!model.chromosomes.length) {
+      $("trm-heatmap-impact").textContent = "No reported calls in this analysis.";
+      return emptyChart(target, "No call windows available");
+    }
+    let affected = 0, windows = 0, maximumLength = 1;
+    model.chromosomes.forEach((item) => {
+      maximumLength = Math.max(maximumLength, item.length);
+      item.bins.forEach((bin) => { windows += 1; if (bin.kept !== bin.all) affected += 1; });
+    });
+    $("trm-heatmap-impact").textContent = `${affected} / ${windows} windows filter affected · ${windows - affected} unchanged · actual window: ${formatInteger.format(model.size)} bp${model.size !== requested ? " (increased to bound display size)" : ""}. Chromosomes with reported calls remain visible, including filtered-out regions.`;
+    $("trm-heatmap-impact").setAttribute("data-filtered", affected > 0 ? "true" : "false");
+    $("trm-heatmap-maximum").textContent = `${model.maximum} calls / window`;
+    const width = 1100, left = 190, right = 90, rowHeight = 38, top = 32;
+    const height = top + model.chromosomes.length * rowHeight + 10;
+    const x = (value) => left + (width - left - right) * value / maximumLength;
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "TE call counts per chromosome window with filter impact" });
+    for (let i = 0; i <= 4; i += 1) {
+      const tick = svgElement("text", { x: x(maximumLength * i / 4), y: 16, class: "trm-scatter-axis-label", "text-anchor": "middle" });
+      tick.textContent = `${compactPosition(maximumLength * i / 4)} bp`; svg.appendChild(tick);
+    }
+    model.chromosomes.forEach((item, index) => {
+      const y = top + rowHeight * index;
+      const label = svgElement("text", { x: 5, y: y + 16, class: "trm-genome-label" });
+      label.textContent = item.chrom.length > 25 ? `${item.chrom.slice(0, 22)}…` : item.chrom;
+      const labelTitle = svgElement("title"); labelTitle.textContent = `${item.chrom}${item.known ? "" : " — observed span; chromosome length unavailable"}`;
+      label.appendChild(labelTitle); svg.appendChild(label);
+      item.bins.forEach((bin) => {
+        const changed = bin.kept !== bin.all;
+        const point = svgElement("rect", { x: x(bin.start), y, width: Math.max(0.25, x(bin.end) - x(bin.start)), height: 23, rx: 2,
+          fill: magmaColor(bin.kept, model.maximum), class: `trm-heatmap-cell${changed ? " trm-heatmap-affected" : ""}`, tabindex: "0",
+          "aria-label": `${bin.chrom}:${bin.start}-${bin.end}: ${bin.kept} selected of ${bin.all}; ${changed ? "filter affected" : "unchanged"}`,
+          "aria-describedby": "trm-heatmap-tooltip" });
+        point.addEventListener("pointerenter", (event) => showWindowTooltip(event, bin, point));
+        point.addEventListener("pointermove", (event) => showWindowTooltip(event, bin, point));
+        point.addEventListener("focus", (event) => showWindowTooltip(event, bin, point));
+        point.addEventListener("pointerleave", () => { $("trm-heatmap-tooltip").hidden = true; });
+        point.addEventListener("blur", () => { $("trm-heatmap-tooltip").hidden = true; });
+        point.addEventListener("keydown", (event) => { if (event.key === "Escape") $("trm-heatmap-tooltip").hidden = true; });
+        svg.appendChild(point);
+      });
+    });
+    target.replaceChildren(svg);
+  }
+
+  function filteredStructureRelations(identity, coverage) {
+    const eligible = new Set(residentCopies.filter((copy) => copy.identity >= identity && copy.coverage >= coverage)
+      .map((copy) => JSON.stringify([copy.target, copy.copy_id])));
+    return (resident.relations || []).filter((relation) => eligible.has(JSON.stringify([relation.target, relation.source_copy_id]))
+      && eligible.has(JSON.stringify([relation.target, relation.target_copy_id])));
+  }
+
+  function renderStructurePreview() {
+    const identity = Number($("trm-structure-identity").value) || 0;
+    const coverage = Number($("trm-structure-coverage").value) || 0;
+    $("trm-structure-identity-value").textContent = `${identity}%`;
+    $("trm-structure-coverage-value").textContent = `${coverage}%`;
+    const target = $("trm-structure-preview");
+    target.replaceChildren();
+    if (!Array.isArray(resident.relations)) return emptyChart(target, "Rebuild the report to enable relation-level threshold preview.");
+    const rows = filteredStructureRelations(identity, coverage);
+    const counts = new Map(); rows.forEach((row) => counts.set(row.relation, (counts.get(row.relation) || 0) + 1));
+    $("trm-structure-preview-note").textContent = `${rows.length} / ${resident.relations.length} relation pairs retained. Both copies must pass identity and consensus coverage; no regrouping or re-annotation. Independent of table filters.`;
+    ["same_family_overlap", "nested_candidate", "overlap_candidate"].forEach((type) => {
+      const total = (resident.summary.relation_types || {})[type] || 0;
+      target.appendChild(summaryCard(type, `${formatInteger.format(counts.get(type) || 0)} / ${formatInteger.format(total)}`, "preview / all reported relations"));
+    });
+  }
+
   function renderGenomeChart() {
     const target = $("trm-genome-chart");
     const selectedChroms = new Set(state.filtered.map((call) => call.chrom));
     const chromosomes = data.chromosome_summary.filter((item) => selectedChroms.has(item.chrom));
     if (!chromosomes.length) return emptyChart(target, "No genomic position in the current selection");
-    const width = 1100;
-    const left = 150;
-    const right = 25;
-    const rowHeight = 34;
-    const height = 35 + chromosomes.length * rowHeight;
-    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "TE calls along chromosomes" });
+    const width = 1100, left = 190, right = 150, rowHeight = 42;
+    const height = 52 + chromosomes.length * rowHeight;
+    // Keep one absolute scale across chromosomes and filter changes. Unknown
+    // lengths use the observed span, explicitly labelled rather than inferred as fact.
+    const spans = new Map((data.chromosome_summary || []).map((item) => [item.chrom, item.length || 1]));
+    calls.forEach((call) => spans.set(call.chrom, Math.max(spans.get(call.chrom) || 1, call.anchor || 0)));
+    let maximum = 1;
+    spans.forEach((span) => { maximum = Math.max(maximum, span); });
+    const x = (bp) => left + (width - left - right) * bp / maximum;
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "TE calls along chromosomes on a shared base-pair scale" });
+    for (let i = 0; i <= 4; i += 1) {
+      const value = maximum * i / 4;
+      svg.appendChild(svgElement("line", { x1: x(value), x2: x(value), y1: 26, y2: height - 12, class: "trm-scatter-grid trm-scatter-grid-vertical" }));
+      const tick = svgElement("text", { x: x(value), y: 14, "text-anchor": "middle", class: "trm-scatter-axis-label" });
+      tick.textContent = `${compactPosition(value)} bp`;
+      svg.appendChild(tick);
+    }
     chromosomes.forEach((item, index) => {
-      const y = 25 + index * rowHeight;
+      const y = 45 + index * rowHeight;
       const label = svgElement("text", { x: 5, y: y + 4, class: "trm-genome-label" });
-      label.textContent = item.chrom;
+      label.textContent = item.chrom.length > 25 ? `${item.chrom.slice(0, 22)}…` : item.chrom;
+      const labelTitle = svgElement("title");
+      labelTitle.textContent = item.chrom;
+      label.appendChild(labelTitle);
       svg.appendChild(label);
-      svg.appendChild(svgElement("line", { x1: left, y1: y, x2: width - right, y2: y, class: "trm-genome-line" }));
-      const chromosomeCalls = state.filtered.filter((call) => call.chrom === item.chrom);
-      const inferredLength = Math.max(...chromosomeCalls.map((call) => call.anchor), 1);
-      const length = item.length || inferredLength;
-      chromosomeCalls.forEach((call) => {
-        const x = left + (width - left - right) * Math.min(1, Math.max(0, call.anchor / length));
-        const point = svgElement("circle", {
-          cx: x,
-          cy: y,
-          r: 4.2,
-          fill: call.source === "INSIDER" ? "#6f5bd3" : call.source === "OUTSIDER" ? "#ed8a3b" : "#a8b4b9",
-          class: "trm-call-point",
-        });
+      const span = item.length || spans.get(item.chrom);
+      const track = svgElement("line", { x1: left, y1: y, x2: x(span), y2: y, class: `trm-genome-line${item.length ? "" : " trm-genome-length-unknown"}`, tabindex: "0" });
+      const lengthText = item.length ? `${formatInteger.format(item.length)} bp` : "Length unavailable; showing observed span";
+      const trackTitle = svgElement("title");
+      trackTitle.textContent = `${item.chrom}: ${lengthText}`;
+      track.appendChild(trackTitle);
+      svg.appendChild(track);
+      const size = svgElement("text", { x: width - right + 14, y: y + 4, class: "trm-genome-label" });
+      size.textContent = item.length ? `${formatDecimal.format(item.length / 1e6)} Mb` : "Length unknown";
+      const sizeTitle = svgElement("title");
+      sizeTitle.textContent = lengthText;
+      size.appendChild(sizeTitle);
+      svg.appendChild(size);
+      state.filtered.filter((call) => call.chrom === item.chrom).forEach((call) => {
+        const point = svgElement("circle", { cx: x(Math.max(0, call.anchor)), cy: y, r: 4.2,
+          fill: call.source === "INSIDER" ? "#6f5bd3" : call.source === "OUTSIDER" ? "#ed8a3b" : "#a8b4b9", class: "trm-call-point", tabindex: "0" });
         const title = svgElement("title");
-        title.textContent = `${call.family} · ${call.event_id} · ${call.chrom}:${formatInteger.format(call.anchor)}`;
+        title.textContent = `${call.family} · ${call.event_id} · ${call.chrom}:${formatInteger.format(call.anchor)}\nChromosome: ${lengthText}`;
         point.appendChild(title);
         svg.appendChild(point);
       });
@@ -582,6 +799,8 @@
       const label = document.createElement("span");
       label.className = "trm-bar-label";
       label.textContent = item.label;
+      label.title = item.label;
+      label.tabIndex = 0;
       const track = document.createElement("span");
       track.className = "trm-bar-track";
       const bar = document.createElement("span");
@@ -962,7 +1181,8 @@
       summaryCard("Primary families", formatInteger.format(summary.families || 0), "distinct primary assignments"),
       summaryCard("Full length", formatInteger.format(tiers.full_length || 0), "configured classification"),
       summaryCard("Partial / relic", `${formatInteger.format(tiers.partial || 0)} / ${formatInteger.format(tiers.degraded_relic || 0)}`, "configured classification"),
-      summaryCard("Multi-TE copies", formatInteger.format(summary.multi_te_copies || 0), `${formatInteger.format(summary.ambiguous_copies || 0)} copies retain multiple matches`)
+      summaryCard("Copies with multiple candidate matches", formatInteger.format(summary.ambiguous_copies || 0), "Several candidate matches, possibly assigned to the same TE family"),
+      summaryCard("Copies with multiple candidate families", formatInteger.format(summary.multi_te_copies || 0), "Subset of copies with multiple matches; alternative annotations, not confirmed multi-TE structures")
     );
   }
 
@@ -993,13 +1213,21 @@
     $("trm-resident-partial-value").textContent = `${residentState.partialCoverage}%`;
     const counts = { full_length: 0, partial: 0, degraded_relic: 0 };
     residentCopies.forEach((copy) => { counts[residentTier(copy)] += 1; });
-    $("trm-resident-calibration-summary").textContent = [
-      `${formatInteger.format(counts.full_length)} full-length`,
-      `${formatInteger.format(counts.partial)} partial`,
-      `${formatInteger.format(counts.degraded_relic)} degraded/relic`,
-      `from ${formatInteger.format(residentCopies.length)} reported copies`,
-      `discovery floor: ${resident.thresholds.min_pident}% identity and ${resident.thresholds.min_aligned_bp} aligned bp`,
-    ].join(" · ");
+    const summary = $("trm-resident-calibration-summary");
+    summary.replaceChildren();
+    const tiers = [
+      ["full_length", "Full-length", `Coverage ≥ ${residentState.fullCoverage}% and identity ≥ ${residentState.fullIdentity}%`],
+      ["partial", "Partial", `Coverage ≥ ${residentState.partialCoverage}%; full-length criteria not met`],
+      ["degraded_relic", "Degraded / relic", `Coverage < ${residentState.partialCoverage}%; full-length criteria not met`],
+    ];
+    tiers.forEach(([key, label, rule]) => {
+      const percentage = residentCopies.length ? 100 * counts[key] / residentCopies.length : 0;
+      const card = summaryCard(label, formatInteger.format(counts[key]), `${formatPercent.format(percentage)}% of reported copies · ${rule}`);
+      card.className += ` trm-tier-card trm-tier-${key}`;
+      summary.appendChild(card);
+    });
+    $("trm-resident-calibration-context").textContent = `Classification preview across ${formatInteger.format(residentCopies.length)} reported copies. Counts use the current sliders and all reported copies, independently of the resident table filters.`;
+    $("trm-resident-discovery-floor").textContent = `Discovery filters: identity ≥ ${resident.thresholds.min_pident}% · aligned length ≥ ${resident.thresholds.min_aligned_bp} bp. These are fixed pipeline settings; moving the sliders cannot recover evidence excluded during discovery.`;
 
     const target = $("trm-resident-calibration-chart");
     if (!residentCopies.length) return emptyChart(target, "No resident copy to calibrate");
@@ -1113,6 +1341,13 @@
     initializeResidentFilters();
     renderResidentCalibration();
     renderResidentEvidence();
+    ["trm-structure-identity", "trm-structure-coverage"].forEach((id) => $(id).addEventListener("input", renderStructurePreview));
+    $("trm-structure-reset").addEventListener("click", () => {
+      $("trm-structure-identity").value = 0;
+      $("trm-structure-coverage").value = 0;
+      renderStructurePreview();
+    });
+    renderStructurePreview();
     applyResidentFilters();
   }
 
@@ -1190,6 +1425,8 @@
 
   function renderSelection() {
     renderCards();
+    renderDetectorSummary();
+    renderGenomeHeatmap();
     renderFamilyChart();
     renderFrequencyChart();
     renderGenomeChart();

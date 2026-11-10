@@ -18,7 +18,7 @@ from te_candidate_provenance import read_provenance, EVIDENCE_COLUMNS
 from report_frequency_depth import attach_frequency_depth
 
 
-REPORT_SCHEMA_VERSION = "1.8.0"
+REPORT_SCHEMA_VERSION = "1.9.0"
 TE_INFO_COLUMNS = (
     "chrom",
     "start",
@@ -404,6 +404,12 @@ def build_resident_te_data(
     relation_count, relation_types = read_resident_summary_table(
         relation_paths, relation_header, "relation"
     )
+    relation_rows = read_tsv_rows(relation_paths, relation_header)
+    copy_keys = {(row["target"], row["copy_id"]) for row in copies}
+    for row in relation_rows:
+        for endpoint in ("source_copy_id", "target_copy_id"):
+            if (row["target"], row[endpoint]) not in copy_keys:
+                raise ValueError(f"Relation {row['relation_id']}: unknown copy {row[endpoint]}")
     tiers = Counter(row["status"] for row in copies)
     targets = Counter(row["target"] for row in copies)
     return {
@@ -422,6 +428,7 @@ def build_resident_te_data(
             "relation_types": relation_types,
         },
         "copies": copies,
+        "relations": relation_rows,
     }
 
 
@@ -724,6 +731,7 @@ def build_report_data(
         "proximity_groups": proximity_groups(calls, locus_window),
         "mapping_stats": read_mapping_stats(mapping_stats_path),
         "sv_counts": read_vcf_counts(sv_vcf_path),
+        "sv_counts_available": sv_vcf_path is not None and sv_vcf_path.is_file(),
         "input_manifest": read_manifest(manifest_path),
         "resident_te": build_resident_te_data(
             copy_paths=resident_copy_paths,
@@ -809,6 +817,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--script", type=Path, required=True)
     parser.add_argument("--output-qmd", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
+    parser.add_argument("--help-page", type=Path, help="Standalone report help HTML source")
+    parser.add_argument("--output-help", type=Path, help="Destination; defaults to report-help.html beside QMD")
     parser.add_argument("--enabled-source", action="append", default=[])
     parser.add_argument("--title", default="TrEMOLO analysis report")
     parser.add_argument("--author", default="")
@@ -876,6 +886,8 @@ def main() -> None:
     )
     atomic_write_text(args.output_json, json_text)
     atomic_write_text(args.output_qmd, source)
+    help_page = args.help_page or Path(__file__).resolve().parents[3] / "report/quarto/report-help.html"
+    atomic_write_text(args.output_help or args.output_qmd.with_name("report-help.html"), help_page.read_text())
     print(
         "Prepared Quarto report data: {} calls, {} families, {} proximity groups, "
         "{} resident copies, {} ambiguous variable calls.".format(

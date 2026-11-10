@@ -26,6 +26,7 @@ lang: en
     <p class="trm-eyebrow">TrEMOLO · reproducible report</p>
     <h2 id="trm-report-title">Transposable-element landscape</h2>
     <p id="trm-report-subtitle" class="trm-muted"></p>
+    <a class="trm-help-link" href="report-help.html" target="_blank" rel="noopener">Report help ↗</a>
   </div>
   <div class="trm-legend" aria-label="Evidence source legend">
     <span><i class="trm-dot trm-insider"></i>INSIDER</span>
@@ -40,6 +41,15 @@ lang: en
 
 ```{=html}
 <div id="trm-summary-cards" class="trm-card-grid" aria-live="polite"></div>
+```
+
+```{=html}
+<section class="trm-panel">
+  <div class="trm-panel-heading"><div><p class="trm-kicker">Detection channels</p><h3>Reported TE calls by detector</h3></div><a class="trm-help-link" href="report-help.html#counts" target="_blank" rel="noopener">Help · counting units ↗</a></div>
+  <p id="trm-detector-note" class="trm-caption trm-caption-left"></p>
+  <div class="trm-table-wrap"><table class="trm-table"><thead><tr><th>Detector</th><th>Insertions</th><th>Deletions</th><th>SOFT</th><th>HARD</th><th>Other</th><th>Total</th></tr></thead><tbody id="trm-detector-table-body"></tbody></table></div>
+  <div id="trm-raw-sv-summary" class="trm-card-grid trm-raw-sv-summary"></div>
+</section>
 ```
 
 ```{=html}
@@ -70,9 +80,10 @@ lang: en
 ```{=html}
 <section class="trm-panel">
   <div class="trm-panel-heading">
-    <div><p class="trm-kicker">Genome</p><h3>Call positions by chromosome</h3></div>
-    <span class="trm-caption">positions are normalized to chromosome length</span>
+    <div><p class="trm-kicker">Genome</p><h3>Call positions by chromosome</h3><a class="trm-help-link" href="report-help.html#chromosomes" target="_blank" rel="noopener">Help · chromosome lengths ↗</a></div>
+    <span class="trm-caption">shared base-pair scale · chromosome lengths shown in Mb</span>
   </div>
+  <p class="trm-caption trm-caption-left">Bar lengths reflect chromosome size on the same scale. Hover a bar or size label for the exact length in bp. Dashed bars indicate an unknown reference length and show only the observed span.</p>
   <div id="trm-genome-chart" class="trm-chart trm-genome-chart"></div>
 </section>
 ```
@@ -98,7 +109,7 @@ lang: en
 ```{=html}
 <section class="trm-panel">
   <div class="trm-panel-heading">
-    <div><p class="trm-kicker">Read support</p><h3>Frequency versus local depth</h3></div>
+    <div><p class="trm-kicker">Read support</p><h3>Frequency versus local depth</h3><a class="trm-help-link" href="report-help.html#frequency" target="_blank" rel="noopener">Help · frequency & depth ↗</a></div>
   </div>
   <div class="trm-depth-controls">
     <label class="trm-chart-control">Depth axis
@@ -111,11 +122,30 @@ lang: en
       <input id="trm-depth-frequency-guide" type="number" min="0" max="100" step="1" value="50">
     </label>
   </div>
-  <p class="trm-caption trm-caption-left">x: depth used by the frequency estimate · y: displayed TE frequency (%) · teal: OUTSIDER · purple: INSIDER. All call filters apply. Hover or focus a point for counts, source and position.</p>
+  <p class="trm-caption trm-caption-left">x: depth used by the frequency estimate · y: displayed TE frequency (%). All call filters apply. Hover or focus a point for counts, source and position.</p>
+  <div id="trm-depth-legend" class="trm-legend" aria-label="Frequency-depth evidence source legend">
+    <span><i class="trm-dot trm-outsider" aria-hidden="true"></i>OUTSIDER</span>
+    <span><i class="trm-dot trm-insider" aria-hidden="true"></i>INSIDER</span>
+  </div>
   <p id="trm-depth-summary" class="trm-caption trm-caption-left" aria-live="polite"></p>
   <div id="trm-frequency-depth-chart" class="trm-chart trm-frequency-position-chart"></div>
   <p class="trm-caption trm-caption-left">OUTSIDER: adjusted read denominator from the same raw/precise table selected for the reported frequency. INSIDER: integer mean of sampled flanking depths. These are different estimators, not raw genome-wide coverage or fold enrichment. Guides are adjustable visual aids, not confidence thresholds. Missing, zero-depth, inconsistent and out-of-range estimates are omitted from this plot and retained in the call export.</p>
 </section>
+```
+
+```{=html}
+<section class="trm-panel">
+  <div class="trm-panel-heading"><div><p class="trm-kicker">Genome windows</p><h3>Calls per genomic window</h3></div><a class="trm-help-link" href="report-help.html#heatmap" target="_blank" rel="noopener">Help · colours & filters ↗</a></div>
+  <label class="trm-chart-control">Window width
+    <select id="trm-heatmap-window"><option value="100000">100 kb</option><option value="500000">500 kb</option><option value="1000000" selected>1 Mb</option><option value="5000000">5 Mb</option></select>
+  </label>
+  <div class="trm-heatmap-key"><span class="trm-heatmap-empty-key"></span><span>No selected call</span><span class="trm-magma-ramp"></span><span>Low → <strong id="trm-heatmap-maximum"></strong></span></div>
+  <div class="trm-impact-key"><span><i class="trm-impact-swatch"></i>Filter affected: at least one call excluded</span><span><i class="trm-impact-swatch trm-impact-unchanged"></i>Unchanged by filters</span></div>
+  <p id="trm-heatmap-impact" class="trm-note" aria-live="polite"></p>
+  <div id="trm-genome-heatmap" class="trm-chart trm-genome-chart"></div>
+  <p class="trm-caption trm-caption-left">Colours show selected call counts, not read depth; the colour scale uses all reported calls and stays fixed while filtering. Hover or focus a window for selected and baseline INSIDER/OUTSIDER counts. An empty window does not establish absence of TEs.</p>
+</section>
+<div id="trm-heatmap-tooltip" class="trm-window-tooltip" role="tooltip" hidden></div>
 ```
 
 # Explore calls
@@ -141,6 +171,8 @@ The filters below update the call charts and the call table. Downloading exports
   </div>
 </section>
 ```
+
+[Help: source alignment flags and evidence fractions](report-help.html#provenance){target="_blank"}
 
 The **Source genomic alignments** column counts extracted query sequences by
 the SAM status of the genomic alignment used to extract them: primary (neither
@@ -256,34 +288,50 @@ This section is independent from INSIDER/OUTSIDER variant calls. It describes co
 ```{=html}
 <div id="trm-resident-unavailable" class="trm-note" hidden></div>
 <div id="trm-resident-content">
+  <a class="trm-help-link" href="report-help.html#candidates" target="_blank" rel="noopener">Help · candidate matches versus families ↗</a>
   <div id="trm-resident-cards" class="trm-card-grid"></div>
 
   <section class="trm-panel">
     <div class="trm-panel-heading">
-      <div><p class="trm-kicker">Threshold laboratory</p><h3>Coverage × identity classification</h3></div>
+      <div><p class="trm-kicker">Threshold laboratory</p><h3>Coverage × identity classification</h3><a class="trm-help-link" href="report-help.html#coverage" target="_blank" rel="noopener">Help · full_length & partial ↗</a></div>
       <span class="trm-caption">interactive preview only; pipeline files are unchanged</span>
     </div>
     <div class="trm-resident-controls">
       <label>Full-length coverage <output id="trm-resident-full-value"></output><input id="trm-resident-full-threshold" type="range" min="0" max="100" step="1"></label>
       <label>Full-length identity <output id="trm-resident-identity-value"></output><input id="trm-resident-identity-threshold" type="range" min="0" max="100" step="1"></label>
-      <label>Partial coverage <output id="trm-resident-partial-value"></output><input id="trm-resident-partial-threshold" type="range" min="0" max="100" step="1"></label>
+      <label>Minimum partial consensus coverage <output id="trm-resident-partial-value"></output><input id="trm-resident-partial-threshold" type="range" min="0" max="100" step="1"></label>
       <button id="trm-resident-reset-thresholds" type="button" class="trm-button trm-button-secondary">Reset configured values</button>
     </div>
-    <p id="trm-resident-calibration-summary" class="trm-note"></p>
+    <p id="trm-resident-calibration-context" class="trm-caption trm-caption-left" aria-live="polite"></p>
+    <div id="trm-resident-calibration-summary" class="trm-card-grid trm-tier-summary" aria-live="polite"></div>
+    <p id="trm-resident-discovery-floor" class="trm-note"></p>
+    <p class="trm-caption trm-caption-left">Consensus coverage is the percentage of the database TE sequence covered by the union of aligned intervals (overlaps counted once). Example: 1,000 aligned consensus bp out of a 5,000 bp TE = 20%. It is not read depth or sequence identity. Partial means the minimum coverage is met but the full-length coverage/identity criteria are not.</p>
     <p class="trm-caption trm-caption-left">Points are deterministically thinned above 2,500 for browser performance; counts always use every reported copy. Discovery still uses the configured minimum identity and aligned length; these sliders only simulate the three reporting tiers.</p>
     <div id="trm-resident-calibration-chart" class="trm-chart trm-resident-calibration-chart"></div>
   </section>
 
   <div class="trm-grid trm-grid-2">
     <section class="trm-panel">
-      <div class="trm-panel-heading"><div><p class="trm-kicker">Discovery</p><h3>Fragments retained and rejected</h3></div></div>
+      <div class="trm-panel-heading"><div><p class="trm-kicker">Discovery</p><h3>Fragments retained and rejected</h3><a class="trm-help-link" href="report-help.html#discovery" target="_blank" rel="noopener">Help · accepted fragments ↗</a></div></div>
       <div id="trm-resident-fragment-summary" class="trm-chart"></div>
     </section>
     <section class="trm-panel">
-      <div class="trm-panel-heading"><div><p class="trm-kicker">Structure</p><h3>Provisional copy relations</h3></div></div>
+      <div class="trm-panel-heading"><div><p class="trm-kicker">Structure</p><h3>Provisional copy relations</h3><a class="trm-help-link" href="report-help.html#structure" target="_blank" rel="noopener">Help · relation types ↗</a></div></div>
+      <p class="trm-caption trm-caption-left">All reported relations · fixed baseline, before additional preview thresholds.</p>
       <div id="trm-resident-relation-summary" class="trm-chart"></div>
     </section>
   </div>
+
+  <section class="trm-panel">
+    <div class="trm-panel-heading"><div><p class="trm-kicker">Structure preview</p><h3>Relations after identity & coverage thresholds</h3></div><a class="trm-help-link" href="report-help.html#structure" target="_blank" rel="noopener">Help · threshold meaning ↗</a></div>
+    <div class="trm-structure-controls">
+      <label>Minimum primary-match identity <output id="trm-structure-identity-value">0%</output><input id="trm-structure-identity" type="range" min="0" max="100" step="1" value="0"></label>
+      <label>Minimum consensus coverage <output id="trm-structure-coverage-value">0%</output><input id="trm-structure-coverage" type="range" min="0" max="100" step="1" value="0"></label>
+      <button id="trm-structure-reset" class="trm-button trm-button-secondary" type="button">Reset · no extra threshold</button>
+    </div>
+    <p id="trm-structure-preview-note" class="trm-caption trm-caption-left" aria-live="polite"></p>
+    <div id="trm-structure-preview" class="trm-card-grid trm-structure-preview"></div>
+  </section>
 
   <section class="trm-panel trm-filter-panel">
     <div class="trm-panel-heading"><div><p class="trm-kicker">Multi-TE assignments</p><h3>Ambiguous resident copies</h3></div></div>

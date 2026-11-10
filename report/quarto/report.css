@@ -201,3 +201,40 @@ body {
 .trm-depth-controls .trm-chart-control { min-width: 10rem; }
 .trm-depth-controls input { border: 1px solid var(--trm-line); border-radius: 0.55rem; padding: 0.5rem 0.65rem; background: var(--bs-body-bg); color: var(--bs-body-color); }
 .trm-depth-guide { stroke: var(--trm-ink); stroke-width: 1.3; stroke-dasharray: 6 5; opacity: 0.7; }
+
+#trm-depth-legend { margin: 0 0 1.25rem; }
+
+.trm-genome-length-unknown { stroke-dasharray: 5 6; }
+.trm-tier-summary { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); margin: 0.75rem 0 1rem; }
+.trm-tier-card { border-top: 4px solid; }
+.trm-tier-full_length { border-top-color: #087f78; }
+.trm-tier-partial { border-top-color: #ed8a3b; }
+.trm-tier-degraded_relic { border-top-color: #a8b4b9; }
+.trm-bar-label[title] { cursor: help; }
+.trm-bar-label:focus { white-space: normal; overflow-wrap: anywhere; outline-offset: 3px; }
+
+/* Contextual help and chromosome-window exploration. */
+.trm-help-link { display: inline-block; font-size: 0.75rem; font-weight: 700; color: var(--trm-teal-dark); text-decoration: none; border-bottom: 1px dotted currentColor; margin: 0.4rem 0; }
+.trm-help-link:hover, .trm-help-link:focus { text-decoration: underline; }
+.trm-raw-sv-summary { margin-top: 1rem; }
+.trm-structure-controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-bottom: 1.5rem; }
+.trm-structure-controls label { display: grid; grid-template-columns: 1fr auto; gap: 0.4rem; min-width: 15rem; font-size: 0.8rem; }
+.trm-structure-controls input { grid-column: 1 / -1; width: 100%; accent-color: var(--trm-teal); }
+.trm-structure-preview .trm-card-label { overflow-wrap: anywhere; }
+.trm-heatmap-key, .trm-impact-key { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0; font-size: 0.78rem; }
+.trm-magma-ramp { display: inline-block; width: 12rem; height: 0.8rem; border-radius: 99px; background: linear-gradient(90deg,#000004,#3b0f70,#8c2981,#de4968,#fe9f6d,#fcfdbf); }
+:root { --trm-heatmap-empty: #e4e9ee; }
+.trm-heatmap-empty-key { width: 1rem; height: 0.8rem; background: var(--trm-heatmap-empty); border: 1px solid #96a5b1; border-radius: 2px; }
+.trm-impact-key span { display: inline-flex; align-items: center; gap: 0.5rem; }
+.trm-impact-swatch { display: inline-block; width: 1rem; height: 0.8rem; border: 2px solid #1685f8; border-radius: 2px; background: var(--trm-heatmap-empty); }
+.trm-impact-unchanged { border: 1px solid #8f9aa6; }
+.trm-heatmap-cell { stroke: var(--trm-panel); stroke-width: 0.6; cursor: help; }
+.trm-heatmap-affected { stroke: #1685f8; stroke-width: 2; paint-order: stroke fill; }
+.trm-heatmap-cell:hover, .trm-heatmap-cell:focus { stroke: #00cde8; stroke-width: 3; outline: none; }
+.trm-window-tooltip { position: fixed; z-index: 10000; max-width: min(380px, calc(100vw - 24px)); padding: 1rem; border-radius: 12px; background: #102b3b; color: #fff; box-shadow: 0 12px 35px #0004; font-size: 0.8rem; pointer-events: none; border: 1px solid #79c8e4; }
+.trm-window-tooltip strong { color: #a4f1ed; overflow-wrap: anywhere; }
+.trm-window-tooltip p { margin: 0.5rem 0; }
+.trm-window-tooltip[hidden] { display: none; }
+
+#trm-heatmap-impact { padding: 0.85rem 1rem; border: 1px solid var(--trm-line); border-left: 4px solid var(--trm-teal); border-radius: 9px; font-size: 0.8rem; background: var(--trm-soft); }
+#trm-heatmap-impact[data-filtered="true"] { border-left-color: #1685f8; }
