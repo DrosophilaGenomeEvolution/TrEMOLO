@@ -11,7 +11,7 @@ From the **parent of the TrEMOLO checkout**, after running the workflow:
 
 ```bash
 singularity exec TrEMOLO-3.simg TrEMOLO/module build 2 \
-  work_refactor_test STRUCTURE_REPORT
+  work_v3_test STRUCTURE_REPORT
 ```
 
 Open `STRUCTURE_REPORT/report.html` or `index.html`. Share the **whole output
@@ -153,7 +153,7 @@ The historical Node server, global repository symlink and CDN dependencies are
 no longer used. Normalization still holds alignment records in Python memory;
 this change removes the oversized Quarto input and the unbounded HTML gallery,
 without changing scientific thresholds or discarding evidence.
-The refactored Singularity definition includes Quarto; with an older image,
+The v3 Singularity definition includes Quarto; with an older image,
 run the wrapper from a host installation of Quarto instead.
 
 

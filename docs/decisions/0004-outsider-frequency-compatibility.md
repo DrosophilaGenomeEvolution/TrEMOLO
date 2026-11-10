@@ -46,7 +46,7 @@ frequency inputs and tables, as well as these test-dataset invariants:
 - 25 frequency events represented in `MERGE_TE_ALL.bed` and 9 retained
   frequency events outside that merged-call set.
 
-Only orchestration is corrected in compatibility mode. The refactored DAG
+Only orchestration is corrected in compatibility mode. The v3 DAG
 declares all inputs and outputs, processes the complete candidate table without
 persistent chunk artifacts, propagates worker failures, streams the externally
 sorted aggregation, and never removes shared `.fai` files globally.

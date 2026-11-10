@@ -1,6 +1,6 @@
 # Workflow progress messages
 
-The refactored `workflow/Snakefile` emits short messages for major scientific
+The v3 `workflow/Snakefile` emits short messages for major scientific
 jobs and report generation. Index-only jobs retain Snakemake's usual display.
 Messages go to stderr (the job's inherited console/scheduler stream) and are
 appended to `WORK_DIRECTORY/log/progress.log`. They do not enter FASTA, BED,

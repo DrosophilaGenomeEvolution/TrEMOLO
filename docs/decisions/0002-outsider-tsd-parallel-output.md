@@ -28,7 +28,7 @@ Migration regression requires:
 
 ## Consequences
 
-The refactored test output contains 894 deterministic raw candidates,
+The v3 test output contains 894 deterministic raw candidates,
 recovering 20 records relative to `work_test`. TE detection and the 57 merged
 OUTSIDER calls are unchanged.
 

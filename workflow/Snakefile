@@ -1,4 +1,4 @@
-"""TrEMOLO refactored workflow (incremental migration)."""
+"""TrEMOLO v3 workflow."""
 
 from pathlib import Path
 import math

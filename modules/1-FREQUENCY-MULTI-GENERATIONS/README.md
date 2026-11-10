@@ -105,7 +105,7 @@ timepoint. With fewer than two observed timepoints the result is
 
 The Quarto report is self-contained, uses no R, CDN, pandas or Node server, and
 retains interactive chromosome, TE, trend and observation-count filters.
-The refactored Singularity definition includes Quarto; with an older image,
+The v3 Singularity definition includes Quarto; with an older image,
 run the wrapper from a host installation of Quarto instead.
 
 

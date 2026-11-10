@@ -1,6 +1,7 @@
-# Refactored workflow
+# TrEMOLO v3 workflow
 
-This is the supported workflow for **3.0.0-beta.1**, replacing legacy `run.snk`.
+This is the sole workflow entry point for **3.0.0-beta.1**. The 2.x generated
+workflow has been removed; see the [compatibility audit](../docs/v3-compatibility-audit.md).
 Startup displays the version, full source commit and modified-checkout state.
 Actual execution writes the latest identity to `WORK_DIRECTORY/log/run-version.json`;
 dry runs only display it. See [release status](../docs/release-notes-functional-candidate.md).
@@ -21,7 +22,7 @@ executes all enabled branches, including the report:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 all
 ```
 
@@ -32,7 +33,7 @@ The first migrated scientific segment can be inspected or executed explicitly:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 outsider_variant_calling
 ```
 
@@ -46,7 +47,7 @@ The migrated INSIDER structural-variant segment is available with:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 insider_variant_calling
 ```
 
@@ -54,7 +55,7 @@ Shared FASTA and BLAST indexes for the normalized TE database are built once:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 1 te_database_indexes
 ```
 
@@ -62,7 +63,7 @@ INSIDER TE detection reuses these indexes and can be run with:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 insider_te_detection
 ```
 
@@ -70,7 +71,7 @@ Resident whole-assembly TE annotation is an independent optional target:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 te_genome
 ```
 
@@ -99,7 +100,7 @@ legacy-compatible INSIDER empty-site frequency table can be generated with:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 insider_frequency
 ```
 
@@ -113,7 +114,7 @@ INSIDER genome flanks and legacy-compatible TSD calls are available with:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 insider_tsd
 ```
 
@@ -126,7 +127,7 @@ after the two primary sources, run:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 outsider_primary_te_detection
 ```
 
@@ -134,7 +135,7 @@ To include clipped-read evidence and reproduce the historical 100 bp merge:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 outsider_te_detection
 ```
 
@@ -159,7 +160,7 @@ Legacy-compatible OUTSIDER read frequencies are available with:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 outsider_frequency
 ```
 
@@ -176,7 +177,7 @@ separate target:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 outsider_tsd
 ```
 
@@ -192,7 +193,7 @@ requests:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 te_infos
 ```
 
@@ -227,7 +228,7 @@ Ambiguous family evidence for reported variable calls is normalized separately:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 1 te_call_candidates
 ```
 
@@ -242,14 +243,22 @@ The new report is generated directly with Quarto:
 
 ```bash
 snakemake --snakefile TrEMOLO/workflow/Snakefile \
-  --configfile TrEMOLO/tests/workflow/refactor_config.yml \
+  --configfile TrEMOLO/tests/workflow/v3_config.yml \
   --cores 8 report
 ```
 
 It produces `REPORT/report-data.json`, the generated `REPORT/report.qmd`, and a
-single self-contained `REPORT/report.html`. The report has interactive source,
+`REPORT/report.html` with embedded data/scripts and a separate styled
+`REPORT/report-help.html`. Contextual links explain the exact report vocabulary.
+Keep the help page beside the main HTML when sharing. The report has interactive source,
 type, chromosome, family, TSD and frequency filters; genome and family views;
 the complete call table; and an explicitly provisional nearby-call view.
+An additional chromosome-window heatmap uses a fixed Magma colour scale and
+marks windows affected by call filters; tooltips compare selected and baseline
+INSIDER/OUTSIDER counts. The detector table separates final TE calls from raw
+Sniffles VCF totals. Structure previews filter existing relation pairs by both
+copies' primary identity and consensus coverage, alongside the fixed global
+relation counts. All these controls leave scientific outputs unchanged.
 A frequency-versus-local-depth scatter plot distinguishes high-frequency calls
 with little read support from estimates with larger denominators. It includes
 linear/log depth scales, adjustable depth/frequency guides and source-aware
@@ -266,7 +275,7 @@ is excluded.
 It does not use R, `curl`, a web server, or external
 JavaScript/CDN assets.
 
-The refactored container definition pins Quarto 1.9.36. The previously built
+The v3 container definition pins Quarto 1.9.36. The previously built
 Snakemake 5.10 image does not contain it: that image can generate the QMD/data,
 but the source must be rendered by a host Quarto installation or by a rebuilt
 container. Configure a non-default executable with `TOOLS.QUARTO`; customize
@@ -285,7 +294,7 @@ corrections described in `docs/decisions/0017-alignment-candidates-and-timings.m
 
 ```bash
 python3 TrEMOLO/tests/regression/check_variant_calling.py \
-  work_test work_refactor_test
+  work_test work_v3_test
 ```
 
 The INSIDER caller architecture decision is recorded in

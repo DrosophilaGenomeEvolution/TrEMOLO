@@ -1,14 +1,14 @@
 Bootstrap: docker
 From: ubuntu:20.04
 %help
-    Container for TrEMOLO v2.4
+    Scientific environment for the TrEMOLO v3 workflow
     https://github.com/DrosophilaGenomeEvolution/TrEMOLO
     Includes
         Blast 2.2+
         Bedtools2
         RaGOO v1.1
         Assemblytics
-        Snakemake 7.32.4
+        Snakemake (Ubuntu package; validated image: 5.10.0)
         Minimap2 2.28+
         Samtools 1.15.1
         Samtools 1.20
@@ -47,7 +47,7 @@ From: ubuntu:20.04
         Perl v5.26.2
 
 %labels
-    VERSION "TrEMOLO v2.4"
+    VERSION "TrEMOLO v3 scientific environment"
     Maintainer Francois Sabot <francois.sabot@ird.fr>
     Oct, 2023
 
@@ -106,7 +106,7 @@ _EOF_
         texlive-full \
         snakemake
 
-    # Quarto renders the refactored, self-contained HTML report.  The version
+    # Quarto renders the v3, self-contained HTML report.  The version
     # is pinned so report structure does not change between container builds.
     mkdir -p /opt/quarto
     wget -q \

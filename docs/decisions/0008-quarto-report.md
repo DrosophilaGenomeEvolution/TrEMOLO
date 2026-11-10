@@ -1,4 +1,4 @@
-# 0008 — Replace the refactored report directly with Quarto
+# 0008 — Replace the v3 report directly with Quarto
 
 ## Status
 
@@ -13,13 +13,13 @@ also queried a remote author service with `curl`. Consequently the report was
 not reproducible offline, undeclared source changes did not reliably invalidate
 the rule, and report generation could modify or delete pipeline outputs.
 
-The legacy report remains available on the old workflow and can therefore be
-used as a visual and semantic reference while the refactored workflow adopts a
+The 2.x report is available in Git history as a visual and semantic reference;
+the v3 workflow adopts a
 clean report architecture directly.
 
 ## Decision
 
-The refactored workflow does not migrate the R Markdown implementation. It
+The v3 workflow does not migrate the R Markdown implementation. It
 generates:
 
 - `REPORT/report-data.json`, a versioned, deterministic presentation model;

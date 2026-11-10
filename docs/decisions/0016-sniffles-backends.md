@@ -7,7 +7,7 @@ Status: accepted, 2026-09-11.
 `CHOICE.OUTSIDER_VARIANT.CALL_SV` accepts `sniffles1`, `sniffles2`, and the
 backwards-compatible `sniffles` alias for generation 1. Invalid choices fail
 at DAG construction instead of silently running another caller. This applies
-to `workflow/Snakefile`; the archived `run.snk` entry point is unchanged.
+to `workflow/Snakefile`; the 2.x entry point was subsequently removed (see the v3 compatibility audit).
 
 The image retains 1.0.12b at `sniffles` (also `sniffles1`) and installs 2.8.1
 at `sniffles2`. Generation 2 runs in `/opt/sniffles2` with Python 3.12 because

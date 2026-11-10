@@ -23,7 +23,7 @@ The historical rule performed two BLAST passes:
 The rule rebuilt an existing BLAST database, hid every intermediate, treated
 BLAST coordinates directly as BED coordinates, and left incomplete outputs on
 some empty or failed runs. The option remained documented after the initial
-refactor but was silently ignored by `workflow/Snakefile`.
+v3 implementation but was silently ignored by `workflow/Snakefile`.
 
 ## Decision
 

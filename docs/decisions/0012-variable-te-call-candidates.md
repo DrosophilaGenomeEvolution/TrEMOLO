@@ -18,7 +18,7 @@ cases harder to find.
 
 ## Decision
 
-The refactored workflow writes `TE_CALL_CANDIDATES.tsv`. An event is included
+The v3 workflow writes `TE_CALL_CANDIDATES.tsv`. An event is included
 only when all of the following are true:
 
 - it is present in the final `TE_INFOS.bed` call table;

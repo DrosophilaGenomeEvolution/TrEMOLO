@@ -35,7 +35,7 @@ silently during an orchestration migration:
 On the fixture these behaviours yield 201 rows: 190 at depth zero, ten at
 depth one, and one at depth two. Ten rows have frequency 100%, and one covered
 event is supported only by an empty-site deletion. The reference output is
-byte-identical when recomputed from the refactored mapping BAM.
+byte-identical when recomputed from the v3 mapping BAM.
 
 ## Decision
 

@@ -4,7 +4,7 @@ An [inventory of the matching source lines](chromosome-filter-usage.md) lists
 configuration, validation and application sites, separating the current
 workflow, historical workflow and independent utilities.
 
-In the refactored `workflow/Snakefile`, `CHROM_KEEP` is a **Python regular
+In the v3 `workflow/Snakefile`, `CHROM_KEEP` is a **Python regular
 expression applied to the chromosome identifier alone**. It never sees the
 FASTA description, a trailing space/tab, BED coordinates, TE labels or read
 identifiers. The same matcher is used for Sniffles 1/2 VCF sequences/read names,
@@ -55,6 +55,4 @@ The GFA export's separate `--chrom-regex` option already searches chromosome
 names only. It accepts one Python expression (use `|` for alternatives), not
 the legacy comma-list convention. See [GFA export](te-gfa.md).
 
-The historical `run.snk`/`rules.snk` workflow is not the refactored entry point
-and does not acquire the new BED-merging contract. Use `workflow/Snakefile`
-for this behavior.
+The 2.x workflow has been removed. Use `workflow/Snakefile` for this behavior.

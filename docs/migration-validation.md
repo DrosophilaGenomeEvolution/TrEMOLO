@@ -4,7 +4,7 @@ This record predates later scientific corrections and does not certify the
 current beta checkout. See [beta release status](release-notes-functional-candidate.md)
 and [current regression procedures](../tests/regression/README.md).
 
-The refactored `workflow/Snakefile` completed all 70 jobs from a fresh output
+The v3 `workflow/Snakefile` completed all 70 jobs from a fresh output
 directory on the bundled fixture. INSIDER, OUTSIDER, TE_GENOME, OUTSIDER genome
 integration, Liftoff and the Quarto report were enabled.
 

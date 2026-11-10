@@ -1,4 +1,4 @@
-# 0013 — Refactor optional modules around normalized scientific tables
+# 0013 — Organize optional modules around normalized scientific tables
 
 ## Status
 

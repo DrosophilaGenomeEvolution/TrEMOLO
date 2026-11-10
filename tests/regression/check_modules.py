@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the refactored module outputs on the bundled regression fixtures."""
+"""Validate the v3 module outputs on the bundled regression fixtures."""
 
 import argparse
 import csv
