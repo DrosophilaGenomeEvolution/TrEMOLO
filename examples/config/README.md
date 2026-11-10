@@ -2,7 +2,10 @@
 
 Copy one YAML, replace all `/absolute/path/...` values and select a new output
 path. These examples use the current scientific image and leave optional
-resident annotation, integration and unmapped-read analysis disabled.
+resident annotation and integration disabled. OUTSIDER and combined examples
+enable `UNMAPPED_TE: true` to search unmapped reads for TE matches. The
+assembly-only INSIDER example keeps it false because it has no `DATA.SAMPLE`;
+add reads before enabling that option.
 
 | File | Required inputs |
 | --- | --- |

@@ -1,27 +1,27 @@
 # Replace paths before running. All paths are interpreted from the command working directory.
 DATA:
-  GENOME: /absolute/path/assembly.fasta
-  TE_DB: /absolute/path/original_TE_database.fasta
-  WORK_DIRECTORY: /absolute/path/new_combined_output
-  REFERENCE: /absolute/path/reference.fasta
-  SAMPLE: /absolute/path/reads.fastq.gz
+  GENOME: /absolute/path/assembly.fasta # Assembly used as the read-mapping target (FASTA)
+  TE_DB: /absolute/path/original_TE_database.fasta # TE sequence database (multi-FASTA)
+  WORK_DIRECTORY: /absolute/path/new_combined_output # New directory for all analysis outputs
+  REFERENCE: /absolute/path/reference.fasta # Reference assembly for INSIDER comparison (FASTA)
+  SAMPLE: /absolute/path/reads.fastq.gz # Sample long reads (FASTQ or gzipped FASTQ)
 
 CHOICE:
   PIPELINE:
-    INSIDER_VARIANT: true
-    OUTSIDER_VARIANT: true
-    TE_GENOME: false
-    UNMAPPED_TE: false
-    REPORT: true
+    INSIDER_VARIANT: true # Compare the sample assembly with DATA.REFERENCE
+    OUTSIDER_VARIANT: true # Detect TE-associated variation using read mappings
+    TE_GENOME: false # Optional catalogue of resident TEs in the assembly
+    UNMAPPED_TE: true # Search unmapped reads for TE matches; requires DATA.SAMPLE
+    REPORT: true # Generate the interactive HTML report and offline help
   OUTSIDER_VARIANT:
-    CALL_SV: sniffles1
-    CLIPPED_READS: false
-    INTEGRATE_TE_TO_GENOME: false
-    INTEGRATION_ALLOW_PARTIAL: false # strict if integration is enabled
+    CALL_SV: sniffles1 # Structural-variant caller: sniffles1 or sniffles2
+    CLIPPED_READS: false # Set true to include soft/hard-clipped read evidence
+    INTEGRATE_TE_TO_GENOME: false # Optional reconstruction with detected insertions
+    INTEGRATION_ALLOW_PARTIAL: false # Fail on rejected insertions if integration is enabled
 
 TOOLS:
-  QUARTO: /opt/quarto/bin/quarto
-  LIFTOFF: /opt/conda/envs/liftoff_env/bin/liftoff
+  QUARTO: /opt/quarto/bin/quarto # Report renderer inside the current container
+  LIFTOFF: /opt/conda/envs/liftoff_env/bin/liftoff # Flank projection tool; used with combined integration
 
 PARAMS:
-  THREADS: 8
+  THREADS: 8 # Threads requested per job; total allocation is limited by --cores
